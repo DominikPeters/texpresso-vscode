@@ -38,16 +38,6 @@ function byteLength(str : string) : number {
  * @api public
  */
 
-// function Rope(str) {
-//   // allow usage without `new`
-//   if (!(this instanceof Rope)) return new Rope(str);
-
-//   this._value = str;
-//   this.length = str.length;
-//   this.bytes = byteLength(str);
-//   adjust.call(this);
-// }
-
 class Rope {
   private _value?: string;
   public length: number;
@@ -153,69 +143,6 @@ class Rope {
     }
   }
 
-  public substring(start: number, end?: number): string {
-    if (typeof end == 'undefined') {
-      end = this.length;
-    }
-    if (start < 0 || isNaN(start)) {
-      start = 0;
-    } else if (start > this.length) {
-      start = this.length;
-    }
-    if (end < 0 || isNaN(end)) {
-      end = 0;
-    } else if (end > this.length) {
-      end = this.length;
-    }
-    if (typeof this._value != 'undefined') {
-      return this._value.substring(start, end);
-    } else if (this._left && this._right) {
-      const leftLength = this._left.length;
-      const leftStart = Math.min(start, leftLength);
-      const leftEnd = Math.min(end, leftLength);
-      const rightLength = this._right.length;
-      const rightStart = Math.max(0, Math.min(start - leftLength, rightLength));
-      const rightEnd = Math.max(0, Math.min(end - leftLength, rightLength));
-      if (leftStart != leftEnd) {
-        if (rightStart != rightEnd) {
-          return this._left.substring(leftStart, leftEnd) + this._right.substring(rightStart, rightEnd);
-        } else {
-          return this._left.substring(leftStart, leftEnd);
-        }
-      } else {
-        if (rightStart != rightEnd) {      
-          return this._right.substring(rightStart, rightEnd);
-        } else {
-          return '';
-        }
-      }
-    }
-    return '';
-  }
-
-  public substr(start: number, length?: number): string {
-    let end;
-    if (start < 0) {
-      start = this.length + start;
-      if (start < 0) {
-        start = 0;
-      }
-    }
-    if (typeof length == 'undefined') {
-      end = this.length;
-    } else {
-      if (length < 0) {
-        length = 0;
-      }
-      end = start + length;
-    }
-    return this.substring(start, end);
-  }
-
-  public charAt(position: number): string {
-    return this.substring(position, position + 1);
-  }
-
   public byteOffset(position: number): number {
     if (typeof this._value != 'undefined') {
       return byteLength(this._value.substring(0, position));
@@ -228,10 +155,6 @@ class Rope {
       }
     }
     return 0;
-  }
-
-  public charCodeAt(position: number): number {
-    return this.substring(position, position + 1).charCodeAt(0);
   }
 }
 
