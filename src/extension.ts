@@ -73,7 +73,6 @@ export function activate(context: vscode.ExtensionContext) {
 						outputChanged = true;
 					}
 					else if (message[0] === 'truncate' && message[1] === 'log') {
-						console.log("Received", message);
 						const bytesToKeep = message[2];
 						providedOutput = providedOutput.slice(-bytesToKeep);
 						outputChanged = true;
@@ -123,7 +122,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.window.onDidChangeActiveTextEditor(editor => {
 		if (activeEditor && editor && editor.document === activeEditor.document) {
-			console.log(activeEditor === editor);
 			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', true);
 		} else {
 			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);

@@ -1,8 +1,8 @@
 {
-  "name": "texpresso",
+  "name": "texpresso-basic",
   "displayName": "TeXpresso",
   "description": "Basic extension for interacting with TeXpresso for live previewing LaTeX documents",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "icon": "./assets/texpresso_logo.png",
   "homepage": "https://github.com/DominikPeters/texpresso-vscode",
   "repository": {
