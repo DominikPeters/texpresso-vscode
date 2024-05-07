@@ -44,6 +44,10 @@
         "command": "texpresso.syncTexForwardShortName",
         "title": "Texpresso SyncTeX",
         "enablement": "texpresso.inActiveEditor"
+      },
+      {
+        "command": "texpresso.stop",
+        "title": "Texpresso: Stop"
       }
     ],
     "configuration": {

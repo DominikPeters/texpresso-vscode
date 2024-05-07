@@ -1,11 +1,6 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-// Import child_process
-import { ChildProcess, spawn, execSync } from 'child_process';
-// import tmp
+import { ChildProcess, spawn } from 'child_process';
 import * as tmp from 'tmp';
-// import fs
 import * as fs from 'fs';
 
 import Rope from './rope';
@@ -21,8 +16,6 @@ let texpresso: ChildProcess;
 let rope: Rope;
 let filePath: string;
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
 	if (texpresso) {
@@ -193,6 +186,16 @@ export function activate(context: vscode.ExtensionContext) {
 			const message = ["previous-page"];
 			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
 		}
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.stop', () => {
+		if (texpresso) {
+			texpresso.kill();
+		}
+		activeEditor = undefined;
+		vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
+		outputChannel.clear();
+		debugChannel.clear();
 	}));
 }
 
