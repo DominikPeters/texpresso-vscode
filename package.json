@@ -3,14 +3,29 @@
   "displayName": "TeXpresso",
   "description": "Basic extension for interacting with TeXpresso for live previewing LaTeX documents",
   "version": "0.0.1",
+  "icon": "./assets/texpresso_logo.png",
+  "homepage": "https://github.com/DominikPeters/texpresso-vscode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DominikPeters/texpresso-vscode.git"
+  },
   "engines": {
     "vscode": "^1.88.0"
   },
   "categories": [
+    "Education",
     "Other"
+  ],
+  "keywords": [
+    "texpresso",
+    "latex",
+    "tex",
+    "preview",
+    "syncTeX"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
+  "license": "MIT",
   "contributes": {
     "commands": [
       {
