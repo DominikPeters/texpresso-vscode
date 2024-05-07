@@ -29,7 +29,7 @@ This extension contributes the following settings:
 
 ## Architecture
 
-TeXpresso and the underlying LaTeX compilers are based on a UTF-8 byte representation, and [communication between the editor and TeXpresso](https://github.com/let-def/texpresso/blob/main/EDITOR-PROTOCOL.md) occurs in terms of byte offsets. However, VS Code only provides access to character positions and not their byte position. Thus, this extension keeps a copy of the current document in a *rope* data structure, enriched with byte offsets. This allows for efficient conversion between character and byte positions, and also allows for efficient edits to the underlying text string. The [code for the rope data structure](https://github.com/DominikPeters/texpresso-vscode/blob/master/src/rope.ts) builds on https://github.com/component/rope.
+TeXpresso and the underlying LaTeX compilers are based on a UTF-8 byte representation, and [communication between the editor and TeXpresso](https://github.com/let-def/texpresso/blob/main/EDITOR-PROTOCOL.md) occurs in terms of byte offsets. However, VS Code only provides access to character positions and not their byte position. Thus, this extension keeps a copy of the current document in a *rope* data structure ([wikipedia](https://en.wikipedia.org/wiki/Rope_(data_structure))), enriched with byte offsets. This allows for efficient conversion between character and byte positions, and also allows for efficient edits to the underlying text string. The [code for the rope data structure](https://github.com/DominikPeters/texpresso-vscode/blob/master/src/rope.ts) builds on https://github.com/component/rope.
 
 ## Known Issues
 
