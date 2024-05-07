@@ -17,8 +17,8 @@ export function activate(context: vscode.ExtensionContext) {
 		texpresso.kill();
 	}
 
-	const outputChannel = vscode.window.createOutputChannel('Texpresso', { log: true });
-	const debugChannel = vscode.window.createOutputChannel('Texpresso Debug', { log: true });
+	const outputChannel = vscode.window.createOutputChannel('TeXpresso', { log: true });
+	const debugChannel = vscode.window.createOutputChannel('TeXpresso Debug', { log: true });
 	let providedOutput = "";
 	let outputChanged = true;
 
@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
 				fs.accessSync(command, fs.constants.X_OK);
 			} catch (error) {
 				vscode.window.showErrorMessage(
-					`Texpresso command '${command}' does not exist or is not executable. Please check the 'texpresso.command' setting.`,
+					`TeXpresso command '${command}' does not exist or is not executable. Please check the 'texpresso.command' setting.`,
 					'Open Settings'
 				).then(value => {
 					if (value === 'Open Settings') {

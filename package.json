@@ -1,7 +1,7 @@
 {
   "name": "texpresso",
-  "displayName": "texpresso",
-  "description": "",
+  "displayName": "TeXpresso",
+  "description": "Basic extension for interacting with TeXpresso for live previewing LaTeX documents",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.88.0"
@@ -15,44 +15,44 @@
     "commands": [
       {
         "command": "texpresso.startDocument",
-        "title": "Texpresso: Start Document"
+        "title": "TeXpresso: Start Document"
       },
       {
         "command": "texpresso.freshCompile",
-        "title": "Texpresso: Fresh Compile",
+        "title": "TeXpresso: Fresh Compile",
         "enablement": "texpresso.running"
       },
       {
         "command": "texpresso.previousPage",
-        "title": "Texpresso: Show Previous Page in Preview Window",
+        "title": "TeXpresso: Show Previous Page in Preview Window",
         "icon": "$(arrow-circle-left)",
         "enablement": "texpresso.inActiveEditor"
       },
       {
         "command": "texpresso.nextPage",
-        "title": "Texpresso: Show Next Page in Preview Window",
+        "title": "TeXpresso: Show Next Page in Preview Window",
         "icon": "$(arrow-circle-right)",
         "enablement": "texpresso.inActiveEditor"
       },
       {
         "command": "texpresso.syncTexForward",
-        "title": "Texpresso: Show Current Position in Preview Window (SyncTeX)",
-        "shortTitle": "Texpresso SyncTeX",
+        "title": "TeXpresso: Show Current Position in Preview Window (SyncTeX)",
+        "shortTitle": "TeXpresso SyncTeX",
         "enablement": "texpresso.inActiveEditor"
       },
       {
         "command": "texpresso.syncTexForwardShortName",
-        "title": "Texpresso SyncTeX",
+        "title": "TeXpresso SyncTeX",
         "enablement": "texpresso.inActiveEditor"
       },
       {
         "command": "texpresso.stop",
-        "title": "Texpresso: Stop",
+        "title": "TeXpresso: Stop",
         "enablement": "texpresso.running"
       }
     ],
     "configuration": {
-      "title": "Texpresso",
+      "title": "TeXpresso",
       "properties": {
         "texpresso.command": {
           "type": "string",
