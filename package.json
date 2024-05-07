@@ -55,7 +55,7 @@
       "properties": {
         "texpresso.command": {
           "type": "string",
-          "default": "/Users/dominik/GitHub/texpresso/build/texpresso",
+          "default": "texpresso",
           "description": "Path to the texpresso binary"
         }
       }
