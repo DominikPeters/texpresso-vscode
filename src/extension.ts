@@ -29,6 +29,11 @@ export function activate(context: vscode.ExtensionContext) {
 		texpresso.kill();
 	}
 
+	const outputChannel = vscode.window.createOutputChannel('Texpresso', {log: true});
+	const debugChannel = vscode.window.createOutputChannel('Texpresso Debug', {log: true});
+	let providedOutput = "";
+	let outputChanged = true;
+
 	let activeEditor: vscode.TextEditor | undefined;
 
 	// The command has been defined in the package.json file
@@ -71,11 +76,30 @@ export function activate(context: vscode.ExtensionContext) {
 						const line = message[2];
 						activeEditor?.revealRange(new vscode.Range(line - 1, 0, line - 1, 0));
 					}
+					else if (message[0] === 'append' && message[1] === 'log') {
+						providedOutput += message[3];
+						outputChanged = true;
+					}
+					else if (message[0] === 'truncate' && message[1] === 'log') {
+						console.log("Received", message);
+						const bytesToKeep = message[2];
+						providedOutput = providedOutput.slice(-bytesToKeep);
+						outputChanged = true;
+					}
+					else if (message[0] === 'flush') {
+						if (outputChanged) {
+							outputChanged = false;
+							outputChannel.replace(providedOutput);
+						}
+					}
+					else {
+						console.log("Received unhandled message", message);
+					}
 				});
 			}
 			if (texpresso && texpresso.stderr) {
 				texpresso.stderr.on('data', data => {
-					console.error(`stderr: ${data}`);
+					debugChannel.append(data.toString());
 				});
 			}
 			// Send file content to texpresso
