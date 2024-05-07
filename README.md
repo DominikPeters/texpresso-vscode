@@ -25,7 +25,7 @@ TeXpresso must be installed, and must be callable at the path provided in the `t
 This extension contributes the following settings:
 
 * `texpresso.command`: The path to the texpresso binary.
-* `texpresso.syncTexForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
+* `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 
 ## Architecture
 

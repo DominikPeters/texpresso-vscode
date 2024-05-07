@@ -51,13 +51,13 @@
         "enablement": "texpresso.inActiveEditor"
       },
       {
-        "command": "texpresso.syncTexForward",
+        "command": "texpresso.syncTeXForward",
         "title": "TeXpresso: Show Current Position in Preview Window (SyncTeX)",
         "shortTitle": "TeXpresso SyncTeX",
         "enablement": "texpresso.inActiveEditor"
       },
       {
-        "command": "texpresso.syncTexForwardShortName",
+        "command": "texpresso.syncTeXForwardShortName",
         "title": "TeXpresso SyncTeX",
         "enablement": "texpresso.inActiveEditor"
       },
@@ -75,7 +75,7 @@
           "default": "/Users/dominik/GitHub/texpresso/build/texpresso",
           "description": "Path to the texpresso binary"
         },
-        "texpresso.syncTexForwardOnSelection": {
+        "texpresso.syncTeXForwardOnSelection": {
           "type": "boolean",
           "default": true,
           "description": "Controls whether the preview should be updated when the selection in the editor changes (SyncTeX forward)"
@@ -98,13 +98,13 @@
       "editor/context": [
         {
           "when": "texpresso.inActiveEditor",
-          "command": "texpresso.syncTexForwardShortName",
+          "command": "texpresso.syncTeXForwardShortName",
           "group": "2_preview"
         }
       ],
       "commandPalette": [
         {
-          "command": "texpresso.syncTexForwardShortName",
+          "command": "texpresso.syncTeXForwardShortName",
           "when": "false"
         }
       ]

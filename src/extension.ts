@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.onDidChangeTextEditorSelection(event => {
 		if (activeEditor
 			&& event.textEditor.document === activeEditor.document
-			&& vscode.workspace.getConfiguration('texpresso').get('syncTexForwardOnSelection') as boolean) {
+			&& vscode.workspace.getConfiguration('texpresso').get('syncTeXForwardOnSelection') as boolean) {
 			doSyncTeXForward(event.textEditor);
 		}
 	});
@@ -155,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
 		doSyncTeXForward();
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.syncTexForwardShortName', (event) => {
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.syncTeXForwardShortName', (event) => {
 		doSyncTeXForward();
 	}));
 
