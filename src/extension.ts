@@ -5,11 +5,6 @@ import * as fs from 'fs';
 
 import Rope from './rope';
 
-const textEncoder = new TextEncoder();
-function byteLength(str : string) : number {
-  return textEncoder.encode(str).length;
-}
-
 tmp.setGracefulCleanup();
 
 let texpresso: ChildProcess;
@@ -22,8 +17,8 @@ export function activate(context: vscode.ExtensionContext) {
 		texpresso.kill();
 	}
 
-	const outputChannel = vscode.window.createOutputChannel('Texpresso', {log: true});
-	const debugChannel = vscode.window.createOutputChannel('Texpresso Debug', {log: true});
+	const outputChannel = vscode.window.createOutputChannel('Texpresso', { log: true });
+	const debugChannel = vscode.window.createOutputChannel('Texpresso Debug', { log: true });
 	let providedOutput = "";
 	let outputChanged = true;
 
@@ -45,8 +40,8 @@ export function activate(context: vscode.ExtensionContext) {
 				filePath = fs.realpathSync(filePath);
 			}
 
-			console.log('Starting Texpresso for', filePath);
 			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', true);
+			vscode.commands.executeCommand('setContext', 'texpresso.running', true);
 			// Start texpresso
 			const command = vscode.workspace.getConfiguration('texpresso').get('command') as string;
 			// Check if command exists
@@ -128,6 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.window.onDidChangeActiveTextEditor(editor => {
 		if (activeEditor && editor && editor.document === activeEditor.document) {
+			console.log(activeEditor === editor);
 			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', true);
 		} else {
 			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
@@ -135,11 +131,11 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let previouslySentLineNumber: number | undefined;
-	function doSyncTeXForward() {
-		if (!activeEditor) {
+	function doSyncTeXForward(editor : vscode.TextEditor | undefined = vscode.window.activeTextEditor) {
+		if (!editor || editor.document !== activeEditor?.document) {
 			return;
 		}
-		const lineNumber = activeEditor.selection.active.line;
+		const lineNumber = editor.selection.active.line;
 		if (!previouslySentLineNumber || previouslySentLineNumber !== lineNumber) {
 			previouslySentLineNumber = lineNumber;
 			if (texpresso && texpresso.stdin) {
@@ -150,8 +146,10 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	vscode.window.onDidChangeTextEditorSelection(event => {
-		if (activeEditor && event.textEditor.document === activeEditor.document) {
-			doSyncTeXForward();
+		if (activeEditor
+			&& event.textEditor.document === activeEditor.document
+			&& vscode.workspace.getConfiguration('texpresso').get('syncTexForwardOnSelection') as boolean) {
+			doSyncTeXForward(event.textEditor);
 		}
 	});
 
@@ -194,6 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		activeEditor = undefined;
 		vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
+		vscode.commands.executeCommand('setContext', 'texpresso.running', false);
 		outputChannel.clear();
 		debugChannel.clear();
 	}));

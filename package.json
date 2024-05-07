@@ -20,7 +20,7 @@
       {
         "command": "texpresso.freshCompile",
         "title": "Texpresso: Fresh Compile",
-        "enablement": "texpresso.inActiveEditor"
+        "enablement": "texpresso.running"
       },
       {
         "command": "texpresso.previousPage",
@@ -47,7 +47,8 @@
       },
       {
         "command": "texpresso.stop",
-        "title": "Texpresso: Stop"
+        "title": "Texpresso: Stop",
+        "enablement": "texpresso.running"
       }
     ],
     "configuration": {
@@ -55,8 +56,13 @@
       "properties": {
         "texpresso.command": {
           "type": "string",
-          "default": "texpresso",
+          "default": "/Users/dominik/GitHub/texpresso/build/texpresso",
           "description": "Path to the texpresso binary"
+        },
+        "texpresso.syncTexForwardOnSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether the preview should be updated when the selection in the editor changes (SyncTeX forward)"
         }
       }
     },
