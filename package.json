@@ -19,11 +19,31 @@
       },
       {
         "command": "texpresso.freshCompile",
-        "title": "Texpresso: Fresh Compile"
+        "title": "Texpresso: Fresh Compile",
+        "enablement": "texpresso.inActiveEditor"
       },
       {
-        "command": "texpresso.showPreview",
-        "title": "Texpresso: Show Preview"
+        "command": "texpresso.previousPage",
+        "title": "Texpresso: Show Previous Page in Preview Window",
+        "icon": "$(arrow-circle-left)",
+        "enablement": "texpresso.inActiveEditor"
+      },
+      {
+        "command": "texpresso.nextPage",
+        "title": "Texpresso: Show Next Page in Preview Window",
+        "icon": "$(arrow-circle-right)",
+        "enablement": "texpresso.inActiveEditor"
+      },
+      {
+        "command": "texpresso.syncTexForward",
+        "title": "Texpresso: Show Current Position in Preview Window (SyncTeX)",
+        "shortTitle": "Texpresso SyncTeX",
+        "enablement": "texpresso.inActiveEditor"
+      },
+      {
+        "command": "texpresso.syncTexForwardShortName",
+        "title": "Texpresso SyncTeX",
+        "enablement": "texpresso.inActiveEditor"
       }
     ],
     "configuration": {
@@ -35,6 +55,33 @@
           "description": "Path to the texpresso binary"
         }
       }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "when": "texpresso.inActiveEditor",
+          "command": "texpresso.previousPage",
+          "group": "navigation@1"
+        },
+        {
+          "when": "texpresso.inActiveEditor",
+          "command": "texpresso.nextPage",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "texpresso.inActiveEditor",
+          "command": "texpresso.syncTexForwardShortName",
+          "group": "2_preview"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "texpresso.syncTexForwardShortName",
+          "when": "false"
+        }
+      ]
     }
   },
   "scripts": {
