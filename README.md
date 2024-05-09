@@ -43,6 +43,14 @@ Loses connection if the filename of the main document is changed.
 
 ## Release Notes
 
+### 1.2.0
+
+Added support for color themes.
+
+### 1.1.0
+
+Changed settings identifiers.
+
 ### 1.0.0
 
 Initial release of the extension.
