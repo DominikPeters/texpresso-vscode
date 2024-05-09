@@ -62,6 +62,16 @@
         "enablement": "texpresso.inActiveEditor"
       },
       {
+        "command": "texpresso.adoptTheme",
+        "title": "TeXpresso: Adopt Editor Color Theme",
+        "enablement": "texpresso.running"
+      },
+      {
+        "command": "texpresso.defaultTheme",
+        "title": "TeXpresso: Adopt Default Color Theme",
+        "enablement": "texpresso.running"
+      },
+      {
         "command": "texpresso.stop",
         "title": "TeXpresso: Stop",
         "enablement": "texpresso.running"
@@ -79,6 +89,11 @@
           "type": "boolean",
           "default": true,
           "description": "Controls whether the preview should be updated when the selection in the editor changes (SyncTeX forward)"
+        },
+        "texpresso.useEditorTheme": {
+          "type": "boolean",
+          "default": false,
+          "description": "Controls whether the preview should use the same color theme as the editor (if activated), or the default theme (otherwise)"
         }
       }
     },

@@ -24,11 +24,14 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let activeEditor: vscode.TextEditor | undefined;
 
-	// The command has been defined in the package.json file
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startDocument', () => {
-		activeEditor = vscode.window.activeTextEditor;
-		if (activeEditor) {
-			// vscode.window.showInformationMessage('Starting Texpreso for this document');
+	function startDocumentFromEditor(editor: vscode.TextEditor | undefined) {
+		if (texpresso) {
+			texpresso.kill();
+		}
+
+		if (editor) {
+			activeEditor = editor;
+			// vscode.window.showInformationMessage('Starting TeXpresso for this document');
 			filePath = activeEditor.document.fileName;
 			const text = activeEditor.document.getText();
 			rope = new Rope(text);
@@ -98,7 +101,15 @@ export function activate(context: vscode.ExtensionContext) {
 			if (texpresso && texpresso.stdin) {
 				texpresso.stdin.write(JSON.stringify(message) + '\n');
 			}
+			// Send color theme to texpresso if setting is enabled
+			if (vscode.workspace.getConfiguration('texpresso').get('useEditorTheme') as boolean) {
+				adoptTheme();
+			}
 		}
+	}
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startDocument', () => {
+		startDocumentFromEditor(vscode.window.activeTextEditor);
 	}));
 
 	vscode.workspace.onDidChangeTextDocument(event => {
@@ -128,8 +139,14 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	/***********************************
+	 ***********************************
+	 ****  SyncTeX and Page Choice  ****
+	 ***********************************
+	 **********************************/
+
 	let previouslySentLineNumber: number | undefined;
-	function doSyncTeXForward(editor : vscode.TextEditor | undefined = vscode.window.activeTextEditor) {
+	function doSyncTeXForward(editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor) {
 		if (!editor || editor.document !== activeEditor?.document) {
 			return;
 		}
@@ -159,17 +176,6 @@ export function activate(context: vscode.ExtensionContext) {
 		doSyncTeXForward();
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.freshCompile', () => {
-		if (activeEditor) {
-			const text = activeEditor.document.getText();
-			rope = new Rope(text);
-			// resend "open" command
-			const message = ["open", filePath, text];
-			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
-			texpresso?.stdin?.write(JSON.stringify(["rescan"]) + '\n');
-		}
-	}));
-
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.nextPage', () => {
 		if (activeEditor) {
 			const message = ["next-page"];
@@ -181,6 +187,97 @@ export function activate(context: vscode.ExtensionContext) {
 		if (activeEditor) {
 			const message = ["previous-page"];
 			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+		}
+	}));
+
+	/***********************************
+	 ***********************************
+	 ****    Theme Color Adaption   ****
+	 ***********************************
+	 **********************************/
+
+	function adoptTheme() {
+		if (!texpresso || !activeEditor) {
+			return;
+		}
+		// to get explicit colors of the theme (which are not available in the API), we need to open a webview
+		// see https://github.com/microsoft/vscode/issues/32813#issuecomment-798680103
+		const webviewPanel = vscode.window.createWebviewPanel(
+			'texpresso.colorTheme',
+			'Color Theme',
+			{ preserveFocus: true, viewColumn: vscode.ViewColumn.Beside },
+			{
+				enableScripts: true,
+			}
+		);
+		const webview = webviewPanel.webview;
+		webview.html = `<!DOCTYPE html><html><script>
+			const vscode = acquireVsCodeApi();
+			vscode.postMessage(Object.values(document.getElementsByTagName('html')[0].style).map(
+			(rv) => {
+				return {
+				[rv]: document
+					.getElementsByTagName('html')[0]
+					.style.getPropertyValue(rv),
+				}
+			}
+			));
+		</script></html>`;
+		webview.onDidReceiveMessage((cssVars) => {
+			webviewPanel.dispose();
+			const colors = {} as { [key: string]: number[] };
+			for (const cssVar of cssVars) {
+				const key = Object.keys(cssVar)[0];
+				const value = cssVar[key];
+				if (key === '--vscode-editor-background' || key === '--vscode-editor-foreground') {
+					// value is for example "#cccccc"
+					// convert it to rgb as three floats between 0 and 1
+					const rgb = value.match(/#(..)(..)(..)/);
+					if (rgb) {
+						colors[key] = [
+							parseInt(rgb[1], 16) / 255,
+							parseInt(rgb[2], 16) / 255,
+							parseInt(rgb[3], 16) / 255,
+						];
+					}
+				}
+			}
+			const message = ["theme", colors['--vscode-editor-background'], colors['--vscode-editor-foreground']];
+			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+		});
+	}
+
+	vscode.window.onDidChangeActiveColorTheme(() => {
+		if (vscode.workspace.getConfiguration('texpresso').get('useEditorTheme') as boolean) {
+			adoptTheme();
+		}
+	});
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.adoptTheme', () => {
+		adoptTheme();
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.defaultTheme', () => {
+		if (texpresso) {
+			const message = ["theme", [1, 1, 1], [0, 0, 0]];
+			texpresso.stdin?.write(JSON.stringify(message) + '\n');
+		}
+	}));
+
+	/***********************************
+	 ***********************************
+	 *****     Refresh and Stop    *****
+	 ***********************************
+	 **********************************/
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.freshCompile', () => {
+		if (activeEditor) {
+			const text = activeEditor.document.getText();
+			rope = new Rope(text);
+			// resend "open" command
+			const message = ["open", filePath, text];
+			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+			texpresso?.stdin?.write(JSON.stringify(["rescan"]) + '\n');
 		}
 	}));
 
