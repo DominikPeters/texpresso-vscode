@@ -16,6 +16,9 @@ Use SyncTeX (forwards - editor to preview):
 Use SyncTeX (backwards - preview to editor):
 ![recording12](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/4a9c7709-275f-48d5-b6f9-dcaeede0c622)
 
+Use theme colors in preview (if the `useEditorTheme` setting is activated):
+<img src="https://github.com/DominikPeters/texpresso-vscode/assets/3543224/8b09d947-82cc-418b-a4d0-a0b66f75dd49" width="800">
+
 ## Requirements
 
 TeXpresso must be installed, and must be callable at the path provided in the `texpresso.command` setting.
