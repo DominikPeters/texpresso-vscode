@@ -43,6 +43,10 @@ Loses connection if the filename of the main document is changed.
 
 ## Release Notes
 
+### 1.3.0
+
+Add a button for toggling automatic SyncTeX forward when the selection changes.
+
 ### 1.2.0
 
 Added support for color themes.

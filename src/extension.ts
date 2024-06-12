@@ -176,6 +176,14 @@ export function activate(context: vscode.ExtensionContext) {
 		doSyncTeXForward();
 	}));
 
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.activateSyncTeXForward', () => {
+		vscode.workspace.getConfiguration('texpresso').update('syncTeXForwardOnSelection', true, true);
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.deactivateSyncTeXForward', () => {
+		vscode.workspace.getConfiguration('texpresso').update('syncTeXForwardOnSelection', false, true);
+	}));
+
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.nextPage', () => {
 		if (activeEditor) {
 			const message = ["next-page"];
