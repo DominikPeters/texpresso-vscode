@@ -47,6 +47,8 @@ Loses connection if the filename of the main document is changed.
 
 Add a button for toggling automatic SyncTeX forward when the selection changes.
 
+Turn off the extension when the TeXpresso window is closed.
+
 ### 1.2.0
 
 Added support for color themes.

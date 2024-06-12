@@ -96,6 +96,18 @@ export function activate(context: vscode.ExtensionContext) {
 					debugChannel.append(data.toString());
 				});
 			}
+			if (texpresso) {
+				texpresso.on('close', code => {
+					if (code !== 0) {
+						vscode.window.showErrorMessage(`TeXpresso exited with code ${code}`);
+					}
+					activeEditor = undefined;
+					vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
+					vscode.commands.executeCommand('setContext', 'texpresso.running', false);
+					outputChannel.clear();
+					debugChannel.clear();
+				});
+			}
 			// Send file content to texpresso
 			const message = ["open", filePath, activeEditor.document.getText()];
 			if (texpresso && texpresso.stdin) {
