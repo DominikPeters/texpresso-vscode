@@ -3,6 +3,8 @@ Visual Studio Code extension for interacting with [TeXpresso](https://github.com
 
 ![ezgif-6-3b2ad402f4](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/0ff5cf57-5a2e-48cd-9e5f-633a5ed44411)
 
+After installing the extension, you need to configure the path to the TeXpresso binary in the settings.
+
 To use this extension, open the `.tex` document you wish to edit, then open the command pallete (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>), and select `TeXpresso: Start Document`. A separate window will open showing the compiled preview. The preview immediately updates when you edit the file in VS Code, and using SyncTeX the preview automatically jumps to the current code position (and vice versa for clicks in the preview window). Buttons at the top of the editor are provided to switch pages, and a compile log for seeing compilation errors can be found by using the Output panel.
 
 ## Features
@@ -28,6 +30,7 @@ TeXpresso must be installed, and must be callable at the path provided in the `t
 This extension contributes the following settings:
 
 * `texpresso.command`: The path to the texpresso binary.
+* `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
 
@@ -42,6 +45,10 @@ The extension does not yet react instantaenously to changes to files that are in
 Loses connection if the filename of the main document is changed.
 
 ## Release Notes
+
+### 1.4.0
+
+Add support for executing TeXpresso on WSL (Windows Subsystem for Linux).
 
 ### 1.3.0
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, execSync } from 'child_process';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
 
@@ -21,6 +21,8 @@ export function activate(context: vscode.ExtensionContext) {
 	const debugChannel = vscode.window.createOutputChannel('TeXpresso Debug', { log: true });
 	let providedOutput = "";
 	let outputChanged = true;
+
+	const useWSL = vscode.workspace.getConfiguration('texpresso').get('useWSL') as boolean;
 
 	let activeEditor: vscode.TextEditor | undefined;
 
@@ -49,21 +51,38 @@ export function activate(context: vscode.ExtensionContext) {
 			const command = vscode.workspace.getConfiguration('texpresso').get('command') as string;
 			// Check if command exists
 			try {
-				fs.accessSync(command, fs.constants.X_OK);
+				if (!useWSL) {
+					fs.accessSync(command, fs.constants.X_OK);
+				} else {
+					fs.accessSync('wsl', fs.constants.X_OK);
+					execSync(`wsl -e test -x ${command}`);
+				}
 			} catch (error) {
+				let message = `TeXpresso command '${command}' does not exist or is not executable. Please check the 'texpresso.command' setting.`;
+				if (process.platform === 'win32') {
+					message = `TeXpresso command '${command}' does not exist or is not executable. Please check the 'texpresso.command' and 'texpresso.wsl' settings.`;
+					if (useWSL) {
+						message = `TeXpresso command '${command}' is not executable, or the 'wsl' command is not available. Please check the 'texpresso.command' and 'texpresso.wsl' settings.`;
+					}
+				}
 				vscode.window.showErrorMessage(
-					`TeXpresso command '${command}' does not exist or is not executable. Please check the 'texpresso.command' setting.`,
+					message,
 					'Open Settings'
 				).then(value => {
 					if (value === 'Open Settings') {
-						vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso.command');
+						vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso.');
 					}
 				});
 				return;
 			}
 
 			// react to messages from texpresso
-			texpresso = spawn(command, ['-json', filePath]);
+			if (!useWSL) {
+				texpresso = spawn(command, ['-json', filePath]);
+			} else {
+				filePath = execSync(`wsl wslpath "${filePath}"`).toString().trim();
+				texpresso = spawn('wsl', ['-e', command, '-json', filePath]);
+			}
 			if (texpresso && texpresso.stdout) {
 				texpresso.stdout.on('data', data => {
 					const message = JSON.parse(data.toString());
