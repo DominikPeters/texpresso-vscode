@@ -54,7 +54,6 @@ export function activate(context: vscode.ExtensionContext) {
 				if (!useWSL) {
 					fs.accessSync(command, fs.constants.X_OK);
 				} else {
-					fs.accessSync('wsl', fs.constants.X_OK);
 					execSync(`wsl -e test -x ${command}`);
 				}
 			} catch (error) {
