@@ -34,10 +34,15 @@
         "title": "TeXpresso: Start Document"
       },
       {
-        "command": "texpresso.freshCompile",
-        "title": "TeXpresso: Fresh Compile",
+        "command": "texpresso.refresh",
+        "title": "TeXpresso: Refresh",
         "enablement": "texpresso.running"
       },
+      {
+        "command": "texpresso.externalCompileAndRefresh",
+        "title": "TeXpresso: External Compile and Refresh",
+        "enablement": "texpresso.running"
+      },      
       {
         "command": "texpresso.previousPage",
         "title": "TeXpresso: Show Previous Page in Preview Window",
@@ -96,6 +101,11 @@
           "type": "string",
           "default": "texpresso",
           "description": "Path to the texpresso binary"
+        },
+        "texpresso.externalCompileCommand": {
+            "type": "string",
+            "default": "latexmk",
+            "description": "External command for multi-pass compilation of LaTeX documents"
         },
         "texpresso.useWSL": {
           "type": "boolean",

@@ -308,7 +308,7 @@ export function activate(context: vscode.ExtensionContext) {
 	 ***********************************
 	 **********************************/
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.freshCompile', () => {
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.refresh', () => {
 		if (activeEditor) {
 			const text = activeEditor.document.getText();
 			rope = new Rope(text);
@@ -316,6 +316,90 @@ export function activate(context: vscode.ExtensionContext) {
 			const message = ["open", filePath, text];
 			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
 			texpresso?.stdin?.write(JSON.stringify(["rescan"]) + '\n');
+		}
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.externalCompileAndRefresh', async () => {
+		if (!activeEditor) {
+			vscode.window.showErrorMessage('TeXpresso: No active editor');
+			return;
+		}
+
+		// Save the document first if it has unsaved changes
+		if (activeEditor.document.isDirty) {
+			await activeEditor.document.save();
+		}
+
+		// Get the configured compile command
+		const externalCommand = vscode.workspace.getConfiguration('texpresso').get('externalCompileCommand') as string;
+
+		// Show a status bar message
+		const statusBar = vscode.window.setStatusBarMessage(`TeXpresso: Running ${externalCommand}...`);
+
+		try {
+			// Execute the command
+			const { exec } = require('child_process');
+			const path = require('path');
+			const workDir = path.dirname(filePath);
+
+			outputChannel.appendLine(`\n--- External Compilation ---`);
+			outputChannel.appendLine(`Working directory: ${workDir}`);
+
+			// Prepare the command
+			let cmd: string;
+			let opts: any = {};
+
+			if (!useWSL) {
+				cmd = `${externalCommand} "${filePath}"`;
+				opts.cwd = workDir;
+				outputChannel.appendLine(`Command: ${cmd}`);
+			} else {
+				// When using WSL, we need to convert the Windows path to a WSL path
+				const wslFilePath = execSync(`wsl wslpath "${filePath}"`).toString().trim();
+				const wslWorkDir = path.dirname(wslFilePath);
+				cmd = `cd "${wslWorkDir}" && ${externalCommand} "${wslFilePath}"`;
+				outputChannel.appendLine(`WSL Command: ${cmd}`);
+				cmd = `wsl -e sh -c "${cmd.replace(/"/g, '\\"')}"`;
+			}
+
+			outputChannel.show(true);
+
+			// Execute the command
+			const childProcess = exec(cmd, opts);
+
+			await new Promise<void>((resolve, reject) => {
+				childProcess.stdout.on('data', (data: Buffer) => {
+					outputChannel.append(data.toString());
+				});
+
+				childProcess.stderr.on('data', (data: Buffer) => {
+					outputChannel.append(data.toString());
+				});
+
+				childProcess.on('close', (code: number) => {
+					if (code === 0) {
+						resolve();
+					} else {
+						const errorMsg = `Exit code ${code}`;
+						outputChannel.appendLine(`\nExternal compilation failed: ${errorMsg}`);
+						reject(new Error(errorMsg));
+					}
+				});
+
+				childProcess.on('error', (error: Error) => {
+					outputChannel.appendLine(`\nError: ${error.message}`);
+					reject(error);
+				});
+			});
+
+			// Refresh TeXpresso's internal state
+			vscode.commands.executeCommand('texpresso.refresh');
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			outputChannel.appendLine(`\nError: ${errorMessage}`);
+			vscode.window.showErrorMessage(`TeXpresso: External compilation failed: ${errorMessage}`);
+		} finally {
+			statusBar.dispose();
 		}
 	}));
 
