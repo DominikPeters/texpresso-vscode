@@ -3,7 +3,7 @@
   "displayName": "TeXpresso",
   "description": "Basic extension for interacting with TeXpresso for live previewing LaTeX documents",
   "publisher": "DominikPeters",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "icon": "./assets/texpresso_logo.png",
   "homepage": "https://github.com/DominikPeters/texpresso-vscode",
   "repository": {
@@ -42,7 +42,7 @@
         "command": "texpresso.externalCompileAndRefresh",
         "title": "TeXpresso: External Compile and Refresh",
         "enablement": "texpresso.running"
-      },      
+      },
       {
         "command": "texpresso.previousPage",
         "title": "TeXpresso: Show Previous Page in Preview Window",
@@ -103,9 +103,9 @@
           "description": "Path to the texpresso binary"
         },
         "texpresso.externalCompileCommand": {
-            "type": "string",
-            "default": "latexmk",
-            "description": "External command for multi-pass compilation of LaTeX documents"
+          "type": "string",
+          "default": "latexmk",
+          "description": "External command for multi-pass compilation of LaTeX documents"
         },
         "texpresso.useWSL": {
           "type": "boolean",
