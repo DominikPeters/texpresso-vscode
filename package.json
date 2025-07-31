@@ -121,6 +121,11 @@
           "type": "boolean",
           "default": false,
           "description": "Specifies whether the preview should use the same color theme as the editor (if activated), or the default theme (otherwise)"
+        },
+        "texpresso.useChangeRangeMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version with change-range support (compiled from the utf-16 branch)."
         }
       }
     },

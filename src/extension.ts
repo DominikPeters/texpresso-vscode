@@ -22,7 +22,16 @@ export function activate(context: vscode.ExtensionContext) {
 	let providedOutput = "";
 	let outputChanged = true;
 
+	function sendCommand(command: any[]) {
+		if (texpresso && texpresso.stdin) {
+			const commandJson = JSON.stringify(command);
+			texpresso.stdin.write(commandJson + '\n');
+			debugChannel.appendLine(`Sent command: ${commandJson}`);
+		}
+	}
+
 	const useWSL = vscode.workspace.getConfiguration('texpresso').get('useWSL') as boolean;
+	const useChangeRangeMode = vscode.workspace.getConfiguration('texpresso').get('useChangeRangeMode') as boolean;
 
 	let activeEditor: vscode.TextEditor | undefined;
 
@@ -36,7 +45,9 @@ export function activate(context: vscode.ExtensionContext) {
 			// vscode.window.showInformationMessage('Starting TeXpresso for this document');
 			filePath = activeEditor.document.fileName;
 			const text = activeEditor.document.getText();
-			rope = new Rope(text);
+			if (!useChangeRangeMode) {
+				rope = new Rope(text);
+			}
 			if (activeEditor.document.isUntitled) {
 				const tmpDir = tmp.dirSync();
 				filePath = tmpDir.name + '/untitled.tex';
@@ -76,13 +87,24 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			// react to messages from texpresso
+			const args = ['-json'];
+			if (useChangeRangeMode) {
+				args.push('-lines');
+			}
+			args.push(filePath);
+			
 			if (!useWSL) {
-				texpresso = spawn(command, ['-json', filePath]);
+				texpresso = spawn(command, args);
 			} else {
 				filePath = execSync(`wsl wslpath "${filePath}"`).toString().trim();
-				texpresso = spawn('wsl', ['-e', command, '-json', filePath]);
+				const wslArgs = ['-e', command, ...args.slice(0, -1), filePath]; // replace original filePath with WSL path
+				texpresso = spawn('wsl', wslArgs);
 			}
 			if (texpresso && texpresso.stdout) {
+				outputChannel.append(`Starting TeXpresso with command: ${command} ${args.join(' ')}\n`);
+				outputChannel.append(`Options: ${useChangeRangeMode ? 'Using change-range mode' : 'Using byte-based changes'}\n`);
+				outputChannel.append(`File: ${filePath}\n`);
+				
 				texpresso.stdout.on('data', data => {
 					const message = JSON.parse(data.toString());
 					if (message[0] === 'synctex' && message[1] === activeEditor?.document.fileName) {
@@ -128,9 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			// Send file content to texpresso
 			const message = ["open", filePath, activeEditor.document.getText()];
-			if (texpresso && texpresso.stdin) {
-				texpresso.stdin.write(JSON.stringify(message) + '\n');
-			}
+			sendCommand(message);
 			// Send color theme to texpresso if setting is enabled
 			if (vscode.workspace.getConfiguration('texpresso').get('useEditorTheme') as boolean) {
 				adoptTheme();
@@ -147,15 +167,24 @@ export function activate(context: vscode.ExtensionContext) {
 			// send change message to texpresso via stdin
 			texpresso?.stdin?.cork();
 			for (const change of event.contentChanges) {
-				// get byte offsets of change
-				const start = rope.byteOffset(change.rangeOffset);
-				const end = rope.byteOffset(change.rangeOffset + change.rangeLength);
-				// send change message
-				const message = ["change", filePath, start, end - start, change.text];
-				texpresso?.stdin?.write(JSON.stringify(message) + '\n');
-				// implement change in rope
-				rope.remove(change.rangeOffset, change.rangeOffset + change.rangeLength);
-				rope.insert(change.rangeOffset, change.text);
+				if (useChangeRangeMode) {
+					// use the newer change-range command (line/character based)
+					const startLine = change.range.start.line;
+					const startChar = change.range.start.character;
+					const endLine = change.range.end.line;
+					const endChar = change.range.end.character;
+					const message = ["change-range", filePath, startLine, startChar, endLine, endChar, change.text];
+					sendCommand(message);
+				} else {
+					// use the original change command (byte based)
+					const start = rope.byteOffset(change.rangeOffset);
+					const end = rope.byteOffset(change.rangeOffset + change.rangeLength);
+					const message = ["change", filePath, start, end - start, change.text];
+					sendCommand(message);
+					// implement change in rope
+					rope.remove(change.rangeOffset, change.rangeOffset + change.rangeLength);
+					rope.insert(change.rangeOffset, change.text);
+				}
 			}
 			texpresso?.stdin?.uncork();
 		}
@@ -183,10 +212,8 @@ export function activate(context: vscode.ExtensionContext) {
 		const lineNumber = editor.selection.active.line;
 		if (!previouslySentLineNumber || previouslySentLineNumber !== lineNumber) {
 			previouslySentLineNumber = lineNumber;
-			if (texpresso && texpresso.stdin) {
-				const message = ["synctex-forward", filePath, lineNumber];
-				texpresso.stdin.write(JSON.stringify(message) + '\n');
-			}
+			const message = ["synctex-forward", filePath, lineNumber];
+			sendCommand(message);
 		}
 	}
 
@@ -217,14 +244,14 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.nextPage', () => {
 		if (activeEditor) {
 			const message = ["next-page"];
-			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+			sendCommand(message);
 		}
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.previousPage', () => {
 		if (activeEditor) {
 			const message = ["previous-page"];
-			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+			sendCommand(message);
 		}
 	}));
 
@@ -281,7 +308,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			}
 			const message = ["theme", colors['--vscode-editor-background'], colors['--vscode-editor-foreground']];
-			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
+			sendCommand(message);
 		});
 	}
 
@@ -296,10 +323,8 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.defaultTheme', () => {
-		if (texpresso) {
-			const message = ["theme", [1, 1, 1], [0, 0, 0]];
-			texpresso.stdin?.write(JSON.stringify(message) + '\n');
-		}
+		const message = ["theme", [1, 1, 1], [0, 0, 0]];
+		sendCommand(message);
 	}));
 
 	/***********************************
@@ -311,11 +336,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.refresh', () => {
 		if (activeEditor) {
 			const text = activeEditor.document.getText();
-			rope = new Rope(text);
+			if (!useChangeRangeMode) {
+				rope = new Rope(text);
+			}
 			// resend "open" command
 			const message = ["open", filePath, text];
-			texpresso?.stdin?.write(JSON.stringify(message) + '\n');
-			texpresso?.stdin?.write(JSON.stringify(["rescan"]) + '\n');
+			sendCommand(message);
+			sendCommand(["rescan"]);
 		}
 	}));
 

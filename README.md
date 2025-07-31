@@ -25,6 +25,10 @@ Use theme colors in preview (if the `useEditorTheme` setting is activated):
 
 TeXpresso must be installed, and must be callable at the path provided in the `texpresso.command` setting.
 
+## Using UTF-16 version of TeXpresso for more robust performance
+
+Last update: July 2025. If you use the texpresso version from the `utf-16` of texpresso (https://github.com/let-def/texpresso/tree/utf-16), you can use its new `change-range` feature, which allows the extension to work more efficiently and more robustly (the file is less likely to go out of sync with the preview). To use this, you need to enable the `texpresso.useChangeRangeMode` setting. 
+
 ## Extension Settings
 
 This extension contributes the following settings:
@@ -33,10 +37,15 @@ This extension contributes the following settings:
 * `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
+* `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version with change-range support. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
 
 ## Architecture
 
-TeXpresso and the underlying LaTeX compilers are based on a UTF-8 byte representation, and [communication between the editor and TeXpresso](https://github.com/let-def/texpresso/blob/main/EDITOR-PROTOCOL.md) occurs in terms of byte offsets. However, VS Code only provides access to character positions and not their byte position. Thus, this extension keeps a copy of the current document in a *rope* data structure ([wikipedia](https://en.wikipedia.org/wiki/Rope_(data_structure))), enriched with byte offsets. This allows for efficient conversion between character and byte positions, and also allows for efficient edits to the underlying text string. The [code for the rope data structure](https://github.com/DominikPeters/texpresso-vscode/blob/master/src/rope.ts) builds on https://github.com/component/rope.
+TeXpresso and the underlying LaTeX compilers are based on a UTF-8 byte representation, and [communication between the editor and TeXpresso](https://github.com/let-def/texpresso/blob/main/EDITOR-PROTOCOL.md) occurs in terms of byte offsets. However, VS Code only provides access to character positions and not their byte position. 
+
+By default, this extension keeps a copy of the current document in a *rope* data structure ([wikipedia](https://en.wikipedia.org/wiki/Rope_(data_structure))), enriched with byte offsets. This allows for efficient conversion between character and byte positions, and also allows for efficient edits to the underlying text string. The [code for the rope data structure](https://github.com/DominikPeters/texpresso-vscode/blob/master/src/rope.ts) builds on https://github.com/component/rope.
+
+Newer versions of TeXpresso support a `change-range` command that works with line/character positions instead of byte offsets. When the `texpresso.useChangeRangeMode` setting is enabled, the extension uses this newer protocol, eliminating the need for the rope data structure and improving performance.
 
 ## Known Issues
 
