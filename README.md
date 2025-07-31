@@ -55,6 +55,18 @@ Loses connection if the filename of the main document is changed.
 
 ## Release Notes
 
+### 1.7.0
+
+Add support for the `change-range` command in TeXpresso. Fix WSL paths for external compile feature.
+
+### 1.6.0
+
+Add External Compile feature.
+
+### 1.5.1
+
+Fixes testing of TeXpresso command on WSL.
+
 ### 1.4.0
 
 Add support for executing TeXpresso on WSL (Windows Subsystem for Linux).
