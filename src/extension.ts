@@ -381,10 +381,7 @@ export function activate(context: vscode.ExtensionContext) {
 				opts.cwd = workDir;
 				outputChannel.appendLine(`Command: ${cmd}`);
 			} else {
-				// When using WSL, we need to convert the Windows path to a WSL path
-				const wslFilePath = execSync(`wsl wslpath "${filePath}"`).toString().trim();
-				const wslWorkDir = path.dirname(wslFilePath);
-				cmd = `cd "${wslWorkDir}" && ${externalCommand} "${wslFilePath}"`;
+				cmd = `cd "${workDir}" && ${externalCommand} "${filePath}"`;
 				outputChannel.appendLine(`WSL Command: ${cmd}`);
 				cmd = `wsl -e sh -c "${cmd.replace(/"/g, '\\"')}"`;
 			}
