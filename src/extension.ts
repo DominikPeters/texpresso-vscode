@@ -2,14 +2,86 @@ import * as vscode from 'vscode';
 import { ChildProcess, spawn, execSync } from 'child_process';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import Rope from './rope';
 
 tmp.setGracefulCleanup();
 
+interface TrackedFile {
+	index: number;
+	relativePath: string;
+	absolutePath: string;
+	isOpen: boolean;
+	document?: vscode.TextDocument;
+	rope?: Rope;
+}
+
+class FileRegistry {
+	private files = new Map<number, TrackedFile>();
+	private pathToIndex = new Map<string, number>();
+
+	constructor(private documentDir: string) {}
+
+	addFile(index: number, relativePath: string, sendCommand: (cmd: any[]) => void) {
+		const absolutePath = this.resolvePath(relativePath);
+		const isOpen = vscode.workspace.textDocuments.some(doc => 
+			doc.uri.fsPath === absolutePath);
+		const document = isOpen ? vscode.workspace.textDocuments.find(doc => 
+			doc.uri.fsPath === absolutePath) : undefined;
+
+		const file: TrackedFile = {
+			index, relativePath, absolutePath, isOpen, document,
+			rope: undefined
+		};
+
+		this.files.set(index, file);
+		this.pathToIndex.set(absolutePath, index);
+
+		if (document && isOpen) {
+			const message = ["open", absolutePath, document.getText()];
+			sendCommand(message);
+		}
+	}
+
+	findByIndex(index: number): TrackedFile | undefined {
+		return this.files.get(index);
+	}
+
+	findByPath(absolutePath: string): TrackedFile | undefined {
+		const index = this.pathToIndex.get(absolutePath);
+		return index !== undefined ? this.files.get(index) : undefined;
+	}
+
+	private resolvePath(relativePath: string): string {
+		return relativePath.startsWith('/') ? relativePath : path.resolve(this.documentDir, relativePath);
+	}
+
+	updateDocument(absolutePath: string, document: vscode.TextDocument | undefined, isOpen: boolean, sendCommand: (cmd: any[]) => void) {
+		const file = this.findByPath(absolutePath);
+		if (file) {
+			const wasOpen = file.isOpen;
+			file.isOpen = isOpen;
+			file.document = document;
+
+			if (isOpen && !wasOpen && document) {
+				const message = ["open", file.absolutePath, document.getText()];
+				sendCommand(message);
+			}
+		}
+	}
+
+	clear() {
+		this.files.clear();
+		this.pathToIndex.clear();
+	}
+}
+
 let texpresso: ChildProcess;
 let rope: Rope;
 let filePath: string;
+let documentDir: string;
+let registry: FileRegistry;
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -42,8 +114,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (editor) {
 			activeEditor = editor;
-			// vscode.window.showInformationMessage('Starting TeXpresso for this document');
 			filePath = activeEditor.document.fileName;
+			documentDir = path.dirname(filePath);
+			registry = new FileRegistry(documentDir);
 			const text = activeEditor.document.getText();
 			if (!useChangeRangeMode) {
 				rope = new Rope(text);
@@ -107,9 +180,27 @@ export function activate(context: vscode.ExtensionContext) {
 				
 				texpresso.stdout.on('data', data => {
 					const message = JSON.parse(data.toString());
-					if (message[0] === 'synctex' && message[1] === activeEditor?.document.fileName) {
-						const line = message[2];
-						activeEditor?.revealRange(new vscode.Range(line - 1, 0, line - 1, 0));
+					if (message[0] === 'input-file') {
+						const [, index, relativePath] = message;
+						registry.addFile(index, relativePath, sendCommand);
+						debugChannel.appendLine(`Tracked file ${index}: ${relativePath}`);
+					}
+					else if (message[0] === 'synctex') {
+						const [, filePath, line, column] = message;
+						const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
+						
+						vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath)).then(doc => {
+							return vscode.window.showTextDocument(doc).then(editor => {
+								const pos = new vscode.Position(line - 1, Math.max(0, (column || 1) - 1));
+								editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+								editor.selection = new vscode.Selection(pos, pos);
+							});
+						}, () => {
+							if (activeEditor && filePath === activeEditor.document.fileName) {
+								const pos = new vscode.Position(line - 1, 0);
+								activeEditor.revealRange(new vscode.Range(pos, pos));
+							}
+						});
 					}
 					else if (message[0] === 'append' && message[1] === 'log') {
 						providedOutput += message[3];
@@ -162,13 +253,29 @@ export function activate(context: vscode.ExtensionContext) {
 		startDocumentFromEditor(vscode.window.activeTextEditor);
 	}));
 
+	context.subscriptions.push(
+		vscode.workspace.onDidOpenTextDocument(doc => {
+			if (registry) {
+				registry.updateDocument(doc.uri.fsPath, doc, true, sendCommand);
+			}
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.workspace.onDidCloseTextDocument(doc => {
+			if (registry) {
+				registry.updateDocument(doc.uri.fsPath, undefined, false, sendCommand);
+			}
+		})
+	);
+
 	vscode.workspace.onDidChangeTextDocument(event => {
+		const trackedFile = registry?.findByPath(event.document.uri.fsPath);
+		
 		if (activeEditor && event.document === activeEditor.document) {
-			// send change message to texpresso via stdin
 			texpresso?.stdin?.cork();
 			for (const change of event.contentChanges) {
 				if (useChangeRangeMode) {
-					// use the newer change-range command (line/character based)
 					const startLine = change.range.start.line;
 					const startChar = change.range.start.character;
 					const endLine = change.range.end.line;
@@ -176,14 +283,36 @@ export function activate(context: vscode.ExtensionContext) {
 					const message = ["change-range", filePath, startLine, startChar, endLine, endChar, change.text];
 					sendCommand(message);
 				} else {
-					// use the original change command (byte based)
 					const start = rope.byteOffset(change.rangeOffset);
 					const end = rope.byteOffset(change.rangeOffset + change.rangeLength);
 					const message = ["change", filePath, start, end - start, change.text];
 					sendCommand(message);
-					// implement change in rope
 					rope.remove(change.rangeOffset, change.rangeOffset + change.rangeLength);
 					rope.insert(change.rangeOffset, change.text);
+				}
+			}
+			texpresso?.stdin?.uncork();
+		}
+		else if (trackedFile && trackedFile.isOpen) {
+			texpresso?.stdin?.cork();
+			for (const change of event.contentChanges) {
+				if (useChangeRangeMode) {
+					const startLine = change.range.start.line;
+					const startChar = change.range.start.character;
+					const endLine = change.range.end.line;
+					const endChar = change.range.end.character;
+					const message = ["change-range", trackedFile.absolutePath, startLine, startChar, endLine, endChar, change.text];
+					sendCommand(message);
+				} else {
+					if (!trackedFile.rope) {
+						trackedFile.rope = new Rope(event.document.getText());
+					}
+					const start = trackedFile.rope.byteOffset(change.rangeOffset);
+					const end = trackedFile.rope.byteOffset(change.rangeOffset + change.rangeLength);
+					const message = ["change", trackedFile.absolutePath, start, end - start, change.text];
+					sendCommand(message);
+					trackedFile.rope.remove(change.rangeOffset, change.rangeOffset + change.rangeLength);
+					trackedFile.rope.insert(change.rangeOffset, change.text);
 				}
 			}
 			texpresso?.stdin?.uncork();
@@ -206,22 +335,31 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let previouslySentLineNumber: number | undefined;
 	function doSyncTeXForward(editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor) {
-		if (!editor || editor.document !== activeEditor?.document) {
-			return;
-		}
+		if (!editor) return;
+		
+		const trackedFile = registry?.findByPath(editor.document.uri.fsPath);
 		const lineNumber = editor.selection.active.line;
-		if (!previouslySentLineNumber || previouslySentLineNumber !== lineNumber) {
-			previouslySentLineNumber = lineNumber;
-			const message = ["synctex-forward", filePath, lineNumber];
+		
+		if (editor.document === activeEditor?.document) {
+			if (!previouslySentLineNumber || previouslySentLineNumber !== lineNumber) {
+				previouslySentLineNumber = lineNumber;
+				const message = ["synctex-forward", filePath, lineNumber];
+				sendCommand(message);
+			}
+		} else if (trackedFile) {
+			const message = ["synctex-forward", trackedFile.absolutePath, lineNumber];
 			sendCommand(message);
 		}
 	}
 
 	vscode.window.onDidChangeTextEditorSelection(event => {
-		if (activeEditor
-			&& event.textEditor.document === activeEditor.document
-			&& vscode.workspace.getConfiguration('texpresso').get('syncTeXForwardOnSelection') as boolean) {
-			doSyncTeXForward(event.textEditor);
+		if (vscode.workspace.getConfiguration('texpresso').get('syncTeXForwardOnSelection') as boolean) {
+			const isMainDoc = activeEditor && event.textEditor.document === activeEditor.document;
+			const isTrackedFile = registry?.findByPath(event.textEditor.document.uri.fsPath);
+			
+			if (isMainDoc || isTrackedFile) {
+				doSyncTeXForward(event.textEditor);
+			}
 		}
 	});
 
@@ -432,6 +570,7 @@ export function activate(context: vscode.ExtensionContext) {
 			texpresso.kill();
 		}
 		activeEditor = undefined;
+		registry?.clear();
 		vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
 		vscode.commands.executeCommand('setContext', 'texpresso.running', false);
 		outputChannel.clear();
