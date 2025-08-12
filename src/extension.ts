@@ -3,10 +3,41 @@ import { ChildProcess, spawn, execSync } from 'child_process';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
 import * as path from 'path';
+import { windowsToWslSync, wslToWindowsSync } from 'wsl-path';
 
 import Rope from './rope';
 
 tmp.setGracefulCleanup();
+
+class WSLPathConverter {
+	private enabled: boolean;
+
+	constructor(useWSL: boolean) {
+		this.enabled = useWSL;
+	}
+
+	toWindows(wslPath: string): string {
+		if (!this.enabled) {
+			return wslPath;
+		}
+		try {
+			return wslToWindowsSync(wslPath);
+		} catch (error) {
+			return wslPath;
+		}
+	}
+
+	toWSL(windowsPath: string): string {
+		if (!this.enabled) {
+			return windowsPath;
+		}
+		try {
+			return windowsToWslSync(windowsPath);
+		} catch (error) {
+			return windowsPath;
+		}
+	}
+}
 
 interface TrackedFile {
 	index: number;
@@ -20,8 +51,11 @@ interface TrackedFile {
 class FileRegistry {
 	private files = new Map<number, TrackedFile>();
 	private pathToIndex = new Map<string, number>();
+	private pathConverter: WSLPathConverter;
 
-	constructor(private documentDir: string) {}
+	constructor(private documentDir: string, useWSL: boolean) {
+		this.pathConverter = new WSLPathConverter(useWSL);
+	}
 
 	addFile(index: number, relativePath: string, sendCommand: (cmd: any[]) => void) {
 		const absolutePath = this.resolvePath(relativePath);
@@ -49,12 +83,32 @@ class FileRegistry {
 	}
 
 	findByPath(absolutePath: string): TrackedFile | undefined {
-		const index = this.pathToIndex.get(absolutePath);
+		// Try direct lookup first
+		let index = this.pathToIndex.get(absolutePath);
+		
+		// If not found, try with path conversion (handles WSL/Windows path mismatches)
+		if (index === undefined) {
+			const convertedPath = this.pathConverter.toWindows(absolutePath);
+			index = this.pathToIndex.get(convertedPath);
+			
+			// Also try the reverse conversion
+			if (index === undefined) {
+				const wslPath = this.pathConverter.toWSL(absolutePath);
+				const reconvertedPath = this.pathConverter.toWindows(wslPath);
+				index = this.pathToIndex.get(reconvertedPath);
+			}
+		}
+		
 		return index !== undefined ? this.files.get(index) : undefined;
 	}
 
 	private resolvePath(relativePath: string): string {
-		return relativePath.startsWith('/') ? relativePath : path.resolve(this.documentDir, relativePath);
+		const resolved = relativePath.startsWith('/') ? 
+			relativePath : 
+			path.resolve(this.documentDir, relativePath);
+		
+		// Always return Windows paths for VSCode compatibility
+		return this.pathConverter.toWindows(resolved);
 	}
 
 	updateDocument(absolutePath: string, document: vscode.TextDocument | undefined, isOpen: boolean, sendCommand: (cmd: any[]) => void) {
@@ -116,7 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
 			activeEditor = editor;
 			filePath = activeEditor.document.fileName;
 			documentDir = path.dirname(filePath);
-			registry = new FileRegistry(documentDir);
+			registry = new FileRegistry(documentDir, useWSL);
 			const text = activeEditor.document.getText();
 
 			// Check if document contains \begin{document} to determine if it's likely a main document
@@ -183,7 +237,8 @@ export function activate(context: vscode.ExtensionContext) {
 			if (!useWSL) {
 				texpresso = spawn(command, args);
 			} else {
-				filePath = execSync(`wsl wslpath "${filePath}"`).toString().trim();
+				const pathConverter = new WSLPathConverter(true);
+				filePath = pathConverter.toWSL(filePath);
 				const wslArgs = ['-e', command, ...args.slice(0, -1), filePath]; // replace original filePath with WSL path
 				texpresso = spawn('wsl', wslArgs);
 			}
@@ -201,7 +256,9 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					else if (message[0] === 'synctex') {
 						const [, filePath, line, column] = message;
-						const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
+						const pathConverter = new WSLPathConverter(useWSL);
+						let absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
+						absolutePath = pathConverter.toWindows(absolutePath);
 						
 						vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath)).then(doc => {
 							return vscode.window.showTextDocument(doc).then(editor => {
@@ -519,6 +576,7 @@ export function activate(context: vscode.ExtensionContext) {
 			// Execute the command
 			const { exec } = require('child_process');
 			const path = require('path');
+			const pathConverter = new WSLPathConverter(useWSL);
 			const workDir = path.dirname(filePath);
 
 			outputChannel.appendLine(`\n--- External Compilation ---`);
@@ -533,7 +591,9 @@ export function activate(context: vscode.ExtensionContext) {
 				opts.cwd = workDir;
 				outputChannel.appendLine(`Command: ${cmd}`);
 			} else {
-				cmd = `cd "${workDir}" && ${externalCommand} "${filePath}"`;
+				const wslWorkDir = pathConverter.toWSL(workDir);
+				const wslFilePath = pathConverter.toWSL(filePath);
+				cmd = `cd "${wslWorkDir}" && ${externalCommand} "${wslFilePath}"`;
 				outputChannel.appendLine(`WSL Command: ${cmd}`);
 				cmd = `wsl -e sh -c "${cmd.replace(/"/g, '\\"')}"`;
 			}

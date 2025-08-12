@@ -194,6 +194,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "tmp": "^0.2.3"
+    "tmp": "^0.2.3",
+    "wsl-path": "^4.0.0"
   }
 }
