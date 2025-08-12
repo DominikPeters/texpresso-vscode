@@ -127,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
 						}
 					}
 					else {
-						console.log("Received unhandled message", message);
+						debugChannel.append(`Received unhandled message: ${JSON.stringify(message)}`);
 					}
 				});
 			}
