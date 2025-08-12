@@ -107,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let activeEditor: vscode.TextEditor | undefined;
 
-	function startDocumentFromEditor(editor: vscode.TextEditor | undefined) {
+	async function startDocumentFromEditor(editor: vscode.TextEditor | undefined) {
 		if (texpresso) {
 			texpresso.kill();
 		}
@@ -118,6 +118,20 @@ export function activate(context: vscode.ExtensionContext) {
 			documentDir = path.dirname(filePath);
 			registry = new FileRegistry(documentDir);
 			const text = activeEditor.document.getText();
+
+			// Check if document contains \begin{document} to determine if it's likely a main document
+			if (!text.includes('\\begin{document}')) {
+				const result = await vscode.window.showWarningMessage(
+					'The current document doesn\'t appear to be a main LaTeX document as it doesn\'t contain \\begin{document}. TeXpresso should typically be started from the main document. Do you want to continue anyway?',
+					{ modal: true },
+					'Continue',
+					'Cancel'
+				);
+				
+				if (result !== 'Continue') {
+					return; // Exit without starting TeXpresso
+				}
+			}
 			if (!useChangeRangeMode) {
 				rope = new Rope(text);
 			}
@@ -249,8 +263,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startDocument', () => {
-		startDocumentFromEditor(vscode.window.activeTextEditor);
+	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startDocument', async () => {
+		await startDocumentFromEditor(vscode.window.activeTextEditor);
 	}));
 
 	context.subscriptions.push(
