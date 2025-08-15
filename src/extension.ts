@@ -273,14 +273,56 @@ export function activate(context: vscode.ExtensionContext) {
 							}
 						});
 					}
-					else if (message[0] === 'append' && message[1] === 'log') {
-						providedOutput += message[3];
-						outputChanged = true;
+					else if (message[0] === 'append-lines') {
+						const channel = message[1];
+						const lines = message.slice(2); // All remaining elements are lines
+						const newContent = lines.join('\n') + '\n';
+						
+						if (channel === 'out') {
+							providedOutput += newContent;
+							outputChanged = true;
+						} else if (channel === 'log') {
+							debugChannel.append(newContent);
+						}
 					}
-					else if (message[0] === 'truncate' && message[1] === 'log') {
+					else if (message[0] === 'truncate-lines') {
+						const channel = message[1];
+						const linesToKeep = message[2];
+						
+						if (channel === 'out') {
+							const lines = providedOutput.split('\n');
+							providedOutput = lines.slice(-linesToKeep).join('\n') + (linesToKeep > 0 ? '\n' : '');
+							outputChanged = true;
+						} else if (channel === 'log') {
+							// For debug channel, we'll just clear it on truncate-lines
+							// since VS Code doesn't have easy line-based truncation
+							debugChannel.clear();
+						}
+					}
+					// Legacy support for old byte-based commands
+					else if (message[0] === 'append') {
+						const channel = message[1];
+						const content = message[3];
+						
+						if (channel === 'out') {
+							providedOutput += content;
+							outputChanged = true;
+						} else if (channel === 'log') {
+							debugChannel.append(content);
+						}
+					}
+					else if (message[0] === 'truncate') {
+						const channel = message[1];
 						const bytesToKeep = message[2];
-						providedOutput = providedOutput.slice(-bytesToKeep);
-						outputChanged = true;
+						
+						if (channel === 'out') {
+							providedOutput = providedOutput.slice(-bytesToKeep);
+							outputChanged = true;
+						} else if (channel === 'log') {
+							// For debug channel, we'll just clear it on truncate
+							// since VS Code doesn't have easy byte-based truncation
+							debugChannel.clear();
+						}
 					}
 					else if (message[0] === 'flush') {
 						if (outputChanged) {
