@@ -27,7 +27,7 @@ TeXpresso must be installed, and must be callable at the path provided in the `t
 
 ## Using UTF-16 version of TeXpresso for more robust performance
 
-Last update: July 2025. If you use the texpresso version from the `utf-16` of texpresso (https://github.com/let-def/texpresso/tree/utf-16), you can use its new `change-range` feature, which allows the extension to work more efficiently and more robustly (the file is less likely to go out of sync with the preview). To use this, you need to enable the `texpresso.useChangeRangeMode` setting. 
+If you use TeXpresso version v0.1 or newer, you can use its new `change-range` feature, which allows the extension to work more efficiently and more robustly (the file is less likely to go out of sync with the preview). To use this, you need to enable the `texpresso.useChangeRangeMode` setting. 
 
 ## Extension Settings
 
@@ -37,7 +37,7 @@ This extension contributes the following settings:
 * `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
-* `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version with change-range support. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
+* `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
 
 ## Architecture
 
@@ -49,11 +49,15 @@ Newer versions of TeXpresso support a `change-range` command that works with lin
 
 ## Known Issues
 
-The extension does not yet react instantaenously to changes to files that are included using commands like `\input`.
-
 Loses connection if the filename of the main document is changed.
 
 ## Release Notes
+
+### 1.8.0
+
+Track imported files (e.g. using `\input`) in the extension and transmit changes to TeXpresso. Requires TeXpresso version v0.1 or newer (versions with support for the `input-file` command).
+
+Fix logging output when using the lines mode.
 
 ### 1.7.0
 

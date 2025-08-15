@@ -125,7 +125,7 @@
         "texpresso.useChangeRangeMode": {
           "type": "boolean",
           "default": false,
-          "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version with change-range support (compiled from the utf-16 branch)."
+          "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available"
         }
       }
     },
