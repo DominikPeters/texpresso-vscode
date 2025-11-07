@@ -247,8 +247,34 @@ export function activate(context: vscode.ExtensionContext) {
 				outputChannel.append(`Options: ${useChangeRangeMode ? 'Using change-range mode' : 'Using byte-based changes'}\n`);
 				outputChannel.append(`File: ${filePath}\n`);
 				
-				texpresso.stdout.on('data', data => {
-					const message = JSON.parse(data.toString());
+
+			let buffer = '';
+			texpresso.stdout.on('data', data => {
+				// Append new data to buffer
+				buffer += data.toString();
+
+				// Split by newlines to get complete messages
+				const lines = buffer.split('\n');
+
+				// Keep the last (potentially incomplete) line in the buffer
+				buffer = lines.pop() || '';
+
+				// Process each complete message
+				for (const line of lines) {
+					// Skip empty lines
+					if (line.trim() === '') {
+						continue;
+					}
+
+					let message;
+					try {
+						message = JSON.parse(line);
+					} catch (error) {
+						debugChannel.appendLine(`Failed to parse JSON: ${line}`);
+						debugChannel.appendLine(`Error: ${error}`);
+						continue;
+					}
+
 					if (message[0] === 'input-file') {
 						const [, index, relativePath] = message;
 						registry.addFile(index, relativePath, sendCommand);
@@ -259,7 +285,7 @@ export function activate(context: vscode.ExtensionContext) {
 						const pathConverter = new WSLPathConverter(useWSL);
 						let absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
 						absolutePath = pathConverter.toWindows(absolutePath);
-						
+
 						vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath)).then(doc => {
 							return vscode.window.showTextDocument(doc).then(editor => {
 								const pos = new vscode.Position(line - 1, Math.max(0, (column || 1) - 1));
@@ -277,7 +303,7 @@ export function activate(context: vscode.ExtensionContext) {
 						const channel = message[1];
 						const lines = message.slice(2); // All remaining elements are lines
 						const newContent = lines.join('\n') + '\n';
-						
+
 						if (channel === 'out') {
 							providedOutput += newContent;
 							outputChanged = true;
@@ -288,7 +314,7 @@ export function activate(context: vscode.ExtensionContext) {
 					else if (message[0] === 'truncate-lines') {
 						const channel = message[1];
 						const linesToKeep = message[2];
-						
+
 						if (channel === 'out') {
 							const lines = providedOutput.split('\n');
 							providedOutput = lines.slice(-linesToKeep).join('\n') + (linesToKeep > 0 ? '\n' : '');
@@ -303,7 +329,7 @@ export function activate(context: vscode.ExtensionContext) {
 					else if (message[0] === 'append') {
 						const channel = message[1];
 						const content = message[3];
-						
+
 						if (channel === 'out') {
 							providedOutput += content;
 							outputChanged = true;
@@ -314,7 +340,7 @@ export function activate(context: vscode.ExtensionContext) {
 					else if (message[0] === 'truncate') {
 						const channel = message[1];
 						const bytesToKeep = message[2];
-						
+
 						if (channel === 'out') {
 							providedOutput = providedOutput.slice(-bytesToKeep);
 							outputChanged = true;
@@ -333,7 +359,8 @@ export function activate(context: vscode.ExtensionContext) {
 					else {
 						debugChannel.append(`Received unhandled message: ${JSON.stringify(message)}`);
 					}
-				});
+				}
+			});
 			}
 			if (texpresso && texpresso.stderr) {
 				texpresso.stderr.on('data', data => {
