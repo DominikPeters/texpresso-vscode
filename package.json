@@ -31,7 +31,13 @@
     "commands": [
       {
         "command": "texpresso.startDocument",
-        "title": "TeXpresso: Start Document"
+        "title": "TeXpresso 内置预览",
+        "icon": "$(window)"
+      },
+      {
+        "command": "texpresso.startDocumentExternal",
+        "title": "TeXpresso 外置窗口",
+        "icon": "$(link-external)"
       },
       {
         "command": "texpresso.refresh",
@@ -126,30 +132,35 @@
           "type": "boolean",
           "default": false,
           "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available"
+        },
+        "texpresso.useInlinePreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use an inline VS Code WebView panel for preview instead of a separate SDL window. Requires TeXpresso built with headless mode support"
         }
       }
     },
     "menus": {
       "editor/title": [
         {
-          "when": "texpresso.inActiveEditor",
+          "when": "resourceExtname == .tex && !texpresso.running",
+          "command": "texpresso.startDocument",
+          "group": "navigation@0"
+        },
+        {
+          "when": "resourceExtname == .tex && !texpresso.running",
+          "command": "texpresso.startDocumentExternal",
+          "group": "navigation@1"
+        },
+        {
+          "when": "texpresso.inActiveEditor && !config.texpresso.useInlinePreview",
           "command": "texpresso.previousPage",
           "group": "navigation@1"
         },
         {
-          "when": "texpresso.inActiveEditor",
+          "when": "texpresso.inActiveEditor && !config.texpresso.useInlinePreview",
           "command": "texpresso.nextPage",
           "group": "navigation@2"
-        },
-        {
-          "when": "texpresso.inActiveEditor && !config.texpresso.syncTeXForwardOnSelection",
-          "command": "texpresso.activateSyncTeXForward",
-          "group": "navigation@1"
-        },
-        {
-          "when": "texpresso.inActiveEditor && config.texpresso.syncTeXForwardOnSelection",
-          "command": "texpresso.deactivateSyncTeXForward",
-          "group": "navigation@1"
         }
       ],
       "editor/context": [
