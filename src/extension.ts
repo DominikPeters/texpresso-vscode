@@ -234,6 +234,7 @@ export function activate(context: vscode.ExtensionContext) {
 			panel.onDispose(() => {
 				previewPanels.delete(filePath);
 				vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', false);
+				if (texpresso) { texpresso.kill(); texpressoProcesses.delete(filePath); }
 			});
 			previewPanels.set(filePath, panel);
 		}
@@ -252,7 +253,11 @@ export function activate(context: vscode.ExtensionContext) {
 					let message: any[];
 					try { message = JSON.parse(line); }
 					catch (_) { debugChannel.appendLine('Failed to parse: ' + line); continue; }
-				if (message[0] === 'page') {
+				if (message[0] === 'dark-mode') {
+					const panel = previewPanels.get(filePath);
+					if (panel) panel.postMessage({ type: 'dark-mode', dark: message[1] });
+				}
+				else if (message[0] === 'page') {
 					const [, page, totalPages, qoiPath, width, height] = message;
 					const panel = previewPanels.get(filePath);
 					if (panel) panel.updatePage(page, totalPages, qoiPath, width, height);

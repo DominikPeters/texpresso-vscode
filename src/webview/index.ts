@@ -364,8 +364,13 @@ document.getElementById('btn-fit-height')!.addEventListener('click', () => {
 
 document.getElementById('btn-dark-mode')!.addEventListener('click', () => {
     darkMode = !darkMode;
-    vscode.postMessage({ type: 'toggle-invert' });
+    const canvas = document.getElementById('preview-canvas') as HTMLElement;
+    if (canvas) {
+        canvas.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
+    }
+    try { localStorage.setItem('texpresso-dark-mode', darkMode ? '1' : '0'); } catch (_) {}
     optionsMenu.classList.remove('show');
+    render();
 });
 
 document.getElementById('btn-language')!.addEventListener('click', () => {
@@ -405,6 +410,13 @@ window.addEventListener('message', (e) => {
     if (!msg || !msg.type) return;
 
     switch (msg.type) {
+        case 'dark-mode':
+            darkMode = msg.dark === 'true' || msg.dark === true;
+            const cv = document.getElementById('preview-canvas') as HTMLElement;
+            if (cv) cv.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
+            render();
+            break;
+
         case 'page-update':
             currentPage = msg.page;
             totalPages = msg.totalPages;
@@ -446,5 +458,12 @@ resizeObserver.observe(container);
 
 // ---- Init ----
 updateLocale();
+// Restore dark mode from localStorage
+const savedDark = (() => { try { return localStorage.getItem('texpresso-dark-mode'); } catch (_) { return null; } })();
+if (savedDark === '1') {
+    darkMode = true;
+    const cv = document.getElementById('preview-canvas') as HTMLElement;
+    if (cv) cv.style.filter = 'invert(1) hue-rotate(180deg)';
+}
 resizeCanvas();
 vscode.postMessage({ type: 'preview-ready' });
