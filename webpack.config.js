@@ -45,4 +45,27 @@ const extensionConfig = {
     level: "log", // enables logging required for problem matchers
   },
 };
-module.exports = [ extensionConfig ];
+/** @type WebpackConfig */
+const webviewConfig = {
+	target: 'web',
+	mode: 'none',
+	entry: './src/webview/index.ts',
+	output: {
+		path: path.resolve(__dirname, 'dist', 'webview'),
+		filename: 'preview.js',
+	},
+	resolve: {
+		extensions: ['.ts', '.js'],
+	},
+	module: {
+		rules: [
+			{
+				test: /\.ts$/,
+				exclude: /node_modules/,
+				use: [{ loader: 'ts-loader' }],
+			},
+		],
+	},
+	devtool: 'nosources-source-map',
+};
+module.exports = [ extensionConfig, webviewConfig ];

@@ -89,6 +89,29 @@
         "enablement": "texpresso.running"
       },
       {
+        "command": "texpresso.startBuiltinPreview",
+        "title": "TeXpresso: Open Built-in Preview",
+        "icon": "$(preview)",
+        "enablement": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile"
+      },
+      {
+        "command": "texpresso.startExternalPreview",
+        "title": "TeXpresso: Open External Window",
+        "icon": "$(link-external)",
+        "enablement": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile"
+      },
+      {
+        "command": "texpresso.openMainFileAndPreview",
+        "title": "TeXpresso: Open Main File Preview",
+        "icon": "$(preview)",
+        "enablement": "texpresso.hasMainFile && texpresso.inActiveEditor"
+      },
+      {
+        "command": "texpresso.stopPreview",
+        "title": "TeXpresso: Close Preview Panel",
+        "enablement": "texpresso.previewActiveForCurrentFile"
+      },
+      {
         "command": "texpresso.stop",
         "title": "TeXpresso: Stop",
         "enablement": "texpresso.running"
@@ -126,11 +149,33 @@
           "type": "boolean",
           "default": false,
           "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available"
+        },
+        "texpresso.cacheSize": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Number of pages cached by the built-in preview viewer. Larger values speed up page navigation but use more memory."
         }
       }
     },
     "menus": {
       "editor/title": [
+        {
+          "when": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile",
+          "command": "texpresso.startBuiltinPreview",
+          "group": "navigation@-2"
+        },
+        {
+          "when": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile",
+          "command": "texpresso.startExternalPreview",
+          "group": "navigation@-1"
+        },
+        {
+          "when": "texpresso.hasMainFile && texpresso.inActiveEditor",
+          "command": "texpresso.openMainFileAndPreview",
+          "group": "navigation@-2"
+        },
         {
           "when": "texpresso.inActiveEditor",
           "command": "texpresso.previousPage",
