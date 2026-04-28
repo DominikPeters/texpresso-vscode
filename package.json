@@ -24,7 +24,9 @@
     "preview",
     "syncTeX"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:latex"
+  ],
   "main": "./dist/extension.js",
   "license": "MIT",
   "contributes": {
@@ -170,21 +172,6 @@
           "when": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile",
           "command": "texpresso.startExternalPreview",
           "group": "navigation@-1"
-        },
-        {
-          "when": "texpresso.hasMainFile && texpresso.inActiveEditor",
-          "command": "texpresso.openMainFileAndPreview",
-          "group": "navigation@-2"
-        },
-        {
-          "when": "texpresso.inActiveEditor",
-          "command": "texpresso.previousPage",
-          "group": "navigation@1"
-        },
-        {
-          "when": "texpresso.inActiveEditor",
-          "command": "texpresso.nextPage",
-          "group": "navigation@2"
         },
         {
           "when": "texpresso.inActiveEditor && !config.texpresso.syncTeXForwardOnSelection",

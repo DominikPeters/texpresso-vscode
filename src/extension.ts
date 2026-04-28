@@ -213,13 +213,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const args = ['-json'];
 		if (useChangeRangeMode) { args.push('-lines'); }
-		if (mode === 'builtin') { args.push('-webview'); args.push('-tmpdir'); args.push('/dev/shm'); }
+		if (mode === 'builtin') { args.push('-webview'); args.push('-tmpdir'); args.push('/tmp'); }
 		args.push(filePath);
 
 		if (!useWSL) {
-			texpresso = spawn(command, args, {
-				env: { ...process.env, SDL_VIDEODRIVER: mode === 'external' ? 'x11' : 'dummy' }
-			});
+			const env: NodeJS.ProcessEnv = { ...process.env };
+			if (mode === 'external') {
+				env.SDL_VIDEODRIVER = 'x11';
+				env.SDL_RENDER_SCALE_QUALITY = '2';
+			}
+			texpresso = spawn(command, args, { env });
 		} else {
 			const pc = new WSLPathConverter(true);
 			filePath = pc.toWSL(filePath);
@@ -227,7 +230,7 @@ export function activate(context: vscode.ExtensionContext) {
 			texpresso = spawn('wsl', wslArgs);
 		}
 		texpressoProcesses.set(filePath, texpresso);
-		vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', mode === 'builtin');
+		vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', true);
 
 		if (mode === 'builtin') {
 			const docName = path.basename(filePath);
@@ -245,8 +248,16 @@ export function activate(context: vscode.ExtensionContext) {
 			outputChannel.append(`Starting TeXpresso with command: ${command} ${args.join(' ')}\n`);
 			outputChannel.append(`File: ${filePath}\n`);
 
+			let stdoutBuffer = '';
 			texpresso.stdout.on('data', data => {
-				const message = JSON.parse(data.toString());
+				stdoutBuffer += data.toString();
+				const lines = stdoutBuffer.split('\n');
+				stdoutBuffer = lines.pop() || '';
+				for (const line of lines) {
+					if (!line.trim()) continue;
+					let message: any[];
+					try { message = JSON.parse(line); }
+					catch (_) { debugChannel.appendLine('Failed to parse: ' + line); continue; }
 				if (message[0] === 'page') {
 					const [, page, totalPages, qoiPath, width, height] = message;
 					const panel = previewPanels.get(filePath);
@@ -316,6 +327,7 @@ export function activate(context: vscode.ExtensionContext) {
 				else {
 					debugChannel.append(`Received unhandled message: ${JSON.stringify(message)}`);
 				}
+				}
 			});
 		}
 		if (texpresso && texpresso.stderr) {
@@ -323,13 +335,12 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		if (texpresso) {
 			texpresso.on('close', code => {
-				if (code !== 0) {
+				if (code !== 0 && code !== null) {
 					vscode.window.showErrorMessage(`TeXpresso exited with code ${code}`);
 				}
 				previewPanels.delete(filePath);
 				texpressoProcesses.delete(filePath);
 				activeEditor = undefined;
-				vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
 				vscode.commands.executeCommand('setContext', 'texpresso.running', false);
 				vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', false);
 				outputChannel.clear(); debugChannel.clear();
@@ -347,29 +358,30 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startBuiltinPreview', async () => {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) return;
-		await startDocumentFromEditor(editor, 'builtin');
-	}));
+			const editor = vscode.window.activeTextEditor;
+			if (!editor) return;
+			const curPath = fs.realpathSync(editor.document.uri.fsPath);
+			if (editor.document.getText().includes('\\begin{document}')) {
+				await startDocumentFromEditor(editor, 'builtin');
+			} else {
+				const mainPath = subToMainMap.get(curPath);
+				if (!mainPath) {
+					vscode.window.showErrorMessage('No main LaTeX file found. Open the main .tex file directly.');
+					return;
+				}
+				const mainDoc = await vscode.workspace.openTextDocument(mainPath);
+				const mainEditor = await vscode.window.showTextDocument(mainDoc, vscode.ViewColumn.One);
+				await startDocumentFromEditor(mainEditor, 'builtin');
+			}
+		}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.startExternalPreview', async () => {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) return;
-		await startDocumentFromEditor(editor, 'external');
-	}));
+		context.subscriptions.push(vscode.commands.registerCommand('texpresso.startExternalPreview', async () => {
+			const editor = vscode.window.activeTextEditor;
+			if (!editor) return;
+			await startDocumentFromEditor(editor, 'external');
+		}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.openMainFileAndPreview', async () => {
-		const ae = vscode.window.activeTextEditor;
-		if (!ae) return;
-		const sp = fs.realpathSync(ae.document.uri.fsPath);
-		const mp = subToMainMap.get(sp);
-		if (!mp) { vscode.window.showErrorMessage('No main TeX file found for this included file.'); return; }
-		const md = await vscode.workspace.openTextDocument(mp);
-		const me = await vscode.window.showTextDocument(md, vscode.ViewColumn.Beside);
-		await startDocumentFromEditor(me, 'builtin');
-	}));
-
-	context.subscriptions.push(vscode.commands.registerCommand('texpresso.stopPreview', () => {
+		context.subscriptions.push(vscode.commands.registerCommand('texpresso.stopPreview', () => {
 		if (filePath) {
 			const panel = previewPanels.get(filePath);
 			if (panel) { panel.dispose(); previewPanels.delete(filePath); }
@@ -422,12 +434,14 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}, null, context.subscriptions);
 
+	function updateInActiveEditorContext(editor: vscode.TextEditor | undefined) {
+		const isTexFile = !!(editor && editor.document.fileName.endsWith('.tex'));
+		vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', isTexFile);
+	}
+	updateInActiveEditorContext(vscode.window.activeTextEditor);
 	vscode.window.onDidChangeActiveTextEditor(editor => {
-		if (activeEditor && editor && editor.document === activeEditor.document) {
-			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', true);
-		} else {
-			vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor', false);
-		}
+		updateInActiveEditorContext(editor);
+		updateSubFileContext();
 	});
 
 	// --- SyncTeX ---
