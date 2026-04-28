@@ -68,16 +68,20 @@ export class PreviewPanel {
         height: number
     ): void {
         if (!this.panel) return;
-        const fileUri = vscode.Uri.file(qoiFilePath);
-        const webviewUri = this.panel.webview.asWebviewUri(fileUri);
-        this.panel.webview.postMessage({
-            type: 'page-update',
-            page,
-            totalPages,
-            qoiUri: webviewUri.toString(),
-            renderWidth: width,
-            renderHeight: height,
-        });
+        try {
+            const qoiData = fs.readFileSync(qoiFilePath);
+            const base64Data = qoiData.toString('base64');
+            this.panel.webview.postMessage({
+                type: 'page-update',
+                page,
+                totalPages,
+                qoiBase64: base64Data,
+                renderWidth: width,
+                renderHeight: height,
+            });
+        } catch (e) {
+            console.error('Failed to read QOI file:', e);
+        }
     }
 
     postMessage(msg: any): void {

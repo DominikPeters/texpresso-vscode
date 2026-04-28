@@ -154,6 +154,38 @@ function render() {
     }
 }
 
+function base64ToUint8Array(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+async function loadQOIBase64(qoiBase64: string): Promise<void> {
+    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
+    const cached = pageCache.get(cacheK);
+    if (cached) {
+        pageImage = cached;
+        render();
+        return;
+    }
+
+    const data = base64ToUint8Array(qoiBase64);
+    const decoded = decodeQOI(data);
+    const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
+    const bitmap = await createImageBitmap(imgData);
+
+    pageImage = bitmap;
+    if (pageCache.size >= CACHE_SIZE) {
+        const firstKey = pageCache.keys().next().value;
+        pageCache.delete(firstKey);
+    }
+    pageCache.set(cacheK, bitmap);
+    render();
+}
+
 async function loadQOI(qoiUri: string): Promise<void> {
     const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
     const cached = pageCache.get(cacheK);
@@ -171,7 +203,6 @@ async function loadQOI(qoiUri: string): Promise<void> {
     const bitmap = await createImageBitmap(imgData);
 
     pageImage = bitmap;
-    // Add to cache, maintain LRU
     if (pageCache.size >= CACHE_SIZE) {
         const firstKey = pageCache.keys().next().value;
         pageCache.delete(firstKey);
@@ -383,7 +414,11 @@ window.addEventListener('message', (e) => {
             (document.getElementById('total-pages') as HTMLSpanElement).textContent =
                 '/ ' + String(totalPages);
             pageInput.max = String(totalPages);
-            loadQOI(msg.qoiUri);
+            if (msg.qoiBase64) {
+                loadQOIBase64(msg.qoiBase64);
+            } else if (msg.qoiUri) {
+                loadQOI(msg.qoiUri);
+            }
             break;
 
         case 'zoom-reset':

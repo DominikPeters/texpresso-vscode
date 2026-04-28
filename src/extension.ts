@@ -217,13 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
 		args.push(filePath);
 
 		if (!useWSL) {
-			const env: NodeJS.ProcessEnv = { ...process.env };
-			if (mode === 'external') {
-				env.SDL_VIDEODRIVER = 'x11';
-				env.SDL_RENDER_SCALE_QUALITY = '2';
-			}
-			texpresso = spawn(command, args, { env });
-		} else {
+				texpresso = spawn(command, args);		} else {
 			const pc = new WSLPathConverter(true);
 			filePath = pc.toWSL(filePath);
 			const wslArgs = ['-e', command, ...args.slice(0, -1), filePath];
