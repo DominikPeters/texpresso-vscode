@@ -217,7 +217,13 @@ export function activate(context: vscode.ExtensionContext) {
 		args.push(filePath);
 
 		if (!useWSL) {
-				texpresso = spawn(command, args);		} else {
+				const spawnEnv = { ...process.env };
+			if (mode === 'external') {
+				spawnEnv.DISPLAY = process.env.DISPLAY || ':0';
+				if (process.env.WAYLAND_DISPLAY) spawnEnv.WAYLAND_DISPLAY = process.env.WAYLAND_DISPLAY;
+			}
+			texpresso = spawn(command, args, { env: spawnEnv });
+		} else {
 			const pc = new WSLPathConverter(true);
 			filePath = pc.toWSL(filePath);
 			const wslArgs = ['-e', command, ...args.slice(0, -1), filePath];
