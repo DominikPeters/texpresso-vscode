@@ -284,6 +284,11 @@ export function activate(context: vscode.ExtensionContext) {
 						panel.updatePageDiff(page, totalPages, rects, width, height, pw, ph);
 					}
 				}
+				else if (message[0] === 'page-error') {
+					const totalPages = message[1];
+					const panel = previewPanels.get(filePath);
+					if (panel) panel.postMessage({ type: 'page-error', totalPages: totalPages });
+				}
 				else if (message[0] === 'page') {
 					const [, page, totalPages, qoiPath, width, height] = message;
 					const pw = message.length > 6 ? message[6] : 0;

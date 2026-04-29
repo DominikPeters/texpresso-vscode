@@ -194,12 +194,12 @@
         {
           "when": "texpresso.inActiveEditor && !config.texpresso.syncTeXForwardOnSelection",
           "command": "texpresso.activateSyncTeXForward",
-          "group": "navigation@1"
+          "group": "navigation@0"
         },
         {
           "when": "texpresso.inActiveEditor && config.texpresso.syncTeXForwardOnSelection",
           "command": "texpresso.deactivateSyncTeXForward",
-          "group": "navigation@1"
+          "group": "navigation@0"
         }
       ],
       "editor/context": [

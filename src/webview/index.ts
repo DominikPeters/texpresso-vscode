@@ -378,8 +378,8 @@ container.addEventListener('wheel', (e) => {
     } else {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
-        // Scroll sensitivity: 0.15 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.15;
+        // Scroll sensitivity: 0.2 per wheel tick, normalized
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.2;
         scrollVelocity += delta;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
@@ -648,6 +648,17 @@ window.addEventListener('message', (e) => {
 
         case 'zoom-reset':
             resetZoomState();
+            break;
+
+        case 'page-error':
+            // Page doesn't exist — show alert with i18n
+            const errTotal = msg.totalPages || totalPages;
+            const errMsg = locale === 'zh'
+                ? `该文档共 ${errTotal} 页`
+                : `Document has ${errTotal} page(s)`;
+            alert(errMsg);
+            // Reset page input to current page
+            pageInput.value = String(currentPage + 1);
             break;
 
         case 'fit-mode-changed':
