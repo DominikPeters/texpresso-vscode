@@ -104,7 +104,7 @@ let renderHeight = 792;
 let pageImage: ImageBitmap | null = null;
 let fitMode: 'width' | 'height' | 'custom' = 'width';
 let zoomLevel = 1;         // display zoom (1.0 = fit-width)
-let resMultiplier = 2.0;   // C-side render resolution multiplier
+let resMultiplier = 2.5;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let panX = 0, panY = 0;
 let darkMode = false;
@@ -464,11 +464,11 @@ function resetZoomState() {
     fitMode = 'width';
     zoomLevel = 1;
     panX = panY = 0;
-    resMultiplier = 2.0;
+    resMultiplier = 2.5;
     const ri = document.getElementById('res-input') as HTMLInputElement;
-    if (ri) ri.value = '2.00';
-    const targetW = Math.round(pageWidth * 2);
-    const targetH = Math.round(pageHeight * 2);
+    if (ri) ri.value = '2.50';
+    const targetW = Math.round(pageWidth * 2.5);
+    const targetH = Math.round(pageHeight * 2.5);
     vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
     render();
 }
@@ -625,7 +625,7 @@ window.addEventListener('message', (e) => {
             const resInp = document.getElementById('res-input') as HTMLInputElement;
             if (resInp && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
-                if (Math.abs(parseFloat(resInp.value || '2') - m) > 0.05) {
+                if (Math.abs(parseFloat(resInp.value || '2.5') - m) > 0.05) {
                     resInp.value = m.toFixed(2);
                 }
             }
@@ -653,7 +653,7 @@ window.addEventListener('message', (e) => {
             const resInp2 = document.getElementById('res-input') as HTMLInputElement;
             if (resInp2 && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
-                if (Math.abs(parseFloat(resInp2.value || '2') - m) > 0.05) {
+                if (Math.abs(parseFloat(resInp2.value || '2.5') - m) > 0.05) {
                     resInp2.value = m.toFixed(2);
                 }
             }

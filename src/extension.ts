@@ -110,7 +110,7 @@ function updateSubFileContext() {
 			const mm = subToMainMap.get(ap);
 			const hm = !!(mm && texpressoProcesses.has(mm));
 			vscode.commands.executeCommand('setContext', 'texpresso.hasMainFile', hm);
-			vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', !!(mm && previewPanels.has(mm)));
+			vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', !!(mm && (previewPanels.has(mm) || texpressoProcesses.has(mm))));
 		} catch (_) {}
 	}
 }
