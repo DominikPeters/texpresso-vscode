@@ -277,7 +277,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				else if (message[0] === 'page-diff') {
 					const [, page, totalPages, width, height, pw, ph, nRects] = message;
-					const rects = message[7]; // array of [x, y, w, h, path]
+					const rects = message[8]; // array of [x, y, w, h, path]
 					const panel = previewPanels.get(filePath);
 					if (panel) {
 						if (pw > 0 && ph > 0) panel.setPageDimensions(pw, ph);

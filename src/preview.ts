@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 
 export class PreviewPanel {
     private panel: vscode.WebviewPanel | null = null;
@@ -77,20 +75,20 @@ export class PreviewPanel {
     ): void {
         if (!this.panel) return;
         try {
-            const qoiData = fs.readFileSync(qoiFilePath);
-            const base64Data = qoiData.toString('base64');
+            const fileUri = vscode.Uri.file(qoiFilePath);
+            const webviewUri = this.panel.webview.asWebviewUri(fileUri);
             this.panel.webview.postMessage({
                 type: 'page-update',
                 page,
                 totalPages,
-                qoiBase64: base64Data,
+                qoiUri: webviewUri.toString(),
                 renderWidth: width,
                 renderHeight: height,
                 pageWidth: this.pageWidth,
                 pageHeight: this.pageHeight,
             });
         } catch (e) {
-            console.error('Failed to read QOI file:', e);
+            console.error('Failed to resolve QOI URI:', e);
         }
     }
 
@@ -105,17 +103,17 @@ export class PreviewPanel {
     ): void {
         if (!this.panel) return;
         try {
-            const rectsWithData = rects.map((r: any[]) => {
-                const [x, y, w, h, path] = r;
-                const qoiData = fs.readFileSync(path);
-                const base64Data = qoiData.toString('base64');
-                return { x, y, w, h, qoiBase64: base64Data };
+            const rectsWithUris = rects.map((r: any[]) => {
+                const [x, y, w, h, filePath] = r;
+                const fileUri = vscode.Uri.file(filePath);
+                const webviewUri = this.panel!.webview.asWebviewUri(fileUri);
+                return { x, y, w, h, qoiUri: webviewUri.toString() };
             });
             this.panel.webview.postMessage({
                 type: 'page-diff',
                 page,
                 totalPages,
-                rects: rectsWithData,
+                rects: rectsWithUris,
                 renderWidth: width,
                 renderHeight: height,
                 pageWidth: pageWidth,
@@ -269,7 +267,7 @@ export class PreviewPanel {
         <button id="btn-next" title="后一页">&#x25B6;</button>
         <button id="btn-end" title="末页">&#x23ED;</button>
         <button id="btn-zoom-reset" title="重置缩放">&#x21BA;</button>
-        <input id="res-input" type="number" min="1" max="10" step="0.01" value="3" title="分辨率倍率" style="width:52px;min-height:28px;text-align:center;font-size:12px;">
+        <input id="res-input" type="number" min="1" max="10" step="0.01" value="2" title="分辨率倍率" style="width:52px;min-height:28px;text-align:center;font-size:12px;">
         <div id="options-dropdown">
             <button id="btn-options">选项 &#x25BE;</button>
             <div id="options-menu">

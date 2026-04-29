@@ -42,7 +42,7 @@ function updateLocale() {
     document.getElementById('btn-language')!.textContent = t('language');
     const ld = document.getElementById('loading');
     if (ld) ld.textContent = t('loading');
-    try { localStorage.setItem('texpresso-locale', locale); } catch (_) {}
+    try { localStorage.setItem('texpresso-locale', locale); } catch (_) { }
 }
 
 const saved = (() => { try { return localStorage.getItem('texpresso-locale'); } catch (_) { return null; } })();
@@ -58,7 +58,7 @@ function decodeQOI(data: Uint8Array): { pixels: Uint8ClampedArray; width: number
     const channels = data[12];
     const len = width * height * 4;
     const pixels = new Uint8ClampedArray(len);
-    const index: [number,number,number,number][] = new Array(64).fill(null).map(() => [0,0,0,255]);
+    const index: [number, number, number, number][] = new Array(64).fill(null).map(() => [0, 0, 0, 255]);
     let r = 0, g = 0, b = 0, a = 255;
     let p = 14, run = 0;
     const size = data.length - 8;
@@ -70,7 +70,7 @@ function decodeQOI(data: Uint8Array): { pixels: Uint8ClampedArray; width: number
             else if (b1 === 0xff) { r = data[p++]; g = data[p++]; b = data[p++]; a = data[p++]; }
             else {
                 const tag = b1 >> 6;
-                if (tag === 0) { const idx = b1 & 0x3f; [r,g,b,a] = index[idx]; }
+                if (tag === 0) { const idx = b1 & 0x3f;[r, g, b, a] = index[idx]; }
                 else if (tag === 1) { r += ((b1 >> 4) & 3) - 2; g += ((b1 >> 2) & 3) - 2; b += (b1 & 3) - 2; r &= 255; g &= 255; b &= 255; }
                 else if (tag === 2) { const b2 = data[p++]; const dg = (b1 & 0x3f) - 32; const drdg = ((b2 >> 4) & 0xf) - 8; const dbdg = (b2 & 0xf) - 8; g = (g + dg) & 255; r = (r + g + drdg - (g - dg)) & 255; b = (b + g + dbdg - (g - dg)) & 255; }
                 else { run = b1 & 0x3f; }
@@ -100,7 +100,7 @@ let renderHeight = 792;
 let pageImage: ImageBitmap | null = null;
 let fitMode: 'width' | 'height' | 'custom' = 'width';
 let zoomLevel = 1;         // display zoom (1.0 = fit-width)
-let resMultiplier = 3.0;   // C-side render resolution multiplier
+let resMultiplier = 2.0;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let panX = 0, panY = 0;
 let darkMode = false;
@@ -256,11 +256,22 @@ async function applyDirtyRects(rects: any[]): Promise<void> {
     const oy = panY + (ch - ih) / 2;
 
     for (const rect of rects) {
-        const data = base64ToUint8Array(rect.qoiBase64);
-        const decoded = decodeQOI(data);
-        const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
+        let pixels: Uint8ClampedArray, w: number, h: number;
+        if (rect.qoiUri) {
+            const resp = await fetch(rect.qoiUri);
+            const buf = await resp.arrayBuffer();
+            const data = new Uint8Array(buf);
+            const decoded = decodeQOI(data);
+            pixels = decoded.pixels; w = decoded.width; h = decoded.height;
+        } else if (rect.qoiBase64) {
+            const data = base64ToUint8Array(rect.qoiBase64);
+            const decoded = decodeQOI(data);
+            pixels = decoded.pixels; w = decoded.width; h = decoded.height;
+        } else {
+            continue;
+        }
+        const imgData = new ImageData(pixels, w, h);
         const bitmap = await createImageBitmap(imgData);
-        // Draw the dirty rect at the correct position on canvas
         const dx = ox + rect.x * scale;
         const dy = oy + rect.y * scale;
         const dw = rect.w * scale;
@@ -379,7 +390,7 @@ container.addEventListener('wheel', (e) => {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
         // Scroll sensitivity: 0.25 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.25;
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.3;
         scrollVelocity += delta;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
@@ -459,11 +470,11 @@ function resetZoomState() {
     fitMode = 'width';
     zoomLevel = 1;
     panX = panY = 0;
-    resMultiplier = 3.0;
+    resMultiplier = 2.0;
     const ri = document.getElementById('res-input') as HTMLInputElement;
-    if (ri) ri.value = '3.00';
-    const targetW = Math.round(pageWidth * 3);
-    const targetH = Math.round(pageHeight * 3);
+    if (ri) ri.value = '2.00';
+    const targetW = Math.round(pageWidth * 2);
+    const targetH = Math.round(pageHeight * 2);
     vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
     render();
 }
@@ -505,7 +516,7 @@ document.getElementById('btn-dark-mode')!.addEventListener('click', () => {
     if (canvasEl) {
         canvasEl.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
     }
-    try { localStorage.setItem('texpresso-dark-mode', darkMode ? '1' : '0'); } catch (_) {}
+    try { localStorage.setItem('texpresso-dark-mode', darkMode ? '1' : '0'); } catch (_) { }
     optionsMenu.classList.remove('show');
     render();
 });
@@ -603,16 +614,16 @@ window.addEventListener('message', (e) => {
             (document.getElementById('total-pages') as HTMLSpanElement).textContent =
                 '/ ' + String(totalPages);
             pageInput.max = String(totalPages);
-            if (msg.qoiBase64) {
-                loadQOIBase64(msg.qoiBase64);
-            } else if (msg.qoiUri) {
+            if (msg.qoiUri) {
                 loadQOI(msg.qoiUri);
+            } else if (msg.qoiBase64) {
+                loadQOIBase64(msg.qoiBase64);
             }
             // Sync resolution input
             const resInp = document.getElementById('res-input') as HTMLInputElement;
             if (resInp && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
-                if (Math.abs(parseFloat(resInp.value || '3') - m) > 0.05) {
+                if (Math.abs(parseFloat(resInp.value || '2') - m) > 0.05) {
                     resInp.value = m.toFixed(2);
                 }
             }
@@ -640,7 +651,7 @@ window.addEventListener('message', (e) => {
             const resInp2 = document.getElementById('res-input') as HTMLInputElement;
             if (resInp2 && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
-                if (Math.abs(parseFloat(resInp2.value || '3') - m) > 0.05) {
+                if (Math.abs(parseFloat(resInp2.value || '2') - m) > 0.05) {
                     resInp2.value = m.toFixed(2);
                 }
             }
