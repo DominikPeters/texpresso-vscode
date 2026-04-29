@@ -219,7 +219,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const args = ['-json'];
 		if (useChangeRangeMode) { args.push('-lines'); }
-		if (mode === 'builtin') { args.push('-webview'); args.push('-tmpdir'); args.push('/dev/shm'); }
+		if (mode === 'builtin') {
+				args.push('-webview'); args.push('-tmpdir'); args.push('/dev/shm');
+				const defRes = vscode.workspace.getConfiguration('texpresso').get('defaultResolution') as number || 2.5;
+				args.push('-resolution'); args.push(String(defRes));
+			}
 		args.push(filePath);
 
 		if (!useWSL) {
