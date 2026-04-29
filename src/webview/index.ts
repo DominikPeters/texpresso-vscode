@@ -117,6 +117,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 let zoomDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let smoothScrollAnim: number | null = null;
 let scrollVelocity = 0;
+let scrollVelocityX = 0;
 
 // LRU cache
 const CACHE_SIZE = 10;
@@ -299,13 +300,22 @@ function screenToDocument(cx: number, cy: number): { docX: number; docY: number 
 }
 
 function applySmoothScroll() {
-    if (Math.abs(scrollVelocity) < scrollSpeed) {
+    const vy = Math.abs(scrollVelocity);
+    const vx = Math.abs(scrollVelocityX);
+    if (vy < scrollSpeed && vx < scrollSpeed) {
         scrollVelocity = 0;
+        scrollVelocityX = 0;
         smoothScrollAnim = null;
         return;
     }
-    panY -= scrollVelocity;
-    scrollVelocity *= 0.92;
+    if (vy >= scrollSpeed) {
+        panY -= scrollVelocity;
+        scrollVelocity *= 0.92;
+    }
+    if (vx >= scrollSpeed) {
+        panX -= scrollVelocityX;
+        scrollVelocityX *= 0.92;
+    }
     clampPan();
     render();
     smoothScrollAnim = requestAnimationFrame(applySmoothScroll);
@@ -382,12 +392,16 @@ container.addEventListener('wheel', (e) => {
         render();
         requestResolution();
     } else {
-        // No Ctrl: smooth scroll vertically
+        // No Ctrl: smooth scroll vertically and horizontally
         e.preventDefault();
-        // Scroll sensitivity: 0.25 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * scrollSpeed;
-        scrollVelocity += delta;
+        const dy = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * scrollSpeed;
+        scrollVelocity += dy;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
+        if (e.deltaX) {
+            const dx = Math.sign(e.deltaX) * Math.min(Math.abs(e.deltaX), 40) * scrollSpeed;
+            scrollVelocityX += dx;
+            scrollVelocityX = Math.max(-8, Math.min(8, scrollVelocityX));
+        }
         if (!smoothScrollAnim) {
             smoothScrollAnim = requestAnimationFrame(applySmoothScroll);
         }
@@ -669,6 +683,20 @@ window.addEventListener('message', (e) => {
                     resInp2.value = m.toFixed(2);
                 }
             }
+            break;
+
+        case 'synctex-scroll':
+            if (!pageImage) break;
+            const scw = canvas.width / (window.devicePixelRatio || 1);
+            const sch = canvas.height / (window.devicePixelRatio || 1);
+            const ss = getDisplayScale();
+            const simgX = (msg.x / pageWidth) * renderWidth;
+            const simgY = (msg.y / pageHeight) * renderHeight;
+            // Pan to center the target horizontally, 1/3 from top vertically
+            panX = pageImage.width * ss / 2 - simgX * ss;
+            panY = pageImage.height * ss / 2 - simgY * ss - sch / 6;
+            clampPan();
+            render();
             break;
 
         case 'zoom-reset':

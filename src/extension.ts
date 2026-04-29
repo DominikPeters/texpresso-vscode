@@ -318,7 +318,11 @@ export function activate(context: vscode.ExtensionContext) {
 					updateSubFileContext();
 					debugChannel.appendLine(`Tracked file ${i}: ${rp}`);
 				}
-				else if (message[0] === 'synctex') {
+				else if (message[0] === 'synctex-scroll') {
+						const panel = previewPanels.get(filePath);
+						if (panel) panel.postMessage({ type: 'synctex-scroll', x: message[1], y: message[2] });
+					}
+					else if (message[0] === 'synctex') {
 					const [, fp, line, column] = message;
 					const pc = new WSLPathConverter(useWSL);
 					let ap = path.isAbsolute(fp) ? fp : path.resolve(documentDir, fp);
