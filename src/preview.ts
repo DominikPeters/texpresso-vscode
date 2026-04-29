@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
 export class PreviewPanel {
     private panel: vscode.WebviewPanel | null = null;
@@ -75,20 +76,20 @@ export class PreviewPanel {
     ): void {
         if (!this.panel) return;
         try {
-            const fileUri = vscode.Uri.file(qoiFilePath);
-            const webviewUri = this.panel.webview.asWebviewUri(fileUri);
+            const qoiData = fs.readFileSync(qoiFilePath);
+            const base64Data = qoiData.toString('base64');
             this.panel.webview.postMessage({
                 type: 'page-update',
                 page,
                 totalPages,
-                qoiUri: webviewUri.toString(),
+                qoiBase64: base64Data,
                 renderWidth: width,
                 renderHeight: height,
                 pageWidth: this.pageWidth,
                 pageHeight: this.pageHeight,
             });
         } catch (e) {
-            console.error('Failed to resolve QOI URI:', e);
+            console.error('Failed to read QOI file:', e);
         }
     }
 
@@ -103,17 +104,17 @@ export class PreviewPanel {
     ): void {
         if (!this.panel) return;
         try {
-            const rectsWithUris = rects.map((r: any[]) => {
+            const rectsWithData = rects.map((r: any[]) => {
                 const [x, y, w, h, filePath] = r;
-                const fileUri = vscode.Uri.file(filePath);
-                const webviewUri = this.panel!.webview.asWebviewUri(fileUri);
-                return { x, y, w, h, qoiUri: webviewUri.toString() };
+                const qoiData = fs.readFileSync(filePath);
+                const base64Data = qoiData.toString('base64');
+                return { x, y, w, h, qoiBase64: base64Data };
             });
             this.panel.webview.postMessage({
                 type: 'page-diff',
                 page,
                 totalPages,
-                rects: rectsWithUris,
+                rects: rectsWithData,
                 renderWidth: width,
                 renderHeight: height,
                 pageWidth: pageWidth,

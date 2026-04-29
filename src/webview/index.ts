@@ -256,21 +256,9 @@ async function applyDirtyRects(rects: any[]): Promise<void> {
     const oy = panY + (ch - ih) / 2;
 
     for (const rect of rects) {
-        let pixels: Uint8ClampedArray, w: number, h: number;
-        if (rect.qoiUri) {
-            const resp = await fetch(rect.qoiUri);
-            const buf = await resp.arrayBuffer();
-            const data = new Uint8Array(buf);
-            const decoded = decodeQOI(data);
-            pixels = decoded.pixels; w = decoded.width; h = decoded.height;
-        } else if (rect.qoiBase64) {
-            const data = base64ToUint8Array(rect.qoiBase64);
-            const decoded = decodeQOI(data);
-            pixels = decoded.pixels; w = decoded.width; h = decoded.height;
-        } else {
-            continue;
-        }
-        const imgData = new ImageData(pixels, w, h);
+        const data = base64ToUint8Array(rect.qoiBase64);
+        const decoded = decodeQOI(data);
+        const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
         const bitmap = await createImageBitmap(imgData);
         const dx = ox + rect.x * scale;
         const dy = oy + rect.y * scale;
@@ -614,10 +602,10 @@ window.addEventListener('message', (e) => {
             (document.getElementById('total-pages') as HTMLSpanElement).textContent =
                 '/ ' + String(totalPages);
             pageInput.max = String(totalPages);
-            if (msg.qoiUri) {
-                loadQOI(msg.qoiUri);
-            } else if (msg.qoiBase64) {
+            if (msg.qoiBase64) {
                 loadQOIBase64(msg.qoiBase64);
+            } else if (msg.qoiUri) {
+                loadQOI(msg.qoiUri);
             }
             // Sync resolution input
             const resInp = document.getElementById('res-input') as HTMLInputElement;
