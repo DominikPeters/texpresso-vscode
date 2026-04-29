@@ -246,8 +246,11 @@ export function activate(context: vscode.ExtensionContext) {
 			const panel = new PreviewPanel(context.extensionUri, docName);
 			panel.create();
 			// Send config to webview
-			const maxResCap = vscode.workspace.getConfiguration('texpresso').get('maxResCap') as number || 10;
-			panel.postMessage({ type: 'config', maxResCap: maxResCap });
+			const texConfig = vscode.workspace.getConfiguration('texpresso');
+			const maxResCap = texConfig.get('maxResCap') as number || 10;
+			const defaultResolution = texConfig.get('defaultResolution') as number || 2.5;
+			const scrollSpeed = texConfig.get('scrollSpeed') as number ?? 0.3;
+			panel.postMessage({ type: 'config', maxResCap, defaultResolution, scrollSpeed });
 			panel.onMessage(handleWebviewMessage);
 			panel.onDispose(() => {
 				previewPanels.delete(filePath);

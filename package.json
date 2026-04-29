@@ -171,6 +171,18 @@
           "minimum": 1,
           "maximum": 50,
           "description": "Maximum resolution multiplier for built-in preview rendering."
+        },
+        "texpresso.defaultResolution": {
+          "type": "number",
+          "default": 2.5,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Default resolution multiplier for built-in preview."
+        },
+        "texpresso.scrollSpeed": {
+          "type": "number",
+          "default": 0.3,
+          "description": "Scroll speed multiplier for built-in preview."
         }
       }
     },

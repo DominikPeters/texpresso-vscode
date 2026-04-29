@@ -13,8 +13,8 @@ const i18nData: Record<string, Record<string, string>> = {
         resetZoom: '重置缩放', options: '选项',
         fitWidth: '适应宽度', fitHeight: '适应高度',
         disableSynctex: '关闭 SyncTeX', enableSynctex: '开启 SyncTeX',
-        darkMode: '深色模式', language: 'English',
-        loading: '渲染中…',
+        darkMode: '深色模式', lightMode: '浅色模式',
+        language: 'English', loading: '渲染中…',
     },
     en: {
         home: 'Home', prevPage: 'Prev', nextPage: 'Next',
@@ -22,8 +22,8 @@ const i18nData: Record<string, Record<string, string>> = {
         resetZoom: 'Reset Zoom', options: 'Options',
         fitWidth: 'Fit Width', fitHeight: 'Fit Height',
         disableSynctex: 'Disable SyncTeX', enableSynctex: 'Enable SyncTeX',
-        darkMode: 'Dark Mode', language: '中文',
-        loading: 'Rendering…',
+        darkMode: 'Dark Mode', lightMode: 'Light Mode',
+        language: '中文', loading: 'Rendering…',
     },
 };
 let locale: 'zh' | 'en' = 'zh';
@@ -42,7 +42,8 @@ function updateLocale() {
     document.getElementById('btn-fit-height')!.textContent = t('fitHeight');
     const btnST = document.getElementById('btn-disable-synctex');
     if (btnST) btnST.textContent = synctexEnabled ? t('disableSynctex') : t('enableSynctex');
-    document.getElementById('btn-dark-mode')!.textContent = t('darkMode');
+    const btnDM = document.getElementById('btn-dark-mode');
+    if (btnDM) btnDM.textContent = darkMode ? t('lightMode') : t('darkMode');
     document.getElementById('btn-language')!.textContent = t('language');
     const ld = document.getElementById('loading');
     if (ld) ld.textContent = t('loading');
@@ -108,6 +109,7 @@ let resMultiplier = 2.5;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let panX = 0, panY = 0;
 let darkMode = false;
+let scrollSpeed = 0.3;
 let synctexEnabled = true;
 let isPanning = false;
 let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
@@ -297,7 +299,7 @@ function screenToDocument(cx: number, cy: number): { docX: number; docY: number 
 }
 
 function applySmoothScroll() {
-    if (Math.abs(scrollVelocity) < 0.3) {
+    if (Math.abs(scrollVelocity) < scrollSpeed) {
         scrollVelocity = 0;
         smoothScrollAnim = null;
         return;
@@ -383,7 +385,7 @@ container.addEventListener('wheel', (e) => {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
         // Scroll sensitivity: 0.25 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.3;
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * scrollSpeed;
         scrollVelocity += delta;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
@@ -514,6 +516,8 @@ document.getElementById('btn-disable-synctex')!.addEventListener('click', () => 
 
 document.getElementById('btn-dark-mode')!.addEventListener('click', () => {
     darkMode = !darkMode;
+    const btnDM = document.getElementById('btn-dark-mode');
+    if (btnDM) btnDM.textContent = darkMode ? t('lightMode') : t('darkMode');
     const canvasEl = document.getElementById('preview-canvas') as HTMLElement;
     if (canvasEl) {
         canvasEl.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
@@ -589,6 +593,14 @@ window.addEventListener('message', (e) => {
                 maxResCap = msg.maxResCap;
                 const ri4 = document.getElementById('res-input') as HTMLInputElement;
                 if (ri4) ri4.max = String(msg.maxResCap);
+            }
+            if (msg.defaultResolution) {
+                resMultiplier = msg.defaultResolution;
+                const ri5 = document.getElementById('res-input') as HTMLInputElement;
+                if (ri5) ri5.value = msg.defaultResolution.toFixed(2);
+            }
+            if (msg.scrollSpeed !== undefined) {
+                scrollSpeed = msg.scrollSpeed;
             }
             break;
 
@@ -698,6 +710,8 @@ if (savedDark === '1') {
     darkMode = true;
     const cv = document.getElementById('preview-canvas') as HTMLElement;
     if (cv) cv.style.filter = 'invert(1) hue-rotate(180deg)';
+    const btnDM2 = document.getElementById('btn-dark-mode');
+    if (btnDM2) btnDM2.textContent = t('lightMode');
 }
 // Restore synctex state from localStorage
 const savedST = (() => { try { return localStorage.getItem('texpresso-synctex'); } catch (_) { return null; } })();
