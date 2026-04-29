@@ -274,6 +274,7 @@ export class PreviewPanel {
             <div id="options-menu">
                 <button id="btn-fit-width">适应宽度</button>
                 <button id="btn-fit-height">适应高度</button>
+                <button id="btn-disable-synctex">关闭 SyncTeX</button>
                 <button id="btn-dark-mode">深色模式</button>
                 <button id="btn-language">English</button>
             </div>
@@ -281,7 +282,7 @@ export class PreviewPanel {
     </div>
     <div id="canvas-container">
         <canvas id="preview-canvas"></canvas>
-        <div id="loading">编译中…</div>
+        <div id="loading">渲染中…</div>
     </div>
     <script src="${webviewUri}"></script>
 </body>

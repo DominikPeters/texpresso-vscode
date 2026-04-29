@@ -12,16 +12,18 @@ const i18nData: Record<string, Record<string, string>> = {
         endPage: '末页', pageInput: '页码', totalPages: '总页数',
         resetZoom: '重置缩放', options: '选项',
         fitWidth: '适应宽度', fitHeight: '适应高度',
+        disableSynctex: '关闭 SyncTeX', enableSynctex: '开启 SyncTeX',
         darkMode: '深色模式', language: 'English',
-        loading: '编译中…',
+        loading: '渲染中…',
     },
     en: {
         home: 'Home', prevPage: 'Prev', nextPage: 'Next',
         endPage: 'End', pageInput: 'Page', totalPages: 'total',
         resetZoom: 'Reset Zoom', options: 'Options',
         fitWidth: 'Fit Width', fitHeight: 'Fit Height',
+        disableSynctex: 'Disable SyncTeX', enableSynctex: 'Enable SyncTeX',
         darkMode: 'Dark Mode', language: '中文',
-        loading: 'Compiling…',
+        loading: 'Rendering…',
     },
 };
 let locale: 'zh' | 'en' = 'zh';
@@ -38,6 +40,8 @@ function updateLocale() {
     document.getElementById('btn-options')!.textContent = t('options') + ' ▾';
     document.getElementById('btn-fit-width')!.textContent = t('fitWidth');
     document.getElementById('btn-fit-height')!.textContent = t('fitHeight');
+    const btnST = document.getElementById('btn-disable-synctex');
+    if (btnST) btnST.textContent = synctexEnabled ? t('disableSynctex') : t('enableSynctex');
     document.getElementById('btn-dark-mode')!.textContent = t('darkMode');
     document.getElementById('btn-language')!.textContent = t('language');
     const ld = document.getElementById('loading');
@@ -104,6 +108,7 @@ let resMultiplier = 2.0;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let panX = 0, panY = 0;
 let darkMode = false;
+let synctexEnabled = true;
 let isPanning = false;
 let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
 let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -417,6 +422,7 @@ window.addEventListener('mouseup', () => {
 
 container.addEventListener('click', (e) => {
     if (e.ctrlKey) return;
+    if (!synctexEnabled) return;
     const rect = canvas.getBoundingClientRect();
     // mx, my in CSS pixel space (not adjusted for dpr)
     const mx = e.clientX - rect.left;
@@ -498,6 +504,14 @@ document.getElementById('btn-fit-height')!.addEventListener('click', () => {
     render();
 });
 
+document.getElementById('btn-disable-synctex')!.addEventListener('click', () => {
+    synctexEnabled = !synctexEnabled;
+    const btnST = document.getElementById('btn-disable-synctex');
+    if (btnST) btnST.textContent = synctexEnabled ? t('disableSynctex') : t('enableSynctex');
+    try { localStorage.setItem('texpresso-synctex', synctexEnabled ? '1' : '0'); } catch (_) { }
+    optionsMenu.classList.remove('show');
+});
+
 document.getElementById('btn-dark-mode')!.addEventListener('click', () => {
     darkMode = !darkMode;
     const canvasEl = document.getElementById('preview-canvas') as HTMLElement;
@@ -522,7 +536,7 @@ pageInput.addEventListener('input', () => {
     if (pageInputTimeout) clearTimeout(pageInputTimeout);
     pageInputTimeout = setTimeout(() => {
         const n = parseInt(pageInput.value, 10);
-        if (n >= 1 && n <= totalPages) {
+        if (n >= 1) {
             currentPage = n - 1;
             vscode.postMessage({ type: 'set-page', page: n - 1 });
         }
@@ -533,7 +547,7 @@ pageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         if (pageInputTimeout) { clearTimeout(pageInputTimeout); pageInputTimeout = null; }
         const n = parseInt(pageInput.value, 10);
-        if (n >= 1 && n <= totalPages) {
+        if (n >= 1) {
             currentPage = n - 1;
             vscode.postMessage({ type: 'set-page', page: n - 1 });
         }
@@ -684,6 +698,13 @@ if (savedDark === '1') {
     darkMode = true;
     const cv = document.getElementById('preview-canvas') as HTMLElement;
     if (cv) cv.style.filter = 'invert(1) hue-rotate(180deg)';
+}
+// Restore synctex state from localStorage
+const savedST = (() => { try { return localStorage.getItem('texpresso-synctex'); } catch (_) { return null; } })();
+if (savedST === '0') {
+    synctexEnabled = false;
+    const btnST = document.getElementById('btn-disable-synctex');
+    if (btnST) btnST.textContent = t('enableSynctex');
 }
 // Show loading indicator on init
 const ld = document.getElementById('loading');
