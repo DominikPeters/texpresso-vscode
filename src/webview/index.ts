@@ -378,8 +378,8 @@ container.addEventListener('wheel', (e) => {
     } else {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
-        // Scroll sensitivity: 0.2 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.2;
+        // Scroll sensitivity: 0.25 per wheel tick, normalized
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.25;
         scrollVelocity += delta;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
