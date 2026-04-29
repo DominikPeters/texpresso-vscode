@@ -242,6 +242,34 @@ async function loadQOI(qoiUri: string): Promise<void> {
     if (ld) ld.style.display = 'none';
 }
 
+async function applyDirtyRects(rects: any[]): Promise<void> {
+    // Apply dirty rects on top of existing canvas content without clearing
+    if (!rects || rects.length === 0) return;
+    if (!pageImage) return; // need a full page image first
+
+    const cw = canvas.width / (window.devicePixelRatio || 1);
+    const ch = canvas.height / (window.devicePixelRatio || 1);
+    const scale = getDisplayScale();
+    const iw = pageImage.width * scale;
+    const ih = pageImage.height * scale;
+    const ox = panX + (cw - iw) / 2;
+    const oy = panY + (ch - ih) / 2;
+
+    for (const rect of rects) {
+        const data = base64ToUint8Array(rect.qoiBase64);
+        const decoded = decodeQOI(data);
+        const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
+        const bitmap = await createImageBitmap(imgData);
+        // Draw the dirty rect at the correct position on canvas
+        const dx = ox + rect.x * scale;
+        const dy = oy + rect.y * scale;
+        const dw = rect.w * scale;
+        const dh = rect.h * scale;
+        ctx.drawImage(bitmap, dx, dy, dw, dh);
+        bitmap.close();
+    }
+}
+
 function screenToDocument(cx: number, cy: number): { docX: number; docY: number } {
     // cx, cy are in CSS pixel space (already divided by dpr)
     const cw = canvas.width / (window.devicePixelRatio || 1);
@@ -350,8 +378,8 @@ container.addEventListener('wheel', (e) => {
     } else {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
-        // Use smaller scroll sensitivity: 0.08 per wheel tick, normalized
-        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.08;
+        // Scroll sensitivity: 0.15 per wheel tick, normalized
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.15;
         scrollVelocity += delta;
         scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
@@ -559,9 +587,12 @@ window.addEventListener('message', (e) => {
             break;
 
         case 'page-update':
+            // Hide loading indicator
+            const ld3 = document.getElementById('loading');
+            if (ld3) ld3.style.display = 'none';
+
             currentPage = msg.page;
             totalPages = msg.totalPages;
-            // Update page dimensions if provided
             if (msg.pageWidth && msg.pageHeight) {
                 pageWidth = msg.pageWidth;
                 pageHeight = msg.pageHeight;
@@ -577,12 +608,40 @@ window.addEventListener('message', (e) => {
             } else if (msg.qoiUri) {
                 loadQOI(msg.qoiUri);
             }
-            // Sync resolution input (only if resMultiplier hasn't been explicitly changed)
+            // Sync resolution input
             const resInp = document.getElementById('res-input') as HTMLInputElement;
             if (resInp && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
                 if (Math.abs(parseFloat(resInp.value || '3') - m) > 0.05) {
                     resInp.value = m.toFixed(2);
+                }
+            }
+            break;
+
+        case 'page-diff':
+            // Hide loading indicator
+            const ld4 = document.getElementById('loading');
+            if (ld4) ld4.style.display = 'none';
+
+            currentPage = msg.page;
+            totalPages = msg.totalPages;
+            if (msg.pageWidth && msg.pageHeight) {
+                pageWidth = msg.pageWidth;
+                pageHeight = msg.pageHeight;
+            }
+            renderWidth = msg.renderWidth;
+            renderHeight = msg.renderHeight;
+            pageInput.value = String(currentPage + 1);
+            (document.getElementById('total-pages') as HTMLSpanElement).textContent =
+                '/ ' + String(totalPages);
+            pageInput.max = String(totalPages);
+            applyDirtyRects(msg.rects);
+            // Sync resolution input
+            const resInp2 = document.getElementById('res-input') as HTMLInputElement;
+            if (resInp2 && pageWidth > 0) {
+                const m = renderWidth / pageWidth;
+                if (Math.abs(parseFloat(resInp2.value || '3') - m) > 0.05) {
+                    resInp2.value = m.toFixed(2);
                 }
             }
             break;

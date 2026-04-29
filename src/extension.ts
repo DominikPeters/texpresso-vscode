@@ -275,6 +275,15 @@ export function activate(context: vscode.ExtensionContext) {
 					const panel = previewPanels.get(filePath);
 					if (panel) panel.postMessage({ type: 'dark-mode', dark: message[1] });
 				}
+				else if (message[0] === 'page-diff') {
+					const [, page, totalPages, width, height, pw, ph, nRects] = message;
+					const rects = message[7]; // array of [x, y, w, h, path]
+					const panel = previewPanels.get(filePath);
+					if (panel) {
+						if (pw > 0 && ph > 0) panel.setPageDimensions(pw, ph);
+						panel.updatePageDiff(page, totalPages, rects, width, height, pw, ph);
+					}
+				}
 				else if (message[0] === 'page') {
 					const [, page, totalPages, qoiPath, width, height] = message;
 					const pw = message.length > 6 ? message[6] : 0;

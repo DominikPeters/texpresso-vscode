@@ -94,6 +94,38 @@ export class PreviewPanel {
         }
     }
 
+    updatePageDiff(
+        page: number,
+        totalPages: number,
+        rects: any[],
+        width: number,
+        height: number,
+        pageWidth: number,
+        pageHeight: number,
+    ): void {
+        if (!this.panel) return;
+        try {
+            const rectsWithData = rects.map((r: any[]) => {
+                const [x, y, w, h, path] = r;
+                const qoiData = fs.readFileSync(path);
+                const base64Data = qoiData.toString('base64');
+                return { x, y, w, h, qoiBase64: base64Data };
+            });
+            this.panel.webview.postMessage({
+                type: 'page-diff',
+                page,
+                totalPages,
+                rects: rectsWithData,
+                renderWidth: width,
+                renderHeight: height,
+                pageWidth: pageWidth,
+                pageHeight: pageHeight,
+            });
+        } catch (e) {
+            console.error('Failed to process page-diff:', e);
+        }
+    }
+
     postMessage(msg: any): void {
         this.panel?.webview.postMessage(msg);
     }
