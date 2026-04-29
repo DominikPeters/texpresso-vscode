@@ -60,6 +60,14 @@ export class PreviewPanel {
         this.onDisposeCallback = callback;
     }
 
+    private pageWidth: number = 0;
+    private pageHeight: number = 0;
+
+    setPageDimensions(pw: number, ph: number) {
+        this.pageWidth = pw;
+        this.pageHeight = ph;
+    }
+
     updatePage(
         page: number,
         totalPages: number,
@@ -78,6 +86,8 @@ export class PreviewPanel {
                 qoiBase64: base64Data,
                 renderWidth: width,
                 renderHeight: height,
+                pageWidth: this.pageWidth,
+                pageHeight: this.pageHeight,
             });
         } catch (e) {
             console.error('Failed to read QOI file:', e);

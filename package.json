@@ -117,6 +117,12 @@
         "command": "texpresso.stop",
         "title": "TeXpresso: Stop",
         "enablement": "texpresso.running"
+      },
+      {
+        "command": "texpresso.stopExternalPreview",
+        "title": "TeXpresso: Close External Preview",
+        "icon": "$(x)",
+        "enablement": "texpresso.externalActive"
       }
     ],
     "configuration": {
@@ -158,6 +164,13 @@
           "minimum": 1,
           "maximum": 50,
           "description": "Number of pages cached by the built-in preview viewer. Larger values speed up page navigation but use more memory."
+        },
+        "texpresso.maxResCap": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum resolution multiplier for built-in preview rendering."
         }
       }
     },
@@ -171,6 +184,11 @@
         {
           "when": "texpresso.inActiveEditor && !texpresso.previewActiveForCurrentFile",
           "command": "texpresso.startExternalPreview",
+          "group": "navigation@-1"
+        },
+        {
+          "when": "texpresso.externalActive",
+          "command": "texpresso.stopExternalPreview",
           "group": "navigation@-1"
         },
         {

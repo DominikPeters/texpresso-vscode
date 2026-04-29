@@ -13,6 +13,7 @@ const i18nData: Record<string, Record<string, string>> = {
         resetZoom: '重置缩放', options: '选项',
         fitWidth: '适应宽度', fitHeight: '适应高度',
         darkMode: '深色模式', language: 'English',
+        loading: '编译中…',
     },
     en: {
         home: 'Home', prevPage: 'Prev', nextPage: 'Next',
@@ -20,6 +21,7 @@ const i18nData: Record<string, Record<string, string>> = {
         resetZoom: 'Reset Zoom', options: 'Options',
         fitWidth: 'Fit Width', fitHeight: 'Fit Height',
         darkMode: 'Dark Mode', language: '中文',
+        loading: 'Compiling…',
     },
 };
 let locale: 'zh' | 'en' = 'zh';
@@ -38,6 +40,8 @@ function updateLocale() {
     document.getElementById('btn-fit-height')!.textContent = t('fitHeight');
     document.getElementById('btn-dark-mode')!.textContent = t('darkMode');
     document.getElementById('btn-language')!.textContent = t('language');
+    const ld = document.getElementById('loading');
+    if (ld) ld.textContent = t('loading');
     try { localStorage.setItem('texpresso-locale', locale); } catch (_) {}
 }
 
@@ -97,6 +101,7 @@ let pageImage: ImageBitmap | null = null;
 let fitMode: 'width' | 'height' | 'custom' = 'width';
 let zoomLevel = 1;         // display zoom (1.0 = fit-width)
 let resMultiplier = 3.0;   // C-side render resolution multiplier
+let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let panX = 0, panY = 0;
 let darkMode = false;
 let isPanning = false;
@@ -131,15 +136,27 @@ function getDisplayScale(): number {
 }
 
 function requestResolution() {
+    // Non-linear: sub-linear resolution growth to avoid excessive load
+    // zoom 1x -> 1x, zoom 2x -> 1.5x, zoom 4x -> 2x, max configurable
     const effectiveZoom = fitMode === 'custom' ? zoomLevel : 1;
-    const targetW = Math.round(pageWidth * resMultiplier * effectiveZoom);
-    const targetH = Math.round(pageHeight * resMultiplier * effectiveZoom);
+    const dampedZoom = effectiveZoom <= 1
+        ? effectiveZoom
+        : 1 + Math.sqrt(effectiveZoom - 1) * 0.7;
+    const cappedZoom = Math.min(dampedZoom, maxResCap);
+    const targetW = Math.round(pageWidth * resMultiplier * cappedZoom);
+    const targetH = Math.round(pageHeight * resMultiplier * cappedZoom);
     if (Math.abs(targetW - renderWidth) > renderWidth * 0.15 ||
         Math.abs(targetH - renderHeight) > renderHeight * 0.15) {
         if (zoomDebounceTimeout) clearTimeout(zoomDebounceTimeout);
         zoomDebounceTimeout = setTimeout(() => {
             vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
         }, 250);
+    }
+    // Update resolution input immediately
+    const resInp = document.getElementById('res-input') as HTMLInputElement;
+    if (resInp && pageWidth > 0) {
+        const expectedMult = (targetW / pageWidth);
+        resInp.value = expectedMult.toFixed(2);
     }
 }
 
@@ -158,6 +175,7 @@ function render() {
 
     ctx.drawImage(pageImage, ox, oy, iw, ih);
 }
+
 function base64ToUint8Array(base64: string): Uint8Array {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -173,6 +191,9 @@ async function loadQOIBase64(qoiBase64: string): Promise<void> {
     if (cached) {
         pageImage = cached;
         render();
+        // Hide loading on cache hit too
+        const ld = document.getElementById('loading');
+        if (ld) ld.style.display = 'none';
         return;
     }
 
@@ -188,6 +209,8 @@ async function loadQOIBase64(qoiBase64: string): Promise<void> {
     }
     pageCache.set(cacheK, bitmap);
     render();
+    const ld = document.getElementById('loading');
+    if (ld) ld.style.display = 'none';
 }
 
 async function loadQOI(qoiUri: string): Promise<void> {
@@ -196,6 +219,8 @@ async function loadQOI(qoiUri: string): Promise<void> {
     if (cached) {
         pageImage = cached;
         render();
+        const ld = document.getElementById('loading');
+        if (ld) ld.style.display = 'none';
         return;
     }
 
@@ -213,22 +238,26 @@ async function loadQOI(qoiUri: string): Promise<void> {
     }
     pageCache.set(cacheK, bitmap);
     render();
+    const ld = document.getElementById('loading');
+    if (ld) ld.style.display = 'none';
 }
 
 function screenToDocument(cx: number, cy: number): { docX: number; docY: number } {
+    // cx, cy are in CSS pixel space (already divided by dpr)
     const cw = canvas.width / (window.devicePixelRatio || 1);
     const ch = canvas.height / (window.devicePixelRatio || 1);
     if (!pageImage) return { docX: 0, docY: 0 };
 
-    let scale: number;
-    if (fitMode === 'width') scale = cw / pageImage.width;
-    else if (fitMode === 'height') scale = ch / pageImage.height;
-    else scale = getDisplayScale();
-
+    const scale = getDisplayScale();
     const iw = pageImage.width * scale;
     const ih = pageImage.height * scale;
-    const imgX = (cx - panX - (cw - iw) / 2) / scale;
-    const imgY = (cy - panY - (ch - ih) / 2) / scale;
+    // Image offset on canvas (CSS pixels)
+    const ox = panX + (cw - iw) / 2;
+    const oy = panY + (ch - ih) / 2;
+    // Position within the rendered image (in image pixels)
+    const imgX = (cx - ox) / scale;
+    const imgY = (cy - oy) / scale;
+    // Convert image pixels to TeX points (document coordinates)
     return {
         docX: (imgX / renderWidth) * pageWidth,
         docY: (imgY / renderHeight) * pageHeight,
@@ -236,13 +265,13 @@ function screenToDocument(cx: number, cy: number): { docX: number; docY: number 
 }
 
 function applySmoothScroll() {
-    if (Math.abs(scrollVelocity) < 0.5) {
+    if (Math.abs(scrollVelocity) < 0.3) {
         scrollVelocity = 0;
         smoothScrollAnim = null;
         return;
     }
     panY -= scrollVelocity;
-    scrollVelocity *= 0.9;
+    scrollVelocity *= 0.92;
     clampPan();
     render();
     smoothScrollAnim = requestAnimationFrame(applySmoothScroll);
@@ -255,10 +284,20 @@ function clampPan() {
     const scale = getDisplayScale();
     const iw = pageImage.width * scale;
     const ih = pageImage.height * scale;
-    const maxPanX = iw / 2 + 50;
-    const maxPanY = ih / 2 + 50;
-    panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
-    panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+    // Clamp pan to keep image edges within canvas bounds
+    // (No black background visible beyond page edges)
+    const maxPanX = Math.max(0, (iw - cw) / 2);
+    const maxPanY = Math.max(0, (ih - ch) / 2);
+    if (iw <= cw) {
+        panX = 0;
+    } else {
+        panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+    }
+    if (ih <= ch) {
+        panY = 0;
+    } else {
+        panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+    }
 }
 
 // ---- Event Handlers ----
@@ -275,20 +314,46 @@ container.addEventListener('wheel', (e) => {
             zoomLevel = 1;
         }
 
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.111;
+        // Exact inverse zoom factors to prevent drift
+        const zoomFactor = e.deltaY > 0 ? (1.0 / 1.1) : 1.1;
         const oldZoom = zoomLevel;
         zoomLevel = Math.max(0.1, Math.min(20, zoomLevel * zoomFactor));
+        const r = zoomLevel / oldZoom;
 
-        panX = mx - (mx - panX) * (zoomLevel / oldZoom);
-        panY = my - (my - panY) * (zoomLevel / oldZoom);
+        const cw = canvas.width / (window.devicePixelRatio || 1);
+        const ch = canvas.height / (window.devicePixelRatio || 1);
+
+        // Compute image offset before zoom, then cursor-center it
+        const oldScale = getDisplayScale();
+        const newScale = (cw / pageImage!.width) * zoomLevel;
+        const scaleRatio = newScale / oldScale;
+
+        // Image offset in CSS pixels before zoom
+        const oldIw = pageImage!.width * oldScale;
+        const oldIh = pageImage!.height * oldScale;
+        const oldOx = panX + (cw - oldIw) / 2;
+        const oldOy = panY + (ch - oldIh) / 2;
+
+        // New offset after zoom (cursor-centered)
+        const newOx = oldOx * scaleRatio + mx * (1 - scaleRatio);
+        const newOy = oldOy * scaleRatio + my * (1 - scaleRatio);
+
+        // New pan values
+        const newIw = pageImage!.width * newScale;
+        const newIh = pageImage!.height * newScale;
+        panX = newOx - (cw - newIw) / 2;
+        panY = newOy - (ch - newIh) / 2;
+
         clampPan();
         render();
         requestResolution();
     } else {
         // No Ctrl: smooth scroll vertically
         e.preventDefault();
-        scrollVelocity += e.deltaY * 1.5;
-        scrollVelocity = Math.max(-80, Math.min(80, scrollVelocity));
+        // Use smaller scroll sensitivity: 0.08 per wheel tick, normalized
+        const delta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40) * 0.08;
+        scrollVelocity += delta;
+        scrollVelocity = Math.max(-8, Math.min(8, scrollVelocity));
         if (!smoothScrollAnim) {
             smoothScrollAnim = requestAnimationFrame(applySmoothScroll);
         }
@@ -326,16 +391,16 @@ window.addEventListener('mouseup', () => {
 container.addEventListener('click', (e) => {
     if (e.ctrlKey) return;
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const mx = (e.clientX - rect.left) / dpr;
-    const my = (e.clientY - rect.top) / dpr;
+    // mx, my in CSS pixel space (not adjusted for dpr)
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
     const { docX, docY } = screenToDocument(mx, my);
     vscode.postMessage({ type: 'synctex-backward', page: currentPage, x: docX, y: docY });
 });
 
 window.addEventListener('keydown', (e) => {
     const tag = (e.target as HTMLElement).tagName;
-    if (tag === 'INPUT') return; // Don't intercept input typing
+    if (tag === 'INPUT') return;
     switch (e.key) {
         case 'ArrowLeft': case 'PageUp':
             e.preventDefault();
@@ -356,28 +421,31 @@ window.addEventListener('keydown', (e) => {
         case '0':
             if (e.ctrlKey) {
                 e.preventDefault();
-                fitMode = 'width';
-                zoomLevel = 1;
-                panX = panY = 0;
-                vscode.postMessage({ type: 'reset-zoom' });
-                render();
+                resetZoomState();
             }
             break;
     }
 });
+
+function resetZoomState() {
+    fitMode = 'width';
+    zoomLevel = 1;
+    panX = panY = 0;
+    resMultiplier = 3.0;
+    const ri = document.getElementById('res-input') as HTMLInputElement;
+    if (ri) ri.value = '3.00';
+    const targetW = Math.round(pageWidth * 3);
+    const targetH = Math.round(pageHeight * 3);
+    vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
+    render();
+}
 
 // ---- Button Handlers ----
 document.getElementById('btn-home')!.addEventListener('click', () => vscode.postMessage({ type: 'go-home' }));
 document.getElementById('btn-prev')!.addEventListener('click', () => vscode.postMessage({ type: 'previous-page' }));
 document.getElementById('btn-next')!.addEventListener('click', () => vscode.postMessage({ type: 'next-page' }));
 document.getElementById('btn-end')!.addEventListener('click', () => vscode.postMessage({ type: 'go-end' }));
-document.getElementById('btn-zoom-reset')!.addEventListener('click', () => {
-    fitMode = 'width';
-    zoomLevel = 1;
-    panX = panY = 0;
-    vscode.postMessage({ type: 'reset-zoom' });
-    render();
-});
+document.getElementById('btn-zoom-reset')!.addEventListener('click', () => resetZoomState());
 
 // Options dropdown
 const optionsBtn = document.getElementById('btn-options')!;
@@ -405,9 +473,9 @@ document.getElementById('btn-fit-height')!.addEventListener('click', () => {
 
 document.getElementById('btn-dark-mode')!.addEventListener('click', () => {
     darkMode = !darkMode;
-    const canvas = document.getElementById('preview-canvas') as HTMLElement;
-    if (canvas) {
-        canvas.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
+    const canvasEl = document.getElementById('preview-canvas') as HTMLElement;
+    if (canvasEl) {
+        canvasEl.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
     }
     try { localStorage.setItem('texpresso-dark-mode', darkMode ? '1' : '0'); } catch (_) {}
     optionsMenu.classList.remove('show');
@@ -445,29 +513,29 @@ pageInput.addEventListener('keydown', (e) => {
     }
 });
 
-    // Resolution multiplier input
-    const resInput = document.getElementById('res-input') as HTMLInputElement;
-    let resInputTimeout: ReturnType<typeof setTimeout> | null = null;
-    resInput.addEventListener('input', () => {
-        if (resInputTimeout) clearTimeout(resInputTimeout);
-        resInputTimeout = setTimeout(() => {
-            const v = parseFloat(resInput.value);
-            if (v >= 1 && v <= 10) {
-                resMultiplier = v;
-                requestResolution();
-            }
-        }, 400);
-    });
-    resInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            if (resInputTimeout) { clearTimeout(resInputTimeout); resInputTimeout = null; }
-            const v = parseFloat(resInput.value);
-            if (v >= 1 && v <= 10) {
-                resMultiplier = v;
-                requestResolution();
-            }
+// Resolution multiplier input
+const resInput = document.getElementById('res-input') as HTMLInputElement;
+let resInputTimeout: ReturnType<typeof setTimeout> | null = null;
+resInput.addEventListener('input', () => {
+    if (resInputTimeout) clearTimeout(resInputTimeout);
+    resInputTimeout = setTimeout(() => {
+        const v = parseFloat(resInput.value);
+        if (v >= 1 && v <= maxResCap) {
+            resMultiplier = v;
+            requestResolution();
         }
-    });
+    }, 400);
+});
+resInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (resInputTimeout) { clearTimeout(resInputTimeout); resInputTimeout = null; }
+        const v = parseFloat(resInput.value);
+        if (v >= 1 && v <= maxResCap) {
+            resMultiplier = v;
+            requestResolution();
+        }
+    }
+});
 
 // ---- Message Handler ----
 window.addEventListener('message', (e) => {
@@ -475,6 +543,14 @@ window.addEventListener('message', (e) => {
     if (!msg || !msg.type) return;
 
     switch (msg.type) {
+        case 'config':
+            if (msg.maxResCap) {
+                maxResCap = msg.maxResCap;
+                const ri4 = document.getElementById('res-input') as HTMLInputElement;
+                if (ri4) ri4.max = String(msg.maxResCap);
+            }
+            break;
+
         case 'dark-mode':
             darkMode = msg.dark === 'true' || msg.dark === true;
             const cv = document.getElementById('preview-canvas') as HTMLElement;
@@ -485,6 +561,11 @@ window.addEventListener('message', (e) => {
         case 'page-update':
             currentPage = msg.page;
             totalPages = msg.totalPages;
+            // Update page dimensions if provided
+            if (msg.pageWidth && msg.pageHeight) {
+                pageWidth = msg.pageWidth;
+                pageHeight = msg.pageHeight;
+            }
             renderWidth = msg.renderWidth;
             renderHeight = msg.renderHeight;
             pageInput.value = String(currentPage + 1);
@@ -496,22 +577,18 @@ window.addEventListener('message', (e) => {
             } else if (msg.qoiUri) {
                 loadQOI(msg.qoiUri);
             }
-            // Sync resolution input
+            // Sync resolution input (only if resMultiplier hasn't been explicitly changed)
             const resInp = document.getElementById('res-input') as HTMLInputElement;
             if (resInp && pageWidth > 0) {
                 const m = renderWidth / pageWidth;
                 if (Math.abs(parseFloat(resInp.value || '3') - m) > 0.05) {
                     resInp.value = m.toFixed(2);
-                    resMultiplier = m;
                 }
             }
             break;
 
         case 'zoom-reset':
-            fitMode = 'width';
-            zoomLevel = 1;
-            panX = panY = 0;
-            render();
+            resetZoomState();
             break;
 
         case 'fit-mode-changed':
@@ -539,5 +616,8 @@ if (savedDark === '1') {
     const cv = document.getElementById('preview-canvas') as HTMLElement;
     if (cv) cv.style.filter = 'invert(1) hue-rotate(180deg)';
 }
+// Show loading indicator on init
+const ld = document.getElementById('loading');
+if (ld) ld.style.display = 'block';
 resizeCanvas();
 vscode.postMessage({ type: 'preview-ready' });

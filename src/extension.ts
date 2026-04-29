@@ -236,12 +236,18 @@ export function activate(context: vscode.ExtensionContext) {
 			texpresso = spawn('wsl', wslArgs);
 		}
 		texpressoProcesses.set(filePath, texpresso);
+		if (mode === 'external') {
+			vscode.commands.executeCommand('setContext', 'texpresso.externalActive', true);
+		}
 		vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', true);
 
 		if (mode === 'builtin') {
 			const docName = path.basename(filePath);
 			const panel = new PreviewPanel(context.extensionUri, docName);
 			panel.create();
+			// Send config to webview
+			const maxResCap = vscode.workspace.getConfiguration('texpresso').get('maxResCap') as number || 10;
+			panel.postMessage({ type: 'config', maxResCap: maxResCap });
 			panel.onMessage(handleWebviewMessage);
 			panel.onDispose(() => {
 				previewPanels.delete(filePath);
@@ -271,8 +277,13 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				else if (message[0] === 'page') {
 					const [, page, totalPages, qoiPath, width, height] = message;
+					const pw = message.length > 6 ? message[6] : 0;
+					const ph = message.length > 7 ? message[7] : 0;
 					const panel = previewPanels.get(filePath);
-					if (panel) panel.updatePage(page, totalPages, qoiPath, width, height);
+					if (panel) {
+						if (pw > 0 && ph > 0) panel.setPageDimensions(pw, ph);
+						panel.updatePage(page, totalPages, qoiPath, width, height);
+					}
 				}
 				else if (message[0] === 'zoom-reset') {
 					const panel = previewPanels.get(filePath);
@@ -350,6 +361,7 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage(`TeXpresso exited with code ${code}`);
 				}
 				previewPanels.delete(filePath);
+				vscode.commands.executeCommand('setContext', 'texpresso.externalActive', false);
 				texpressoProcesses.delete(filePath);
 				activeEditor = undefined;
 				vscode.commands.executeCommand('setContext', 'texpresso.running', false);
@@ -392,6 +404,12 @@ export function activate(context: vscode.ExtensionContext) {
 			await startDocumentFromEditor(editor, 'external');
 		}));
 
+		context.subscriptions.push(vscode.commands.registerCommand('texpresso.stopExternalPreview', () => {
+			if (texpresso) { texpresso.kill(); }
+			vscode.commands.executeCommand('setContext', 'texpresso.externalActive', false);
+			vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', false);
+		}));
+
 		context.subscriptions.push(vscode.commands.registerCommand('texpresso.stopPreview', () => {
 		if (filePath) {
 			const panel = previewPanels.get(filePath);
@@ -408,6 +426,28 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.workspace.onDidCloseTextDocument(doc => {
 			if (registry) registry.updateDocument(doc.uri.fsPath, undefined, false, sendCommand);
+			// Close preview if all related tex files are closed
+			try {
+				const closedPath = fs.realpathSync(doc.uri.fsPath);
+				for (const [mainPath, panel] of previewPanels) {
+					if (mainPath === closedPath || subToMainMap.get(closedPath) === mainPath) {
+						const anyOpen = vscode.workspace.textDocuments.some(d => {
+							try {
+								const fp = fs.realpathSync(d.uri.fsPath);
+								return fp === mainPath || subToMainMap.get(fp) === mainPath;
+							} catch (_) { return false; }
+						});
+						if (!anyOpen) {
+							panel.dispose();
+							previewPanels.delete(mainPath);
+							const proc = texpressoProcesses.get(mainPath);
+							if (proc) { proc.kill(); texpressoProcesses.delete(mainPath); }
+							vscode.commands.executeCommand('setContext', 'texpresso.previewActiveForCurrentFile', false);
+							vscode.commands.executeCommand('setContext', 'texpresso.externalActive', false);
+						}
+					}
+				}
+			} catch (_) {}
 		}));
 
 	vscode.workspace.onDidChangeTextDocument(event => {
