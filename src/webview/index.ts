@@ -359,7 +359,7 @@ container.addEventListener('wheel', (e) => {
         }
 
         // Exact inverse zoom factors to prevent drift
-        const zoomFactor = e.deltaY > 0 ? (1.0 / 1.05) : 1.05;
+        const zoomFactor = e.deltaY > 0 ? (1.0 / 1.025) : 1.025;
         const oldZoom = zoomLevel;
         zoomLevel = Math.max(0.1, Math.min(20, zoomLevel * zoomFactor));
         const r = zoomLevel / oldZoom;
