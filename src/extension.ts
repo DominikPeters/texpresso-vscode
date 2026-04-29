@@ -116,8 +116,14 @@ function updateSubFileContext() {
 }
 
 function handleWebviewMessage(msg: any) {
-	if (!texpresso || !texpresso.stdin) return;
+	if (!texpresso || !texpresso.stdin) {
+		console.warn('TeXpresso: dropping webview message (texpresso process not running):', msg.type);
+		return;
+	}
 	switch (msg.type) {
+		case 'preview-ready':
+			// Webview initialization complete — handled silently
+			break;
 		case 'synctex-backward':
 			texpresso.stdin.write(JSON.stringify(["synctex-backward", msg.page, msg.x, msg.y]) + '\n');
 			break;
@@ -213,14 +219,14 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const args = ['-json'];
 		if (useChangeRangeMode) { args.push('-lines'); }
-		if (mode === 'builtin') { args.push('-webview'); args.push('-tmpdir'); args.push('/tmp'); }
+		if (mode === 'builtin') { args.push('-webview'); args.push('-tmpdir'); args.push('/dev/shm'); }
 		args.push(filePath);
 
 		if (!useWSL) {
 				const spawnEnv = { ...process.env };
 			if (mode === 'external') {
-				spawnEnv.DISPLAY = process.env.DISPLAY || ':0';
-				if (process.env.WAYLAND_DISPLAY) spawnEnv.WAYLAND_DISPLAY = process.env.WAYLAND_DISPLAY;
+				spawnEnv.SDL_VIDEODRIVER = 'wayland';
+				delete spawnEnv.DISPLAY;
 			}
 			texpresso = spawn(command, args, { env: spawnEnv });
 		} else {
@@ -290,7 +296,7 @@ export function activate(context: vscode.ExtensionContext) {
 					let ap = path.isAbsolute(fp) ? fp : path.resolve(documentDir, fp);
 					ap = pc.toWindows(ap);
 					vscode.workspace.openTextDocument(vscode.Uri.file(ap)).then(doc => {
-						return vscode.window.showTextDocument(doc).then(editor => {
+						return vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One, preserveFocus: true }).then(editor => {
 							const pos = new vscode.Position(line - 1, Math.max(0, (column || 1) - 1));
 							editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
 							editor.selection = new vscode.Selection(pos, pos);

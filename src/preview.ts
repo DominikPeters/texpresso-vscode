@@ -134,15 +134,15 @@ export class PreviewPanel {
             user-select: none;
         }
         #navbar button {
-            min-width: 36px;
-            min-height: 36px;
-            padding: 4px 8px;
+            min-width: 28px;
+            min-height: 28px;
+            padding: 2px 6px;
             border: 1px solid var(--vscode-panel-border, #3c3c3c);
             background: var(--vscode-button-secondaryBackground, #3c3c3c);
             color: var(--vscode-button-secondaryForeground, #ccc);
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -154,14 +154,14 @@ export class PreviewPanel {
             background: var(--vscode-button-background, #0078d4);
         }
         #page-input {
-            width: 50px;
-            min-height: 36px;
+            width: 48px;
+            min-height: 28px;
             text-align: center;
             background: var(--vscode-input-background, #3c3c3c);
             color: var(--vscode-input-foreground, #ccc);
             border: 1px solid var(--vscode-panel-border, #3c3c3c);
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
         }
         #total-pages {
             font-size: 14px;
@@ -207,6 +207,15 @@ export class PreviewPanel {
             padding: 8px 12px;
             min-height: 32px;
         }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -218,6 +227,7 @@ export class PreviewPanel {
         <button id="btn-next" title="后一页">&#x25B6;</button>
         <button id="btn-end" title="末页">&#x23ED;</button>
         <button id="btn-zoom-reset" title="重置缩放">&#x21BA;</button>
+        <input id="res-input" type="number" min="1" max="10" step="0.01" value="3" title="分辨率倍率" style="width:52px;min-height:28px;text-align:center;font-size:12px;">
         <div id="options-dropdown">
             <button id="btn-options">选项 &#x25BE;</button>
             <div id="options-menu">
@@ -230,6 +240,7 @@ export class PreviewPanel {
     </div>
     <div id="canvas-container">
         <canvas id="preview-canvas"></canvas>
+        <div id="loading">编译中…</div>
     </div>
     <script src="${webviewUri}"></script>
 </body>
