@@ -251,30 +251,32 @@ async function loadQOI(qoiUri: string): Promise<void> {
 }
 
 async function applyDirtyRects(rects: any[]): Promise<void> {
-    // Apply dirty rects on top of existing canvas content without clearing
     if (!rects || rects.length === 0) return;
-    if (!pageImage) return; // need a full page image first
+    if (!pageImage) return;
 
-    const cw = canvas.width / (window.devicePixelRatio || 1);
-    const ch = canvas.height / (window.devicePixelRatio || 1);
-    const scale = getDisplayScale();
-    const iw = pageImage.width * scale;
-    const ih = pageImage.height * scale;
-    const ox = panX + (cw - iw) / 2;
-    const oy = panY + (ch - ih) / 2;
+    // Composite dirty rects into pageImage on an offscreen canvas,
+    // so that subsequent render() calls (e.g. from panning) use the
+    // updated image instead of reverting to the original.
+    const offscreen = document.createElement('canvas');
+    offscreen.width = pageImage.width;
+    offscreen.height = pageImage.height;
+    const octx = offscreen.getContext('2d')!;
+    octx.drawImage(pageImage, 0, 0);
 
     for (const rect of rects) {
         const data = base64ToUint8Array(rect.qoiBase64);
         const decoded = decodeQOI(data);
         const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
         const bitmap = await createImageBitmap(imgData);
-        const dx = ox + rect.x * scale;
-        const dy = oy + rect.y * scale;
-        const dw = rect.w * scale;
-        const dh = rect.h * scale;
-        ctx.drawImage(bitmap, dx, dy, dw, dh);
+        octx.drawImage(bitmap, rect.x, rect.y, rect.w, rect.h);
         bitmap.close();
     }
+
+    const updated = await createImageBitmap(offscreen);
+    pageImage = updated;
+    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
+    pageCache.set(cacheK, updated);
+    render();
 }
 
 function screenToDocument(cx: number, cy: number): { docX: number; docY: number } {
