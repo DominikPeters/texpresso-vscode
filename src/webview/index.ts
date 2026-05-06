@@ -107,6 +107,7 @@ let fitMode: 'width' | 'height' | 'custom' = 'width';
 let zoomLevel = 1;         // display zoom (1.0 = fit-width)
 let resMultiplier = 2.5;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
+let hasAutoDetected = false;
 let panX = 0, panY = 0;
 let darkMode = false;
 let scrollSpeed = 0.3;
@@ -141,6 +142,28 @@ function getDisplayScale(): number {
     if (fitMode === 'width') return cw / pageImage.width;
     if (fitMode === 'height') return ch / pageImage.height;
     return (cw / pageImage.width) * zoomLevel;
+}
+
+function autoDetectResolution() {
+    if (hasAutoDetected) return;
+    if (pageWidth <= 0 || pageHeight <= 0) return;
+    hasAutoDetected = true;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+    const cw = rect.width;
+    if (cw <= 0) return;
+
+    // At fit-width, need  pageWidth * mult >= cw * dpr  for sharp rendering.
+    // Round up to nearest 0.25 for sane increments, clamp to [1, maxResCap].
+    const raw = (cw * dpr) / pageWidth;
+    const rounded = Math.max(1, Math.min(maxResCap, Math.ceil(raw * 4) / 4));
+    if (Math.abs(rounded - resMultiplier) < 0.05) return;
+
+    resMultiplier = rounded;
+    const resInp = document.getElementById('res-input') as HTMLInputElement;
+    if (resInp) resInp.value = rounded.toFixed(2);
+    requestResolution();
 }
 
 function requestResolution() {
@@ -474,11 +497,12 @@ function resetZoomState() {
     fitMode = 'width';
     zoomLevel = 1;
     panX = panY = 0;
-    resMultiplier = 2.5;
+    // Clear auto-detect flag so resolution is re-detected on next page load
+    hasAutoDetected = false;
+    const targetW = Math.round(pageWidth * resMultiplier);
+    const targetH = Math.round(pageHeight * resMultiplier);
     const ri = document.getElementById('res-input') as HTMLInputElement;
-    if (ri) ri.value = '2.50';
-    const targetW = Math.round(pageWidth * 2.5);
-    const targetH = Math.round(pageHeight * 2.5);
+    if (ri) ri.value = resMultiplier.toFixed(2);
     vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
     render();
 }
@@ -649,6 +673,7 @@ window.addEventListener('message', (e) => {
                     resInp.value = m.toFixed(2);
                 }
             }
+            autoDetectResolution();
             break;
 
         case 'page-diff':
@@ -677,6 +702,7 @@ window.addEventListener('message', (e) => {
                     resInp2.value = m.toFixed(2);
                 }
             }
+            autoDetectResolution();
             break;
 
         case 'synctex-scroll':
