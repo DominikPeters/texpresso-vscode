@@ -194,23 +194,16 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 async function loadQOIBase64(qoiBase64: string): Promise<void> {
-    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
-    const cached = pageCache.get(cacheK);
-    if (cached) {
-        pageImage = cached;
-        render();
-        // Hide loading on cache hit too
-        const ld = document.getElementById('loading');
-        if (ld) ld.style.display = 'none';
-        return;
-    }
-
+    // Always reload on full page update – the C side sends a full page
+    // precisely when the content has changed or resolution changed, so a
+    // cached entry at this resolution would be stale.
     const data = base64ToUint8Array(qoiBase64);
     const decoded = decodeQOI(data);
     const imgData = new ImageData(decoded.pixels, decoded.width, decoded.height);
     const bitmap = await createImageBitmap(imgData);
 
     pageImage = bitmap;
+    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
     if (pageCache.size >= CACHE_SIZE) {
         const firstKey = pageCache.keys().next().value;
         pageCache.delete(firstKey);
@@ -222,16 +215,7 @@ async function loadQOIBase64(qoiBase64: string): Promise<void> {
 }
 
 async function loadQOI(qoiUri: string): Promise<void> {
-    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
-    const cached = pageCache.get(cacheK);
-    if (cached) {
-        pageImage = cached;
-        render();
-        const ld = document.getElementById('loading');
-        if (ld) ld.style.display = 'none';
-        return;
-    }
-
+    // Always reload on full page update – cached entry would be stale
     const resp = await fetch(qoiUri);
     const buf = await resp.arrayBuffer();
     const data = new Uint8Array(buf);
@@ -240,6 +224,7 @@ async function loadQOI(qoiUri: string): Promise<void> {
     const bitmap = await createImageBitmap(imgData);
 
     pageImage = bitmap;
+    const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
     if (pageCache.size >= CACHE_SIZE) {
         const firstKey = pageCache.keys().next().value;
         pageCache.delete(firstKey);
@@ -274,7 +259,14 @@ async function applyDirtyRects(rects: any[]): Promise<void> {
 
     const updated = await createImageBitmap(offscreen);
     pageImage = updated;
+    // Update cache for current resolution and evict stale entries for
+    // other resolutions of the same page (content has changed).
     const cacheK = cacheKey(currentPage, renderWidth, renderHeight);
+    for (const key of pageCache.keys()) {
+        if (key.startsWith(`${currentPage}-`) && key !== cacheK) {
+            pageCache.delete(key);
+        }
+    }
     pageCache.set(cacheK, updated);
     render();
 }
