@@ -105,7 +105,7 @@ let renderHeight = 792;
 let pageImage: ImageBitmap | null = null;
 let fitMode: 'width' | 'height' | 'custom' = 'width';
 let zoomLevel = 1;         // display zoom (1.0 = fit-width)
-let resMultiplier = 2.5;   // C-side render resolution multiplier
+let resMultiplier = 3.0;   // C-side render resolution multiplier
 let maxResCap = 12;        // maximum resolution multiplier (configurable)
 let hasAutoDetected = false;
 let panX = 0, panY = 0;
@@ -125,6 +125,7 @@ const CACHE_SIZE = 10;
 const pageCache: Map<string, ImageBitmap> = new Map();
 function cacheKey(page: number, rw: number, rh: number): string { return `${page}-${rw}-${rh}`; }
 
+let lastResizeWidth = 0;
 function resizeCanvas() {
     const rect = container.getBoundingClientRect();
     canvas.width = rect.width * (window.devicePixelRatio || 1);
@@ -132,6 +133,14 @@ function resizeCanvas() {
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
     ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+
+    // When the window size changes significantly (>15%), re-detect optimal
+    // resolution so that the rendered image stays sharp at the new size.
+    if (lastResizeWidth > 0 && Math.abs(rect.width - lastResizeWidth) > lastResizeWidth * 0.15) {
+        hasAutoDetected = false;
+        autoDetectResolution();
+    }
+    if (lastResizeWidth === 0) lastResizeWidth = rect.width;
     render();
 }
 
@@ -155,8 +164,11 @@ function autoDetectResolution() {
     if (cw <= 0) return;
 
     // At fit-width, need  pageWidth * mult >= cw * dpr  for sharp rendering.
+    // Apply a quality multiplier (1.2x) so the auto-detected baseline is ~3x
+    // instead of ~2.5x for typical HiDPI screens.
     // Round up to nearest 0.25 for sane increments, clamp to [1, maxResCap].
-    const raw = (cw * dpr) / pageWidth;
+    const qualityMult = 1.2;
+    const raw = (cw * dpr) / pageWidth * qualityMult;
     const rounded = Math.max(1, Math.min(maxResCap, Math.ceil(raw * 4) / 4));
     if (Math.abs(rounded - resMultiplier) < 0.05) return;
 

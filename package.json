@@ -174,7 +174,7 @@
         },
         "texpresso.defaultResolution": {
           "type": "number",
-          "default": 2.5,
+          "default": 3,
           "minimum": 1,
           "maximum": 50,
           "description": "Default resolution multiplier for built-in preview."
