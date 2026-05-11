@@ -253,6 +253,17 @@ export class PreviewPanel {
             padding: 8px 12px;
             min-height: 32px;
         }
+        #search-input {
+            width: 120px;
+            min-height: 28px;
+            padding: 2px 6px;
+            background: var(--vscode-input-background, #3c3c3c);
+            color: var(--vscode-input-foreground, #ccc);
+            border: 1px solid var(--vscode-panel-border, #3c3c3c);
+            border-radius: 4px;
+            font-size: 13px;
+            margin-left: 8px;
+        }
         #loading {
             position: absolute;
             top: 50%;
@@ -284,6 +295,10 @@ export class PreviewPanel {
                 <button id="btn-language">English</button>
             </div>
         </div>
+        <input id="search-input" type="text" placeholder="搜索…" title="在预览中搜索文字">
+        <span id="search-info" style="display:none; font-size:12px; padding:0 4px;"></span>
+        <button id="btn-search-prev" title="上一个结果" style="display:none;">&#x25B2;</button>
+        <button id="btn-search-next" title="下一个结果" style="display:none;">&#x25BC;</button>
     </div>
     <div id="canvas-container">
         <canvas id="preview-canvas"></canvas>

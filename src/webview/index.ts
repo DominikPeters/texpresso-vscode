@@ -119,6 +119,12 @@ let zoomDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let smoothScrollAnim: number | null = null;
 let scrollVelocity = 0;
 let scrollVelocityX = 0;
+let highlightBbox: { x0: number, y0: number, x1: number, y1: number } | null = null;
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Search state
+let searchHits: Array<{ page: number; x0: number; y0: number; x1: number; y1: number }> = [];
+let searchCurrentHit: number = -1;
 
 // LRU cache
 const CACHE_SIZE = 10;
@@ -217,6 +223,22 @@ function render() {
     const oy = panY + (ch - ih) / 2;
 
     ctx.drawImage(pageImage, ox, oy, iw, ih);
+
+    // Draw highlight bbox (word-level synctex target)
+    if (highlightBbox) {
+        const hx = ox + (highlightBbox.x0 / pageWidth) * iw;
+        const hy = oy + (highlightBbox.y0 / pageHeight) * ih;
+        const hw = ((highlightBbox.x1 - highlightBbox.x0) / pageWidth) * iw;
+        const hh = ((highlightBbox.y1 - highlightBbox.y0) / pageHeight) * ih;
+
+        // Semi-transparent yellow fill
+        ctx.fillStyle = 'rgba(255, 200, 0, 0.3)';
+        ctx.fillRect(hx, hy, hw, hh);
+        // Orange border
+        ctx.strokeStyle = 'rgba(255, 140, 0, 0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(hx, hy, hw, hh);
+    }
 }
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -375,6 +397,7 @@ function clampPan() {
 
 // ---- Event Handlers ----
 container.addEventListener('wheel', (e) => {
+    if (highlightBbox) { highlightBbox = null; }
     if (e.ctrlKey) {
         // Ctrl+wheel: multiplicative zoom centered on cursor
         e.preventDefault();
@@ -470,6 +493,16 @@ container.addEventListener('click', (e) => {
     if (!synctexEnabled) return;
     const rect = canvas.getBoundingClientRect();
     // mx, my in CSS pixel space (not adjusted for dpr)
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const { docX, docY } = screenToDocument(mx, my);
+    vscode.postMessage({ type: 'synctex-backward', page: currentPage, x: docX, y: docY });
+});
+
+container.addEventListener('dblclick', (e) => {
+    if (e.ctrlKey) return;
+    if (!synctexEnabled) return;
+    const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const { docX, docY } = screenToDocument(mx, my);
@@ -626,6 +659,57 @@ resInput.addEventListener('keydown', (e) => {
     }
 });
 
+// ---- Search Handlers ----
+const searchInput = document.getElementById('search-input') as HTMLInputElement;
+const searchInfo = document.getElementById('search-info') as HTMLSpanElement;
+const btnSearchPrev = document.getElementById('btn-search-prev') as HTMLButtonElement;
+const btnSearchNext = document.getElementById('btn-search-next') as HTMLButtonElement;
+
+function navigateSearch(delta: number) {
+    if (searchHits.length === 0) return;
+    searchCurrentHit = (searchCurrentHit + delta + searchHits.length) % searchHits.length;
+    applySearchHit(searchCurrentHit);
+}
+
+function applySearchHit(index: number) {
+    if (index < 0 || index >= searchHits.length) return;
+    const hit = searchHits[index];
+    if (hit.page !== currentPage) {
+        vscode.postMessage({ type: 'set-page', page: hit.page });
+    }
+    highlightBbox = { x0: hit.x0, y0: hit.y0, x1: hit.x1, y1: hit.y1 };
+    if (highlightTimer) clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 8000);
+    searchInfo.textContent = `${index + 1}/${searchHits.length}`;
+}
+
+searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) { searchHits = []; searchCurrentHit = -1; updateSearchUI(); return; }
+        vscode.postMessage({ type: 'search', query });
+    }
+    if (e.key === 'Escape') {
+        searchHits = [];
+        searchCurrentHit = -1;
+        highlightBbox = null;
+        updateSearchUI();
+        render();
+    }
+});
+
+btnSearchPrev.addEventListener('click', () => navigateSearch(-1));
+btnSearchNext.addEventListener('click', () => navigateSearch(1));
+
+function updateSearchUI() {
+    const hasResults = searchHits.length > 0;
+    searchInfo.style.display = hasResults ? 'inline' : 'none';
+    btnSearchPrev.style.display = hasResults ? 'flex' : 'none';
+    btnSearchNext.style.display = hasResults ? 'flex' : 'none';
+    if (!hasResults) searchInfo.textContent = '';
+}
+
 // ---- Message Handler ----
 window.addEventListener('message', (e) => {
     const msg = e.data;
@@ -728,7 +812,36 @@ window.addEventListener('message', (e) => {
             panX = pageImage.width * ss / 2 - simgX * ss;
             panY = pageImage.height * ss / 2 - simgY * ss - sch / 6;
             clampPan();
+            // Highlight bbox if available
+            if (msg.bbox && msg.bbox.x0 < msg.bbox.x1 && msg.bbox.y0 < msg.bbox.y1) {
+                highlightBbox = msg.bbox;
+                if (highlightTimer) clearTimeout(highlightTimer);
+                highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 3000);
+            }
             render();
+            break;
+
+        case 'word-bbox':
+            if (!pageImage) break;
+            if (msg.page === currentPage && msg.x0 < msg.x1 && msg.y0 < msg.y1) {
+                highlightBbox = { x0: msg.x0, y0: msg.y0, x1: msg.x1, y1: msg.y1 };
+                if (highlightTimer) clearTimeout(highlightTimer);
+                highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 5000);
+            }
+            render();
+            break;
+
+        case 'search-results':
+            searchHits = (msg.hits || []).map((h: number[]) => ({
+                page: h[0], x0: h[1], y0: h[2], x1: h[3], y1: h[4],
+            }));
+            searchCurrentHit = searchHits.length > 0 ? 0 : -1;
+            updateSearchUI();
+            if (searchHits.length > 0) {
+                searchInfo.textContent = `1/${searchHits.length}`;
+                const hit = searchHits[0];
+                vscode.postMessage({ type: 'set-page', page: hit.page });
+            }
             break;
 
         case 'zoom-reset':

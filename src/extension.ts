@@ -154,6 +154,9 @@ function handleWebviewMessage(msg: any) {
 		case 'toggle-invert':
 			texpresso.stdin.write(JSON.stringify(["invert"]) + '\n');
 			break;
+		case 'search':
+			texpresso.stdin.write(JSON.stringify(["search", msg.query]) + '\n');
+			break;
 	}
 }
 
@@ -314,6 +317,10 @@ export function activate(context: vscode.ExtensionContext) {
 					const panel = previewPanels.get(filePath);
 					if (panel) panel.postMessage({ type: 'fit-mode-changed', mode: message[1] });
 				}
+				else if (message[0] === 'search-results') {
+					const panel = previewPanels.get(filePath);
+					if (panel) panel.postMessage({ type: 'search-results', query: message[1], hits: message[2] });
+				}
 				else if (message[0] === 'input-file') {
 					const [, i, rp] = message;
 					registry.addFile(i, rp, sendCommand);
@@ -324,7 +331,28 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				else if (message[0] === 'synctex-scroll') {
 						const panel = previewPanels.get(filePath);
-						if (panel) panel.postMessage({ type: 'synctex-scroll', x: message[1], y: message[2] });
+						if (panel) {
+							const payload: any = { type: 'synctex-scroll', x: message[1], y: message[2] };
+							if (message.length > 3) payload.page = message[3];
+							if (message.length > 7) {
+								payload.bbox = {
+									x0: message[4], y0: message[5],
+									x1: message[6], y1: message[7],
+								};
+							}
+							panel.postMessage(payload);
+						}
+					}
+					else if (message[0] === 'word-bbox') {
+						const panel = previewPanels.get(filePath);
+						if (panel) {
+							panel.postMessage({
+								type: 'word-bbox',
+								page: message[1],
+								x0: message[2], y0: message[3],
+								x1: message[4], y1: message[5],
+							});
+						}
 					}
 					else if (message[0] === 'synctex') {
 					const [, fp, line, column] = message;
