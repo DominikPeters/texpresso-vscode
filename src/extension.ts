@@ -561,6 +561,7 @@ export function activate(context: vscode.ExtensionContext) {
 				sendCommand(["synctex-forward", filePath, lineNumber]);
 			}
 		} else if (trackedFile) {
+			sendCommand(["open", trackedFile.absolutePath, editor.document.getText()]);
 			sendCommand(["synctex-forward", trackedFile.absolutePath, lineNumber]);
 		}
 	}
