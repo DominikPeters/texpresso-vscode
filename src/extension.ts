@@ -553,7 +553,8 @@ export function activate(context: vscode.ExtensionContext) {
 	function doSyncTeXForward(editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor) {
 		if (!editor) return;
 		const trackedFile = registry?.findByPath(editor.document.uri.fsPath);
-		const lineNumber = editor.selection.active.line;
+		// VSCode uses 0-based line numbers; synctex expects 1-based
+		const lineNumber = editor.selection.active.line + 1;
 		if (editor.document === activeEditor?.document) {
 			if (!previouslySentLineNumber || previouslySentLineNumber !== lineNumber) {
 				previouslySentLineNumber = lineNumber;
