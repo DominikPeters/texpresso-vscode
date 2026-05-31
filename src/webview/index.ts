@@ -409,14 +409,16 @@ container.addEventListener('wheel', (e) => {
         // Exact inverse zoom factors to prevent drift
         const zoomFactor = e.deltaY > 0 ? (1.0 / 1.025) : 1.025;
         const oldZoom = zoomLevel;
-        zoomLevel = Math.max(0.1, Math.min(20, zoomLevel * zoomFactor));
-        const r = zoomLevel / oldZoom;
 
         const cw = canvas.width / (window.devicePixelRatio || 1);
         const ch = canvas.height / (window.devicePixelRatio || 1);
 
-        // Compute image offset before zoom, then cursor-center it
+        // Capture old scale BEFORE updating zoomLevel (getDisplayScale reads it)
         const oldScale = getDisplayScale();
+
+        zoomLevel = Math.max(0.1, Math.min(20, zoomLevel * zoomFactor));
+        const r = zoomLevel / oldZoom;
+
         const newScale = (cw / pageImage!.width) * zoomLevel;
         const scaleRatio = newScale / oldScale;
 
