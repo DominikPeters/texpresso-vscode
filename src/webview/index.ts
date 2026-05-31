@@ -170,7 +170,10 @@ function autoDetectResolution() {
 
     // Smooth resolution: cw * dpr / pageWidth ensures sharp rendering.
     // Apply a quality multiplier (1.2x) and clamp to [1, maxResCap].
-    const qualityMult = 1.2;
+    let qualityMult = 1.2;
+    if (trimFactor > 0) {
+        qualityMult /= (1.0 - 2.0 * trimFactor);
+    }
     const raw = (cw * dpr) / pageWidth * qualityMult;
     const smooth = Math.max(1, Math.min(maxResCap, raw));
     if (Math.abs(smooth - resMultiplier) < 0.01) return;

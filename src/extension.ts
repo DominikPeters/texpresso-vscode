@@ -262,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
 			// Scan .tex file for % texpresso-trim: X comment
 			let trimFactor = defaultTrimFactor;
 			const fileText = activeEditor.document.getText();
-			const trimMatch = fileText.match(/%\s*texpresso-trim:\s*([\d.]+)/);
+			const trimMatch = fileText.match(/%\s*!?\s*texpresso-trim\s*[:=]\s*([\d.]+)/);
 			if (trimMatch) {
 				const commentVal = parseFloat(trimMatch[1]);
 				if (!isNaN(commentVal) && commentVal >= 0 && commentVal < 0.5) {
