@@ -212,16 +212,6 @@ function render() {
 
     if (!pageImage) return;
 
-    // Apply trim: clip viewport to inset region
-    if (trimFactor > 0 && trimFactor < 0.5) {
-        const insetX = cw * trimFactor;
-        const insetY = ch * trimFactor;
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(insetX, insetY, cw - 2 * insetX, ch - 2 * insetY);
-        ctx.clip();
-    }
-
     const scale = getDisplayScale();
     const iw = pageImage.width * scale;
     const ih = pageImage.height * scale;
@@ -246,9 +236,6 @@ function render() {
         ctx.strokeRect(hx, hy, hw, hh);
     }
 
-    if (trimFactor > 0 && trimFactor < 0.5) {
-        ctx.restore();
-    }
 }
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -680,7 +667,7 @@ trimInput.addEventListener('input', () => {
         const v = parseFloat(trimInput.value);
         if (!isNaN(v) && v >= 0 && v < 0.5) {
             trimFactor = v;
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
         }
     }, 300);
 });
@@ -690,7 +677,7 @@ trimInput.addEventListener('keydown', (e) => {
         const v = parseFloat(trimInput.value);
         if (!isNaN(v) && v >= 0 && v < 0.5) {
             trimFactor = v;
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
         }
     }
 });
@@ -719,7 +706,7 @@ window.addEventListener('message', (e) => {
                 trimFactor = msg.trimFactor;
                 const ti = document.getElementById('trim-input') as HTMLInputElement;
                 if (ti) ti.value = trimFactor.toFixed(2);
-                render();
+                vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             }
             break;
 
@@ -727,7 +714,7 @@ window.addEventListener('message', (e) => {
             darkMode = msg.dark === 'true' || msg.dark === true;
             const cv = document.getElementById('preview-canvas') as HTMLElement;
             if (cv) cv.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             break;
 
         case 'page-update':
@@ -809,7 +796,7 @@ window.addEventListener('message', (e) => {
                 if (highlightTimer) clearTimeout(highlightTimer);
                 highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 3000);
             }
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             break;
 
         case 'word-bbox':
@@ -819,7 +806,7 @@ window.addEventListener('message', (e) => {
                 if (highlightTimer) clearTimeout(highlightTimer);
                 highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 5000);
             }
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             break;
 
         case 'zoom-reset':
@@ -839,7 +826,7 @@ window.addEventListener('message', (e) => {
 
         case 'fit-mode-changed':
             fitMode = msg.mode;
-            render();
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             break;
     }
 });
