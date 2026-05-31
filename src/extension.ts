@@ -432,6 +432,15 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		}
 		sendCommand(["open", filePath, activeEditor.document.getText()]);
+			// Send trim factor from comment (both builtin and external modes)
+			{
+				const cfg = vscode.workspace.getConfiguration('texpresso');
+				let tf = cfg.get('defaultTrimFactor') as number || 0;
+				const txt = activeEditor.document.getText();
+				const m = txt.match(/%\s*!?\s*texpresso-trim\s*[:=]\s*([\d.]+)/);
+				if (m) { const v = parseFloat(m[1]); if (!isNaN(v) && v >= 0 && v < 0.5) tf = v; }
+				if (tf > 0) sendCommand(["set-trim-factor", tf]);
+			}
 		if (vscode.workspace.getConfiguration('texpresso').get('useEditorTheme') as boolean) {
 			adoptTheme();
 		}
