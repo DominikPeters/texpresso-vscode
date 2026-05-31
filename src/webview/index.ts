@@ -10,7 +10,8 @@ const i18nData: Record<string, Record<string, string>> = {
     zh: {
         home: '首页', prevPage: '前一页', nextPage: '后一页',
         endPage: '末页', pageInput: '页码', totalPages: '总页数',
-        resetZoom: '重置缩放', options: '选项',
+        resetZoom: '重置缩放', resolution: '分辨率倍率', trimFactor: '裁剪比例',
+        options: '选项',
         fitWidth: '适应宽度', fitHeight: '适应高度',
         disableSynctex: '关闭 SyncTeX', enableSynctex: '开启 SyncTeX',
         darkMode: '深色模式', lightMode: '浅色模式',
@@ -19,7 +20,8 @@ const i18nData: Record<string, Record<string, string>> = {
     en: {
         home: 'Home', prevPage: 'Prev', nextPage: 'Next',
         endPage: 'End', pageInput: 'Page', totalPages: 'total',
-        resetZoom: 'Reset Zoom', options: 'Options',
+        resetZoom: 'Reset Zoom', resolution: 'Resolution', trimFactor: 'Trim',
+        options: 'Options',
         fitWidth: 'Fit Width', fitHeight: 'Fit Height',
         disableSynctex: 'Disable SyncTeX', enableSynctex: 'Enable SyncTeX',
         darkMode: 'Dark Mode', lightMode: 'Light Mode',
@@ -37,6 +39,10 @@ function updateLocale() {
     (document.getElementById('page-input') as HTMLInputElement).title = t('pageInput');
     document.getElementById('total-pages')!.title = t('totalPages');
     document.getElementById('btn-zoom-reset')!.title = t('resetZoom');
+    const ri = document.getElementById('res-input') as HTMLInputElement;
+    if (ri) ri.title = t('resolution');
+    const ti = document.getElementById('trim-input') as HTMLInputElement;
+    if (ti) ti.title = t('trimFactor');
     document.getElementById('btn-options')!.textContent = t('options') + ' ▾';
     document.getElementById('btn-fit-width')!.textContent = t('fitWidth');
     document.getElementById('btn-fit-height')!.textContent = t('fitHeight');
