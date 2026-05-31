@@ -194,7 +194,7 @@ export class PreviewPanel {
         #navbar button:active {
             background: var(--vscode-button-background, #0078d4);
         }
-        #page-input, #res-input {
+        #page-input, #res-input, #trim-input {
             min-height: 28px;
             text-align: center;
             background: var(--vscode-input-background, #3c3c3c);
@@ -208,6 +208,9 @@ export class PreviewPanel {
         }
         #res-input {
             width: 52px;
+        }
+        #trim-input {
+            width: 48px;
         }
         #total-pages {
             font-size: 14px;
@@ -274,6 +277,7 @@ export class PreviewPanel {
         <button id="btn-end" title="末页">&#x23ED;</button>
         <button id="btn-zoom-reset" title="重置缩放">&#x21BA;</button>
         <input id="res-input" type="number" min="1" max="10" step="0.01" value="3.0" title="分辨率倍率">
+        <input id="trim-input" type="number" min="0" max="0.49" step="0.01" value="0" title="裁剪比例">
         <div id="options-dropdown">
             <button id="btn-options">选项 &#x25BE;</button>
             <div id="options-menu">

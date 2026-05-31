@@ -112,6 +112,7 @@ let panX = 0, panY = 0;
 let darkMode = false;
 let scrollSpeed = 0.3;
 let synctexEnabled = true;
+let trimFactor = 0;
 let isPanning = false;
 let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
 let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -648,6 +649,30 @@ resInput.addEventListener('keydown', (e) => {
     }
 });
 
+// Trim factor input
+const trimInput = document.getElementById('trim-input') as HTMLInputElement;
+let trimInputTimeout: ReturnType<typeof setTimeout> | null = null;
+trimInput.addEventListener('input', () => {
+    if (trimInputTimeout) clearTimeout(trimInputTimeout);
+    trimInputTimeout = setTimeout(() => {
+        const v = parseFloat(trimInput.value);
+        if (!isNaN(v) && v >= 0 && v < 0.5) {
+            trimFactor = v;
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
+        }
+    }, 300);
+});
+trimInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (trimInputTimeout) { clearTimeout(trimInputTimeout); trimInputTimeout = null; }
+        const v = parseFloat(trimInput.value);
+        if (!isNaN(v) && v >= 0 && v < 0.5) {
+            trimFactor = v;
+            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
+        }
+    }
+});
+
 // ---- Message Handler ----
 window.addEventListener('message', (e) => {
     const msg = e.data;
@@ -667,6 +692,12 @@ window.addEventListener('message', (e) => {
             }
             if (msg.scrollSpeed !== undefined) {
                 scrollSpeed = msg.scrollSpeed;
+            }
+            if (msg.trimFactor !== undefined) {
+                trimFactor = msg.trimFactor;
+                const ti = document.getElementById('trim-input') as HTMLInputElement;
+                if (ti) ti.value = trimFactor.toFixed(2);
+                vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
             }
             break;
 

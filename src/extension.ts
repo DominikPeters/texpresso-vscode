@@ -154,6 +154,9 @@ function handleWebviewMessage(msg: any) {
 		case 'toggle-invert':
 			texpresso.stdin.write(JSON.stringify(["invert"]) + '\n');
 			break;
+		case 'set-trim-factor':
+			texpresso.stdin.write(JSON.stringify(["set-trim-factor", msg.factor]) + '\n');
+			break;
 	}
 }
 
@@ -254,7 +257,20 @@ export function activate(context: vscode.ExtensionContext) {
 			const maxResCap = texConfig.get('maxResCap') as number || 10;
 			const defaultResolution = texConfig.get('defaultResolution') as number || 2.5;
 			const scrollSpeed = texConfig.get('scrollSpeed') as number ?? 0.3;
-			panel.postMessage({ type: 'config', maxResCap, defaultResolution, scrollSpeed });
+			const defaultTrimFactor = texConfig.get('defaultTrimFactor') as number || 0;
+
+			// Scan .tex file for % texpresso-trim: X comment
+			let trimFactor = defaultTrimFactor;
+			const fileText = activeEditor.document.getText();
+			const trimMatch = fileText.match(/%\s*texpresso-trim:\s*([\d.]+)/);
+			if (trimMatch) {
+				const commentVal = parseFloat(trimMatch[1]);
+				if (!isNaN(commentVal) && commentVal >= 0 && commentVal < 0.5) {
+					trimFactor = commentVal;
+				}
+			}
+
+			panel.postMessage({ type: 'config', maxResCap, defaultResolution, scrollSpeed, trimFactor });
 			panel.onMessage(handleWebviewMessage);
 			panel.onDispose(() => {
 				previewPanels.delete(filePath);
