@@ -122,10 +122,6 @@ let scrollVelocityX = 0;
 let highlightBbox: { x0: number, y0: number, x1: number, y1: number } | null = null;
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Search state
-let searchHits: Array<{ page: number; x0: number; y0: number; x1: number; y1: number }> = [];
-let searchCurrentHit: number = -1;
-
 // LRU cache
 const CACHE_SIZE = 10;
 const pageCache: Map<string, ImageBitmap> = new Map();
@@ -140,10 +136,8 @@ function resizeCanvas() {
     canvas.style.height = rect.height + 'px';
     ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
 
-    // When the window size changes significantly (>15%), re-detect optimal
-    // resolution so that the rendered image stays sharp at the new size.
-    if (lastResizeWidth > 0 && Math.abs(rect.width - lastResizeWidth) > lastResizeWidth * 0.15) {
-        hasAutoDetected = false;
+    // Re-detect optimal resolution on every size change for smooth scaling
+    if (lastResizeWidth > 0 && rect.width !== lastResizeWidth) {
         autoDetectResolution();
     }
     if (lastResizeWidth === 0) lastResizeWidth = rect.width;
@@ -160,27 +154,23 @@ function getDisplayScale(): number {
 }
 
 function autoDetectResolution() {
-    if (hasAutoDetected) return;
     if (pageWidth <= 0 || pageHeight <= 0) return;
-    hasAutoDetected = true;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = container.getBoundingClientRect();
     const cw = rect.width;
     if (cw <= 0) return;
 
-    // At fit-width, need  pageWidth * mult >= cw * dpr  for sharp rendering.
-    // Apply a quality multiplier (1.2x) so the auto-detected baseline is ~3x
-    // instead of ~2.5x for typical HiDPI screens.
-    // Round up to nearest 0.25 for sane increments, clamp to [1, maxResCap].
+    // Smooth resolution: cw * dpr / pageWidth ensures sharp rendering.
+    // Apply a quality multiplier (1.2x) and clamp to [1, maxResCap].
     const qualityMult = 1.2;
     const raw = (cw * dpr) / pageWidth * qualityMult;
-    const rounded = Math.max(1, Math.min(maxResCap, Math.ceil(raw * 4) / 4));
-    if (Math.abs(rounded - resMultiplier) < 0.05) return;
+    const smooth = Math.max(1, Math.min(maxResCap, raw));
+    if (Math.abs(smooth - resMultiplier) < 0.01) return;
 
-    resMultiplier = rounded;
+    resMultiplier = smooth;
     const resInp = document.getElementById('res-input') as HTMLInputElement;
-    if (resInp) resInp.value = rounded.toFixed(2);
+    if (resInp) resInp.value = smooth.toFixed(2);
     requestResolution();
 }
 
@@ -194,8 +184,7 @@ function requestResolution() {
     const cappedZoom = Math.min(dampedZoom, maxResCap);
     const targetW = Math.round(pageWidth * resMultiplier * cappedZoom);
     const targetH = Math.round(pageHeight * resMultiplier * cappedZoom);
-    if (Math.abs(targetW - renderWidth) > renderWidth * 0.15 ||
-        Math.abs(targetH - renderHeight) > renderHeight * 0.15) {
+    if (targetW !== renderWidth || targetH !== renderHeight) {
         if (zoomDebounceTimeout) clearTimeout(zoomDebounceTimeout);
         zoomDebounceTimeout = setTimeout(() => {
             vscode.postMessage({ type: 'set-output-size', width: targetW, height: targetH });
@@ -659,57 +648,6 @@ resInput.addEventListener('keydown', (e) => {
     }
 });
 
-// ---- Search Handlers ----
-const searchInput = document.getElementById('search-input') as HTMLInputElement;
-const searchInfo = document.getElementById('search-info') as HTMLSpanElement;
-const btnSearchPrev = document.getElementById('btn-search-prev') as HTMLButtonElement;
-const btnSearchNext = document.getElementById('btn-search-next') as HTMLButtonElement;
-
-function navigateSearch(delta: number) {
-    if (searchHits.length === 0) return;
-    searchCurrentHit = (searchCurrentHit + delta + searchHits.length) % searchHits.length;
-    applySearchHit(searchCurrentHit);
-}
-
-function applySearchHit(index: number) {
-    if (index < 0 || index >= searchHits.length) return;
-    const hit = searchHits[index];
-    if (hit.page !== currentPage) {
-        vscode.postMessage({ type: 'set-page', page: hit.page });
-    }
-    highlightBbox = { x0: hit.x0, y0: hit.y0, x1: hit.x1, y1: hit.y1 };
-    if (highlightTimer) clearTimeout(highlightTimer);
-    highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 8000);
-    searchInfo.textContent = `${index + 1}/${searchHits.length}`;
-}
-
-searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (!query) { searchHits = []; searchCurrentHit = -1; updateSearchUI(); return; }
-        vscode.postMessage({ type: 'search', query });
-    }
-    if (e.key === 'Escape') {
-        searchHits = [];
-        searchCurrentHit = -1;
-        highlightBbox = null;
-        updateSearchUI();
-        render();
-    }
-});
-
-btnSearchPrev.addEventListener('click', () => navigateSearch(-1));
-btnSearchNext.addEventListener('click', () => navigateSearch(1));
-
-function updateSearchUI() {
-    const hasResults = searchHits.length > 0;
-    searchInfo.style.display = hasResults ? 'inline' : 'none';
-    btnSearchPrev.style.display = hasResults ? 'flex' : 'none';
-    btnSearchNext.style.display = hasResults ? 'flex' : 'none';
-    if (!hasResults) searchInfo.textContent = '';
-}
-
 // ---- Message Handler ----
 window.addEventListener('message', (e) => {
     const msg = e.data;
@@ -829,19 +767,6 @@ window.addEventListener('message', (e) => {
                 highlightTimer = setTimeout(() => { highlightBbox = null; render(); }, 5000);
             }
             render();
-            break;
-
-        case 'search-results':
-            searchHits = (msg.hits || []).map((h: number[]) => ({
-                page: h[0], x0: h[1], y0: h[2], x1: h[3], y1: h[4],
-            }));
-            searchCurrentHit = searchHits.length > 0 ? 0 : -1;
-            updateSearchUI();
-            if (searchHits.length > 0) {
-                searchInfo.textContent = `1/${searchHits.length}`;
-                const hit = searchHits[0];
-                vscode.postMessage({ type: 'set-page', page: hit.page });
-            }
             break;
 
         case 'zoom-reset':

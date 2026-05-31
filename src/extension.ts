@@ -154,9 +154,6 @@ function handleWebviewMessage(msg: any) {
 		case 'toggle-invert':
 			texpresso.stdin.write(JSON.stringify(["invert"]) + '\n');
 			break;
-		case 'search':
-			texpresso.stdin.write(JSON.stringify(["search", msg.query]) + '\n');
-			break;
 	}
 }
 
@@ -316,10 +313,6 @@ export function activate(context: vscode.ExtensionContext) {
 				else if (message[0] === 'fit-mode-changed') {
 					const panel = previewPanels.get(filePath);
 					if (panel) panel.postMessage({ type: 'fit-mode-changed', mode: message[1] });
-				}
-				else if (message[0] === 'search-results') {
-					const panel = previewPanels.get(filePath);
-					if (panel) panel.postMessage({ type: 'search-results', query: message[1], hits: message[2] });
 				}
 				else if (message[0] === 'input-file') {
 					const [, i, rp] = message;
