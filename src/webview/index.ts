@@ -212,6 +212,16 @@ function render() {
 
     if (!pageImage) return;
 
+    // Apply trim: clip viewport to inset region
+    if (trimFactor > 0 && trimFactor < 0.5) {
+        const insetX = cw * trimFactor;
+        const insetY = ch * trimFactor;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(insetX, insetY, cw - 2 * insetX, ch - 2 * insetY);
+        ctx.clip();
+    }
+
     const scale = getDisplayScale();
     const iw = pageImage.width * scale;
     const ih = pageImage.height * scale;
@@ -234,6 +244,10 @@ function render() {
         ctx.strokeStyle = 'rgba(255, 140, 0, 0.8)';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(hx, hy, hw, hh);
+    }
+
+    if (trimFactor > 0 && trimFactor < 0.5) {
+        ctx.restore();
     }
 }
 
@@ -666,7 +680,7 @@ trimInput.addEventListener('input', () => {
         const v = parseFloat(trimInput.value);
         if (!isNaN(v) && v >= 0 && v < 0.5) {
             trimFactor = v;
-            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
+            render();
         }
     }, 300);
 });
@@ -676,7 +690,7 @@ trimInput.addEventListener('keydown', (e) => {
         const v = parseFloat(trimInput.value);
         if (!isNaN(v) && v >= 0 && v < 0.5) {
             trimFactor = v;
-            vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
+            render();
         }
     }
 });
@@ -705,7 +719,7 @@ window.addEventListener('message', (e) => {
                 trimFactor = msg.trimFactor;
                 const ti = document.getElementById('trim-input') as HTMLInputElement;
                 if (ti) ti.value = trimFactor.toFixed(2);
-                vscode.postMessage({ type: 'set-trim-factor', factor: trimFactor });
+                render();
             }
             break;
 

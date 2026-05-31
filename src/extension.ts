@@ -154,9 +154,6 @@ function handleWebviewMessage(msg: any) {
 		case 'toggle-invert':
 			texpresso.stdin.write(JSON.stringify(["invert"]) + '\n');
 			break;
-		case 'set-trim-factor':
-			texpresso.stdin.write(JSON.stringify(["set-trim-factor", msg.factor]) + '\n');
-			break;
 	}
 }
 
