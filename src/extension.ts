@@ -246,92 +246,106 @@ export function activate(context: vscode.ExtensionContext) {
 				outputChannel.append(`Starting TeXpresso with command: ${command} ${args.join(' ')}\n`);
 				outputChannel.append(`Options: ${useChangeRangeMode ? 'Using change-range mode' : 'Using byte-based changes'}\n`);
 				outputChannel.append(`File: ${filePath}\n`);
-				
+
+				let buffer = '';
 				texpresso.stdout.on('data', data => {
-					const message = JSON.parse(data.toString());
-					if (message[0] === 'input-file') {
-						const [, index, relativePath] = message;
-						registry.addFile(index, relativePath, sendCommand);
-						debugChannel.appendLine(`Tracked file ${index}: ${relativePath}`);
-					}
-					else if (message[0] === 'synctex') {
-						const [, filePath, line, column] = message;
-						const pathConverter = new WSLPathConverter(useWSL);
-						let absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
-						absolutePath = pathConverter.toWindows(absolutePath);
-						
-						vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath)).then(doc => {
-							return vscode.window.showTextDocument(doc).then(editor => {
-								const pos = new vscode.Position(line - 1, Math.max(0, (column || 1) - 1));
-								editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
-								editor.selection = new vscode.Selection(pos, pos);
-							});
-						}, () => {
-							if (activeEditor && filePath === activeEditor.document.fileName) {
-								const pos = new vscode.Position(line - 1, 0);
-								activeEditor.revealRange(new vscode.Range(pos, pos));
+					buffer += data.toString();
+					const lines = buffer.split('\n');
+					// Keep the last incomplete line in the buffer
+					buffer = lines.pop() || '';
+
+					for (const line of lines) {
+						if (!line.trim()) continue; // Skip empty lines
+						try {
+							const message = JSON.parse(line);
+							if (message[0] === 'input-file') {
+								const [, index, relativePath] = message;
+								registry.addFile(index, relativePath, sendCommand);
+								debugChannel.appendLine(`Tracked file ${index}: ${relativePath}`);
 							}
-						});
-					}
-					else if (message[0] === 'append-lines') {
-						const channel = message[1];
-						const lines = message.slice(2); // All remaining elements are lines
-						const newContent = lines.join('\n') + '\n';
-						
-						if (channel === 'out') {
-							providedOutput += newContent;
-							outputChanged = true;
-						} else if (channel === 'log') {
-							debugChannel.append(newContent);
+							else if (message[0] === 'synctex') {
+								const [, filePath, line, column] = message;
+								const pathConverter = new WSLPathConverter(useWSL);
+								let absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(documentDir, filePath);
+								absolutePath = pathConverter.toWindows(absolutePath);
+								
+								vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath)).then(doc => {
+									return vscode.window.showTextDocument(doc).then(editor => {
+										const pos = new vscode.Position(line - 1, Math.max(0, (column || 1) - 1));
+										editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+										editor.selection = new vscode.Selection(pos, pos);
+									});
+								}, () => {
+									if (activeEditor && filePath === activeEditor.document.fileName) {
+										const pos = new vscode.Position(line - 1, 0);
+										activeEditor.revealRange(new vscode.Range(pos, pos));
+									}
+								});
+							}
+							else if (message[0] === 'append-lines') {
+								const channel = message[1];
+								const lines = message.slice(2); // All remaining elements are lines
+								const newContent = lines.join('\n') + '\n';
+								
+								if (channel === 'out') {
+									providedOutput += newContent;
+									outputChanged = true;
+								} else if (channel === 'log') {
+									debugChannel.append(newContent);
+								}
+							}
+							else if (message[0] === 'truncate-lines') {
+								const channel = message[1];
+								const linesToKeep = message[2];
+								
+								if (channel === 'out') {
+									const lines = providedOutput.split('\n');
+									providedOutput = lines.slice(-linesToKeep).join('\n') + (linesToKeep > 0 ? '\n' : '');
+									outputChanged = true;
+								} else if (channel === 'log') {
+									// For debug channel, we'll just clear it on truncate-lines
+									// since VS Code doesn't have easy line-based truncation
+									debugChannel.clear();
+								}
+							}
+							// Legacy support for old byte-based commands
+							else if (message[0] === 'append') {
+								const channel = message[1];
+								const content = message[3];
+								
+								if (channel === 'out') {
+									providedOutput += content;
+									outputChanged = true;
+								} else if (channel === 'log') {
+									debugChannel.append(content);
+								}
+							}
+							else if (message[0] === 'truncate') {
+								const channel = message[1];
+								const bytesToKeep = message[2];
+								
+								if (channel === 'out') {
+									providedOutput = providedOutput.slice(-bytesToKeep);
+									outputChanged = true;
+								} else if (channel === 'log') {
+									// For debug channel, we'll just clear it on truncate
+									// since VS Code doesn't have easy byte-based truncation
+									debugChannel.clear();
+								}
+							}
+							else if (message[0] === 'flush') {
+								if (outputChanged) {
+									outputChanged = false;
+									outputChannel.replace(providedOutput);
+								}
+							}
+							else {
+								debugChannel.append(`Received unhandled message: ${JSON.stringify(message)}`);
+							}
+						} catch (error) {
+							debugChannel.appendLine(`Error parsing JSON from line: ${line}`);
+							debugChannel.appendLine(`Error: ${error instanceof Error ? error.message : String(error)}`);
 						}
-					}
-					else if (message[0] === 'truncate-lines') {
-						const channel = message[1];
-						const linesToKeep = message[2];
-						
-						if (channel === 'out') {
-							const lines = providedOutput.split('\n');
-							providedOutput = lines.slice(-linesToKeep).join('\n') + (linesToKeep > 0 ? '\n' : '');
-							outputChanged = true;
-						} else if (channel === 'log') {
-							// For debug channel, we'll just clear it on truncate-lines
-							// since VS Code doesn't have easy line-based truncation
-							debugChannel.clear();
-						}
-					}
-					// Legacy support for old byte-based commands
-					else if (message[0] === 'append') {
-						const channel = message[1];
-						const content = message[3];
-						
-						if (channel === 'out') {
-							providedOutput += content;
-							outputChanged = true;
-						} else if (channel === 'log') {
-							debugChannel.append(content);
-						}
-					}
-					else if (message[0] === 'truncate') {
-						const channel = message[1];
-						const bytesToKeep = message[2];
-						
-						if (channel === 'out') {
-							providedOutput = providedOutput.slice(-bytesToKeep);
-							outputChanged = true;
-						} else if (channel === 'log') {
-							// For debug channel, we'll just clear it on truncate
-							// since VS Code doesn't have easy byte-based truncation
-							debugChannel.clear();
-						}
-					}
-					else if (message[0] === 'flush') {
-						if (outputChanged) {
-							outputChanged = false;
-							outputChannel.replace(providedOutput);
-						}
-					}
-					else {
-						debugChannel.append(`Received unhandled message: ${JSON.stringify(message)}`);
 					}
 				});
 			}
