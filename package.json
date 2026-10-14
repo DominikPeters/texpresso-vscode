@@ -126,6 +126,14 @@
           "type": "boolean",
           "default": false,
           "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available"
+        },
+        "texpresso.arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments passed to TeXpresso"
         }
       }
     },
