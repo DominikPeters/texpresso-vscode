@@ -6,9 +6,11 @@ import * as path from 'node:path';
 import { TexpressoSession } from '../../session';
 import { SessionPaths } from '../../paths';
 import { config, document } from '../helpers';
+import { diagnostics } from './diagnostics';
 
 const binary = process.env.TEXPRESSO_BINARY;
-for (const packageProvider of ['texlive', 'tectonic'] as const) {
+const providers = process.env.TEXPRESSO_TEST_TECTONIC === '1' ? ['texlive', 'tectonic'] as const : ['texlive'] as const;
+for (const packageProvider of providers) {
   for (const streamFiles of [false, true]) {
     for (const useChangeRangeMode of [false, true]) {
       test('real engine: ' + packageProvider + ', ' + (streamFiles ? 'stream, ' : '') + (useChangeRangeMode ? 'ranges' : 'bytes'),
@@ -26,11 +28,12 @@ for (const packageProvider of ['texlive', 'tectonic'] as const) {
           await fs.writeFile(child.fileName, initial);
           let output = '';
           let debug = '';
+          let activity = Date.now();
           let failure: Error | undefined;
           const session = new TexpressoSession(main, { ...config, command: binary!, packageProvider,
             useChangeRangeMode, streamFiles, includeDirectories: ['support files'] },
           new SessionPaths(main.fileName, false), () => [main, child], {
-            state() {}, synctex() {}, debug: text => { debug += text; },
+            state() {}, synctex() {}, debug: text => { debug += text; activity = Date.now(); },
             error: error => { failure = error; },
             output: (target, text) => { if (target === 'out') { output = text; } }
           });
@@ -45,7 +48,10 @@ for (const packageProvider of ['texlive', 'tectonic'] as const) {
           };
           try {
             await session.start();
-            await until(() => output.includes('BEFORE'));
+            // The typeout appears before the first usable rollback checkpoint.
+            await until(() => output.includes('BEFORE') && Date.now() - activity >= 300 &&
+              debug.lastIndexOf('[info] output 1 pages long') > Math.max(
+                debug.lastIndexOf('texpresso: handshake success'), debug.lastIndexOf('[change] rewinded trace')));
             assert.ok(session.sync.contains(child), 'upstream announces included source');
             const offset = initial.indexOf('BEFORE');
             contents = initial.replace('BEFORE', 'AFTER');
@@ -54,8 +60,11 @@ for (const packageProvider of ['texlive', 'tectonic'] as const) {
             } as import('vscode').TextDocumentContentChangeEvent]);
             await until(() => output.includes('AFTER'));
             assert.doesNotMatch(debug, /\[fatal\]/);
+          } catch (error) {
+            await diagnostics(root, output, debug);
+            throw error;
           } finally {
-            session.dispose();
+            await session.dispose();
             await fs.rm(root, { recursive: true, force: true });
           }
         });

@@ -3,7 +3,7 @@ import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-interface Trace { type: string; pid?: number; root?: string; command?: unknown[] }
+interface Trace { type: string; pid?: number; root?: string; args?: string[]; command?: unknown[] }
 async function trace(): Promise<Trace[]> {
   try {
     const text = await fs.readFile(process.env.TEXPRESSO_TEST_TRACE!, 'utf8');
@@ -39,6 +39,10 @@ async function capture(name: string): Promise<void> {
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('DominikPeters.texpresso-basic');
   assert.ok(extension, 'extension discovered');
+  if (process.env.TEXPRESSO_TEST_PACKAGED) {
+    assert.match(extension.extensionPath, /extensions/);
+    assert.ok(!extension.extensionPath.includes('texpresso-test-harness'), 'actual installed VSIX is under test');
+  }
   await extension.activate();
   const workspace = vscode.workspace.workspaceFolders![0].uri.fsPath;
   const project = path.join(workspace, 'paper');
@@ -54,6 +58,19 @@ export async function run(): Promise<void> {
   const command = (name: string) => vscode.commands.executeCommand('texpresso.' + name);
   const starts = async () => (await trace()).filter(item => item.type === 'start');
   try {
+    const hinted = path.join(project, 'hinted.tex');
+    const bridge = path.join(project, 'bridge.tex');
+    await fs.writeFile(hinted, '% !TeX root = bridge.tex\nChapter content.\n');
+    await fs.writeFile(bridge, '% !TeX root = main.tex\n');
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(hinted));
+    await command('startDocument');
+    await until(async () => (await starts()).at(-1)?.root === mainPath, 'magic root chain selects the main document');
+    await command('stop');
+    const retired = (await starts()).at(-1)!.pid!;
+    assert.throws(() => process.kill(retired, 0), 'Stop waits for the engine to exit');
+    await fs.writeFile(process.env.TEXPRESSO_TEST_TRACE!, '');
+    await vscode.window.showTextDocument(main);
+    console.log('PASS: chained magic root comments and awaited process shutdown');
     await command('startDocument');
     await until(async () => (await trace()).some(item => item.command?.[0] === 'synctex-forward' &&
       item.command[1] === mainPath && item.command[2] === 5), 'initial SyncTeX uses current cursor and one-based lines');
@@ -62,6 +79,11 @@ export async function run(): Promise<void> {
     await fs.writeFile(path.join(project, 'plot.bin'), Buffer.from([1, 2, 3, 255]));
     await until(async () => (await trace()).some(item => item.command?.[0] === 'rescan'), 'binary lookup dependency refreshes after a disk change');
     assert.equal((await starts()).length, 1);
+    const rescans = (await trace()).filter(item => item.command?.[0] === 'rescan').length;
+    await fs.writeFile(path.join(project, 'replacement.bin'), Buffer.from([5, 6, 7, 255]));
+    await fs.rename(path.join(project, 'replacement.bin'), path.join(project, 'plot.bin'));
+    await until(async () => (await trace()).filter(item => item.command?.[0] === 'rescan').length > rescans, 'atomic resource replacement refreshes the preview');
+    assert.equal((await starts()).length, 1, 'atomic replacement retains the preview');
     await command('enableAutoRerun');
     await until(async () => (await trace()).some(item => item.command?.[0] === 'rerun' && item.command[1] === true), 'automatic reruns enabled live');
     await command('rerunOnce');
@@ -144,6 +166,25 @@ export async function run(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeQuickOpen');
 
     await command('stop');
+    const secondFolder = path.join(workspace, 'second project');
+    await fs.mkdir(secondFolder);
+    const secondRoot = path.join(secondFolder, 'main.tex');
+    const secondChild = path.join(secondFolder, 'child.tex');
+    await fs.writeFile(secondRoot, '\\documentclass{article}\n\\begin{document}Second project.\\end{document}');
+    await fs.writeFile(secondChild, '% !TeX root = main.tex\nSecond chapter.');
+    assert.ok(vscode.workspace.updateWorkspaceFolders(1, 0, { uri: vscode.Uri.file(secondFolder), name: 'Second project' }));
+    await until(async () => vscode.workspace.workspaceFolders?.length === 2, 'second workspace folder added');
+    const secondSettings = vscode.workspace.getConfiguration('texpresso', vscode.Uri.file(secondRoot));
+    await secondSettings.update('command', process.env.TEXPRESSO_TEST_NODE, vscode.ConfigurationTarget.WorkspaceFolder);
+    await secondSettings.update('arguments', [process.env.TEXPRESSO_TEST_ENGINE!, '--second-project'], vscode.ConfigurationTarget.WorkspaceFolder);
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(secondChild));
+    await command('startDocument');
+    await until(async () => (await starts()).at(-1)?.root === secondRoot, 'magic root in second workspace folder');
+    assert.ok((await trace()).filter(item => item.type === 'start').at(-1)?.args?.includes('--second-project'), 'selected root supplies its own folder settings');
+    await command('stop');
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(mainPath));
+    console.log('PASS: multi-root workspace settings follow the discovered root');
+    const beforeFailure = (await starts()).length;
     const configuration = vscode.workspace.getConfiguration('texpresso', vscode.Uri.file(mainPath));
     await configuration.update('command', path.join(workspace, 'missing-texpresso'), vscode.ConfigurationTarget.WorkspaceFolder);
     await command('startDocument');
@@ -153,7 +194,7 @@ export async function run(): Promise<void> {
     console.log('PASS: failed launch and Check Setup complete without a running preview');
     await configuration.update('command', process.env.TEXPRESSO_TEST_NODE, vscode.ConfigurationTarget.WorkspaceFolder);
     await command('startDocument');
-    await until(async () => (await starts()).length === beforeRefresh + 2, 'recover after a failed launch');
+    await until(async () => (await starts()).length === beforeFailure + 1, 'recover after a failed launch');
     console.log('PASS: recovery after a failed launch');
   } finally {
     await command('stop');

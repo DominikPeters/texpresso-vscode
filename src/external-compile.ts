@@ -1,4 +1,5 @@
-import { ChildProcess, exec, spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
+import { terminate } from './process-lifecycle';
 import * as path from 'path';
 import type { SessionPaths } from './paths';
 
@@ -19,15 +20,16 @@ export class ExternalCompiler {
     // with existing user recipes. Document paths are separate from that recipe.
     const child = paths.useWSL
       ? spawn('wsl', ['-e', 'sh', '-c',
-        'cd ' + shellQuote(paths.engineDirectory) + ' && ' + command + ' ' + shellQuote(paths.rootEnginePath)])
-      : exec(command + ' ' + (process.platform === 'win32'
+        'cd ' + shellQuote(paths.engineDirectory) + ' && ' + command + ' ' + shellQuote(paths.rootEnginePath)],
+      { detached: process.platform !== 'win32', windowsHide: true })
+      : spawn(command + ' ' + (process.platform === 'win32'
         ? '"' + paths.rootEditorPath + '"' : shellQuote(paths.rootEditorPath)),
-        { cwd: path.dirname(paths.rootEditorPath) });
+        { cwd: path.dirname(paths.rootEditorPath), shell: true, detached: process.platform !== 'win32', windowsHide: true });
     this.process = child;
     child.stdout?.setEncoding('utf8');
     child.stderr?.setEncoding('utf8');
-    child.stdout?.on('data', (text: string) => this.log(text));
-    child.stderr?.on('data', (text: string) => this.log(text));
+    child.stdout?.on('data', (text: string) => { if (this.process === child) { this.log(text); } });
+    child.stderr?.on('data', (text: string) => { if (this.process === child) { this.log(text); } });
     try {
       await new Promise<void>((resolve, reject) => {
         child.once('error', reject);
@@ -46,7 +48,9 @@ export class ExternalCompiler {
     }
   }
 
-  dispose(): void {
-    this.process?.kill();
+  dispose(): Promise<void> {
+    const child = this.process;
+    this.process = undefined;
+    return child ? terminate(child) : Promise.resolve();
   }
 }

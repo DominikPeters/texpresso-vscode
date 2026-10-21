@@ -1,7 +1,6 @@
-assets/texpresso_logo.svg
-internal
-src/rope
-src/test/**
-out/**
-scripts/**
-.github/**
+**/*
+!package.json
+!README.md
+!LICENSE
+!assets/texpresso_logo.png
+!dist/extension.js

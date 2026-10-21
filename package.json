@@ -39,6 +39,10 @@
         "icon": "$(play)"
       },
       {
+        "command": "texpresso.selectMainDocument",
+        "title": "TeXpresso: Select Main Document"
+      },
+      {
         "command": "texpresso.refresh",
         "title": "TeXpresso: Refresh (Restart Preview)",
         "enablement": "texpresso.running"
@@ -319,7 +323,9 @@
     "test": "node scripts/test-node.cjs",
     "test:unit": "npm run compile-tests && node scripts/test-node.cjs",
     "test:integration": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs",
-    "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine"
+    "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine",
+    "package:vsix": "node scripts/package.cjs",
+    "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

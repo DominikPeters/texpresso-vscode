@@ -9,6 +9,7 @@ import { TexpressoSession } from '../../session';
 import { SessionPaths } from '../../paths';
 import { config, document } from '../helpers';
 import type { SessionConfiguration } from '../../configuration';
+import { diagnostics } from './diagnostics';
 
 const binary = process.env.TEXPRESSO_BINARY;
 async function engine(source: string, options: Partial<SessionConfiguration>,
@@ -64,7 +65,10 @@ async function engine(source: string, options: Partial<SessionConfiguration>,
     await session.start();
     await body({ session, root, output: () => output, debug: () => debug, until });
     assert.equal(restarts, expectedRestarts, 'only streamed-image changes require a process restart');
-  } finally { session.dispose(); watcher.close(); await fs.rm(root, { recursive: true, force: true }); }
+  } catch (error) {
+    await diagnostics(root, output, debug);
+    throw error;
+  } finally { await session.dispose(); watcher.close(); await fs.rm(root, { recursive: true, force: true }); }
 }
 
 const references = '\\documentclass{article}\n\\begin{document}\nSee Section~\\ref{target}.\n\\section{Target}\\label{target}\n\\typeout{REFERENCE-CHECKED}\n\\end{document}\n';

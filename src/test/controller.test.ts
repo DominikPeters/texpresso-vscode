@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as vm from 'node:vm';
 import { TexpressoSession } from '../session';
+import { MainDocuments } from '../main-document';
 import { config, document, FakeProcess } from './helpers';
 
 test('controller isolates old process exits, reloads root settings, and retains failure logs', async () => {
@@ -96,6 +97,16 @@ test('controller isolates old process exits, reloads root settings, and retains 
       if (name === './session') {
         return { TexpressoSession: TestSession };
       }
+      if (name === './root-selection') {
+        return { mainDocuments: () => new MainDocuments({
+          async open(file: string) {
+            const doc = api.workspace.textDocuments.find(doc => doc.fileName === file);
+            if (!doc) { throw new Error('ENOENT'); }
+            return doc;
+          },
+          async choose() { return undefined; }, recalled() { return undefined; }, remember() {}
+        }) };
+      }
       if (name === './controls') {
         return { PreviewControls: class { update() {} show() {} dispose() {} } };
       }
@@ -104,7 +115,8 @@ test('controller isolates old process exits, reloads root settings, and retains 
   });
   exported.activate!({ subscriptions: [] });
   try {
-    await commands.get('texpresso.startDocument')!();
+    await Promise.all([commands.get('texpresso.startDocument')!(), commands.get('texpresso.startDocument')!()]);
+    assert.equal(children.length, 1, 'only the latest concurrent start launches an engine');
     assert.equal(contexts.get('texpresso.running'), true);
     assert.equal(contexts.get('texpresso.inActiveEditor'), true);
     children[0].stdout.write('["input-file",2,"child.tex"]\n');
@@ -138,6 +150,6 @@ test('controller isolates old process exits, reloads root settings, and retains 
     assert.equal(channels.get('TeXpresso')!.text, 'failure details\n');
     assert.equal(errors.length, 1);
   } finally {
-    exported.deactivate!();
+    await exported.deactivate!();
   }
 });

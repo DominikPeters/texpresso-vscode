@@ -51,7 +51,7 @@ export class PreviewControls {
     }
     if (!active) {
       items.push({ label: '$(play) Start Preview', command: 'texpresso.startDocument',
-        description: 'Use the active document' });
+        description: 'Use the selected main document or active file' });
     }
     if (session) {
       items.push({ label: '$(refresh) Restart Preview', command: 'texpresso.restart',
@@ -61,6 +61,7 @@ export class PreviewControls {
       items.push({ label: '$(debug-stop) Stop Preview', command: 'texpresso.stop' });
     }
     items.push(
+      { label: '$(file-code) Select Main Document', command: 'texpresso.selectMainDocument' },
       { label: '$(tools) Check Setup', command: 'texpresso.checkSetup', description: 'Executable, provider, and launch settings' },
       { label: '$(output) Show Compiler Output', command: 'texpresso.showCompilerOutput' },
       { label: '$(terminal) Show Engine Log', command: 'texpresso.showEngineLog' },

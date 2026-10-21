@@ -91,6 +91,16 @@ Existing `-tectonic` or `-texlive` entries in `texpresso.arguments` continue to 
 
 Launch settings are read for the main document on each start. The extension offers to restart a running preview when those settings change.
 
+### Main document selection
+
+Start Preview follows `% !TeX root = ../main.tex` comments, with relative paths resolved from the file containing the comment. Chained comments are supported; circular references and missing targets produce an error. Quoted paths containing spaces are accepted.
+
+When editing a known input of the current preview, Start keeps that preview’s main document. A standalone file containing `\documentclass` or `\begin{document}` is used directly. Otherwise a picker lists standalone TeX files in the current workspace folder, with relative paths to distinguish duplicate filenames. Browse and Use Current File are also available.
+
+Use **TeXpresso: Select Main Document** from the Command Palette or preview controls to choose explicitly. The choice is remembered for that workspace folder and follows VS Code file/folder renames. Selecting a different main document replaces an existing preview; with no preview running, it chooses the document for the next start. Each folder in a multi-root workspace has its own selection and launch settings. The extension does not infer include relationships by parsing the whole project.
+
+Stop and extension deactivation wait for shutdown. On Linux and macOS, the extension owns a process group and terminates its helper processes too, escalating after a short grace period if necessary. Native Windows launches use process-tree termination.
+
 ### Windows and WSL
 
 When VS Code runs on Windows and launches TeXpresso inside WSL, enable `texpresso.useWSL` and use the Linux executable path. When the extension itself runs inside a Remote WSL window, leave `texpresso.useWSL` disabled and configure it like a Linux installation.
@@ -114,13 +124,15 @@ Automatic reruns and streaming are explicit settings. Received lookup messages e
 
 ### Development checks
 
-Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code.
+Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code. The regressions include main-document resolution, concurrent starts, stale session events, atomic dependency replacement, and shutdown of an unresponsive process tree.
 
-Run `npm run test:integration` for tests inside a real VS Code Extension Development Host, with an isolated workspace and profile. The suite launches a deterministic protocol fixture as a real child process and exercises imported-file Unicode edits and undo, initial SyncTeX, restart, file/folder renames, external compilation, and recovery after failed startup. It does not require TeXpresso to be installed. CI runs these checks on Linux, macOS, and Windows, plus VS Code 1.88 on Linux.
+Run `npm run test:integration` for tests inside a real VS Code Extension Development Host, with an isolated workspace and profile. The suite launches a deterministic protocol fixture as a real child process and exercises magic-root chains, multi-root settings, imported-file Unicode edits and undo, initial SyncTeX, stop/restart, file/folder renames, external compilation, and failed-startup recovery. It requires no TeXpresso installation. CI runs the suite on Linux, macOS, and Windows, plus VS Code 1.88 on Linux.
 
-Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`.
+Run `npm run test:package` to build and inspect a VSIX, install it into an isolated extension directory, and run the same host suite against the installed extension. This needs the `vsce` CLI; CI pins `@vscode/vsce` to 3.7.1. The production bundle includes its JavaScript dependencies, so the VSIX contains only the manifest, runtime bundle, icon, README, and license. The resulting VSIX is saved under `artifacts/`.
 
-For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These tests compile and edit an included source through a spaced include path with both TeX Live and Tectonic, in byte/range and filesystem/stream modes. They also check reference convergence, pause/resume, and image dimension updates after disk changes. Both package providers must be installed and their packages cached or downloadable. Tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a graphical display, set `SDL_VIDEODRIVER=dummy`. The local baseline tested for this change is upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d`.
+Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`. Failed host runs retain logs, the engine trace, and their synthetic workspace under `artifacts/`; `TEXPRESSO_TEST_ARTIFACTS` overrides that location. CI uploads diagnostics on failure and cancels superseded runs.
+
+For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These use **TeX Live only by default** and test byte/range edits, filesystem/stream modes, reference convergence, pause/resume, and image updates. Set `TEXPRESSO_TEST_TECTONIC=1` to opt into Tectonic cases, which may download TeX packages. Native tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a display, set `SDL_VIDEODRIVER=dummy`; set `TEXPRESSO_TEST_ARTIFACTS` to retain native-engine diagnostics on failure. A separate Linux CI job builds upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d` and runs the TeX Live cases.
 
 Theme integration and actual Windows/WSL execution still need platform-specific manual checks; the deterministic host fixture does not substitute for a real WSL installation.
 

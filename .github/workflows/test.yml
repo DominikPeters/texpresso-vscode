@@ -2,10 +2,15 @@ name: Tests
 on:
   push:
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
+    name: Extension / ${{ matrix.os }} / VS Code ${{ matrix.vscode }}
     strategy:
       fail-fast: false
       matrix:
@@ -15,7 +20,7 @@ jobs:
           - os: ubuntu-latest
             vscode: '1.88.0'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 15
     env:
       VSCODE_VERSION: ${{ matrix.vscode }}
     steps:
@@ -25,10 +30,93 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+        timeout-minutes: 4
+      - name: Types, bundle, lint, and regression tests
+        run: npm test
+        timeout-minutes: 3
       - name: VS Code integration tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:integration
+        timeout-minutes: 5
       - name: VS Code integration tests (macOS and Windows)
         if: runner.os != 'Linux'
         run: npm run test:integration
+        timeout-minutes: 5
+      - name: Save diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ matrix.os }}-${{ matrix.vscode }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+  package:
+    name: Packaged VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        timeout-minutes: 4
+      - name: Install pinned packaging tool
+        run: npm install --global @vscode/vsce@3.7.1
+        timeout-minutes: 3
+      - name: Package, inspect, install, and test the VSIX
+        run: xvfb-run -a npm run test:package
+        timeout-minutes: 5
+      - name: Save VSIX and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-extension
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+  engine:
+    name: Pinned TeXpresso / TeX Live
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TEXPRESSO_BINARY: ${{ github.workspace }}/.engine/build/texpresso
+      TEXPRESSO_TEST_ARTIFACTS: ${{ github.workspace }}/artifacts/engine
+      SDL_VIDEODRIVER: dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: let-def/texpresso
+          ref: e8df7709077b2f86f6e16e6c86ceefb86de06f8d
+          path: .engine
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        timeout-minutes: 4
+      - name: Install native build dependencies and TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libsdl2-dev libmupdf-dev libmujs-dev \
+            libfreetype-dev libgumbo-dev libjbig2dec0-dev libjpeg-dev \
+            libopenjp2-7-dev libfontconfig-dev libharfbuzz-dev \
+            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev libtesseract-dev texlive-xetex
+        timeout-minutes: 8
+      - name: Build pinned engine
+        run: make -C .engine -j2 all
+        timeout-minutes: 4
+      - name: Test native synchronization, controls, and dependencies
+        run: npm run test:engine
+        timeout-minutes: 4
+      - name: Save engine diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-engine-diagnostics
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

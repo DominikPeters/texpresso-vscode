@@ -28,6 +28,7 @@ export class TexpressoSession {
   private engine: EngineProcess;
   private output: SessionOutput;
   private ended = false;
+  private shutdown?: Promise<void>;
   private unknownMessages = new Set<string>();
   readonly sync: DocumentSync;
   readonly dependencies: Dependencies;
@@ -194,14 +195,14 @@ export class TexpressoSession {
     this.events.error(error);
   }
 
-  dispose(): void {
+  dispose(): Promise<void> {
     if (this.ended) {
-      return;
+      return this.shutdown || Promise.resolve();
     }
     this.ended = true;
     this.dependencies.dispose();
     const wasActive = this.engine.active;
-    this.engine.dispose();
+    this.shutdown = this.engine.dispose().then(() => this.cleanTemporaryDirectory());
     this.output.flush();
     if (this.state !== 'failed') {
       this.state = 'stopped';
@@ -210,6 +211,7 @@ export class TexpressoSession {
       this.cleanTemporaryDirectory();
     }
     this.events.state(this.state);
+    return this.shutdown;
   }
 
   private cleanTemporaryDirectory(): void {

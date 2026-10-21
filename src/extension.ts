@@ -10,13 +10,20 @@ import { PreviewControls } from './controls';
 import { describeFailure } from './failures';
 import { setupReport } from './setup';
 import { renamedPath } from './renames';
+import { mainDocuments } from './root-selection';
 import type { SessionConfiguration } from './configuration';
 import type { FileChange, WatchFile } from './dependencies';
 
 tmp.setGracefulCleanup();
-let deactivateSession: (() => void) | undefined;
+let deactivateSession: (() => Promise<void>) | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
+  const roots = mainDocuments(context);
+  const shutdowns = new Set<Promise<void>>();
+  function retiring(dispose: Promise<void>): void {
+    shutdowns.add(dispose);
+    void dispose.finally(() => shutdowns.delete(dispose));
+  }
   let activeSession: TexpressoSession | undefined;
   let startRequest = 0;
   let disposeTheme = () => {};
@@ -86,15 +93,16 @@ export function activate(context: vscode.ExtensionContext): void {
     controls.update(activeSession?.state === 'stopped' ? undefined : activeSession);
   }
 
-  function stop(): void {
+  async function stop(): Promise<void> {
     startRequest++;
     const previous = activeSession;
     activeSession = undefined;
     pendingRename = undefined;
-    previous?.dispose();
+    if (previous) { retiring(previous.dispose()); }
     disposeTheme();
-    compiler.dispose();
+    retiring(compiler.dispose());
     updateContexts();
+    await Promise.all(shutdowns);
   }
   deactivateSession = stop;
   context.subscriptions.push({ dispose: stop });
@@ -121,13 +129,16 @@ export function activate(context: vscode.ExtensionContext): void {
       void vscode.window.showErrorMessage('TeXpresso: Open a LaTeX document first.');
       return;
     }
-    if (checkRoot && !document.getText().includes('\\begin{document}')) {
-      const result = await vscode.window.showWarningMessage(
-        'This file does not contain \\begin{document}. Start TeXpresso from this file anyway?',
-        { modal: true }, 'Continue');
-      if (result !== 'Continue' || request !== startRequest) {
+    if (checkRoot) {
+      try {
+        const session = activeSession;
+        document = await roots.resolve(document, session ? { root: session.document,
+          contains: source => session.sync.contains(source) } : undefined);
+      } catch (error) {
+        if (request === startRequest) { void vscode.window.showErrorMessage(String(error instanceof Error ? error.message : error)); }
         return;
       }
+      if (!document || request !== startRequest) { return; }
     }
     let temporaryDirectory: tmp.DirResult | undefined;
     try {
@@ -187,9 +198,9 @@ export function activate(context: vscode.ExtensionContext): void {
       temporaryDirectory = undefined;
       const previous = activeSession;
       activeSession = session;
-      previous?.dispose();
+      if (previous) { retiring(previous.dispose()); }
       disposeTheme();
-      compiler.dispose();
+      retiring(compiler.dispose());
       output.clear();
       log.clear();
       debug.clear();
@@ -239,6 +250,13 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand('texpresso.' + name, callback));
   }
   register('startDocument', () => startDocument());
+  register('selectMainDocument', async () => {
+    const source = vscode.window.activeTextEditor?.document || activeSession?.document;
+    if (!source) { return; }
+    const request = ++startRequest;
+    const document = await roots.select(source);
+    if (document && request === startRequest && activeSession) { await startDocument(document, false); }
+  });
   register('restart', () => activeSession && startDocument(activeSession.document, false));
   register('stop', stop);
   register('showControls', () => controls.show(activeSession?.state === 'stopped' ? undefined : activeSession));
@@ -462,7 +480,8 @@ export function activate(context: vscode.ExtensionContext): void {
   updateContexts();
 }
 
-export function deactivate(): void {
-  deactivateSession?.();
+export async function deactivate(): Promise<void> {
+  const stop = deactivateSession;
   deactivateSession = undefined;
+  await stop?.();
 }

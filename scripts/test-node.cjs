@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 const directory = path.resolve(__dirname, '../out/test', process.argv[2] || '');
 const files = fs.readdirSync(directory).filter(file => file.endsWith('.test.js'))
   .map(file => path.join(directory, file));
-const result = spawnSync(process.execPath, ['--test', ...files], { stdio: 'inherit' });
+const result = spawnSync(process.execPath, ['--test', '--test-reporter=spec', ...files], { stdio: 'inherit' });
 if (result.error) {
   throw result.error;
 }

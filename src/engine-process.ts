@@ -3,6 +3,7 @@ import type { Interface } from 'readline';
 import { readProtocol, Command, Message } from './protocol';
 import type { LaunchCommand } from './configuration';
 import { processFailure } from './failures';
+import { terminate } from './process-lifecycle';
 
 export interface EngineEvents {
   message(message: Message): void;
@@ -18,6 +19,8 @@ export class EngineProcess {
   private child?: ChildProcess;
   private reader?: Interface;
   private stopping = false;
+  private shutdown?: Promise<void>;
+  private cancelStart?: () => void;
   stderrTail = '';
   private stderrPending = '';
 
@@ -29,17 +32,21 @@ export class EngineProcess {
 
   start(launch: LaunchCommand): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (this.stopping) { resolve(); return; }
       let spawned = false;
+      this.cancelStart = resolve;
       const child = this.spawnEngine(launch.command, launch.args, {
-        cwd: launch.cwd, stdio: ['pipe', 'pipe', 'pipe']
+        cwd: launch.cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true
       });
       this.child = child;
       child.once('spawn', () => {
         spawned = true;
+        this.cancelStart = undefined;
+        if (this.stopping) { void terminate(child); }
         resolve();
       });
       child.on('error', error => {
-        if (!spawned) {
+        if (!spawned && !this.stopping) {
           const failure = processFailure(error, 'launch');
           reject(failure);
           this.events.error(failure);
@@ -47,9 +54,13 @@ export class EngineProcess {
           this.events.error(processFailure(error, 'connection'));
         }
       });
+      child.once('exit', () => {
+        if (!this.stopping) { void terminate(child).catch(error => this.events.debug(String(error))); }
+      });
       child.once('close', (code, signal) => {
         this.reader?.close();
         this.child = undefined;
+        this.cancelStart = undefined;
         if (!spawned) {
           reject(new Error('TeXpresso exited before starting.'));
         }
@@ -65,6 +76,7 @@ export class EngineProcess {
             }
           }
         }, (line, error) => {
+          if (this.stopping) { return; }
           this.events.debug('Invalid protocol message: ' + line.slice(0, 250) + ' (' + String(error) + ')');
         });
       }
@@ -108,9 +120,13 @@ export class EngineProcess {
     }
   }
 
-  dispose(): void {
+  dispose(): Promise<void> {
+    if (this.shutdown) { return this.shutdown; }
     this.stopping = true;
+    this.cancelStart?.();
+    this.cancelStart = undefined;
     this.reader?.close();
-    this.child?.kill();
+    this.shutdown = this.child ? terminate(this.child) : Promise.resolve();
+    return this.shutdown;
   }
 }
