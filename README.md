@@ -136,6 +136,8 @@ For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absol
 
 Run `npm run test:integration:engine` with `TEXPRESSO_BINARY` set to test real compilation through the extension inside VS Code. On Windows, this launches the binary in the default WSL distribution, so provide its **Linux path**. CI installs Ubuntu 24.04 in WSL 2, builds the pinned TeXpresso revision with TeX Live, and runs Windows VS Code against it. The suite checks magic-root and include-directory paths containing spaces and Unicode, unsaved edits with both byte and range protocols, disk dependency refresh, streaming, restart, and termination of Linux engine/worker processes. The same suite can run against a native engine on Linux/macOS. It selects SDL's dummy video driver, as upstream's own test targets do; visible-window rendering and theme integration still need separate checks.
 
+The WSL job caches an exported Ubuntu distribution containing TeX Live and the native build dependencies. Its key covers the workflow, `scripts/ci/wsl-environment.cjs`, and `scripts/ci/wsl-packages.txt`; changing any of these prepares a fresh image. The image is saved before source checkout copies and builds, so test failures do not discard a prepared environment and the pinned engine is rebuilt each run. The job summary records setup/import/export timings and archive size; cache download/upload timings appear in the cache steps.
+
 ## Release Notes
 
 ### Unreleased

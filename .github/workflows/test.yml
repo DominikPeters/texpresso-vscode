@@ -141,7 +141,21 @@ jobs:
           cache: npm
       - run: npm ci
         timeout-minutes: 4
+      - name: Configure prepared WSL cache
+        id: wsl-config
+        run: node scripts/ci/wsl-environment.cjs configure
+      - name: Restore prepared Ubuntu and TeX Live distribution
+        id: wsl-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/texpresso-wsl.tar
+          key: wsl2-windows2022-ubuntu2404-v1-${{ hashFiles('.github/workflows/test.yml', 'scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
+      - name: Import cached WSL distribution
+        if: steps.wsl-cache.outputs.cache-hit == 'true'
+        run: node scripts/ci/wsl-environment.cjs import
+        timeout-minutes: 8
       - name: Install Ubuntu, native build dependencies, and TeX Live in WSL
+        if: steps.wsl-cache.outputs.cache-hit != 'true'
         uses: Vampire/setup-wsl@3b46b44374d5d0ae94654c45d114a3ed7a0e07a8 # v5.0.1
         timeout-minutes: 20
         with:
@@ -151,18 +165,19 @@ jobs:
           wsl-conf: |
             [boot]
             systemd=false
-          additional-packages: >-
-            build-essential libsdl2-dev libmupdf-dev libmujs-dev
-            libfreetype-dev libgumbo-dev libjbig2dec0-dev libjpeg-dev
-            libopenjp2-7-dev libfontconfig-dev libharfbuzz-dev
-            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev
-            libtesseract-dev texlive-xetex procps
+          additional-packages: ${{ steps.wsl-config.outputs.packages }}
+      - name: Export prepared distribution before adding source checkouts
+        if: steps.wsl-cache.outputs.cache-hit != 'true'
+        run: node scripts/ci/wsl-environment.cjs export
+        timeout-minutes: 8
+      - name: Save prepared distribution even if later tests fail
+        if: steps.wsl-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/texpresso-wsl.tar
+          key: ${{ steps.wsl-cache.outputs.cache-primary-key }}
       - name: Build pinned engine on the Linux filesystem
-        shell: wsl-bash {0}
-        run: |
-          mkdir -p /opt/texpresso
-          cp -a .engine/. /opt/texpresso/
-          make -C /opt/texpresso -j2 all
+        run: node scripts/ci/wsl-environment.cjs build
         timeout-minutes: 8
       - name: Test Windows VS Code launching and synchronizing the real WSL engine
         run: npm run test:integration:engine
