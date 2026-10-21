@@ -27,8 +27,14 @@ export class SessionPaths {
   }
 
   toEditor(enginePath: string): string {
-    const absolute = this.enginePath.resolve(this.engineDirectory, enginePath);
+    const absolute = this.absoluteEnginePath(enginePath);
     return this.useWSL ? this.conversion.toEditor(absolute) : absolute;
+  }
+
+  absoluteEnginePath(enginePath: string): string {
+    // Keep VFS keys in the engine's namespace. Linux system files map to UNC
+    // paths in Windows, which wsl-path cannot convert back to Linux paths.
+    return this.enginePath.resolve(this.engineDirectory, enginePath);
   }
 
   includeDirectory(directory: string): string {

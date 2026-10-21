@@ -30,7 +30,7 @@ export class Dependencies {
     private events: { send(command: Command): void; restart(): void; debug(text: string): void; error(error: Error): void }) {}
 
   private key(enginePath: string): string {
-    return this.paths.logicalPath(this.paths.toEditor(enginePath));
+    return this.paths.absoluteEnginePath(enginePath);
   }
 
   private local(file: string): boolean {

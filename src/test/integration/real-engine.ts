@@ -106,6 +106,14 @@ export async function run(): Promise<void> {
     console.log('PASS: host VS Code launches real ' + (useWSL ? 'WSL ' : '') + 'TeXpresso and resolves magic root / include paths');
 
     await replace('TXP-BEFORE', 'TXP-RANGES');
+    // VS Code installs file watchers asynchronously without a ready event.
+    // Wait for a real rescan before testing a separate, single disk edit.
+    await until(async () => {
+      if ((await logs()).engine.includes('stdin: ["rescan"]')) { return true; }
+      await fs.writeFile(diskPath, '\\typeout{TXP-DISK-BEFORE}\n');
+      await delay(500);
+      return false;
+    }, 'real dependency watcher becomes ready');
     await fs.writeFile(diskPath, '\\typeout{TXP-DISK-AFTER}\n');
     await compiled('TXP-DISK-AFTER');
     console.log('PASS: unsaved Unicode-buffer edits and on-disk dependencies recompile in the real engine');

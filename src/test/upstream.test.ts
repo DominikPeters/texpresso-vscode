@@ -11,6 +11,35 @@ import { TexpressoSession } from '../session';
 import { buildLaunchCommand } from '../configuration';
 import { config, document, FakeProcess } from './helpers';
 
+test('WSL system inputs retain Linux VFS keys when their editor paths are UNC shares', () => {
+  const paths = new SessionPaths('C:\\paper\\main.tex', true, {
+    toEngine(file) {
+      assert.ok(!file.startsWith('\\\\'), 'UNC editor paths must not be round-tripped through wsl-path');
+      return file.replace(/^C:\\/, '/mnt/c/').replace(/\\/g, '/');
+    },
+    toEditor(file) {
+      return file.startsWith('/mnt/c/') ? file.replace('/mnt/c/', 'C:\\').replace(/\//g, '\\') :
+        '\\\\wsl.localhost\\Ubuntu' + file.replace(/\//g, '\\');
+    }
+  });
+  const main = document(paths.rootEditorPath);
+  const sent: Command[] = [];
+  const sync = new DocumentSync(main, paths, true, () => [main], command => sent.push(command));
+  const deps = new Dependencies(paths, sync, { watch: true, stream: false, roots: [],
+    watchFile() { throw new Error('System packages must not be watched as project dependencies'); }
+  }, { send: command => sent.push(command), restart() {}, debug() {}, error(error) { throw error; } });
+  const systemFile = '/usr/share/texlive/texmf-dist/tex/latex/base/article.cls';
+  try {
+    deps.lookup('read', 'successful', systemFile);
+    sync.announce(systemFile);
+    deps.input(systemFile);
+    assert.equal(sync.overlay(systemFile), undefined);
+    assert.match(sync.editorPath(systemFile), /^\\\\wsl\.localhost\\Ubuntu\\usr\\share\\texlive/);
+    assert.equal(paths.absoluteEnginePath(systemFile), systemFile);
+    assert.deepEqual(sent, [], 'system package lookup does not send an editor overlay');
+  } finally { deps.dispose(); }
+});
+
 test('stream launch primes open buffers and enables reruns before resuming; legacy launch sends no new commands', async () => {
   for (const streamFiles of [false, true]) {
     const main = document('/work/main.tex');

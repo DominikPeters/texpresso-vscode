@@ -59,7 +59,7 @@ export class DocumentSync {
   }
 
   announce(enginePath: string): void {
-    const logicalPath = this.paths.logicalPath(this.paths.toEditor(enginePath));
+    const logicalPath = this.paths.absoluteEnginePath(enginePath);
     const candidates = this.paths.sourceCandidates(enginePath, this.includeDirectories);
     const resolved = this.paths.sourcePath(enginePath, this.includeDirectories);
     const document = this.engineFiles.get(logicalPath)?.document || this.documents().find(doc =>
@@ -108,7 +108,7 @@ export class DocumentSync {
   }
 
   overlay(enginePath: string): vscode.TextDocument | undefined {
-    const known = this.engineFiles.get(this.paths.logicalPath(this.paths.toEditor(enginePath)))?.document;
+    const known = this.engineFiles.get(this.paths.absoluteEnginePath(enginePath))?.document;
     if (known && !known.isClosed) {
       return known;
     }
@@ -194,7 +194,7 @@ export class DocumentSync {
   }
 
   editorPath(enginePath: string): string {
-    const logicalPath = this.paths.logicalPath(this.paths.toEditor(enginePath));
+    const logicalPath = this.paths.absoluteEnginePath(enginePath);
     const known = this.engineFiles.get(logicalPath);
     if (known) {
       if (known.document === this.root && this.root.isUntitled) {
