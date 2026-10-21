@@ -27,7 +27,13 @@ const { spawnSync } = require('node:child_process');
   let failed = true;
   const packaged = process.argv.includes('--packaged');
   try {
-    const executable = process.env.VSCODE_EXECUTABLE || await downloadAndUnzipVSCode(process.env.VSCODE_VERSION || 'stable');
+    let executable = process.env.VSCODE_EXECUTABLE || await downloadAndUnzipVSCode(process.env.VSCODE_VERSION || 'stable');
+    // test-electron 2.5 still returns Electron for macOS; newer VS Code
+    // distributions name the executable Code. Retain support for older builds.
+    if (process.platform === 'darwin' && !fs.existsSync(executable)) {
+      const renamed = path.join(path.dirname(executable), 'Code');
+      if (fs.existsSync(renamed)) { executable = renamed; }
+    }
     const profiles = ['--user-data-dir=' + path.join(root, 'user'), '--extensions-dir=' + path.join(root, 'extensions')];
     let development = path.resolve(__dirname, '..');
     if (packaged) {

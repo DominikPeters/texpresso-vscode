@@ -4,6 +4,11 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 interface Trace { type: string; pid?: number; root?: string; args?: string[]; command?: unknown[] }
+// VS Code normalizes Windows drive letters; the native engine resolves them
+// through realpath, which can restore their original case.
+function samePath(actual: unknown, expected: string): boolean {
+  return typeof actual === 'string' && path.relative(actual, expected) === '';
+}
 async function trace(): Promise<Trace[]> {
   try {
     const text = await fs.readFile(process.env.TEXPRESSO_TEST_TRACE!, 'utf8');
@@ -64,7 +69,7 @@ export async function run(): Promise<void> {
     await fs.writeFile(bridge, '% !TeX root = main.tex\n');
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(hinted));
     await command('startDocument');
-    await until(async () => (await starts()).at(-1)?.root === mainPath, 'magic root chain selects the main document');
+    await until(async () => samePath((await starts()).at(-1)?.root, mainPath), 'magic root chain selects the main document');
     await command('stop');
     const retired = (await starts()).at(-1)!.pid!;
     assert.throws(() => process.kill(retired, 0), 'Stop waits for the engine to exit');
@@ -73,11 +78,20 @@ export async function run(): Promise<void> {
     console.log('PASS: chained magic root comments and awaited process shutdown');
     await command('startDocument');
     await until(async () => (await trace()).some(item => item.command?.[0] === 'synctex-forward' &&
-      item.command[1] === mainPath && item.command[2] === 5), 'initial SyncTeX uses current cursor and one-based lines');
+      samePath(item.command[1], mainPath) && item.command[2] === 5), 'initial SyncTeX uses current cursor and one-based lines');
     console.log('PASS: initial cursor synchronization through a real engine process');
 
+    // Watcher registration is asynchronous in VS Code and has no ready event.
+    // Warm it up before checking individual disk changes below.
+    await until(async () => {
+      if ((await trace()).some(item => item.command?.[0] === 'rescan')) { return true; }
+      await fs.writeFile(path.join(project, 'plot.bin'), Buffer.from([0, 1, 2, 255]));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return false;
+    }, 'dependency watcher becomes ready');
+    const initialRescans = (await trace()).filter(item => item.command?.[0] === 'rescan').length;
     await fs.writeFile(path.join(project, 'plot.bin'), Buffer.from([1, 2, 3, 255]));
-    await until(async () => (await trace()).some(item => item.command?.[0] === 'rescan'), 'binary lookup dependency refreshes after a disk change');
+    await until(async () => (await trace()).filter(item => item.command?.[0] === 'rescan').length > initialRescans, 'binary lookup dependency refreshes after a disk change');
     assert.equal((await starts()).length, 1);
     const rescans = (await trace()).filter(item => item.command?.[0] === 'rescan').length;
     await fs.writeFile(path.join(project, 'replacement.bin'), Buffer.from([5, 6, 7, 255]));
@@ -101,20 +115,20 @@ export async function run(): Promise<void> {
 
     const child = await vscode.workspace.openTextDocument(childPath);
     editor = await vscode.window.showTextDocument(child);
-    await until(async () => (await trace()).some(item => item.command?.[0] === 'open' && item.command[1] === childPath), 'included buffer opened');
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'open' && samePath(item.command[1], childPath)), 'included buffer opened');
     await editor.edit(edit => edit.insert(new vscode.Position(0, 0), 'é😀'));
     await until(async () => (await trace()).some(item => item.command?.[0] === 'change-range' &&
-      item.command[1] === childPath && item.command.at(-1) === 'é😀'), 'Unicode edit reaches the engine');
+      samePath(item.command[1], childPath) && item.command.at(-1) === 'é😀'), 'Unicode edit reaches the engine');
     await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
     await vscode.commands.executeCommand('undo');
     await until(async () => (await trace()).some(item => item.command?.[0] === 'change-range' &&
-      item.command[1] === childPath && item.command[5] === 3 && item.command.at(-1) === ''), 'undo uses UTF-16 positions');
+      samePath(item.command[1], childPath) && item.command[5] === 3 && item.command.at(-1) === ''), 'undo uses UTF-16 positions');
     console.log('PASS: imported-file edits and undo');
 
     const beforeRestart = (await starts()).length;
     await command('restart');
     await until(async () => (await starts()).length === beforeRestart + 1, 'restart from an included editor');
-    assert.equal((await starts()).at(-1)!.root, mainPath);
+    assert.ok(samePath((await starts()).at(-1)!.root, mainPath));
     console.log('PASS: Restart preserves the main document');
 
     editor = await vscode.window.showTextDocument(main);
@@ -123,7 +137,7 @@ export async function run(): Promise<void> {
     rename.renameFile(vscode.Uri.file(mainPath), vscode.Uri.file(renamed));
     assert.ok(await vscode.workspace.applyEdit(rename));
     mainPath = renamed;
-    await until(async () => (await starts()).at(-1)?.root === mainPath, 'main document rename restarts preview');
+    await until(async () => samePath((await starts()).at(-1)?.root, mainPath), 'main document rename restarts preview');
     console.log('PASS: main document rename');
 
     const moved = path.join(workspace, 'moved paper');
@@ -131,7 +145,7 @@ export async function run(): Promise<void> {
     move.renameFile(vscode.Uri.file(project), vscode.Uri.file(moved));
     assert.ok(await vscode.workspace.applyEdit(move));
     mainPath = path.join(moved, 'renamed.tex');
-    await until(async () => (await starts()).at(-1)?.root === mainPath, 'containing directory rename restarts preview');
+    await until(async () => samePath((await starts()).at(-1)?.root, mainPath), 'containing directory rename restarts preview');
     editor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(mainPath));
     editor.selection = new vscode.Selection(4, 0, 4, 0);
     console.log('PASS: containing folder rename');
@@ -139,7 +153,7 @@ export async function run(): Promise<void> {
     const beforeBuild = (await starts()).length;
     await command('externalCompileAndRefresh');
     await until(async () => (await starts()).length === beforeBuild + 1, 'external build restarts the engine');
-    assert.equal((await starts()).at(-1)!.root, mainPath);
+    assert.ok(samePath((await starts()).at(-1)!.root, mainPath));
     assert.ok((await trace()).some(item => item.type === 'build'));
     await fs.access(mainPath.replace(/\.tex$/, '.aux'));
     console.log('PASS: external compile starts a fresh engine with new auxiliary files');
@@ -160,10 +174,13 @@ export async function run(): Promise<void> {
     if (process.env.TEXPRESSO_CAPTURE_DIR) {
       await vscode.commands.executeCommand('workbench.action.closePanel');
       await vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
+      // Without a capture, closing immediately can cancel the request before
+      // the quick pick has even opened (notably on VS Code 1.88).
+      const controls = command('showControls');
+      await capture('preview-controls');
+      await vscode.commands.executeCommand('workbench.action.closeQuickOpen');
+      await controls;
     }
-    void command('showControls');
-    await capture('preview-controls');
-    await vscode.commands.executeCommand('workbench.action.closeQuickOpen');
 
     await command('stop');
     const secondFolder = path.join(workspace, 'second project');
@@ -179,7 +196,7 @@ export async function run(): Promise<void> {
     await secondSettings.update('arguments', [process.env.TEXPRESSO_TEST_ENGINE!, '--second-project'], vscode.ConfigurationTarget.WorkspaceFolder);
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(secondChild));
     await command('startDocument');
-    await until(async () => (await starts()).at(-1)?.root === secondRoot, 'magic root in second workspace folder');
+    await until(async () => samePath((await starts()).at(-1)?.root, secondRoot), 'magic root in second workspace folder');
     assert.ok((await trace()).filter(item => item.type === 'start').at(-1)?.args?.includes('--second-project'), 'selected root supplies its own folder settings');
     await command('stop');
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(mainPath));
