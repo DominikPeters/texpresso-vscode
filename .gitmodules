@@ -1,0 +1,4 @@
+[submodule "native/texpresso"]
+	path = native/texpresso
+	url = https://github.com/DominikPeters/texpresso.git
+	branch = vscode

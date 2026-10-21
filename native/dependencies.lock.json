@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "texpresso": {
+    "repository": "https://github.com/DominikPeters/texpresso.git",
+    "branch": "vscode",
+    "revisionSource": "Git submodule native/texpresso"
+  },
+  "mupdf": {
+    "version": "1.28.5",
+    "repository": "https://github.com/ArtifexSoftware/mupdf.git",
+    "revision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+    "submodules": {
+      "thirdparty/lcms2": "d69c64417c4a33a4629957fc0e08f4f4c5abcc3d"
+    }
+  },
+  "icu": {
+    "version": "78.3",
+    "sourceUrl": "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz",
+    "sourceSha256": "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0"
+  }
+}
