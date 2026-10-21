@@ -39,7 +39,7 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
+node_modules
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -131,6 +131,12 @@ dist
 /src/rope
 /internal
 /examples
+
+# Native source/build caches and local bundles
+/native/.work/
+/native/.bundles/
+/.native-sources/
+/native/**/__pycache__/
 
 /artifacts/
 *.vsix

@@ -1,0 +1,79 @@
+name: Native development bundle
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 35
+    env:
+      SDL_VIDEODRIVER: dummy
+      TEXPRESSO_TEST_TECTONIC: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check native profile contracts
+        run: python3 -m unittest discover -s native/tests
+      - name: Read locked MuPDF revision
+        id: inputs
+        run: |
+          python3 - <<'PY'
+          import json, os
+          lock = json.load(open('native/dependencies.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('mupdf=' + lock['mupdf']['revision'] + '\n')
+          PY
+      - name: Restore local dependency source cache
+        uses: actions/cache@v4
+        with:
+          path: .native-sources/mupdf
+          key: native-mupdf-${{ steps.inputs.outputs.mupdf }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ArtifexSoftware/mupdf
+          ref: ${{ steps.inputs.outputs.mupdf }}
+          path: .native-sources/mupdf
+          persist-credentials: false
+      - name: Initialize only the required MuPDF submodule
+        run: git -C .native-sources/mupdf submodule update --init --depth 1 thirdparty/lcms2
+      - name: Cache Homebrew downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: native-brew-${{ runner.arch }}-${{ hashFiles('native/dependencies.lock.json', 'native/profiles/*', '.github/workflows/native-build.yml') }}
+      - name: Install development build libraries on the runner
+        run: brew install pkgconf freetype jpeg-turbo openjpeg brotli sdl2 harfbuzz graphite2 fontconfig libpng jbig2dec icu4c@78
+      - name: Build and relocate the native bundle
+        run: python3 native/scripts/build.py --mupdf-source .native-sources/mupdf --icu-prefix "$(brew --prefix icu4c@78)" --output native/.bundles/macos
+      - name: Compare filtered ICU with stock ICU
+        run: python3 native/scripts/verify_icu.py --icu-prefix "$(brew --prefix icu4c@78)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install local test provider on the runner
+        run: brew install --cask basictex
+      - name: Test the bundle with TeX Live
+        run: |
+          export PATH="/Library/TeX/texbin:$PATH"
+          export TEXPRESSO_BINARY="$PWD/native/.bundles/macos/bin/texpresso"
+          npm run test:engine
+        timeout-minutes: 8
+      - name: Save development bundle and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-${{ runner.arch }}
+          path: |
+            native/.bundles/*.zip
+            native/.bundles/*/build-manifest.json
+            artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

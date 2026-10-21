@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "description": "icupkg selection: retain all converters, break rules/dictionaries, core Unicode data, and root/supplemental bundles",
+  "excludeTrees": ["coll", "curr", "lang", "rbnf", "region", "translit", "unit", "zone"],
+  "excludeRootLocaleBundles": true
+}

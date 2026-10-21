@@ -86,10 +86,14 @@ jobs:
       SDL_VIDEODRIVER: dummy
     steps:
       - uses: actions/checkout@v4
+      - name: Read committed engine pin
+        id: engine-pin
+        shell: bash
+        run: echo "revision=$(git rev-parse HEAD:native/texpresso)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          repository: let-def/texpresso
-          ref: e8df7709077b2f86f6e16e6c86ceefb86de06f8d
+          repository: DominikPeters/texpresso
+          ref: ${{ steps.engine-pin.outputs.revision }}
           path: .engine
       - uses: actions/setup-node@v4
         with:
@@ -130,10 +134,14 @@ jobs:
       - name: Keep Linux build sources in LF format
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
+      - name: Read committed engine pin
+        id: engine-pin
+        shell: bash
+        run: echo "revision=$(git rev-parse HEAD:native/texpresso)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          repository: let-def/texpresso
-          ref: e8df7709077b2f86f6e16e6c86ceefb86de06f8d
+          repository: DominikPeters/texpresso
+          ref: ${{ steps.engine-pin.outputs.revision }}
           path: .engine
       - uses: actions/setup-node@v4
         with:
