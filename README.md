@@ -33,19 +33,55 @@ If you use TeXpresso version v0.1 or newer, you can use its new `change-range` f
 
 This extension contributes the following settings:
 
-* `texpresso.command`: The path to the texpresso binary.
+* `texpresso.command`: The path to the texpresso binary, or a command available on PATH.
+* `texpresso.packageProvider`: Select Automatic, TeX Live, or Tectonic as the package provider (TeXpresso v0.2 or newer).
+* `texpresso.includeDirectories`: Additional include directories, relative to the main document or absolute.
+* `texpresso.arguments`: Additional command-line arguments, with one argument per array item.
 * `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
 * `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
 
+### Package providers and additional arguments
+
+Select a package provider in Settings by searching for `texpresso.packageProvider`. This chooses where TeXpresso loads packages; it does not install TeX Live or Tectonic or select a different TeX engine.
+
+For example, to use Tectonic and search a project build directory:
+
+```json
+{
+  "texpresso.packageProvider": "tectonic",
+  "texpresso.includeDirectories": ["build"],
+  "texpresso.arguments": []
+}
+```
+
+Existing `-tectonic` or `-texlive` entries in `texpresso.arguments` continue to work with the Automatic provider setting. An explicit provider selection overrides those flags. Paths containing spaces remain a single array item; do not add shell quotes. For example, `["-I", "/path/to/support files"]` is valid. In additional arguments, WSL paths must use Linux syntax; the dedicated include directory setting can also convert Windows paths.
+
+Launch settings are read for the main document on each start. The extension offers to restart a running preview when those settings change.
+
+### Windows and WSL
+
+When VS Code runs on Windows and launches TeXpresso inside WSL, enable `texpresso.useWSL` and use the Linux executable path. When the extension itself runs inside a Remote WSL window, leave `texpresso.useWSL` disabled and configure it like a Linux installation.
+
 ## Architecture
 
-TeXpresso and the underlying LaTeX compilers are based on a UTF-8 byte representation, and [communication between the editor and TeXpresso](https://github.com/let-def/texpresso/blob/main/EDITOR-PROTOCOL.md) occurs in terms of byte offsets. However, VS Code only provides access to character positions and not their byte position. 
+`extension.ts` connects VS Code commands and editor events to one active `TexpressoSession`. Each session owns its process, document synchronization state, and output buffers, so a previous process cannot reset a newer session.
 
-By default, this extension keeps a copy of the current document in a *rope* data structure ([wikipedia](https://en.wikipedia.org/wiki/Rope_(data_structure))), enriched with byte offsets. This allows for efficient conversion between character and byte positions, and also allows for efficient edits to the underlying text string. The [code for the rope data structure](https://github.com/DominikPeters/texpresso-vscode/blob/master/src/rope.ts) builds on https://github.com/component/rope.
+- `configuration.ts` resolves settings for the main document and constructs launch arguments.
+- `paths.ts` translates between editor paths and engine paths, including WSL.
+- `engine-process.ts` handles process startup, shutdown, errors, and UTF-8-safe protocol framing.
+- `protocol.ts` validates incoming messages and defines outgoing commands.
+- `document-sync.ts` synchronizes the main document and imported files. Range mode sends UTF-16 edits directly; legacy mode maintains a pre-edit rope for byte offsets.
+- `logs.ts` applies output appends and truncations as TeXpresso backtracks.
 
-Newer versions of TeXpresso support a `change-range` command that works with line/character positions instead of byte offsets. When the `texpresso.useChangeRangeMode` setting is enabled, the extension uses this newer protocol, eliminating the need for the rope data structure and improving performance.
+Compiler output, compiler logs, process diagnostics, and external builds have separate Output channels. Logs remain available after a session stops or fails.
+
+Current upstream TeXpresso does not expose a reliable version or capability query. Newer features must not be inferred from an unreported version; capability negotiation is deferred until upstream supports it.
+
+### Development checks
+
+Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code. Use the Extension Development Host to check editor and theme integration manually.
 
 ## Known Issues
 

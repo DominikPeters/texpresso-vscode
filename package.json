@@ -31,7 +31,8 @@
     "commands": [
       {
         "command": "texpresso.startDocument",
-        "title": "TeXpresso: Start Document"
+        "title": "TeXpresso: Start Document",
+        "enablement": "!texpresso.starting"
       },
       {
         "command": "texpresso.refresh",
@@ -100,32 +101,39 @@
         "texpresso.command": {
           "type": "string",
           "default": "texpresso",
-          "description": "Path to the texpresso binary"
+          "description": "Path to the texpresso binary",
+          "scope": "machine-overridable",
+          "order": 1
         },
         "texpresso.externalCompileCommand": {
           "type": "string",
           "default": "latexmk",
-          "description": "External command for multi-pass compilation of LaTeX documents"
+          "description": "External command for multi-pass compilation of LaTeX documents",
+          "scope": "resource"
         },
         "texpresso.useWSL": {
           "type": "boolean",
           "default": false,
-          "description": "Specifies whether texpresso should be run in WSL (Windows Subsystem for Linux)"
+          "description": "Specifies whether texpresso should be run in WSL (Windows Subsystem for Linux)",
+          "scope": "machine-overridable"
         },
         "texpresso.syncTeXForwardOnSelection": {
           "type": "boolean",
           "default": true,
-          "description": "Specifies whether the preview should be updated when the selection in the editor changes (SyncTeX forward)"
+          "description": "Specifies whether the preview should be updated when the selection in the editor changes (SyncTeX forward)",
+          "scope": "resource"
         },
         "texpresso.useEditorTheme": {
           "type": "boolean",
           "default": false,
-          "description": "Specifies whether the preview should use the same color theme as the editor (if activated), or the default theme (otherwise)"
+          "description": "Specifies whether the preview should use the same color theme as the editor (if activated), or the default theme (otherwise)",
+          "scope": "resource"
         },
         "texpresso.useChangeRangeMode": {
           "type": "boolean",
           "default": false,
-          "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available"
+          "description": "Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer with change-range support. Recommended if available",
+          "scope": "resource"
         },
         "texpresso.arguments": {
           "type": "array",
@@ -133,7 +141,41 @@
             "type": "string"
           },
           "default": [],
-          "description": "Additional arguments passed to TeXpresso"
+          "scope": "resource",
+          "markdownDescription": "Additional arguments passed to TeXpresso, one array item per argument. Prefer the package provider and include directory settings for those options. The package provider setting takes precedence when explicitly selected. Takes effect when starting a document.",
+          "order": 20
+        },
+        "texpresso.packageProvider": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "texlive",
+            "tectonic"
+          ],
+          "enumItemLabels": [
+            "Automatic",
+            "TeX Live",
+            "Tectonic"
+          ],
+          "enumDescriptions": [
+            "Let TeXpresso choose an installed package provider.",
+            "Load packages from TeX Live.",
+            "Load packages from Tectonic."
+          ],
+          "default": "auto",
+          "scope": "resource",
+          "order": 2,
+          "markdownDescription": "Where TeXpresso loads LaTeX packages. Requires TeXpresso v0.2 or newer. An explicit selection overrides provider flags in `texpresso.arguments`. Takes effect when starting a document."
+        },
+        "texpresso.includeDirectories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "order": 3,
+          "markdownDescription": "Additional directories to search for project files, relative to the main document or absolute. In WSL mode, Linux paths and Windows paths are accepted. Takes effect when starting a document."
         }
       }
     },
@@ -184,7 +226,8 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "node --test out/test/*.test.js",
+    "test:unit": "npm run compile-tests && node --test out/test/*.test.js"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
