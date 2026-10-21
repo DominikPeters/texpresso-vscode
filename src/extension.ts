@@ -227,8 +227,13 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
+			const args = vscode.workspace
+			.getConfiguration('texpresso')
+			.get<string[]>('arguments', []);
+			
 			// react to messages from texpresso
-			const args = ['-json'];
+			args.push('-json');
+
 			if (useChangeRangeMode) {
 				args.push('-lines');
 			}
