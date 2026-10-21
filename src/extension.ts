@@ -342,6 +342,13 @@ export function activate(context: vscode.ExtensionContext): void {
       if (session && renamedPath(session.paths.rootEditorPath, event.files)) {
         // VS Code may close the old document before firing onDidRenameFiles.
         pendingRename = session;
+        // Windows cannot move a directory held as a child process's cwd.
+        // Release this launch and any retiring launches before the rename;
+        // onDidRenameFiles starts the preview again at its new path.
+        retiring(session.dispose());
+        retiring(compiler.dispose());
+        disposeTheme();
+        event.waitUntil(Promise.all(shutdowns).then(() => {}));
       }
     }),
     vscode.workspace.onDidRenameFiles(event => {

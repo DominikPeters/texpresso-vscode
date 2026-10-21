@@ -14,7 +14,7 @@ for (const packageProvider of providers) {
   for (const streamFiles of [false, true]) {
     for (const useChangeRangeMode of [false, true]) {
       test('real engine: ' + packageProvider + ', ' + (streamFiles ? 'stream, ' : '') + (useChangeRangeMode ? 'ranges' : 'bytes'),
-        { skip: !binary, timeout: 60000 }, async () => {
+        { skip: !binary, timeout: 90000 }, async () => {
           const root = await fs.mkdtemp(path.join(os.tmpdir(), 'texpresso-engine-'));
           const support = path.join(root, 'support files');
           await fs.mkdir(support);
@@ -37,8 +37,8 @@ for (const packageProvider of providers) {
             error: error => { failure = error; },
             output: (target, text) => { if (target === 'out') { output = text; } }
           });
-          const until = async (check: () => boolean) => {
-            const deadline = Date.now() + 25000;
+          const until = async (check: () => boolean, timeout = 25000) => {
+            const deadline = Date.now() + timeout;
             while (!check()) {
               if (failure || Date.now() > deadline) {
                 throw failure || new Error('Engine timeout\n' + output + '\n' + debug.slice(-3000));
@@ -49,9 +49,10 @@ for (const packageProvider of providers) {
           try {
             await session.start();
             // The typeout appears before the first usable rollback checkpoint.
+            // Cold TeX Live format generation needs a separate startup budget.
             await until(() => output.includes('BEFORE') && Date.now() - activity >= 300 &&
               debug.lastIndexOf('[info] output 1 pages long') > Math.max(
-                debug.lastIndexOf('texpresso: handshake success'), debug.lastIndexOf('[change] rewinded trace')));
+                debug.lastIndexOf('texpresso: handshake success'), debug.lastIndexOf('[change] rewinded trace')), 60000);
             assert.ok(session.sync.contains(child), 'upstream announces included source');
             const offset = initial.indexOf('BEFORE');
             contents = initial.replace('BEFORE', 'AFTER');

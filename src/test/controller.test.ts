@@ -44,8 +44,14 @@ test('controller isolates old process exits, reloads root settings, and retains 
       onDidChangeConfiguration: event('configuration'),
       onDidOpenTextDocument: event('open'), onDidCloseTextDocument: event('close'),
       onDidChangeTextDocument: event('change'),
-      onWillRenameFiles: event('willRename'), onDidRenameFiles: event('rename')
+      onWillRenameFiles: event('willRename'), onDidRenameFiles: event('rename'),
+      async openTextDocument(uri: { fsPath: string }) {
+        const opened = document(uri.fsPath, main.getText());
+        this.textDocuments.push(opened);
+        return opened;
+      }
     },
+    Uri: { file: (file: string) => ({ fsPath: file }) },
     window: {
       activeTextEditor: editor,
       createOutputChannel(name: string) {
@@ -144,8 +150,21 @@ test('controller isolates old process exits, reloads root settings, and retains 
     assert.equal(launches[3].at(-1), main.fileName);
     assert.equal(children[2].killed, true);
 
-    children[3].stdout.write('["append-lines","out","failure details"]\n["flush"]\n');
-    children[3].emit('close', 1, null);
+    const moved = path.join(path.dirname(main.fileName), '..', 'moved work', 'main.tex');
+    const files = [{ oldUri: { fsPath: path.dirname(main.fileName) }, newUri: { fsPath: path.dirname(moved) } }];
+    let renameReady: Promise<void> | undefined;
+    listeners.get('willRename')!({ files, waitUntil: (ready: Promise<void>) => { renameReady = ready; } });
+    assert.ok(renameReady, 'rename waits for process shutdown');
+    await renameReady;
+    assert.ok(children[3].killed, 'old working directory released before rename');
+    listeners.get('close')!(main);
+    listeners.get('rename')!({ files });
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(launches[4].at(-1), moved, 'preview restarts at the moved root');
+    assert.equal(contexts.get('texpresso.running'), true);
+
+    children[4].stdout.write('["append-lines","out","failure details"]\n["flush"]\n');
+    children[4].emit('close', 1, null);
     assert.equal(contexts.get('texpresso.running'), false);
     assert.equal(channels.get('TeXpresso')!.text, 'failure details\n');
     assert.equal(errors.length, 1);
