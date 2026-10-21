@@ -24,6 +24,10 @@ const { spawnSync } = require('node:child_process');
     'editor.fontSize': 16,
     'telemetry.telemetryLevel': 'off'
   }));
+  // Start in workspace mode: converting a folder window to a multi-root
+  // workspace reloads the extension host on VS Code 1.88, aborting the suite.
+  const workspaceFile = path.join(root, 'fixture.code-workspace');
+  fs.writeFileSync(workspaceFile, JSON.stringify({ folders: [{ path: workspace }] }));
   let failed = true;
   const packaged = process.argv.includes('--packaged');
   try {
@@ -62,7 +66,7 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_TEST_ENGINE: fixture,
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR
       },
-      launchArgs: [workspace, ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
+      launchArgs: [workspaceFile, ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,
         ...(process.env.TEXPRESSO_DEBUG_PORT ? ['--remote-debugging-port=' + process.env.TEXPRESSO_DEBUG_PORT] : [])]
     });
@@ -71,7 +75,7 @@ const { spawnSync } = require('node:child_process');
     if (failed) {
       const diagnostics = path.resolve(process.env.TEXPRESSO_TEST_ARTIFACTS || 'artifacts', packaged ? 'packaged-host' : 'development-host');
       fs.mkdirSync(diagnostics, { recursive: true });
-      for (const entry of ['user/logs', 'engine.jsonl', 'workspace']) {
+      for (const entry of ['user/logs', 'engine.jsonl', 'workspace', 'fixture.code-workspace']) {
         const source = path.join(root, entry);
         if (fs.existsSync(source)) { fs.cpSync(source, path.join(diagnostics, entry), { recursive: true }); }
       }

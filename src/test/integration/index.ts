@@ -189,11 +189,20 @@ export async function run(): Promise<void> {
     const secondChild = path.join(secondFolder, 'child.tex');
     await fs.writeFile(secondRoot, '\\documentclass{article}\n\\begin{document}Second project.\\end{document}');
     await fs.writeFile(secondChild, '% !TeX root = main.tex\nSecond chapter.');
-    assert.ok(vscode.workspace.updateWorkspaceFolders(1, 0, { uri: vscode.Uri.file(secondFolder), name: 'Second project' }));
-    await until(async () => vscode.workspace.workspaceFolders?.length === 2, 'second workspace folder added');
+    // workspaceFolders changes optimistically; configuration still belongs to
+    // the old folder until the main-thread change event confirms the update.
+    let folderAdded = false;
+    const folderChange = vscode.workspace.onDidChangeWorkspaceFolders(event => {
+      folderAdded ||= event.added.some(folder => samePath(folder.uri.fsPath, secondFolder));
+    });
+    try {
+      assert.ok(vscode.workspace.updateWorkspaceFolders(1, 0, { uri: vscode.Uri.file(secondFolder), name: 'Second project' }));
+      await until(async () => folderAdded, 'second workspace folder added');
+    } finally { folderChange.dispose(); }
     const secondSettings = vscode.workspace.getConfiguration('texpresso', vscode.Uri.file(secondRoot));
     await secondSettings.update('command', process.env.TEXPRESSO_TEST_NODE, vscode.ConfigurationTarget.WorkspaceFolder);
     await secondSettings.update('arguments', [process.env.TEXPRESSO_TEST_ENGINE!, '--second-project'], vscode.ConfigurationTarget.WorkspaceFolder);
+    assert.equal(vscode.workspace.getConfiguration('texpresso', vscode.Uri.file(secondRoot)).get('command'), process.env.TEXPRESSO_TEST_NODE);
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(secondChild));
     await command('startDocument');
     await until(async () => samePath((await starts()).at(-1)?.root, secondRoot), 'magic root in second workspace folder');

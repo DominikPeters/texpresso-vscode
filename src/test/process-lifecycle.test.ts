@@ -18,9 +18,10 @@ test('cancelling startup settles start and idempotently stops a late spawn', asy
   assert.ok(child.killed);
 });
 
-test('shutdown kills an unresponsive launcher and its worker', { timeout: 10000 }, async () => {
+test('shutdown kills an unresponsive launcher and its worker', { timeout: 30000 }, async context => {
   const pids: number[] = [];
   let pending = '';
+  const started = Date.now();
   const engine = new EngineProcess(events(), (command, args, options) => {
     const child = require('node:child_process').spawn(command, args, options) as import('node:child_process').ChildProcess;
     child.stdout!.on('data', chunk => {
@@ -34,10 +35,15 @@ test('shutdown kills an unresponsive launcher and its worker', { timeout: 10000 
   });
   try {
     await engine.start({ command: process.execPath, args: [path.resolve(__dirname, '../../src/test/fixtures/process-tree.cjs')], cwd: process.cwd() });
-    const end = Date.now() + 3000;
+    // Starting two Node processes can be slow on hosted Windows runners.
+    // Keep startup separate from the bounded shutdown and reaping checks.
+    const end = Date.now() + (process.platform === 'win32' ? 10000 : 3000);
     while (pids.length < 2 && Date.now() < end) { await new Promise(resolve => setTimeout(resolve, 20)); }
+    context.diagnostic('Launcher and worker startup: ' + (Date.now() - started) + ' ms; PIDs: ' + pids.join(', '));
     assert.equal(pids.length, 2, 'launcher and worker started');
+    const stopping = Date.now();
     await engine.dispose();
+    context.diagnostic('Engine disposal: ' + (Date.now() - stopping) + ' ms');
     for (const pid of pids) {
       const deadline = Date.now() + 2000;
       let alive = true;
