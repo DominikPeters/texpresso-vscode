@@ -9,6 +9,7 @@ export interface EngineEvents {
   debug(text: string): void;
   error(error: Error): void;
   exit(code: number | null, signal: NodeJS.Signals | null, intentional: boolean): void;
+  unsupported?(verb: string): void;
 }
 
 export type SpawnEngine = (command: string, args: string[], options: SpawnOptions) => ChildProcess;
@@ -18,6 +19,7 @@ export class EngineProcess {
   private reader?: Interface;
   private stopping = false;
   stderrTail = '';
+  private stderrPending = '';
 
   constructor(private events: EngineEvents, private spawnEngine: SpawnEngine = spawn) {}
 
@@ -70,6 +72,15 @@ export class EngineProcess {
       child.stderr?.on('data', (text: string) => {
         if (!this.stopping) {
           this.stderrTail = (this.stderrTail + text).slice(-8000);
+          this.stderrPending += text;
+          const lines = this.stderrPending.split('\n');
+          this.stderrPending = lines.pop()!.slice(-8000);
+          for (const line of lines) {
+            const unsupported = line.match(/^\[command\] unknown verb: (\S+)/);
+            if (unsupported) {
+              this.events.unsupported?.(unsupported[1]);
+            }
+          }
           this.events.debug(text);
         }
       });

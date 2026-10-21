@@ -7,6 +7,8 @@ import { SessionPaths } from './paths';
 import { SessionOutput } from './logs';
 import type { Command, Message, OutputTarget } from './protocol';
 import { EngineFailure, processFailure } from './failures';
+import { Dependencies, WatchFile } from './dependencies';
+import * as path from 'path';
 
 export type SessionState = 'starting' | 'running' | 'stopped' | 'failed';
 export interface SessionEvents {
@@ -16,7 +18,11 @@ export interface SessionEvents {
   synctex(file: string, line: number, column?: number): void;
   error(error: Error): void;
   rendered?(): void;
+  restart?(): void;
+  warning?(message: string): void;
 }
+
+export interface SessionServices { watchFile?: WatchFile; roots?: readonly string[]; watchDelay?: number }
 
 export class TexpressoSession {
   private engine: EngineProcess;
@@ -24,6 +30,10 @@ export class TexpressoSession {
   private ended = false;
   private unknownMessages = new Set<string>();
   readonly sync: DocumentSync;
+  readonly dependencies: Dependencies;
+  readonly unsupported = new Set<string>();
+  paused = false;
+  autoRerun: boolean;
   state: SessionState = 'starting';
 
   constructor(
@@ -33,13 +43,28 @@ export class TexpressoSession {
     documents: () => readonly vscode.TextDocument[],
     private events: SessionEvents,
     private temporaryDirectory?: DirResult,
-    spawnEngine?: SpawnEngine
+    spawnEngine?: SpawnEngine,
+    services: SessionServices = {}
   ) {
+    this.autoRerun = configuration.autoRerun;
     this.output = new SessionOutput((target, text) => events.output(target, text));
     this.engine = new EngineProcess({
       message: message => this.handleMessage(message),
       debug: text => events.debug(text),
       error: error => this.fail(error),
+      unsupported: verb => {
+        if (this.unsupported.has(verb)) {
+          return;
+        }
+        this.unsupported.add(verb);
+        if (verb === 'pause' || verb === 'resume') {
+          this.paused = false;
+        } else if (verb === 'rerun') {
+          this.autoRerun = false;
+        }
+        this.events.warning?.('This TeXpresso build does not support “' + verb + '”. Update TeXpresso to use this feature.');
+        this.events.state(this.state);
+      },
       exit: (code, signal, intentional) => {
         this.cleanTemporaryDirectory();
         if (!this.ended && !intentional && (code !== 0 || signal)) {
@@ -52,6 +77,15 @@ export class TexpressoSession {
     }, spawnEngine);
     this.sync = new DocumentSync(document, paths, configuration.useChangeRangeMode,
       documents, command => this.send(command));
+    this.dependencies = new Dependencies(paths, this.sync, {
+      watch: configuration.watchDependencies, stream: configuration.streamFiles,
+      roots: [...(services.roots || []), path.dirname(paths.rootEditorPath),
+        ...configuration.includeDirectories.map(dir => paths.toEditor(paths.includeDirectory(dir)))],
+      watchFile: services.watchFile, delay: services.watchDelay
+    }, {
+      send: command => this.send(command), restart: () => this.events.restart?.(),
+      debug: text => events.debug(text), error: error => this.fail(error)
+    });
   }
 
   async start(): Promise<void> {
@@ -76,7 +110,16 @@ export class TexpressoSession {
         return;
       }
       this.state = 'running';
+      if (this.configuration.streamFiles) {
+        this.sync.prime();
+      }
       this.sync.initialize();
+      if (this.autoRerun) {
+        this.send(['rerun', true]);
+      }
+      if (this.configuration.streamFiles) {
+        this.send(['resume']);
+      }
       this.events.state(this.state);
     } catch (error) {
       this.fail(error instanceof EngineFailure ? error :
@@ -95,12 +138,15 @@ export class TexpressoSession {
       return;
     }
     switch (message[0]) {
-      case 'input-file': this.sync.announce(message[2]); break;
+      case 'input-file':
+        this.sync.announce(message[2]);
+        this.dependencies.input(message[2]);
+        break;
       case 'reset-sync': this.sync.initialize(); break;
       case 'synctex':
         this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3]);
         break;
-      case 'lookup-file': break; // Informational in normal filesystem mode.
+      case 'lookup-file': this.dependencies.lookup(message[1], message[2], message[3]); break;
       default:
         if (!this.unknownMessages.has(message[0])) {
           this.unknownMessages.add(message[0]);
@@ -112,6 +158,30 @@ export class TexpressoSession {
   send(command: Command): void {
     if (!this.ended) {
       this.engine.send(command);
+    }
+  }
+
+  setAutoRerun(enabled: boolean): void {
+    this.configuration.autoRerun = enabled;
+    this.autoRerun = enabled && !this.unsupported.has('rerun');
+    if (!this.unsupported.has('rerun')) {
+      this.send(['rerun', enabled]);
+    }
+    this.events.state(this.state);
+  }
+
+  setPaused(paused: boolean): void {
+    if (this.unsupported.has(paused ? 'pause' : 'resume')) {
+      return;
+    }
+    this.paused = paused;
+    this.send([paused ? 'pause' : 'resume']);
+    this.events.state(this.state);
+  }
+
+  rerunOnce(): void {
+    if (!this.paused && !this.unsupported.has('rerun-once')) {
+      this.send(['rerun-once']);
     }
   }
 
@@ -129,6 +199,7 @@ export class TexpressoSession {
       return;
     }
     this.ended = true;
+    this.dependencies.dispose();
     const wasActive = this.engine.active;
     this.engine.dispose();
     this.output.flush();

@@ -11,6 +11,9 @@ export interface SessionConfiguration {
   packageProvider: PackageProvider;
   includeDirectories: string[];
   arguments: string[];
+  autoRerun: boolean;
+  watchDependencies: boolean;
+  streamFiles: boolean;
 }
 
 export interface LaunchCommand {
@@ -27,7 +30,10 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
     packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
-    arguments: configuration.get<string[]>('arguments', [])
+    arguments: configuration.get<string[]>('arguments', []),
+    autoRerun: configuration.get<boolean>('autoRerun', false),
+    watchDependencies: configuration.get<boolean>('watchDependencies', true),
+    streamFiles: configuration.get<boolean>('streamFiles', false)
   };
 }
 
@@ -42,6 +48,8 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
         throw new Error('The -I argument needs a directory.');
       }
       args.push('-I', directory);
+    } else if (argument === '-stream') {
+      throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
     } else if (argument === '-texlive' || argument === '-tectonic') {
       if (config.packageProvider === 'auto') {
         providers.add(argument);
@@ -62,6 +70,9 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
     args.push('-I', paths.includeDirectory(directory));
   }
   args.push('-json');
+  if (config.streamFiles) {
+    args.push('-stream');
+  }
   if (config.useChangeRangeMode) {
     args.push('-lines');
   }

@@ -27,8 +27,13 @@ test('controller isolates old process exits, reloads root settings, and retains 
   };
   const editor = { document: main, selection: { active: { line: 0 } } };
   const api = {
+    RelativePattern: class {},
     workspace: {
       textDocuments: [main, childDocument],
+      createFileSystemWatcher() {
+        return { onDidChange: () => disposable, onDidCreate: () => disposable,
+          onDidDelete: () => disposable, dispose() {} };
+      },
       getConfiguration(_section: string, scope: unknown) {
         scopedReads.push(scope);
         return { get(key: string, fallback: unknown) {
@@ -76,14 +81,14 @@ test('controller isolates old process exits, reloads root settings, and retains 
         children.push(process);
         queueMicrotask(() => process.emit('spawn'));
         return process.asChild();
-      });
+      }, args[7]);
     }
   }
   const extensionPath = path.join(__dirname, '../extension.js');
   const localRequire = createRequire(extensionPath);
   const exported: { activate?: (context: { subscriptions: unknown[] }) => void; deactivate?: () => void } = {};
   vm.runInNewContext(readFileSync(extensionPath, 'utf8'), {
-    exports: exported, module: { exports: exported },
+    exports: exported, module: { exports: exported }, process,
     require(name: string) {
       if (name === 'vscode') {
         return api;

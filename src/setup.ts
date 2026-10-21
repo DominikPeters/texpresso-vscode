@@ -42,6 +42,9 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
     'Main document: ' + paths.rootEditorPath,
     'Execution: ' + (configuration.useWSL ? 'Windows → WSL' : 'Directly on the extension host'),
     'Package provider: ' + configuration.packageProvider,
+    'Automatic reruns: ' + (configuration.autoRerun ? 'on' : 'off'),
+    'Watch dependencies: ' + (configuration.watchDependencies ? 'on' : 'off'),
+    'File access: ' + (configuration.streamFiles ? 'editor streaming' : 'filesystem'),
     'Edit protocol: ' + (configuration.useChangeRangeMode ? 'UTF-16 ranges' : 'Legacy UTF-8 byte offsets'), ''];
   try {
     const launch = buildLaunchCommand(configuration, paths);
@@ -59,9 +62,7 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
       } catch { /* An absent package provider is useful information, not a failed report. */ }
       lines.push(command + ': ' + (found || 'not found on PATH'));
     }
-    lines.push('', 'These checks locate executables; they do not verify engine compatibility or compile a document.',
-      'TeXpresso does not currently provide a reliable version/capability query.',
-      'For Remote WSL windows, leave texpresso.useWSL disabled.');
+    lines.push('', 'For Remote WSL windows, leave texpresso.useWSL disabled.');
   } catch (error) {
     lines.push('Setup check failed: ' + (error instanceof Error ? error.message : String(error)));
   }

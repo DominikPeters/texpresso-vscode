@@ -8,7 +8,8 @@ import * as path from 'node:path';
 
 export const config: SessionConfiguration = {
   command: 'texpresso', useWSL: false, useChangeRangeMode: true,
-  packageProvider: 'auto', includeDirectories: [], arguments: []
+  packageProvider: 'auto', includeDirectories: [], arguments: [],
+  autoRerun: false, watchDependencies: true, streamFiles: false
 };
 
 export function document(fileName: string, text = 'abc'): vscode.TextDocument {

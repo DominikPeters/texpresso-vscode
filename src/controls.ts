@@ -22,7 +22,8 @@ export class PreviewControls {
     const name = session?.document.isUntitled ? 'Untitled' : session && path.basename(session.paths.rootEditorPath);
     switch (session?.state) {
       case 'starting': this.item.text = '$(loading~spin) TeXpresso: Starting…'; break;
-      case 'running': this.item.text = '$(preview) TeXpresso: ' + name; break;
+      case 'running': this.item.text = (session?.paused ? '$(debug-pause)' : '$(preview)') +
+        ' TeXpresso: ' + name + (session?.paused ? ' (paused)' : ''); break;
       case 'failed': this.item.text = '$(warning) TeXpresso: Failed'; break;
       default: this.item.text = '$(play) TeXpresso';
     }
@@ -34,6 +35,20 @@ export class PreviewControls {
   async show(session?: TexpressoSession): Promise<void> {
     const items: (vscode.QuickPickItem & { command: string })[] = [];
     const active = session && ['starting', 'running'].includes(session.state);
+    if (session?.state === 'running') {
+      if (!session.paused && !session.unsupported.has('rerun-once')) {
+        items.push({ label: '$(run-all) Rerun Once', command: 'texpresso.rerunOnce', description: 'Update references and table of contents' });
+      }
+      if (!session.unsupported.has('rerun')) {
+        items.push({ label: (session.autoRerun ? '$(check)' : '$(circle-large-outline)') + ' Automatic Reruns',
+          description: session.autoRerun ? 'On — click to disable' : 'Off — click to enable',
+          command: session.autoRerun ? 'texpresso.disableAutoRerun' : 'texpresso.enableAutoRerun' });
+      }
+      if (!session.unsupported.has('pause') && !session.unsupported.has('resume')) {
+        items.push({ label: session.paused ? '$(play) Resume Preview' : '$(debug-pause) Pause Preview',
+          command: session.paused ? 'texpresso.resume' : 'texpresso.pause' });
+      }
+    }
     if (!active) {
       items.push({ label: '$(play) Start Preview', command: 'texpresso.startDocument',
         description: 'Use the active document' });
@@ -53,7 +68,7 @@ export class PreviewControls {
     );
     const chosen = await vscode.window.showQuickPick(items, {
       title: 'TeXpresso' + (session ? ' — ' + path.basename(session.paths.rootEditorPath) : ''),
-      placeHolder: session?.state === 'running' ? 'Preview running' :
+      placeHolder: session?.state === 'running' ? (session.paused ? 'Preview paused — edits will appear after resuming' : 'Preview running') :
         session?.state === 'failed' ? 'Preview failed — check the setup or engine log' : 'Preview controls'
     });
     if (chosen) {

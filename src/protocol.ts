@@ -4,6 +4,10 @@ import type { Readable } from 'stream';
 export type OutputTarget = 'out' | 'log';
 export type Command =
   | ['open', string, string]
+  | ['open-base64', string, string]
+  | ['register', string]
+  | ['rerun', boolean]
+  | ['rerun-once'] | ['pause'] | ['resume']
   | ['close', string]
   | ['change', string, number, number, string]
   | ['change-range', string, number, number, number, number, string]

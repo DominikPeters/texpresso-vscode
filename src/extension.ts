@@ -11,6 +11,7 @@ import { describeFailure } from './failures';
 import { setupReport } from './setup';
 import { renamedPath } from './renames';
 import type { SessionConfiguration } from './configuration';
+import type { FileChange, WatchFile } from './dependencies';
 
 tmp.setGracefulCleanup();
 let deactivateSession: (() => void) | undefined;
@@ -31,6 +32,40 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(output, log, debug, build, setup, controls, compiler);
   const running = () => activeSession?.state === 'running' ? activeSession : undefined;
   const settings = (document: vscode.TextDocument) => vscode.workspace.getConfiguration('texpresso', document.uri);
+  const watchGroups = new Map<string, { files: Map<string, Set<Parameters<WatchFile>[1]>>; dispose(): void }>();
+  const watchKey = (file: string) => process.platform === 'win32' ? path.resolve(file).toLowerCase() : path.resolve(file);
+  const watchFile: WatchFile = (file, changed) => {
+    let base = path.dirname(file);
+    while (!fs.existsSync(base) && path.dirname(base) !== base) {
+      base = path.dirname(base);
+    }
+    const pattern = base === path.dirname(file) ? '*' : '**/*';
+    const groupKey = watchKey(base) + '\0' + pattern;
+    let group = watchGroups.get(groupKey);
+    if (!group) {
+      const files = new Map<string, Set<Parameters<WatchFile>[1]>>();
+      const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(base, pattern));
+      const dispatch = (uri: vscode.Uri, kind: FileChange) => {
+        files.get(watchKey(uri.fsPath))?.forEach(callback => callback(kind));
+      };
+      const listeners = [watcher.onDidChange(uri => dispatch(uri, 'change')),
+        watcher.onDidCreate(uri => dispatch(uri, 'create')), watcher.onDidDelete(uri => dispatch(uri, 'delete'))];
+      group = { files, dispose() { listeners.forEach(listener => listener.dispose()); watcher.dispose(); } };
+      watchGroups.set(groupKey, group);
+    }
+    const key = watchKey(file);
+    const callbacks = group.files.get(key) || new Set();
+    callbacks.add(changed);
+    group.files.set(key, callbacks);
+    let disposed = false;
+    return { dispose() {
+      if (disposed) { return; }
+      disposed = true;
+      callbacks.delete(changed);
+      if (!callbacks.size) { group!.files.delete(key); }
+      if (!group!.files.size) { group!.dispose(); watchGroups.delete(groupKey); }
+    } };
+  };
 
   function updateContexts(): void {
     const editor = vscode.window.activeTextEditor;
@@ -39,6 +74,13 @@ export function activate(context: vscode.ExtensionContext): void {
     void vscode.commands.executeCommand('setContext', 'texpresso.active',
       activeSession?.state === 'starting' || activeSession?.state === 'running');
     void vscode.commands.executeCommand('setContext', 'texpresso.hasDocument', !!activeSession);
+    void vscode.commands.executeCommand('setContext', 'texpresso.paused', !!activeSession?.paused);
+    void vscode.commands.executeCommand('setContext', 'texpresso.canPause', !!running() &&
+      !activeSession?.unsupported.has('pause') && !activeSession?.unsupported.has('resume'));
+    void vscode.commands.executeCommand('setContext', 'texpresso.canRerun', !!running() &&
+      !activeSession?.unsupported.has('rerun-once') && !activeSession?.paused);
+    void vscode.commands.executeCommand('setContext', 'texpresso.autoRerun', !!activeSession?.autoRerun);
+    void vscode.commands.executeCommand('setContext', 'texpresso.canAutoRerun', !!running() && !activeSession?.unsupported.has('rerun'));
     void vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor',
       !!running() && !!editor && !!running()?.sync.contains(editor.document));
     controls.update(activeSession?.state === 'stopped' ? undefined : activeSession);
@@ -124,12 +166,24 @@ export function activate(context: vscode.ExtensionContext): void {
               syncForward();
             }
           },
+          restart: () => {
+            if (running() === session) {
+              void startDocument(session.document, false);
+            }
+          },
+          warning: message => {
+            if (activeSession === session) {
+              void vscode.window.showWarningMessage(message);
+            }
+          },
           error: error => {
             if (activeSession === session) {
               void reportError(error, session.configuration);
             }
           }
-        }, temporaryDirectory);
+        }, temporaryDirectory, undefined, {
+          watchFile, roots: vscode.workspace.workspaceFolders?.map(folder => folder.uri.fsPath)
+        });
       temporaryDirectory = undefined;
       const previous = activeSession;
       activeSession = session;
@@ -192,6 +246,19 @@ export function activate(context: vscode.ExtensionContext): void {
   register('showEngineLog', () => debug.show(true));
   register('showCompilerOutput', () => output.show(true));
   register('openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso'));
+  register('rerunOnce', () => running()?.rerunOnce());
+  register('pause', () => running()?.setPaused(true));
+  register('resume', () => running()?.setPaused(false));
+  for (const [name, enabled] of [['enableAutoRerun', true], ['disableAutoRerun', false]] as const) {
+    register(name, () => {
+      const document = activeSession?.document || vscode.window.activeTextEditor?.document;
+      if (document) {
+        const target = vscode.workspace.getWorkspaceFolder(document.uri)
+          ? vscode.ConfigurationTarget.WorkspaceFolder : vscode.ConfigurationTarget.Global;
+        return settings(document).update('autoRerun', enabled, target);
+      }
+    });
+  }
   // rescan does not reliably discover previously absent auxiliary files (#13).
   // Keep Refresh as a compatibility alias for a complete session restart.
   register('refresh', () => running() && startDocument(running()!.document, false));
@@ -225,7 +292,11 @@ export function activate(context: vscode.ExtensionContext): void {
           session.send(['theme', [1, 1, 1], [0, 0, 0]]);
         }
       }
-      const launchKeys = ['command', 'useWSL', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments'];
+      if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
+        session.setAutoRerun(settings(session.document).get('autoRerun', false));
+      }
+      const launchKeys = ['command', 'useWSL', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
+        'streamFiles', 'watchDependencies'];
       if (launchKeys.some(key => event.affectsConfiguration('texpresso.' + key, session.document.uri)) &&
           JSON.stringify(readConfiguration(settings(session.document))) !== JSON.stringify(session.configuration)) {
         void vscode.window.showInformationMessage('TeXpresso settings changed. Restart the preview to apply them.', 'Restart')
@@ -243,7 +314,9 @@ export function activate(context: vscode.ExtensionContext): void {
           stop();
         }
       } else {
-        running()?.sync.closeDocument(document);
+        const session = running();
+        session?.sync.closeDocument(document);
+        session?.dependencies.closed(document.uri.fsPath);
       }
     }),
     vscode.workspace.onWillRenameFiles(event => {
@@ -313,6 +386,7 @@ export function activate(context: vscode.ExtensionContext): void {
       return;
     }
     const status = vscode.window.setStatusBarMessage('TeXpresso: External compilation...');
+    session.dependencies.suspended = true;
     try {
       for (const document of vscode.workspace.textDocuments) {
         if (session.sync.contains(document) && document.isDirty && !document.isUntitled && !await document.save()) {
@@ -336,6 +410,7 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showErrorMessage('TeXpresso: ' + String(error));
       }
     } finally {
+      session.dependencies.resumeWatching();
       status.dispose();
     }
   });

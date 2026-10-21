@@ -47,6 +47,7 @@ export async function run(): Promise<void> {
   await fs.writeFile(mainPath, '\\documentclass{article}\n\\begin{document}\nHello world.\n\\input{chapter.tex}\nCurrent position.\n\\end{document}\n');
   const childPath = path.join(project, 'chapter.tex');
   await fs.writeFile(childPath, 'Chapter content.\n');
+  await fs.writeFile(path.join(project, 'plot.bin'), Buffer.from([0, 1, 2, 255]));
   const main = await vscode.workspace.openTextDocument(mainPath);
   let editor = await vscode.window.showTextDocument(main);
   editor.selection = new vscode.Selection(4, 0, 4, 0);
@@ -57,6 +58,24 @@ export async function run(): Promise<void> {
     await until(async () => (await trace()).some(item => item.command?.[0] === 'synctex-forward' &&
       item.command[1] === mainPath && item.command[2] === 5), 'initial SyncTeX uses current cursor and one-based lines');
     console.log('PASS: initial cursor synchronization through a real engine process');
+
+    await fs.writeFile(path.join(project, 'plot.bin'), Buffer.from([1, 2, 3, 255]));
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'rescan'), 'binary lookup dependency refreshes after a disk change');
+    assert.equal((await starts()).length, 1);
+    await command('enableAutoRerun');
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'rerun' && item.command[1] === true), 'automatic reruns enabled live');
+    await command('rerunOnce');
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'rerun-once'), 'one-shot rerun');
+    await command('pause'); await command('resume');
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'pause') &&
+      (await trace()).some(item => item.command?.[0] === 'resume'), 'pause/resume controls');
+    await command('disableAutoRerun');
+    await until(async () => (await trace()).some(item => item.command?.[0] === 'rerun' && item.command[1] === false), 'automatic reruns disabled live');
+    assert.equal((await starts()).length, 1, 'live controls retain the process');
+    console.log('PASS: dependency watcher, automatic/one-shot reruns, and pause/resume');
+
+    await fs.writeFile(path.join(project, 'future.tex'), 'New dependency.\n');
+    await until(async () => (await starts()).length === 2, 'creating a previously missing dependency recovers the preview');
 
     const child = await vscode.workspace.openTextDocument(childPath);
     editor = await vscode.window.showTextDocument(child);
@@ -102,6 +121,16 @@ export async function run(): Promise<void> {
     assert.ok((await trace()).some(item => item.type === 'build'));
     await fs.access(mainPath.replace(/\.tex$/, '.aux'));
     console.log('PASS: external compile starts a fresh engine with new auxiliary files');
+
+    const streamSettings = vscode.workspace.getConfiguration('texpresso', vscode.Uri.file(mainPath));
+    await streamSettings.update('streamFiles', true, vscode.ConfigurationTarget.WorkspaceFolder);
+    const beforeStream = (await starts()).length;
+    await command('restart');
+    await until(async () => (await starts()).length === beforeStream + 1, 'streaming startup');
+    const streamPid = (await starts()).at(-1)!.pid;
+    await until(async () => (await trace()).some(item => item.pid === streamPid && item.command?.[0] === 'register') &&
+      (await trace()).some(item => item.pid === streamPid && item.command?.[0] === 'resume'), 'streaming primes files and resumes');
+    console.log('PASS: streaming startup through the actual extension controller');
 
     const beforeRefresh = (await starts()).length;
     await command('refresh');

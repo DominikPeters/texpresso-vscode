@@ -55,17 +55,38 @@ export class SessionPaths {
   }
 
   sourcePath(enginePath: string, includeDirectories: readonly string[]): string {
+    const candidates = this.sourceCandidates(enginePath, includeDirectories);
+    return candidates.find(file => {
+      try { return fs.statSync(file).isFile(); } catch { return false; }
+    }) || candidates[0];
+  }
+
+  sourceCandidates(enginePath: string, includeDirectories: readonly string[]): string[] {
     const direct = this.toEditor(enginePath);
     if (this.enginePath.isAbsolute(enginePath)) {
-      return direct;
+      return [direct];
     }
     // SyncTeX announces logical input names even when -I found the source in a
     // different directory. Keep the logical name for protocol writes, but match
     // the actual editor document on disk.
-    const candidates = [direct, ...includeDirectories.map(directory =>
+    return [direct, ...includeDirectories.map(directory =>
       this.toEditor(this.enginePath.resolve(this.engineDirectory, directory, enginePath)))];
-    return candidates.find(file => {
-      try { return fs.statSync(file).isFile(); } catch { return false; }
-    }) || direct;
+  }
+
+  logicalPath(editorPath: string): string {
+    // Do not resolve symlinks here: these are keys in TeXpresso's VFS, and
+    // changing a logical key can select a different cached file.
+    return this.useWSL ? this.conversion.toEngine(editorPath) : editorPath;
+  }
+
+  aliases(editorPath: string, includeDirectories: readonly string[]): string[] {
+    const aliases: string[] = [];
+    for (const directory of [this.toEditor('.'), ...includeDirectories.map(dir => this.toEditor(dir))]) {
+      const relative = path.relative(this.identity(directory), this.identity(editorPath));
+      if (relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)) {
+        aliases.push(this.logicalPath(path.join(this.toEditor('.'), relative)));
+      }
+    }
+    return [...new Set(aliases)];
   }
 }

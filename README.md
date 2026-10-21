@@ -7,11 +7,11 @@ After installing the extension, you need to configure the path to the TeXpresso 
 
 To use this extension, open the `.tex` document you wish to edit, then open the command pallete (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>), and select `TeXpresso: Start Document`. A separate window will open showing the compiled preview. The preview immediately updates when you edit the file in VS Code, and using SyncTeX the preview automatically jumps to the current code position (and vice versa for clicks in the preview window). Buttons at the top of the editor are provided to switch pages, and a compile log for seeing compilation errors can be found by using the Output panel.
 
-The TeXpresso status-bar entry opens preview controls: Start, Stop, Restart, Check Setup, logs, and Settings. It shows the main document while running and indicates startup or failure. Start and Stop are also available in the editor toolbar. Stop can cancel a preview that is still starting; Restart keeps the same main document when you are editing an included file.
+The TeXpresso status-bar entry opens preview controls: Rerun Once, Automatic Reruns, Pause/Resume, Start, Stop, Restart, Check Setup, logs, and Settings. It shows the main document while running and indicates startup, pause, or failure. Start and Stop are also available in the editor toolbar. Stop can cancel a preview that is still starting; Restart keeps the same main document when you are editing an included file.
 
 ### Troubleshooting
 
-Run **TeXpresso: Check Setup** from the Command Palette or preview controls. The **TeXpresso Setup** Output channel shows the extension host, main document, execution mode, package provider, executable lookup, and exact launch arguments. It also checks for `kpsewhich` and `tectonic` on the host (or inside WSL). This checks executable discovery; it does not launch TeXpresso or establish which features that build supports.
+Run **TeXpresso: Check Setup** from the Command Palette or preview controls. The **TeXpresso Setup** Output channel shows the extension host, main document, execution mode, package provider, executable lookup, and exact launch arguments. It also checks for `kpsewhich` and `tectonic` on the host (or inside WSL).
 
 Launch errors offer **Check Setup**, **Open Settings**, and **Show Engine Log**. The **TeXpresso Engine** channel contains process diagnostics, while **TeXpresso** and **TeXpresso Log** contain compiler output. Logs remain available after the preview exits. An engine crash or unsupported option is reported separately from an executable that cannot be found.
 
@@ -22,6 +22,18 @@ With automatic SyncTeX enabled, the preview synchronizes to the active cursor af
 Renaming a tracked source file or its containing folder through VS Code restarts the preview with the current main-document path. Included files found through configured `-I` directories are matched to their editor buffers, including paths containing spaces and buffers opened through directory symlinks.
 
 **Refresh** and a successful **External Compile and Refresh** restart the engine. A plain upstream `rescan` can miss auxiliary files that did not exist at startup, leaving references unresolved. Restarting clears that cache and automatic SyncTeX restores the active source position. It also resets manual preview navigation and zoom. External compilation saves dirty tracked source buffers first.
+
+With `texpresso.watchDependencies` enabled (the default), project files used by TeXpresso are watched for changes on disk. Recent engines report file lookups, allowing images and other resources to be tracked alongside TeX sources. Older engines still provide source-file tracking. Changes are batched into a rescan; creating a previously missing dependency or deleting an input restarts the preview to clear the engine's cached filesystem state. Editor buffers take precedence over disk updates, and engine-written files are excluded to avoid refresh loops.
+
+### Reruns, pause, and streaming
+
+Recent upstream builds support **Rerun Once** and **Automatic Reruns** in the preview controls and Command Palette. Enable `texpresso.autoRerun` to run additional passes for references and the table of contents when editing pauses. This setting takes effect immediately and keeps the preview window open. Bibliography programs still run through **External Compile and Refresh**.
+
+**Pause Preview** suspends compilation while you edit; **Resume Preview** applies the accumulated changes. The status bar indicates when the preview is paused.
+
+Enable `texpresso.streamFiles` for editor-managed file transfer. TeXpresso starts paused; the extension registers and supplies open buffers, then resumes it and supplies discovered project resources, including binary data. The extension also updates streamed resources when they change on disk. A changed streamed image currently restarts the preview to clear upstream's cached image dimensions. Use this setting instead of putting `-stream` in additional arguments.
+
+Automatic reruns require the merged July 2026 `rerun` support. Pause/resume and streaming require the merged May 2026 protocol additions. These features are tested against upstream [e8df770](https://github.com/let-def/texpresso/commit/e8df7709077b2f86f6e16e6c86ceefb86de06f8d). Automatic reruns and streaming default to off; if an older engine rejects a control, the extension reports it and disables that control for the session.
 
 ## Features
 
@@ -53,6 +65,9 @@ This extension contributes the following settings:
 * `texpresso.packageProvider`: Select Automatic, TeX Live, or Tectonic as the package provider (TeXpresso v0.2 or newer).
 * `texpresso.includeDirectories`: Additional include directories, relative to the main document or absolute.
 * `texpresso.arguments`: Additional command-line arguments, with one argument per array item.
+* `texpresso.autoRerun`: Run additional passes for references and the table of contents after editing pauses. Defaults to off and can be toggled from preview controls.
+* `texpresso.watchDependencies`: Refresh when project dependencies change on disk. Defaults to on.
+* `texpresso.streamFiles`: Supply project files through the editor protocol, including binary resources. Defaults to off.
 * `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
@@ -89,12 +104,13 @@ When VS Code runs on Windows and launches TeXpresso inside WSL, enable `texpress
 - `engine-process.ts` handles process startup, shutdown, errors, and UTF-8-safe protocol framing.
 - `protocol.ts` validates incoming messages and defines outgoing commands.
 - `document-sync.ts` synchronizes the main document and imported files. Range mode sends UTF-16 edits directly; legacy mode calculates byte offsets from a pre-edit text snapshot to preserve surrogate pairs.
+- `dependencies.ts` handles file lookups, dependency changes, and binary resource transfer. Watchers are shared by directory and disposed with their sessions.
 - `controls.ts`, `failures.ts`, and `setup.ts` provide preview controls and troubleshooting.
 - `logs.ts` applies output appends and truncations as TeXpresso backtracks.
 
 Compiler output, compiler logs, process diagnostics, and external builds have separate Output channels. Logs remain available after a session stops or fails.
 
-Current upstream TeXpresso does not expose a reliable version or capability query. Newer features must not be inferred from an unreported version; capability negotiation is deferred until upstream supports it.
+Automatic reruns and streaming are explicit settings. Received lookup messages extend dependency discovery; unknown-verb replies disable rejected controls for the session.
 
 ### Development checks
 
@@ -104,7 +120,7 @@ Run `npm run test:integration` for tests inside a real VS Code Extension Develop
 
 Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`.
 
-For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These tests compile and edit an included source through a spaced include path with both TeX Live and Tectonic, in byte and range modes. Both package providers must be installed and their packages cached or downloadable. Tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a graphical display, set `SDL_VIDEODRIVER=dummy`. The local baseline tested for this change is upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d`.
+For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These tests compile and edit an included source through a spaced include path with both TeX Live and Tectonic, in byte/range and filesystem/stream modes. They also check reference convergence, pause/resume, and image dimension updates after disk changes. Both package providers must be installed and their packages cached or downloadable. Tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a graphical display, set `SDL_VIDEODRIVER=dummy`. The local baseline tested for this change is upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d`.
 
 Theme integration and actual Windows/WSL execution still need platform-specific manual checks; the deterministic host fixture does not substitute for a real WSL installation.
 
@@ -112,6 +128,8 @@ Theme integration and actual Windows/WSL execution still need platform-specific 
 
 ### Unreleased
 
+- Support automatic and one-shot reruns, pause/resume, and streaming with registered buffers and binary resources.
+- Watch project dependencies using upstream file-lookup notifications, with source tracking on older engines.
 - Add preview status and controls, Restart, Check Setup, and actionable process errors.
 - Fix legacy Unicode edit offsets, forward SyncTeX line numbers, initial synchronization, and synchronization after compilation.
 - Restart previews after source renames and external compilation, including newly created auxiliary files.
