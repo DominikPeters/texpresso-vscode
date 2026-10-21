@@ -1,0 +1,179 @@
+{
+  "date": "2026-10-21",
+  "engine_revision": "e8df7709077b2f86f6e16e6c86ceefb86de06f8d",
+  "mupdf_revision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+  "profile": "native/profiles/mupdf.mk",
+  "native": {
+    "host": "macOS-15.7.9-arm64-arm-64bit",
+    "results": [
+      {
+        "width": 1600,
+        "height": 2263,
+        "repeats": 7,
+        "load_list_ms": 4.586,
+        "png_draw_ms": 1.712,
+        "png_encode_ms": 55.212,
+        "svg_export_ms": 1.702,
+        "png_bytes": 381529,
+        "svg_bytes": 339489,
+        "native_rgb_bytes": 10862400,
+        "fixture": "text",
+        "svg_gzip1_bytes": 44640,
+        "svg_gzip1_ms": 1.03,
+        "svg_gzip6_bytes": 35073,
+        "svg_gzip6_ms": 3.789
+      },
+      {
+        "width": 2400,
+        "height": 3395,
+        "repeats": 7,
+        "load_list_ms": 2.066,
+        "png_draw_ms": 3.539,
+        "png_encode_ms": 115.13,
+        "svg_export_ms": 1.754,
+        "png_bytes": 654656,
+        "svg_bytes": 339489,
+        "native_rgb_bytes": 24444000,
+        "fixture": "text",
+        "svg_gzip1_bytes": 44640,
+        "svg_gzip1_ms": 1.001,
+        "svg_gzip6_bytes": 35073,
+        "svg_gzip6_ms": 3.786
+      },
+      {
+        "width": 1600,
+        "height": 2263,
+        "repeats": 7,
+        "load_list_ms": 9.37,
+        "png_draw_ms": 26.593,
+        "png_encode_ms": 41.33,
+        "svg_export_ms": 5.441,
+        "png_bytes": 204527,
+        "svg_bytes": 1329624,
+        "native_rgb_bytes": 10862400,
+        "fixture": "vector",
+        "svg_gzip1_bytes": 171209,
+        "svg_gzip1_ms": 4.174,
+        "svg_gzip6_bytes": 140825,
+        "svg_gzip6_ms": 18.323
+      },
+      {
+        "width": 2400,
+        "height": 3395,
+        "repeats": 7,
+        "load_list_ms": 8.856,
+        "png_draw_ms": 40.46,
+        "png_encode_ms": 89.926,
+        "svg_export_ms": 5.421,
+        "png_bytes": 427453,
+        "svg_bytes": 1329624,
+        "native_rgb_bytes": 24444000,
+        "fixture": "vector",
+        "svg_gzip1_bytes": 171209,
+        "svg_gzip1_ms": 4.208,
+        "svg_gzip6_bytes": 140825,
+        "svg_gzip6_ms": 18.416
+      },
+      {
+        "width": 1600,
+        "height": 2263,
+        "repeats": 7,
+        "load_list_ms": 0.755,
+        "png_draw_ms": 2.77,
+        "png_encode_ms": 60.056,
+        "svg_export_ms": 19.571,
+        "png_bytes": 1005685,
+        "svg_bytes": 1067146,
+        "native_rgb_bytes": 10862400,
+        "fixture": "raster",
+        "svg_gzip1_bytes": 822710,
+        "svg_gzip1_ms": 26.064,
+        "svg_gzip6_bytes": 805440,
+        "svg_gzip6_ms": 32.697
+      },
+      {
+        "width": 2400,
+        "height": 3395,
+        "repeats": 7,
+        "load_list_ms": 1.034,
+        "png_draw_ms": 6.39,
+        "png_encode_ms": 105.569,
+        "svg_export_ms": 19.443,
+        "png_bytes": 1066818,
+        "svg_bytes": 1067146,
+        "native_rgb_bytes": 24444000,
+        "fixture": "raster",
+        "svg_gzip1_bytes": 822710,
+        "svg_gzip1_ms": 26.255,
+        "svg_gzip6_bytes": 805440,
+        "svg_gzip6_ms": 32.052
+      }
+    ],
+    "method": "One untimed warm-up; arithmetic mean of repeated exports from one display list."
+  },
+  "browser": {
+    "browser": "155.0.8059.85",
+    "viewport_css": [
+      820,
+      1152
+    ],
+    "dpr": 2,
+    "note": "Warm local Blob decode; frame timing includes two rAF waits. Canvas includes readback. No VS Code IPC.",
+    "results": [
+      {
+        "fixture": "text",
+        "format": "png",
+        "decode_ms": 7.857142865657806,
+        "decode_two_frames_ms": 32.61428571598871,
+        "canvas_draw_readback_ms": 8.59999999829701,
+        "naturalWidth": 1600,
+        "naturalHeight": 2263
+      },
+      {
+        "fixture": "text",
+        "format": "svg",
+        "decode_ms": 20.32857143027442,
+        "decode_two_frames_ms": 31.114285707473755,
+        "canvas_draw_readback_ms": 17.114285707473755,
+        "naturalWidth": 595,
+        "naturalHeight": 842
+      },
+      {
+        "fixture": "vector",
+        "format": "png",
+        "decode_ms": 5.671428578240531,
+        "decode_two_frames_ms": 24.50000000851495,
+        "canvas_draw_readback_ms": 7.985714290823255,
+        "naturalWidth": 1600,
+        "naturalHeight": 2263
+      },
+      {
+        "fixture": "vector",
+        "format": "svg",
+        "decode_ms": 25.69999999659402,
+        "decode_two_frames_ms": 38.07142857994352,
+        "canvas_draw_readback_ms": 10.085714289120265,
+        "naturalWidth": 595,
+        "naturalHeight": 842
+      },
+      {
+        "fixture": "raster",
+        "format": "png",
+        "decode_ms": 8.314285712582725,
+        "decode_two_frames_ms": 36.51428571769169,
+        "canvas_draw_readback_ms": 11.471428573131561,
+        "naturalWidth": 1600,
+        "naturalHeight": 2263
+      },
+      {
+        "fixture": "raster",
+        "format": "svg",
+        "decode_ms": 12.100000006811959,
+        "decode_two_frames_ms": 24.814285729612624,
+        "canvas_draw_readback_ms": 9.614285715988704,
+        "naturalWidth": 595,
+        "naturalHeight": 842
+      }
+    ]
+  }
+}

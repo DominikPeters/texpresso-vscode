@@ -5,6 +5,11 @@
 The old `web-wrapper-version` branch is independent historical work; new
 embedding work starts from current upstream and is implemented afresh.
 
+The [embedded preview design](../docs/embedded-preview.md) describes a proposed
+headless viewer backend, PNG/SVG export, transport, and SyncTeX/link integration.
+The [offline rendering experiment](bench/README.md) records initial native and
+browser measurements. The runtime still uses the existing external window.
+
 ## Working with the fork
 
 Initialize the engine only when doing native work:
