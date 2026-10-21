@@ -14,6 +14,7 @@ export interface SessionConfiguration {
   autoRerun: boolean;
   watchDependencies: boolean;
   streamFiles: boolean;
+  previewLocation?: 'auto' | 'editor' | 'window';
 }
 
 export interface LaunchCommand {
@@ -33,7 +34,8 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
     arguments: configuration.get<string[]>('arguments', []),
     autoRerun: configuration.get<boolean>('autoRerun', false),
     watchDependencies: configuration.get<boolean>('watchDependencies', true),
-    streamFiles: configuration.get<boolean>('streamFiles', false)
+    streamFiles: configuration.get<boolean>('streamFiles', false),
+    previewLocation: configuration.get<'auto' | 'editor' | 'window'>('previewLocation', 'auto')
   };
 }
 
@@ -48,6 +50,8 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
         throw new Error('The -I argument needs a directory.');
       }
       args.push('-I', directory);
+    } else if (argument === '-headless' || argument === '-capabilities') {
+      throw new Error('Use TeXpresso Preview Location in Settings instead of adding ' + argument + ' to arguments.');
     } else if (argument === '-stream') {
       throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
     } else if (argument === '-texlive' || argument === '-tectonic') {

@@ -7,6 +7,7 @@ import { SessionPaths } from './paths';
 import { TexpressoSession } from './session';
 import { ExternalCompiler } from './external-compile';
 import { PreviewControls } from './controls';
+import { PreviewController } from './preview-controller';
 import { describeFailure } from './failures';
 import { setupReport } from './setup';
 import { renamedPath } from './renames';
@@ -25,6 +26,7 @@ export function activate(context: vscode.ExtensionContext): void {
     void dispose.finally(() => shutdowns.delete(dispose));
   }
   let activeSession: TexpressoSession | undefined;
+  let preview: PreviewController | undefined;
   let startRequest = 0;
   let disposeTheme = () => {};
   let pendingRename: TexpressoSession | undefined;
@@ -91,6 +93,17 @@ export function activate(context: vscode.ExtensionContext): void {
     void vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor',
       !!running() && !!editor && !!running()?.sync.contains(editor.document));
     controls.update(activeSession?.state === 'stopped' ? undefined : activeSession);
+    if (activeSession?.embedded && activeSession.state === 'running' && !preview) {
+      const session = activeSession;
+      preview = new PreviewController(vscode, context.extensionUri, session,
+        () => { if (activeSession === session) { void stop(); } }, action => {
+          if (activeSession !== session) { return; }
+          if (action === 'restart') { void startDocument(session.document, false); }
+          else if (action === 'pause') { session.setPaused(!session.paused); }
+          else { output.show(true); }
+        });
+    }
+    preview?.update();
   }
 
   async function stop(): Promise<void> {
@@ -98,6 +111,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const previous = activeSession;
     activeSession = undefined;
     pendingRename = undefined;
+    preview?.dispose(); preview = undefined;
     if (previous) { retiring(previous.dispose()); }
     disposeTheme();
     retiring(compiler.dispose());
@@ -172,6 +186,7 @@ export function activate(context: vscode.ExtensionContext): void {
             }
           },
           synctex: (file, line, column) => { void revealSource(session, file, line, column); },
+          preview: event => { if (activeSession === session) { preview?.handle(event); } },
           rendered: () => {
             if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
               syncForward();
@@ -197,6 +212,7 @@ export function activate(context: vscode.ExtensionContext): void {
         });
       temporaryDirectory = undefined;
       const previous = activeSession;
+      preview?.dispose(); preview = undefined;
       activeSession = session;
       if (previous) { retiring(previous.dispose()); }
       disposeTheme();
@@ -228,7 +244,10 @@ export function activate(context: vscode.ExtensionContext): void {
       if (running() !== session) {
         return;
       }
-      const editor = await vscode.window.showTextDocument(document);
+      const sourceColumn = session.embedded
+        ? vscode.window.visibleTextEditors.find(editor => session.sync.contains(editor.document))?.viewColumn || vscode.ViewColumn.One
+        : undefined;
+      const editor = await vscode.window.showTextDocument(document, sourceColumn);
       if (running() !== session) {
         return;
       }
@@ -280,8 +299,8 @@ export function activate(context: vscode.ExtensionContext): void {
   // rescan does not reliably discover previously absent auxiliary files (#13).
   // Keep Refresh as a compatibility alias for a complete session restart.
   register('refresh', () => running() && startDocument(running()!.document, false));
-  register('nextPage', () => running()?.send(['next-page']));
-  register('previousPage', () => running()?.send(['previous-page']));
+  register('nextPage', () => preview ? preview.navigate(1) : running()?.send(['next-page']));
+  register('previousPage', () => preview ? preview.navigate(-1) : running()?.send(['previous-page']));
   register('syncTeXForward', () => syncForward());
   register('syncTeXForwardShortName', () => syncForward());
   register('defaultTheme', () => running()?.send(['theme', [1, 1, 1], [0, 0, 0]]));
@@ -314,7 +333,7 @@ export function activate(context: vscode.ExtensionContext): void {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
       }
       const launchKeys = ['command', 'useWSL', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
-        'streamFiles', 'watchDependencies'];
+        'streamFiles', 'watchDependencies', 'previewLocation'];
       if (launchKeys.some(key => event.affectsConfiguration('texpresso.' + key, session.document.uri)) &&
           JSON.stringify(readConfiguration(settings(session.document))) !== JSON.stringify(session.configuration)) {
         void vscode.window.showInformationMessage('TeXpresso settings changed. Restart the preview to apply them.', 'Restart')

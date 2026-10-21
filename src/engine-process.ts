@@ -1,12 +1,13 @@
 import { spawn, ChildProcess, SpawnOptions } from 'child_process';
-import type { Interface } from 'readline';
 import { readProtocol, Command, Message } from './protocol';
+import { readPreviewProtocol, type PreviewMessage, type PreviewImage } from './preview-protocol';
 import type { LaunchCommand } from './configuration';
 import { processFailure } from './failures';
 import { terminate } from './process-lifecycle';
 
 export interface EngineEvents {
-  message(message: Message): void;
+  message(message: Message | PreviewMessage): void;
+  image?(image: PreviewImage): void;
   debug(text: string): void;
   error(error: Error): void;
   exit(code: number | null, signal: NodeJS.Signals | null, intentional: boolean): void;
@@ -17,7 +18,7 @@ export type SpawnEngine = (command: string, args: string[], options: SpawnOption
 
 export class EngineProcess {
   private child?: ChildProcess;
-  private reader?: Interface;
+  private reader?: { close(): void };
   private stopping = false;
   private shutdown?: Promise<void>;
   private cancelStart?: () => void;
@@ -30,7 +31,7 @@ export class EngineProcess {
     return this.child !== undefined;
   }
 
-  start(launch: LaunchCommand): Promise<void> {
+  start(launch: LaunchCommand, preview = false): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.stopping) { resolve(); return; }
       let spawned = false;
@@ -67,7 +68,7 @@ export class EngineProcess {
         this.events.exit(code, signal, this.stopping);
       });
       if (child.stdout) {
-        this.reader = readProtocol(child.stdout, message => {
+        const message = (message: Message | PreviewMessage) => {
           if (!this.stopping) {
             try {
               this.events.message(message);
@@ -75,7 +76,10 @@ export class EngineProcess {
               this.events.error(error instanceof Error ? error : new Error(String(error)));
             }
           }
-        }, (line, error) => {
+        };
+        this.reader = preview ? readPreviewProtocol(child.stdout, message,
+          image => { if (!this.stopping) { this.events.image?.(image); } },
+          error => { if (!this.stopping) { this.events.error(error); } }) : readProtocol(child.stdout, message, (line, error) => {
           if (this.stopping) { return; }
           this.events.debug('Invalid protocol message: ' + line.slice(0, 250) + ' (' + String(error) + ')');
         });

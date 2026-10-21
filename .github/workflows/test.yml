@@ -83,6 +83,7 @@ jobs:
     env:
       TEXPRESSO_BINARY: ${{ github.workspace }}/.engine/build/texpresso
       TEXPRESSO_TEST_ARTIFACTS: ${{ github.workspace }}/artifacts/engine
+      TEXPRESSO_TEST_PREVIEW: '1'
       SDL_VIDEODRIVER: dummy
     steps:
       - uses: actions/checkout@v4
@@ -116,6 +117,9 @@ jobs:
       - name: Test native synchronization, controls, and dependencies
         run: npm run test:engine
         timeout-minutes: 4
+      - name: Test the real engine in a VS Code webview
+        run: xvfb-run -a npm run test:integration:preview
+        timeout-minutes: 5
       - name: Save engine diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
@@ -190,6 +194,9 @@ jobs:
       - name: Test Windows VS Code launching and synchronizing the real WSL engine
         run: npm run test:integration:engine
         timeout-minutes: 8
+      - name: Test binary preview images between WSL and the Windows webview
+        run: npm run test:integration:preview
+        timeout-minutes: 5
       - name: Save Windows host and real-engine diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

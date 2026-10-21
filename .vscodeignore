@@ -4,3 +4,5 @@
 !LICENSE
 !assets/texpresso_logo.png
 !dist/extension.js
+!media/preview.js
+!media/preview.css

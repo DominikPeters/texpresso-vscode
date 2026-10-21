@@ -54,13 +54,13 @@
       },
       {
         "command": "texpresso.previousPage",
-        "title": "TeXpresso: Show Previous Page in Preview Window",
+        "title": "TeXpresso: Show Previous Page in Preview",
         "icon": "$(arrow-circle-left)",
         "enablement": "texpresso.inActiveEditor"
       },
       {
         "command": "texpresso.nextPage",
-        "title": "TeXpresso: Show Next Page in Preview Window",
+        "title": "TeXpresso: Show Next Page in Preview",
         "icon": "$(arrow-circle-right)",
         "enablement": "texpresso.inActiveEditor"
       },
@@ -260,6 +260,22 @@
           "scope": "resource",
           "order": 21,
           "markdownDescription": "Start TeXpresso in streaming mode and supply project files, including binary resources, through the editor protocol. Requires the merged `-stream`, `register`, `resume`, and `open-base64` support (May 2026 or newer). Takes effect when starting a document."
+        },
+        "texpresso.previewLocation": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "editor",
+            "window"
+          ],
+          "default": "auto",
+          "enumDescriptions": [
+            "Use the editor preview when the installed engine supports it; otherwise open its window.",
+            "Show the preview in an editor tab. Requires a TeXpresso build with headless preview support.",
+            "Open the native TeXpresso preview window."
+          ],
+          "description": "Where to display the TeXpresso preview. Restart the preview after changing this setting.",
+          "scope": "resource"
         }
       }
     },
@@ -326,7 +342,8 @@
     "test:integration:engine": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --real-engine",
     "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine",
     "package:vsix": "node scripts/package.cjs",
-    "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged"
+    "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged",
+    "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

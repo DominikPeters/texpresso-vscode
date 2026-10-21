@@ -1,0 +1,23 @@
+import { execFile } from 'child_process';
+import type { SessionConfiguration, LaunchCommand } from './configuration';
+import { processFailure } from './failures';
+
+export function probePreview(config: SessionConfiguration, cwd?: string): Promise<boolean> {
+  const launch: LaunchCommand = config.useWSL
+    ? { command: 'wsl', args: ['-e', config.command, '-capabilities'] }
+    : { command: config.command, args: ['-capabilities'], cwd };
+  return new Promise((resolve, reject) => {
+    execFile(launch.command, launch.args, { cwd: launch.cwd, timeout: 3000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {
+      if (error) {
+        if (['ENOENT', 'ENOTDIR', 'EACCES', 'EPERM'].includes(String(error.code))) { reject(processFailure(error, 'launch')); }
+        else { resolve(false); }
+        return;
+      }
+      try {
+        const capabilities = JSON.parse(stdout);
+        resolve(capabilities?.previewProtocol === 1 && Array.isArray(capabilities.codecs) &&
+          capabilities.codecs.includes('png') && capabilities.synctex === true);
+      } catch { resolve(false); }
+    });
+  });
+}

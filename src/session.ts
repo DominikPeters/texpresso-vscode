@@ -8,6 +8,8 @@ import { SessionOutput } from './logs';
 import type { Command, Message, OutputTarget } from './protocol';
 import { EngineFailure, processFailure } from './failures';
 import { Dependencies, WatchFile } from './dependencies';
+import { probePreview } from './preview-capabilities';
+import { isPreviewMessage, type PreviewImage, type PreviewMessage } from './preview-protocol';
 import * as path from 'path';
 
 export type SessionState = 'starting' | 'running' | 'stopped' | 'failed';
@@ -20,9 +22,13 @@ export interface SessionEvents {
   rendered?(): void;
   restart?(): void;
   warning?(message: string): void;
+  preview?(event: PreviewMessage | PreviewImage | { sourceSequence: number }): void;
 }
 
-export interface SessionServices { watchFile?: WatchFile; roots?: readonly string[]; watchDelay?: number }
+export interface SessionServices {
+  watchFile?: WatchFile; roots?: readonly string[]; watchDelay?: number;
+  probePreview?: typeof probePreview;
+}
 
 export class TexpressoSession {
   private engine: EngineProcess;
@@ -36,6 +42,9 @@ export class TexpressoSession {
   paused = false;
   autoRerun: boolean;
   state: SessionState = 'starting';
+  embedded = false;
+  previewSequence = 0;
+  previewState?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
 
   constructor(
     readonly document: vscode.TextDocument,
@@ -45,12 +54,13 @@ export class TexpressoSession {
     private events: SessionEvents,
     private temporaryDirectory?: DirResult,
     spawnEngine?: SpawnEngine,
-    services: SessionServices = {}
+    private services: SessionServices = {}
   ) {
     this.autoRerun = configuration.autoRerun;
     this.output = new SessionOutput((target, text) => events.output(target, text));
     this.engine = new EngineProcess({
       message: message => this.handleMessage(message),
+      image: image => { if (!this.ended) { this.events.preview?.(image); } },
       debug: text => events.debug(text),
       error: error => this.fail(error),
       unsupported: verb => {
@@ -93,6 +103,15 @@ export class TexpressoSession {
     let launch;
     try {
       launch = buildLaunchCommand(this.configuration, this.paths);
+      const location = this.configuration.previewLocation;
+      if (location && location !== 'window') {
+        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd);
+        if (this.ended) { return; }
+        if (!this.embedded && location === 'editor') {
+          throw new EngineFailure('configuration', 'This TeXpresso build does not support the editor preview. Choose a build with headless preview support, or set Preview Location to Window.', 'PREVIEW_UNSUPPORTED');
+        }
+        if (this.embedded) { launch.args.splice(launch.args.length - 1, 0, '-headless'); }
+      }
       const directories: string[] = [];
       for (let i = 0; i < launch.args.length; i++) {
         if (launch.args[i] === '-I') {
@@ -101,12 +120,12 @@ export class TexpressoSession {
       }
       this.sync.includeDirectories = directories;
     } catch (error) {
-      this.fail(new EngineFailure('configuration', error instanceof Error ? error.message : String(error)));
+      this.fail(error instanceof EngineFailure ? error : new EngineFailure('configuration', error instanceof Error ? error.message : String(error)));
       return;
     }
     try {
       this.events.debug('Starting: ' + JSON.stringify([launch.command, ...launch.args]));
-      await this.engine.start(launch);
+      await this.engine.start(launch, this.embedded);
       if (this.ended) {
         return;
       }
@@ -128,11 +147,16 @@ export class TexpressoSession {
     }
   }
 
-  private handleMessage(message: Message): void {
+  private handleMessage(message: Message | PreviewMessage): void {
     if (this.ended) {
       return;
     }
-    if (this.output.handle(message)) {
+    if (isPreviewMessage(message)) {
+      if (message[0] === 'preview-state') { this.previewState = message; }
+      this.events.preview?.(message);
+      return;
+    }
+    if (this.output.handle(message as Message)) {
       if (message[0] === 'flush') {
         this.events.rendered?.();
       }
@@ -145,7 +169,7 @@ export class TexpressoSession {
         break;
       case 'reset-sync': this.sync.initialize(); break;
       case 'synctex':
-        this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3]);
+        this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3] === -1 ? undefined : message[3]);
         break;
       case 'lookup-file': this.dependencies.lookup(message[1], message[2], message[3]); break;
       default:
@@ -159,6 +183,11 @@ export class TexpressoSession {
   send(command: Command): void {
     if (!this.ended) {
       this.engine.send(command);
+      if (this.embedded && ['open', 'open-base64', 'close', 'change', 'change-range', 'rescan', 'rerun-once'].includes(command[0])) {
+        this.previewSequence++;
+        this.events.preview?.({ sourceSequence: this.previewSequence });
+        this.engine.send(['preview-barrier', this.previewSequence]);
+      }
     }
   }
 

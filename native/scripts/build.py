@@ -6,6 +6,7 @@ import os
 import platform
 import shlex
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 from common import NATIVE, ROOT, check_source, export_source, load_lock, pinned_engine, run, sha256
@@ -101,6 +102,13 @@ def main():
          'CSYSFLAGS=' + shell_flags(['-isysroot', sdk, '-DXETEX_MAC',
                                     '-I' + str(args.icu_prefix / 'include'),
                                     '-I' + str(host_prefix / 'include'), '-fno-common'])], cwd=txp)
+    probe = subprocess.run([str(txp / 'build/texpresso'), '-capabilities'], capture_output=True, text=True, timeout=5)
+    try:
+        capabilities = json.loads(probe.stdout) if probe.returncode == 0 else {}
+    except ValueError:
+        capabilities = {}
+    if not isinstance(capabilities, dict):
+        capabilities = {}
     metadata = {'schema': 1, 'kind': 'development-host-build', 'platform': 'darwin',
                 'architecture': platform.machine(), 'engineRevision': revision,
                 'mupdfRevision': lock['mupdf']['revision'], 'icu': icu_metadata,
@@ -108,7 +116,8 @@ def main():
                 'sdk': Path(sdk).name,
                 'hostPackageVersions': versions,
                 'profiles': {p.name: sha256(p) for p in (NATIVE / 'profiles').iterdir()},
-                'features': {'externalWindow': True, 'embeddedPreview': False}}
+                'features': {'externalWindow': True, 'embeddedPreview': capabilities.get('previewProtocol') == 1},
+                'capabilities': capabilities}
     notices = {'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
                'lcms2-LICENSE': mupdf / 'thirdparty/lcms2/LICENSE',
                'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE'}

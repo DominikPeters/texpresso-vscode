@@ -13,6 +13,9 @@ export type Command =
   | ['change-range', string, number, number, number, number, string]
   | ['synctex-forward', string, number]
   | ['theme', number[], number[]]
+  | ['preview-barrier', number]
+  | ['preview-render', number, number, number, number, number]
+  | ['preview-inverse', number, number, number, number, number]
   | ['next-page'] | ['previous-page'] | ['rescan'];
 
 export type Message =
@@ -29,14 +32,15 @@ function isCount(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
 }
 
-function validateMessage(value: unknown): value is Message | [string, ...unknown[]] {
+export function validateMessage(value: unknown): value is Message | [string, ...unknown[]] {
   if (!Array.isArray(value) || typeof value[0] !== 'string') {
     return false;
   }
   const [, a, b, c] = value;
   switch (value[0]) {
     case 'input-file': return isCount(a) && typeof b === 'string';
-    case 'synctex': return typeof a === 'string' && isCount(b) && (c === undefined || isCount(c));
+    // Upstream uses -1 when SyncTeX has no column information.
+    case 'synctex': return typeof a === 'string' && isCount(b) && (c === undefined || c === -1 || isCount(c));
     case 'append-lines':
       return (a === 'out' || a === 'log') && value.slice(2).every(line => typeof line === 'string');
     case 'append':

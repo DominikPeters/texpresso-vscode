@@ -10,6 +10,7 @@ jobs:
     env:
       SDL_VIDEODRIVER: dummy
       TEXPRESSO_TEST_TECTONIC: '0'
+      TEXPRESSO_TEST_PREVIEW: '1'
     steps:
       - uses: actions/checkout@v4
         with:

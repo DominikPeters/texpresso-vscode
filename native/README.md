@@ -8,7 +8,9 @@ embedding work starts from current upstream and is implemented afresh.
 The [embedded preview design](../docs/embedded-preview.md) describes a proposed
 headless viewer backend, PNG/SVG export, transport, and SyncTeX/link integration.
 The [offline rendering experiment](bench/README.md) records initial native and
-browser measurements. The runtime still uses the existing external window.
+browser measurements. The first headless PNG backend and VS Code preview are
+implemented; SVG and link collection remain planned follow-ups. See the engine's
+[preview protocol](texpresso/PREVIEW-PROTOCOL.md) for its current wire contract.
 
 ## Working with the fork
 
@@ -84,7 +86,9 @@ The profiles reproduce the size experiment: static MuPDF without HTML, XPS,
 OCR, JavaScript, document export, or the large Noto/language-specific CJK fonts;
 static ICU with unused locale/formatting/collation data removed. All converters
 and line-breaking dictionaries remain. Base14 and smaller CJK fonts remain for
-graphics/PDF fallback. The current engine still opens its own SDL window.
+graphics/PDF fallback. The engine supports either its SDL window or the
+`-headless -json` editor preview. The build manifest records runtime capability
+probe results as well as whether the embedded preview is supported.
 
 ## Validation
 

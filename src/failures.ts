@@ -17,6 +17,9 @@ export function describeFailure(error: unknown, configuration?: SessionConfigura
 } {
   const failure = error instanceof EngineFailure ? error : undefined;
   const detail = error instanceof Error ? error.message : String(error);
+  if (failure?.code === 'PREVIEW_UNSUPPORTED') {
+    return { message: detail, setting: 'texpresso.previewLocation' };
+  }
   if (failure?.phase === 'configuration') {
     return { message: 'TeXpresso settings are invalid: ' + detail, setting: 'texpresso.arguments' };
   }

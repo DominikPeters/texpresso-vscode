@@ -1,7 +1,11 @@
 # Embedded TeXpresso preview
 
-Status: proposed architecture, with local export/browser experiments. No runtime
-or engine behavior changes are implemented by this document.
+Status: the first PNG vertical slice is implemented and tested in VS Code.
+It includes headless startup, capability detection, binary framing, page
+navigation/zoom, both SyncTeX directions, source barriers, and panel lifecycle.
+SVG, clipped raster rendering, continuous scrolling, and links remain proposed
+follow-ups below. The current wire contract is
+[documented with the engine](../native/texpresso/PREVIEW-PROTOCOL.md).
 
 ## Recommendation
 

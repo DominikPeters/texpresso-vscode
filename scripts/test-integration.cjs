@@ -5,7 +5,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 (async () => {
-  const realEngine = process.argv.includes('--real-engine');
+  const preview = process.argv.includes('--preview');
+  const realEngine = process.argv.includes('--real-engine') || preview;
   const useWSL = realEngine && process.platform === 'win32';
   const binary = process.env.TEXPRESSO_BINARY;
   if (realEngine && !binary) { throw new Error('--real-engine requires TEXPRESSO_BINARY (a Linux path when using WSL)'); }
@@ -20,11 +21,12 @@ const { spawnSync } = require('node:child_process');
   const builder = path.resolve(__dirname, '../src/test/fixtures/build.cjs');
   const quote = value => process.platform === 'win32' ? '"' + value + '"' : "'" + value.replace(/'/g, "'\\''") + "'";
   fs.writeFileSync(path.join(workspace, '.vscode/settings.json'), JSON.stringify({
-    'texpresso.command': realEngine ? (useWSL ? 'env' : binary) : process.execPath,
-    'texpresso.arguments': realEngine ? (useWSL ? ['SDL_VIDEODRIVER=dummy', binary] : []) : [fixture],
+    'texpresso.command': realEngine ? (useWSL && !preview ? 'env' : binary) : process.execPath,
+    'texpresso.arguments': realEngine ? (useWSL && !preview ? ['SDL_VIDEODRIVER=dummy', binary] : []) : [fixture],
     'texpresso.useWSL': useWSL,
     'texpresso.packageProvider': realEngine ? 'texlive' : 'auto',
     'texpresso.useChangeRangeMode': true,
+    'texpresso.previewLocation': preview ? 'editor' : 'window',
     'texpresso.externalCompileCommand': quote(process.execPath) + ' ' + quote(builder),
     'workbench.startupEditor': 'none',
     'chat.disableAIFeatures': true,
@@ -67,7 +69,7 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (realEngine ? 'real-engine.js' : 'index.js')),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
