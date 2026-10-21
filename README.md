@@ -140,7 +140,7 @@ The WSL job caches an exported Ubuntu distribution containing TeX Live and the n
 
 ## Release Notes
 
-### Unreleased
+### 1.9.0
 
 - Support automatic and one-shot reruns, pause/resume, and streaming with registered buffers and binary resources.
 - Watch project dependencies using upstream file-lookup notifications, with source tracking on older engines.
