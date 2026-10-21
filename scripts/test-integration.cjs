@@ -6,7 +6,9 @@ const { spawnSync } = require('node:child_process');
 
 (async () => {
   // macOS Unix-domain sockets have a short path limit; keep the profile nearby.
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'txp-')));
+  // The native implementation also expands Windows 8.3 names (RUNNER~1),
+  // matching the paths used by the engine's own canonicalization.
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'txp-')));
   const workspace = path.join(root, 'workspace');
   fs.mkdirSync(path.join(workspace, '.vscode'), { recursive: true });
   const fixture = path.resolve(__dirname, '../src/test/fixtures/engine.cjs');
