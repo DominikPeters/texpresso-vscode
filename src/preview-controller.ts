@@ -8,6 +8,8 @@ import type { PreviewImage, PreviewImageHeader, PreviewMessage } from './preview
 const icons = require('../media/codicons.json') as Record<string, string>;
 const icon = (name: string) => icons[name].replace('<svg ', '<svg aria-hidden="true" focusable="false" ');
 
+type RegionRequest = { token: number; bounds: number[]; width: number; purpose: 'region' | 'detail' };
+
 type PreviewEvent = PreviewMessage | PreviewImage | { sourceSequence: number };
 
 export class PreviewController {
@@ -19,8 +21,9 @@ export class PreviewController {
   private page = 0;
   private width = 1200;
   private nextId = 0;
-  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: { token: number; bounds: number[]; width: number } };
-  private region?: { token: number; bounds: number[]; width: number };
+  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest };
+  private region?: RegionRequest;
+  private detail?: RegionRequest;
   private decodeTimeout?: NodeJS.Timeout;
   private state?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
   private shown?: PreviewImageHeader;
@@ -33,6 +36,7 @@ export class PreviewController {
       { viewColumn: api.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [media] });
     const webview = this.panel.webview;
     const script = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.js'));
+    const viewportScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-viewport.js'));
     const lensScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-lens.js'));
     const style = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.css'));
     let visible = this.panel.visible;
@@ -40,7 +44,7 @@ export class PreviewController {
     this.panel.onDidChangeViewState(() => {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible;
-      this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.target = undefined;
+      this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
       this.shown = undefined;
       // A restored webview announces ready; a retained live one answers ping.
       if (this.panel.visible) { void this.post({ type: 'ping' }); }
@@ -68,8 +72,9 @@ export class PreviewController {
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="status">Waiting for the first page…</div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
-      <div id="sheet" hidden><img id="image" alt="Rendered LaTeX page" draggable="false"><div id="highlight" hidden></div></div>
+      <div id="sheet" hidden><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="highlight" hidden></div></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
+      <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
       <script nonce="${this.instance}" src="${script}"></script></body></html>`;
     if (session.previewState) { this.handle(session.previewState); }
@@ -78,7 +83,7 @@ export class PreviewController {
   handle(event: PreviewEvent): void {
     if (this.disposed) { return; }
     if ('sourceSequence' in event) {
-      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined;
+      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined;
       void this.post({ type: 'invalidate' });
     } else if ('header' in event) {
       this.image(event);
@@ -90,7 +95,7 @@ export class PreviewController {
           this.status(); this.flush();
           break;
         case 'preview-invalidated':
-          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined;
+          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined;
           void this.post({ type: 'invalidate' });
           break;
         case 'preview-retry':
@@ -99,8 +104,8 @@ export class PreviewController {
         case 'preview-error':
           if (this.inFlight?.id === event[1]) {
             const region = this.inFlight.region;
-            this.release(); this.region = undefined;
-            void this.post({ type: region ? 'region-error' : 'error', text: event[2] });
+            this.release(); if (region) { this[region.purpose] = undefined; }
+            void this.post({ type: region ? 'region-error' : 'error', text: event[2], purpose: region?.purpose });
             if (region) { this.flush(); }
           }
           break;
@@ -123,7 +128,7 @@ export class PreviewController {
   navigate(delta: number): void {
     this.page = Math.max(0, this.page + delta);
     if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
-    this.dirty = true; this.shown = undefined; this.region = undefined; this.target = undefined; this.status(); this.flush();
+    this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; this.status(); this.flush();
   }
 
   private receive(value: unknown): void {
@@ -149,19 +154,21 @@ export class PreviewController {
           this.release(); void this.post({ type: 'error', text: 'Could not decode the preview image. Restart the preview to try again.' });
         }
         break;
-      case 'region': {
+      case 'region':
+      case 'detail': {
         const h = this.shown, b = m.bounds;
         if (this.session.previewRegions && h && m.revision === h.revision && m.sequence === this.session.previewSequence &&
             m.page === h.page && Number.isSafeInteger(m.token) && (m.token as number) >= 0 &&
             Array.isArray(b) && b.length === 4 && b.every(n => typeof n === 'number' && Number.isFinite(n)) &&
             b[0] >= h.bounds[0] && b[1] >= h.bounds[1] && b[2] <= h.bounds[2] && b[3] <= h.bounds[3] &&
-            b[2] > b[0] && b[3] > b[1] && Number.isFinite(m.width) && (m.width as number) >= 1 && (m.width as number) <= 1024) {
-          this.region = { token: m.token as number, bounds: b, width: Math.round(m.width as number) };
+            b[2] > b[0] && b[3] > b[1] && Number.isFinite(m.width) && (m.width as number) >= 1 && (m.width as number) <= (m.type === 'detail' ? 4096 : 1024)) {
+          this[m.type] = { token: m.token as number, bounds: b, width: Math.round(m.width as number), purpose: m.type };
           this.flush();
         }
         break;
       }
       case 'cancel-region': this.region = undefined; break;
+      case 'cancel-detail': this.detail = undefined; break;
       case 'inverse': {
         const h = this.shown;
         if (h && m.revision === h.revision && m.sequence === this.session.previewSequence && m.page === h.page &&
@@ -178,13 +185,14 @@ export class PreviewController {
   private flush(): void {
     if (!this.ready || !this.panel.visible || this.disposed || this.inFlight ||
         !this.state || this.state[2] !== this.session.previewSequence || this.session.state !== 'running') { return; }
-    // Page updates take priority over the latest replaceable magnifier request.
+    // Page updates take priority; interactive magnification precedes background detail.
+    // All requests share one frame/decode credit.
     if (this.dirty) {
-      this.dirty = false; this.region = undefined;
+      this.dirty = false; this.region = undefined; this.detail = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page };
       this.session.send(['preview-render', this.nextId, this.page, this.width, this.state[1], this.state[2]]);
-    } else if (this.region && this.shown) {
-      const region = this.region; this.region = undefined;
+    } else if ((this.region || this.detail) && this.shown) {
+      const region = (this.region || this.detail)!; this[region.purpose] = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, region };
       const b = region.bounds;
       this.session.send(['preview-region', this.nextId, this.page, region.width, this.state[1], this.state[2], b[0], b[1], b[2], b[3]]);
@@ -209,7 +217,7 @@ export class PreviewController {
     const target = this.target?.page === h.page && this.target.revision === h.revision &&
       this.target.sequence === h.sequence ? this.target : undefined;
     if (target && !request.region) { this.target = undefined; }
-    void this.post(request.region ? { type: 'region', header: h, bytes, token: request.region.token } :
+    void this.post(request.region ? { type: request.region.purpose, header: h, bytes, token: request.region.token } :
       { type: 'image', header: h, bytes, target })
       .then(delivered => { if (!delivered && this.inFlight?.id === h.requestId) { this.release(); this.ready = false; this.dirty = true; } });
     this.status();

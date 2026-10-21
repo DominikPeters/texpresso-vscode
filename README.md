@@ -18,6 +18,12 @@ an ordinary older/upstream installation may still require Window. Point
 `texpresso.command` at the new build's `bin/texpresso` to try it. The extension
 does not yet install or bundle the engine automatically.
 
+Pinch on a trackpad (or Control/Command scroll) to zoom around the pointer.
+Rendering uses the display's device pixel ratio and follows changes between
+monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable
+engines render the visible area separately for sharp text without rasterizing
+the entire enlarged page.
+
 The preview toolbar provides page navigation, fit width/page, zoom,
 pause/resume, restart, and compiler output, using VS Code product icons.
 Toggle the magnifier (or press **M** while the preview has focus), then hold the
@@ -172,7 +178,7 @@ Run `npm run test:package` to build and inspect a VSIX, install it into an isola
 
 Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`. Failed host runs retain logs, the engine trace, and their synthetic workspace under `artifacts/`; `TEXPRESSO_TEST_ARTIFACTS` overrides that location. CI uploads diagnostics on failure and cancels superseded runs.
 
-For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These use **TeX Live only by default** and test byte/range edits, filesystem/stream modes, reference convergence, pause/resume, and image updates. Set `TEXPRESSO_TEST_TECTONIC=1` to opt into Tectonic cases, which may download TeX packages. Native tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a display, set `SDL_VIDEODRIVER=dummy`; set `TEXPRESSO_TEST_ARTIFACTS` to retain native-engine diagnostics on failure. The Linux and WSL CI jobs build the committed `native/texpresso` submodule revision from the fork and run the TeX Live cases.
+For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These use **TeX Live only by default** and test byte/range edits, filesystem/stream modes, reference convergence, pause/resume, and image updates. Set `TEXPRESSO_TEST_TECTONIC=1` to opt into Tectonic cases, which may download TeX packages. Native tests are skipped when `TEXPRESSO_BINARY` is unset. The runner uses SDL's dummy video driver to avoid opening or focusing native windows on every start/restart; set `TEXPRESSO_TEST_NATIVE_WINDOW=1` only when deliberately testing visible windows. Set `TEXPRESSO_TEST_ARTIFACTS` to retain native-engine diagnostics on failure. The Linux and WSL CI jobs build the committed `native/texpresso` submodule revision from the fork and run the TeX Live cases.
 
 Run `npm run test:integration:engine` with `TEXPRESSO_BINARY` set to test real compilation through the extension inside VS Code. On Windows, this launches the binary in the default WSL distribution, so provide its **Linux path**. CI installs Ubuntu 24.04 in WSL 2, builds the pinned TeXpresso revision with TeX Live, and runs Windows VS Code against it. The suite checks magic-root and include-directory paths containing spaces and Unicode, unsaved edits with both byte and range protocols, disk dependency refresh, streaming, restart, and termination of Linux engine/worker processes. The same suite can run against a native engine on Linux/macOS. It selects SDL's dummy video driver, as upstream's own test targets do; visible-window rendering and theme integration still need separate checks.
 

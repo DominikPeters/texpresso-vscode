@@ -1,4 +1,4 @@
-/* global acquireVsCodeApi, TexpressoLensCache */
+/* global acquireVsCodeApi, TexpressoLensCache, TexpressoViewport */
 (() => {
   'use strict';
   const vscode = acquireVsCodeApi();
@@ -15,7 +15,9 @@
   let phase = 'running', timer, lastWidth = 0, lastRequestedPage = -1, restoreScroll = true;
   const post = message => vscode.postMessage({ instance, ...message });
   const save = () => vscode.setState({ page, zoom, left: viewport.scrollLeft, top: viewport.scrollTop });
-  const width = () => Math.min(4096, Math.max(1, Math.ceil(sheet.getBoundingClientRect().width * window.devicePixelRatio)));
+  const { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
+  const width = () => rasterWidth(bounds, sheet.getBoundingClientRect().width, window.devicePixelRatio);
+  let customZoomOption, pinchAnchor, pinchOrigin, lastPinchTime = 0;
 
   function describe() {
     element('page').value = String(page + 1);
@@ -41,13 +43,14 @@
       if (zoom === 'page') { scale = Math.min(scale, Math.max(0.05, (viewport.clientHeight) / pageHeight)); }
     }
     sheet.style.width = `${pageWidth * scale}px`;
+    sheet.style.height = `${pageHeight * scale}px`;
     sheet.style.aspectRatio = `${pageWidth} / ${pageHeight}`;
     // The empty sheet still participates in measurement before the first image.
     if (!header) { sheet.hidden = false; sheet.classList.add('waiting'); }
     let option = [...zoomSelect.options].find(option => option.value === String(zoom));
     if (!option) {
-      option = document.createElement('option'); option.value = String(zoom);
-      option.textContent = `${Math.round(Number(zoom) * 100)}%`; zoomSelect.appendChild(option);
+      if (!customZoomOption) { customZoomOption = document.createElement('option'); zoomSelect.appendChild(customZoomOption); }
+      customZoomOption.value = String(zoom); customZoomOption.textContent = `${Math.round(Number(zoom) * 100)}%`;
     }
     zoomSelect.value = String(zoom);
     if (request) {
@@ -60,6 +63,7 @@
         }
       }, 100);
     }
+    scheduleDetail();
     save();
   }
 
@@ -71,14 +75,40 @@
     closeLens();
     page = Math.max(0, Math.min(100000, value));
     if (complete && count > 0) { page = Math.min(page, count - 1); }
-    stale = true; generation++; element('highlight').hidden = true;
+    clearDetail(); stale = true; generation++; element('highlight').hidden = true;
     viewport.scrollTop = 0; viewport.scrollLeft = 0;
     describe(); layout();
   }
-  function changeZoom(value) { closeLens(); zoom = value; layout(); }
-  function stepZoom(factor) {
-    const effective = (bounds[2] - bounds[0]) ? sheet.getBoundingClientRect().width / (bounds[2] - bounds[0]) * 72 / 96 : 1;
-    changeZoom(Math.round(Math.min(4, Math.max(0.25, effective * factor)) * 100) / 100);
+  function changeZoom(value, origin, anchor) {
+    closeLens();
+    if (!anchor) { pinchAnchor = undefined; }
+    const before = sheet.getBoundingClientRect();
+    const view = viewport.getBoundingClientRect();
+    origin ||= { x: view.left + viewport.clientWidth / 2, y: view.top + viewport.clientHeight / 2 };
+    zoom = value; layout();
+    if (before.width && before.height) {
+      // Measure both rectangles: page centering and scrollbar appearance also
+      // move the page, so a scale-only scroll offset would drift at fit width.
+      const delta = scrollCorrection(before, sheet.getBoundingClientRect(), origin, anchor);
+      const left = viewport.scrollLeft + delta.x, top = viewport.scrollTop + delta.y;
+      const clippedX = left < 0 || left > viewport.scrollWidth - viewport.clientWidth;
+      const clippedY = top < 0 || top > viewport.scrollHeight - viewport.clientHeight;
+      viewport.scrollLeft = left; viewport.scrollTop = top;
+      if (anchor && (clippedX || clippedY)) {
+        // At the page boundary the browser cannot preserve the requested
+        // origin. Rebase that axis instead of accumulating unreachable scroll.
+        const actual = sheet.getBoundingClientRect();
+        if (clippedX) { anchor.x = (origin.x - actual.left) / actual.width; }
+        if (clippedY) { anchor.y = (origin.y - actual.top) / actual.height; }
+      }
+    }
+    save();
+  }
+  function stepZoom(factor, origin, anchor) {
+    if (factor === 1) { return; }
+    const effective = Number(zoom) || sheet.getBoundingClientRect().width / (bounds[2] - bounds[0]) * 72 / 96;
+    const next = clamp(effective * factor, 0.25, 4);
+    if (next !== effective) { changeZoom(next, origin, anchor); }
   }
   function highlight(target) {
     if (!header || stale || target.page !== header.page) { return; }
@@ -91,6 +121,49 @@
     mark.hidden = false;
     highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
     requestAnimationFrame(() => mark.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+  }
+
+  let detailImage = element('detail'), detailUrl, detailTimer, detailFailed = false;
+  const detailCache = new DetailCache();
+  function clearDetail() {
+    clearTimeout(detailTimer); detailCache.reset(); detailFailed = false;
+    detailImage.hidden = true; post({ type: 'cancel-detail' });
+    if (detailUrl) { URL.revokeObjectURL(detailUrl); detailUrl = undefined; }
+  }
+  function scheduleDetail() {
+    clearTimeout(detailTimer);
+    detailTimer = setTimeout(requestDetail, 120);
+  }
+  function requestDetail() {
+    if (stale || !header || !regions || detailFailed) { return; }
+    const view = viewport.getBoundingClientRect();
+    const request = detailCache.request(bounds, image.getBoundingClientRect(),
+      { left: view.left + viewport.clientLeft, top: view.top + viewport.clientTop,
+        right: view.left + viewport.clientLeft + viewport.clientWidth,
+        bottom: view.top + viewport.clientTop + viewport.clientHeight }, window.devicePixelRatio, header.width);
+    if (request) { post({ type: 'detail', ...request, revision: header.revision, sequence: header.sequence, page: header.page }); }
+  }
+  async function receiveDetail(m) {
+    const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
+    const candidate = new Image(); candidate.src = url;
+    try {
+      await candidate.decode();
+      if (stale || !header || m.token !== detailCache.pending?.token || m.header.revision !== header.revision ||
+          m.header.sequence !== header.sequence || m.header.page !== header.page) { URL.revokeObjectURL(url); }
+      else {
+        const previous = detailUrl, b = m.header.bounds;
+        detailCache.accept(m.token, m.header); detailUrl = url;
+        candidate.id = 'detail'; candidate.alt = ''; candidate.draggable = false;
+        candidate.style.left = `${100 * (b[0] - bounds[0]) / (bounds[2] - bounds[0])}%`;
+        candidate.style.top = `${100 * (b[1] - bounds[1]) / (bounds[3] - bounds[1])}%`;
+        candidate.style.width = `${100 * (b[2] - b[0]) / (bounds[2] - bounds[0])}%`;
+        candidate.style.height = `${100 * (b[3] - b[1]) / (bounds[3] - bounds[1])}%`;
+        detailImage.replaceWith(candidate); detailImage = candidate;
+        if (previous) { requestAnimationFrame(() => URL.revokeObjectURL(previous)); }
+      }
+    } catch { URL.revokeObjectURL(url); detailFailed = true; detailCache.reset(); }
+    post({ type: 'decoded', id: m.header.requestId });
+    scheduleDetail();
   }
 
   const lens = element('lens'), lensBase = element('lensBase');
@@ -170,13 +243,16 @@
         element('magnify').disabled = !regions;
         element('magnify').title = regions ? 'Magnifier: hold the mouse button on the page (M)' : 'Magnifier requires a newer TeXpresso build';
         if (page !== m.page) {
-          closeLens(); page = m.page; stale = true; generation++; element('highlight').hidden = true; layout();
+          closeLens(); clearDetail(); page = m.page; stale = true; generation++; element('highlight').hidden = true; layout();
         }
         describe(); break;
-      case 'invalidate': closeLens(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
-      case 'error': closeLens(); stale = true; status.textContent = m.text; status.classList.add('error'); break;
+      case 'invalidate': closeLens(); clearDetail(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
+      case 'error': closeLens(); clearDetail(); stale = true; status.textContent = m.text; status.classList.add('error'); break;
       case 'target': highlight(m); break;
-      case 'region-error': closeLens(); break;
+      case 'region-error':
+        if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
+        break;
+      case 'detail': await receiveDetail(m); break;
       case 'region': {
         const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
         const candidate = new Image(); candidate.src = url;
@@ -199,7 +275,7 @@
         requestLens(); break;
       }
       case 'image': {
-        closeLens();
+        closeLens(); clearDetail();
         const token = ++generation;
         const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
         const candidate = new Image(); candidate.src = url;
@@ -231,9 +307,20 @@
   element('zoomOut').onclick = () => stepZoom(0.8);
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
   for (const id of ['restart', 'pause', 'output']) { element(id).onclick = () => post({ type: id }); }
-  viewport.addEventListener('scroll', () => { closeLens(); save(); }, { passive: true });
+  viewport.addEventListener('scroll', () => { closeLens(); scheduleDetail(); save(); }, { passive: true });
   viewport.addEventListener('wheel', event => {
-    if (event.ctrlKey || event.metaKey) { event.preventDefault(); stepZoom(event.deltaY < 0 ? 1.1 : 1 / 1.1); }
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      const origin = { x: event.clientX, y: event.clientY }, now = performance.now();
+      if (!pinchAnchor || now - lastPinchTime > 250 || origin.x !== pinchOrigin.x || origin.y !== pinchOrigin.y) {
+        const rect = sheet.getBoundingClientRect();
+        pinchAnchor = { x: (origin.x - rect.left) / rect.width, y: (origin.y - rect.top) / rect.height };
+      }
+      // Keep the page point for the whole gesture. Re-reading it after each
+      // rounded scrollLeft/Top would accumulate drift for tiny finger moves.
+      pinchOrigin = origin; lastPinchTime = now;
+      stepZoom(wheelFactor(event.deltaY, event.deltaMode), origin, pinchAnchor);
+    } else { pinchAnchor = undefined; }
   }, { passive: false });
   viewport.addEventListener('keydown', event => {
     if (event.key === 'PageDown' || event.key === 'PageUp') {
@@ -247,7 +334,21 @@
       x: bounds[0] + (event.clientX - rect.left) / rect.width * (bounds[2] - bounds[0]),
       y: bounds[1] + (event.clientY - rect.top) / rect.height * (bounds[3] - bounds[1]) });
   });
-  window.addEventListener('resize', () => { closeLens(); layout(); });
-  window.addEventListener('pagehide', () => { closeLens(); clearTimeout(timer); clearTimeout(highlightTimer); if (objectUrl) { URL.revokeObjectURL(objectUrl); } });
+  const resize = () => { closeLens(); layout(); };
+  window.addEventListener('resize', resize);
+  let resizeFrame;
+  const observer = new ResizeObserver(() => {
+    cancelAnimationFrame(resizeFrame); resizeFrame = requestAnimationFrame(resize);
+  });
+  observer.observe(viewport);
+  let resolution;
+  function watchResolution() {
+    resolution?.removeEventListener('change', densityChanged);
+    resolution = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    resolution.addEventListener('change', densityChanged);
+  }
+  function densityChanged() { watchResolution(); resize(); }
+  watchResolution();
+  window.addEventListener('pagehide', () => { closeLens(); clearDetail(); observer.disconnect(); cancelAnimationFrame(resizeFrame); resolution?.removeEventListener('change', densityChanged); clearTimeout(timer); clearTimeout(highlightTimer); if (objectUrl) { URL.revokeObjectURL(objectUrl); } });
   ready();
 })();

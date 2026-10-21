@@ -142,3 +142,39 @@ test('magnifier shares decode credit, coalesces pointer movement, and yields to 
     assert.equal(f.commands.at(-1)?.[0], 'preview-render', 'old page is no longer available for inverse navigation');
   } finally { f.controller.dispose(); }
 });
+
+test('viewport detail shares decode credit, yields to the magnifier, and keeps inverse coordinates on the full page', () => {
+  const f = fixture();
+  (f.session as typeof f.session & { previewRegions: boolean }).previewRegions = true;
+  const frame = (id: number, bounds: [number, number, number, number] = [0, 0, 612, 792]) =>
+    ({ header: { requestId: id, revision: 1, sequence: 0, page: 0, bounds, width: 1732, height: 2241,
+      mime: 'image/png' as const, byteLength: 4 }, bytes: Buffer.alloc(4) });
+  const region = (type: string, token: number, width: number) =>
+    f.send({ type, token, revision: 1, sequence: 0, page: 0, bounds: [100, 100, 500, 500], width });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1732 });
+    f.controller.handle(frame(1));
+    region('detail', 10, 2000); region('region', 20, 480);
+    assert.equal(f.commands.length, 1, 'base decode owns the frame credit');
+    f.send({ type: 'decoded', id: 1 });
+    assert.equal(f.commands.at(-1)?.[3], 480, 'magnifier precedes background detail');
+    f.controller.handle(frame(2, [100, 100, 500, 500]));
+    f.send({ type: 'decoded', id: 2 });
+    assert.equal(f.commands.at(-1)?.[3], 2000);
+    f.controller.handle(frame(3, [100, 100, 500, 500]));
+    assert.equal(f.messages.filter(m => m.type === 'detail').at(-1)?.token, 10);
+    f.send({ type: 'decoded', id: 3 });
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 600, y: 700 });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-inverse', 'crop never replaces full-page hit bounds');
+    region('region', 30, 2000); region('detail', 40, 4097);
+    assert.equal(f.commands.at(-1)?.[0], 'preview-inverse', 'purpose-specific raster limits');
+    region('detail', 50, 2000);
+    f.controller.handle(['preview-error', f.commands.at(-1)![1] as number, 'crop failed']);
+    assert.equal(f.messages.at(-1)?.purpose, 'detail');
+    region('detail', 60, 2000);
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(frame(f.commands.at(-1)![1] as number, [100, 100, 500, 500]));
+    assert.equal(f.messages.filter(m => m.type === 'detail').length, 1, 'stale detail is dropped after edits');
+  } finally { f.controller.dispose(); }
+});

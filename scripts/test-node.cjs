@@ -10,7 +10,13 @@ const files = fs.readdirSync(directory).filter(file => file.endsWith('.test.js')
 // Native engines share a format cache. Concurrent cold starts can read a
 // partially written .fmt while another test file is generating it.
 const concurrency = process.argv[2] === 'engine' ? ['--test-concurrency=1'] : [];
-const result = spawnSync(process.execPath, ['--test', '--test-reporter=spec', ...concurrency, ...files], { stdio: 'inherit' });
+// Legacy-window coverage must not steal focus on every engine start/restart.
+// Showing native windows is an explicit, local manual-test opt-in.
+const env = { ...process.env };
+if (process.argv[2] === 'engine' && env.TEXPRESSO_TEST_NATIVE_WINDOW !== '1') {
+  env.SDL_VIDEODRIVER = 'dummy';
+}
+const result = spawnSync(process.execPath, ['--test', '--test-reporter=spec', ...concurrency, ...files], { stdio: 'inherit', env });
 if (result.error) {
   throw result.error;
 }

@@ -12,10 +12,10 @@ button:focus-visible, select:focus-visible, input:focus-visible, main:focus-visi
 input { width: 52px; margin-left: 3px; }
 #status { padding: 4px 8px; min-height: 24px; color: var(--vscode-descriptionForeground); font-size: 12px; }
 #status.error { color: var(--vscode-errorForeground,#f66); }
-main { flex: 1; min-height: 0; overflow: auto; padding: 0; background: var(--vscode-sideBar-background,#252526); }
+main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
 #sheet { position: relative; margin: 0 auto; background: white;  flex-shrink: 0; }
 #sheet.waiting { height: 0; overflow: hidden; }
-#image { width: 100%; display: block; user-select: none; }
+#image { width: 100%; height: 100%; display: block; user-select: none; }
 #highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; }
 #empty { margin: 64px auto; text-align: center; color: var(--vscode-descriptionForeground); }
 [hidden] { display: none !important; }
@@ -30,3 +30,5 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 #highlight { animation: locate 1.5s ease-out forwards; }
 @keyframes locate { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #highlight { animation: none; } }
+
+#detail { position: absolute; pointer-events: none; user-select: none; }
