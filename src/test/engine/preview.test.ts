@@ -21,7 +21,7 @@ for (const streamFiles of [false, true]) {
       let state: Extract<PreviewMessage, ['preview-state', ...unknown[]]> | undefined;
       const images = new Map<number, PreviewImage>(), retries = new Set<number>();
       const targets: Extract<PreviewMessage, ['preview-forward', ...unknown[]]>[] = [];
-      const sources: { file: string; line: number }[] = [];
+      const sources: { file: string; line: number; word?: string }[] = [];
       let failure: Error | undefined, debug = '', output = '', id = 0;
       const originalVideo = process.env.SDL_VIDEODRIVER;
       // This engine must work even when no video driver can be initialized.
@@ -30,7 +30,7 @@ for (const streamFiles of [false, true]) {
         previewLocation: 'editor', streamFiles }, new SessionPaths(main.fileName, false), () => [main], {
         state() {}, output: (target, text) => { if (target === 'out') { output = text; } },
         debug: text => { debug = (debug + text).slice(-100000); }, error: error => { failure = error; },
-        synctex: (file, line) => sources.push({ file, line }),
+        synctex: (file, line, _column, word) => sources.push({ file, line, word }),
         preview: event => {
           if ('header' in event) { images.set(event.header.requestId, event); }
           else if (Array.isArray(event)) {
@@ -59,7 +59,7 @@ for (const streamFiles of [false, true]) {
         throw new Error('Too many obsolete render requests');
       };
       try {
-        await session.start(); assert.equal(session.embedded, true);
+        await session.start(); assert.equal(session.embedded, true); assert.equal(session.previewRegions, true);
         const first = await render(0, 1200);
         assert.deepEqual(first.bytes.subarray(0, 8), Buffer.from('89504e470d0a1a0a', 'hex'));
         assert.equal(first.header.sequence, session.previewSequence);
@@ -67,6 +67,13 @@ for (const streamFiles of [false, true]) {
         const zoomed = await render(0, 4096);
         assert.ok(zoomed.header.width > first.header.width);
         assert.ok(zoomed.header.width * zoomed.header.height <= 4000000, 'native pixel budget');
+        const regionId = ++id;
+        session.send(['preview-region', regionId, 0, 480, zoomed.header.revision, zoomed.header.sequence, 60, 60, 120, 120]);
+        await until(() => images.has(regionId));
+        const region = images.get(regionId)!;
+        assert.deepEqual(region.header.bounds, [60, 60, 120, 120]);
+        assert.ok(region.header.width >= 478 && region.header.width <= 481);
+        assert.ok(region.header.width * region.header.height < 240000, 'loupe only rasterizes the requested area');
         const second = await render(1, 1200);
         assert.equal(second.header.page, 1); assert.match(output, /SECOND-PAGE/);
         session.sync.syncForward(main, 5);
@@ -75,6 +82,7 @@ for (const streamFiles of [false, true]) {
         session.send(['preview-inverse', target[1], target[2], target[3], target[4], target[5]]);
         await until(() => sources.length > 0);
         assert.equal(sources[0].file, main.fileName); assert.equal(sources[0].line, 6);
+        assert.ok(sources[0].word && /Second|page|target/.test(sources[0].word), 'inverse lookup includes the clicked word');
 
         const previousSources = sources.length;
         contents = contents.replace('First page.', 'Edited first page.');

@@ -343,7 +343,8 @@
     "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine",
     "package:vsix": "node scripts/package.cjs",
     "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged",
-    "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview"
+    "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview",
+    "demo:preview": "npm run package:vsix && node scripts/open-preview-demo.cjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

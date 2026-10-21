@@ -1,3 +1,4 @@
+import { refineSourceWord } from './source-word';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -185,7 +186,7 @@ export function activate(context: vscode.ExtensionContext): void {
               debug.appendLine(text);
             }
           },
-          synctex: (file, line, column) => { void revealSource(session, file, line, column); },
+          synctex: (file, line, column, word) => { void revealSource(session, file, line, column, word); },
           preview: event => { if (activeSession === session) { preview?.handle(event); } },
           rendered: () => {
             if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
@@ -234,7 +235,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  async function revealSource(session: TexpressoSession, file: string, line: number, column = 1): Promise<void> {
+  async function revealSource(session: TexpressoSession, file: string, line: number, column?: number, word?: string): Promise<void> {
     if (running() !== session) {
       return;
     }
@@ -251,7 +252,9 @@ export function activate(context: vscode.ExtensionContext): void {
       if (running() !== session) {
         return;
       }
-      const position = document.validatePosition(new vscode.Position(Math.max(0, line - 1), Math.max(0, column - 1)));
+      const refined = column === undefined || column <= 0 ? refineSourceWord(document.getText(), line - 1, word) : undefined;
+      const position = document.validatePosition(new vscode.Position(refined?.line ?? Math.max(0, line - 1),
+        refined?.character ?? Math.max(0, (column || 1) - 1)));
       editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
       editor.selection = new vscode.Selection(position, position);
     } catch (error) {

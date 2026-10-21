@@ -19,18 +19,31 @@ an ordinary older/upstream installation may still require Window. Point
 does not yet install or bundle the engine automatically.
 
 The preview toolbar provides page navigation, fit width/page, zoom,
-pause/resume, restart, and compiler output. Use Control click (Command click on
-macOS) on the page for inverse SyncTeX. Forward SyncTeX reveals and highlights
-the corresponding point. Closing the preview stops its session; hiding its tab
+pause/resume, restart, and compiler output, using VS Code product icons.
+Toggle the magnifier (or press **M** while the preview has focus), then hold the
+left mouse button on the page for a sharp 2.5× loupe; release to dismiss it, or
+press Escape to leave magnifier mode. The loupe requires an engine advertising
+region rendering. Use Control click (Command click on macOS) on the page for inverse SyncTeX. Forward SyncTeX reveals and highlights
+the corresponding point, with a highlight that fades out. Inverse SyncTeX
+refines line-only locations to a unique matching word in nearby source text;
+ambiguous or macro-generated words keep the original line location. Closing the
+preview stops its session; hiding its tab
 releases the browser view and restores its page/zoom/scroll state when reopened.
 The last successful image remains visible while updating or after an engine
 failure.
 
 This first implementation uses native MuPDF PNG output with a four-megapixel
 budget per image. At high zoom the browser scales the bounded image; sharper
-clipped rendering, SVG, continuous scrolling, text selection, and clickable
-hyperref links are follow-ups. See the
+full-viewport clipped rendering, SVG, continuous scrolling, text selection, and
+clickable hyperref links are follow-ups. See the
 [embedded preview design](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/embedded-preview.md).
+
+For a local demo, build the pinned engine into
+`native/.bundles/<platform>-<architecture>-preview` (or set `TEXPRESSO_BINARY`),
+then run `npm run demo:preview`. This packages the current extension and opens
+an editable sample beside its preview in an isolated VS Code profile. It
+preserves sample edits and uses the installed TeX Live without downloading an
+engine or TeX packages. `VSCODE_CLI` can select a different Code executable.
 
 ### Troubleshooting
 

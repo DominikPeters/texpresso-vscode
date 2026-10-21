@@ -1,0 +1,28 @@
+\documentclass{article}
+\usepackage[margin=26mm]{geometry}
+\usepackage{amsmath}
+\title{TeXpresso inside VS Code}
+\author{A live preview, beside your source}
+\date{}
+\begin{document}
+\maketitle
+\typeout{PREVIEW-BEFORE}
+\section{An immediate connection}
+Edit the source and this page updates. Your document stays in the editor,
+with page navigation, zoom, and source synchronization close at hand.
+\[
+  \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi},
+  \qquad \sum_{k=1}^{n} k = \frac{n(n+1)}{2}.
+\]
+\section{From source to page and back}
+Forward SyncTeX reveals the corresponding place in the preview.
+Control or Command click on the page to return to the source.
+\begin{align*}
+  f(x+h) &= f(x) + h f'(x) + O(h^2),\\
+  e^{i\theta} &= \cos\theta + i\sin\theta.
+\end{align*}
+\newpage
+\typeout{PREVIEW-SECOND}
+\section{The next page}
+Pages are compiled when requested, and images have a bounded pixel budget.
+\end{document}

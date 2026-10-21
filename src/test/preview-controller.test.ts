@@ -88,3 +88,57 @@ test('forward SyncTeX from an obsolete rendering pass cannot navigate the curren
     assert.equal(f.messages.find(m => m.type === 'image')?.target, undefined);
   } finally { f.controller.dispose(); }
 });
+
+test('forward targets are consumed once so later zooming does not revive a highlight', () => {
+  const f = fixture();
+  const frame = (id: number) => ({ header: { requestId: id, revision: 1, sequence: 0, page: 0,
+    bounds: [0, 0, 612, 792] as [number, number, number, number], width: 1000, height: 1295,
+    mime: 'image/png' as const, byteLength: 4 }, bytes: Buffer.alloc(4) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(['preview-forward', 1, 0, 0, 100, 100]);
+    f.controller.handle(frame(1));
+    assert.ok(f.messages.find(m => m.type === 'image')?.target);
+    f.send({ type: 'decoded', id: 1 });
+    f.send({ type: 'viewport', page: 0, width: 1200 });
+    f.controller.handle(frame(2));
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)?.target, undefined);
+    f.send({ type: 'decoded', id: 2 });
+    f.controller.handle(['preview-forward', 1, 0, 0, 100, 100]);
+    assert.equal(f.messages.at(-1)?.type, 'target');
+    f.send({ type: 'viewport', page: 0, width: 1400 });
+    f.controller.handle(frame(3));
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)?.target, undefined);
+  } finally { f.controller.dispose(); }
+});
+
+test('magnifier shares decode credit, coalesces pointer movement, and yields to page updates', () => {
+  const f = fixture();
+  (f.session as typeof f.session & { previewRegions: boolean }).previewRegions = true;
+  const frame = (id: number) => ({ header: { requestId: id, revision: 1, sequence: 0, page: 0,
+    bounds: [0, 0, 612, 792] as [number, number, number, number], width: 1000, height: 1295,
+    mime: 'image/png' as const, byteLength: 4 }, bytes: Buffer.alloc(4) });
+  const region = (token: number, bounds = [100, 100, 200, 200]) =>
+    f.send({ type: 'region', token, revision: 1, sequence: 0, page: 0, bounds, width: 480 });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(frame(1));
+    region(1); region(2);
+    assert.equal(f.commands.length, 1);
+    f.send({ type: 'decoded', id: 1 });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-region');
+    f.controller.handle(frame(2));
+    assert.equal(f.messages.filter(m => m.type === 'region').at(-1)?.token, 2);
+    region(3, [-1, 0, 20, 20]); // Invalid bounds cannot replace a request.
+    region(4); region(5);
+    f.send({ type: 'viewport', page: 1, width: 1000 });
+    f.send({ type: 'decoded', id: 2 });
+    assert.equal(f.commands.length, 3);
+    assert.equal(f.commands.at(-1)?.[0], 'preview-render');
+    assert.equal(f.commands.at(-1)?.[2], 1);
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 500, y: 500 });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-render', 'old page is no longer available for inverse navigation');
+  } finally { f.controller.dispose(); }
+});

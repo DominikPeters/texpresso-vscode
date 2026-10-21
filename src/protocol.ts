@@ -15,12 +15,13 @@ export type Command =
   | ['theme', number[], number[]]
   | ['preview-barrier', number]
   | ['preview-render', number, number, number, number, number]
+  | ['preview-region', number, number, number, number, number, number, number, number, number]
   | ['preview-inverse', number, number, number, number, number]
   | ['next-page'] | ['previous-page'] | ['rescan'];
 
 export type Message =
   | ['input-file', number, string]
-  | ['synctex', string, number, number?]
+  | ['synctex', string, number, number?, string?]
   | ['append-lines', OutputTarget, ...string[]]
   | ['truncate-lines', OutputTarget, number]
   | ['append', OutputTarget, number, string]
@@ -40,7 +41,8 @@ export function validateMessage(value: unknown): value is Message | [string, ...
   switch (value[0]) {
     case 'input-file': return isCount(a) && typeof b === 'string';
     // Upstream uses -1 when SyncTeX has no column information.
-    case 'synctex': return typeof a === 'string' && isCount(b) && (c === undefined || c === -1 || isCount(c));
+    case 'synctex': return typeof a === 'string' && isCount(b) && (c === undefined || c === -1 || isCount(c)) &&
+      (value[4] === undefined || (typeof value[4] === 'string' && value[4].length <= 256));
     case 'append-lines':
       return (a === 'out' || a === 'log') && value.slice(2).every(line => typeof line === 'string');
     case 'append':

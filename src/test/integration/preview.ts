@@ -57,7 +57,7 @@ Pages are compiled when requested, and images have a bounded pixel budget.
 \end{document}
 `);
   const document = await vscode.workspace.openTextDocument(file);
-  const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+  const editor = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false });
   const settings = vscode.workspace.getConfiguration('texpresso', document.uri);
   await settings.update('syncTeXForwardOnSelection', false, vscode.ConfigurationTarget.WorkspaceFolder);
   const command = (name: string) => vscode.commands.executeCommand('texpresso.' + name);
@@ -73,10 +73,14 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     await until(async () => (await renders()).length > before && (await renders()).at(-1)!.page === 0, 'return to first page');
 
     const offset = document.getText().indexOf('PREVIEW-BEFORE');
-    const edit = new vscode.WorkspaceEdit();
-    edit.replace(document.uri, new vscode.Range(document.positionAt(offset), document.positionAt(offset + 14)), 'PREVIEW-AFTER');
+    await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false, preserveFocus: false });
+    editor.selection = new vscode.Selection(document.positionAt(offset), document.positionAt(offset + 14));
     const previousId = (await renders()).at(-1)!.id;
-    assert.ok(await vscode.workspace.applyEdit(edit));
+    await vscode.commands.executeCommand('type', { text: 'PREVIEW-AFTER' });
+    assert.ok(document.getText().includes('PREVIEW-AFTER'), 'source accepts VS Code typing');
+    const beforeMove = editor.selection.active;
+    await vscode.commands.executeCommand('cursorMove', { to: 'right', by: 'character', value: 1 });
+    assert.ok(!editor.selection.active.isEqual(beforeMove), 'source cursor moves after typing');
     await until(async () => (await logs()).includes('PREVIEW-AFTER') && (await renders()).at(-1)!.id > previousId,
       'unsaved editor edit triggers a new preview');
     console.log('PASS: real VS Code webview decodes pages and updates after unsaved edits');

@@ -17,7 +17,7 @@ export interface SessionEvents {
   state(state: SessionState): void;
   output(target: OutputTarget, contents: string): void;
   debug(text: string): void;
-  synctex(file: string, line: number, column?: number): void;
+  synctex(file: string, line: number, column?: number, word?: string): void;
   error(error: Error): void;
   rendered?(): void;
   restart?(): void;
@@ -43,6 +43,7 @@ export class TexpressoSession {
   autoRerun: boolean;
   state: SessionState = 'starting';
   embedded = false;
+  previewRegions = false;
   previewSequence = 0;
   previewState?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
 
@@ -105,7 +106,7 @@ export class TexpressoSession {
       launch = buildLaunchCommand(this.configuration, this.paths);
       const location = this.configuration.previewLocation;
       if (location && location !== 'window') {
-        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd);
+        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; });
         if (this.ended) { return; }
         if (!this.embedded && location === 'editor') {
           throw new EngineFailure('configuration', 'This TeXpresso build does not support the editor preview. Choose a build with headless preview support, or set Preview Location to Window.', 'PREVIEW_UNSUPPORTED');
@@ -169,7 +170,7 @@ export class TexpressoSession {
         break;
       case 'reset-sync': this.sync.initialize(); break;
       case 'synctex':
-        this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3] === -1 ? undefined : message[3]);
+        this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3] === -1 ? undefined : message[3], message[4]);
         break;
       case 'lookup-file': this.dependencies.lookup(message[1], message[2], message[3]); break;
       default:

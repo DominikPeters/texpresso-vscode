@@ -1,0 +1,12 @@
+{
+  "name": "texpresso-preview-demo-launcher",
+  "publisher": "local",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "main": "./index.cjs",
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}
