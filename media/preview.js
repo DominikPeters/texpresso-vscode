@@ -1,4 +1,4 @@
-/* global acquireVsCodeApi */
+/* global acquireVsCodeApi, TexpressoLensCache */
 (() => {
   'use strict';
   const vscode = acquireVsCodeApi();
@@ -93,12 +93,14 @@
     requestAnimationFrame(() => mark.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
   }
 
-  const lens = element('lens'), lensImage = element('lensImage'), lensBase = element('lensBase');
+  const lens = element('lens'), lensBase = element('lensBase');
+  let lensImage = element('lensImage');
+  const lensCache = new TexpressoLensCache();
   const lensSize = 240, magnification = 2.5;
-  let magnify = false, regions = false, pointer, lensUrl, lensHeader, lensTimer, lensToken = 0, lastLensRequest = 0;
+  let magnify = false, regions = false, pointer, lensUrl, lensHeader;
   function closeLens() {
-    pointer = undefined; clearTimeout(lensTimer); lensTimer = undefined; lens.hidden = true;
-    lensHeader = undefined; lensImage.hidden = true; lensToken++;
+    pointer = undefined; lensCache.reset(); lens.hidden = true;
+    lensHeader = undefined; lensImage.hidden = true;
     post({ type: 'cancel-region' });
     if (lensUrl) { URL.revokeObjectURL(lensUrl); lensUrl = undefined; }
   }
@@ -115,7 +117,7 @@
     lens.style.left = `${left}px`; lens.style.top = `${top}px`;
     // A cached copy of the current image follows the pointer immediately while
     // the sharp, clipped rendering is in flight. No extra full-page raster.
-    lensBase.src = image.src;
+    if (lensBase.src !== image.src) { lensBase.src = image.src; }
     lensBase.style.width = `${rect.width * magnification}px`;
     lensBase.style.left = `${lensSize / 2 - (pointer.clientX - rect.left) * magnification}px`;
     lensBase.style.top = `${lensSize / 2 - (pointer.clientY - rect.top) * magnification}px`;
@@ -127,16 +129,13 @@
     lens.hidden = false;
   }
   function requestLens() {
-    lensTimer = undefined;
     if (!pointer || stale || !header) { return; }
-    lastLensRequest = performance.now();
     const scale = image.getBoundingClientRect().width / (bounds[2] - bounds[0]);
-    const span = lensSize / (scale * magnification);
-    const w = Math.min(span, bounds[2] - bounds[0]), h = Math.min(span, bounds[3] - bounds[1]);
-    const x = Math.max(bounds[0], Math.min(bounds[2] - w, pointer.x - w / 2));
-    const y = Math.max(bounds[1], Math.min(bounds[3] - h, pointer.y - h / 2));
-    post({ type: 'region', token: ++lensToken, revision: header.revision, sequence: header.sequence, page: header.page,
-      bounds: [x, y, x + w, y + h], width: Math.min(1024, Math.ceil(w * scale * magnification * window.devicePixelRatio)) });
+    const request = lensCache.request(pointer, bounds, lensSize / (scale * magnification),
+      scale * magnification * window.devicePixelRatio);
+    if (request) {
+      post({ type: 'region', ...request, revision: header.revision, sequence: header.sequence, page: header.page });
+    }
   }
   function moveLens(event) {
     const rect = image.getBoundingClientRect();
@@ -145,7 +144,7 @@
       x: bounds[0] + (event.clientX - rect.left) / rect.width * (bounds[2] - bounds[0]),
       y: bounds[1] + (event.clientY - rect.top) / rect.height * (bounds[3] - bounds[1]) };
     positionLens();
-    if (!lensTimer) { lensTimer = setTimeout(requestLens, Math.max(0, 60 - (performance.now() - lastLensRequest))); }
+    requestLens();
   }
   element('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   image.addEventListener('pointerdown', event => {
@@ -183,14 +182,21 @@
         const candidate = new Image(); candidate.src = url;
         try {
           await candidate.decode();
-          if (!pointer || stale || !header || m.token !== lensToken || m.header.revision !== header.revision ||
+          if (!pointer || stale || !header || m.token !== lensCache.pending?.token || m.header.revision !== header.revision ||
               m.header.sequence !== header.sequence || m.header.page !== header.page) { URL.revokeObjectURL(url); }
           else {
-            if (lensUrl) { URL.revokeObjectURL(lensUrl); }
-            lensUrl = url; lensHeader = m.header; lensImage.src = url; lensImage.hidden = false; positionLens();
+            const previous = lensUrl;
+            lensCache.accept(m.token, m.header);
+            lensUrl = url; lensHeader = m.header;
+            // Swap in the already decoded element; keep the old pixels visible
+            // throughout rendering/decoding instead of clearing an image src.
+            candidate.id = 'lensImage'; candidate.alt = 'Magnified page region'; candidate.draggable = false;
+            lensImage.replaceWith(candidate); lensImage = candidate; positionLens();
+            if (previous) { requestAnimationFrame(() => URL.revokeObjectURL(previous)); }
           }
-        } catch { URL.revokeObjectURL(url); }
-        post({ type: 'decoded', id: m.header.requestId }); break;
+        } catch { URL.revokeObjectURL(url); closeLens(); }
+        post({ type: 'decoded', id: m.header.requestId });
+        requestLens(); break;
       }
       case 'image': {
         closeLens();

@@ -105,3 +105,62 @@ for (const streamFiles of [false, true]) {
       }
     });
 }
+
+test('real headless SyncTeX targets prose records above and below their baselines instead of paragraph/page containers',
+  { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 90000 }, async () => {
+    const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'texpresso-hit-')));
+    const contents = await fs.readFile(path.resolve(__dirname, '../../../scripts/preview-demo/sample.tex'), 'utf8');
+    const main = document(path.join(root, 'sample.tex'), contents);
+    await fs.writeFile(main.fileName, contents);
+    let state: Extract<PreviewMessage, ['preview-state', ...unknown[]]> | undefined;
+    let frame: PreviewImage | undefined;
+    const targets: Extract<PreviewMessage, ['preview-forward', ...unknown[]]>[] = [];
+    const sources: { line: number; word?: string }[] = [];
+    let failure: Error | undefined, debug = '', id = 0;
+    const session = new TexpressoSession(main, { ...config, command: binary!, packageProvider: 'texlive', previewLocation: 'editor' },
+      new SessionPaths(main.fileName, false), () => [main], {
+        state() {}, output() {}, debug: text => { debug = (debug + text).slice(-100000); }, error: error => { failure = error; },
+        synctex: (_file, line, _column, word) => sources.push({ line, word }),
+        preview: event => {
+          if ('header' in event) { frame = event; }
+          else if (Array.isArray(event)) {
+            if (event[0] === 'preview-state') { state = event; }
+            if (event[0] === 'preview-forward') { targets.push(event); }
+          }
+        }
+      });
+    const until = async (check: () => boolean) => {
+      const deadline = Date.now() + 30000;
+      while (!check()) {
+        if (failure || Date.now() > deadline) { throw failure || new Error('SyncTeX hit timeout\n' + debug.slice(-5000)); }
+        await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    };
+    try {
+      await session.start();
+      for (let attempt = 0; !frame && attempt < 20; attempt++) {
+        await until(() => !!state && state[2] === session.previewSequence);
+        session.send(['preview-render', ++id, 0, 1200, state![1], state![2]]);
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+      assert.ok(frame);
+      session.sync.syncForward(main, 17);
+      await until(() => targets.length === 1);
+      const first = targets[0];
+      session.sync.syncForward(main, 18);
+      await until(() => targets.length === 2);
+      const control = targets[1];
+      for (const [x, y, line] of [
+        [first[4] - 10, first[5] - 5, 18],
+        [first[4] + 60, first[5] - 3, 18],
+        [control[4] - 10, control[5] - 5, 19],
+        [first[4] - 10, first[5] + 14, 19]
+      ]) {
+        const count = sources.length;
+        session.send(['preview-inverse', first[1], first[2], 0, x, y]);
+        await until(() => sources.length > count);
+        assert.equal(sources.at(-1)!.line, line, `click ${x},${y} must select prose, not begin-align or newpage`);
+      }
+      assert.equal(sources[0].word, 'Forward');
+    } finally { await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+  });

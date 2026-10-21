@@ -33,6 +33,7 @@ export class PreviewController {
       { viewColumn: api.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [media] });
     const webview = this.panel.webview;
     const script = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.js'));
+    const lensScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-lens.js'));
     const style = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.css'));
     let visible = this.panel.visible;
     webview.onDidReceiveMessage(value => this.receive(value));
@@ -69,6 +70,7 @@ export class PreviewController {
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
       <div id="sheet" hidden><img id="image" alt="Rendered LaTeX page" draggable="false"><div id="highlight" hidden></div></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
+      <script nonce="${this.instance}" src="${lensScript}"></script>
       <script nonce="${this.instance}" src="${script}"></script></body></html>`;
     if (session.previewState) { this.handle(session.previewState); }
   }
