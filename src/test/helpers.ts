@@ -4,6 +4,7 @@ import type { ChildProcess } from 'node:child_process';
 import type * as vscode from 'vscode';
 import type { SessionConfiguration } from '../configuration';
 import type { Command } from '../protocol';
+import * as path from 'node:path';
 
 export const config: SessionConfiguration = {
   command: 'texpresso', useWSL: false, useChangeRangeMode: true,
@@ -11,6 +12,7 @@ export const config: SessionConfiguration = {
 };
 
 export function document(fileName: string, text = 'abc'): vscode.TextDocument {
+  fileName = /^[a-z]:\\/i.test(fileName) ? fileName : path.resolve(fileName);
   return {
     fileName, uri: { fsPath: fileName }, getText: () => text,
     isClosed: false, isUntitled: false, isDirty: false

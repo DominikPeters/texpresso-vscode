@@ -1,0 +1,34 @@
+name: Tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        vscode: [stable]
+        include:
+          - os: ubuntu-latest
+            vscode: '1.88.0'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      VSCODE_VERSION: ${{ matrix.vscode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: VS Code integration tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:integration
+      - name: VS Code integration tests (macOS and Windows)
+        if: runner.os != 'Linux'
+        run: npm run test:integration

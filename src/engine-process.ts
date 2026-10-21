@@ -2,6 +2,7 @@ import { spawn, ChildProcess, SpawnOptions } from 'child_process';
 import type { Interface } from 'readline';
 import { readProtocol, Command, Message } from './protocol';
 import type { LaunchCommand } from './configuration';
+import { processFailure } from './failures';
 
 export interface EngineEvents {
   message(message: Message): void;
@@ -16,6 +17,7 @@ export class EngineProcess {
   private child?: ChildProcess;
   private reader?: Interface;
   private stopping = false;
+  stderrTail = '';
 
   constructor(private events: EngineEvents, private spawnEngine: SpawnEngine = spawn) {}
 
@@ -36,10 +38,11 @@ export class EngineProcess {
       });
       child.on('error', error => {
         if (!spawned) {
-          reject(error);
-          this.events.error(error);
+          const failure = processFailure(error, 'launch');
+          reject(failure);
+          this.events.error(failure);
         } else if (!this.stopping) {
-          this.events.error(error);
+          this.events.error(processFailure(error, 'connection'));
         }
       });
       child.once('close', (code, signal) => {
@@ -66,17 +69,23 @@ export class EngineProcess {
       child.stderr?.setEncoding('utf8');
       child.stderr?.on('data', (text: string) => {
         if (!this.stopping) {
+          this.stderrTail = (this.stderrTail + text).slice(-8000);
           this.events.debug(text);
         }
       });
       child.stdin?.on('error', error => {
         if (!this.stopping) {
-          this.events.error(error);
+          this.events.error(processFailure(error, 'connection'));
         }
       });
       child.stdout?.on('error', error => {
         if (!this.stopping) {
-          this.events.error(error);
+          this.events.error(processFailure(error, 'connection'));
+        }
+      });
+      child.stderr?.on('error', error => {
+        if (!this.stopping) {
+          this.events.error(processFailure(error, 'connection'));
         }
       });
     });

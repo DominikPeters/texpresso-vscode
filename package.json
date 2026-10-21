@@ -24,7 +24,10 @@
     "preview",
     "syncTeX"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:latex",
+    "onLanguage:tex"
+  ],
   "main": "./dist/extension.js",
   "license": "MIT",
   "contributes": {
@@ -32,11 +35,12 @@
       {
         "command": "texpresso.startDocument",
         "title": "TeXpresso: Start Document",
-        "enablement": "!texpresso.starting"
+        "enablement": "!texpresso.starting",
+        "icon": "$(play)"
       },
       {
         "command": "texpresso.refresh",
-        "title": "TeXpresso: Refresh",
+        "title": "TeXpresso: Refresh (Restart Preview)",
         "enablement": "texpresso.running"
       },
       {
@@ -92,7 +96,34 @@
       {
         "command": "texpresso.stop",
         "title": "TeXpresso: Stop",
-        "enablement": "texpresso.running"
+        "enablement": "texpresso.active",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "texpresso.restart",
+        "title": "TeXpresso: Restart Preview",
+        "icon": "$(refresh)",
+        "enablement": "texpresso.hasDocument && !texpresso.starting"
+      },
+      {
+        "command": "texpresso.showControls",
+        "title": "TeXpresso: Preview Controls"
+      },
+      {
+        "command": "texpresso.checkSetup",
+        "title": "TeXpresso: Check Setup"
+      },
+      {
+        "command": "texpresso.showEngineLog",
+        "title": "TeXpresso: Show Engine Log"
+      },
+      {
+        "command": "texpresso.showCompilerOutput",
+        "title": "TeXpresso: Show Compiler Output"
+      },
+      {
+        "command": "texpresso.openSettings",
+        "title": "TeXpresso: Open Settings"
       }
     ],
     "configuration": {
@@ -200,6 +231,16 @@
           "when": "texpresso.inActiveEditor && config.texpresso.syncTeXForwardOnSelection",
           "command": "texpresso.deactivateSyncTeXForward",
           "group": "navigation@1"
+        },
+        {
+          "when": "editorLangId =~ /^(latex|tex)$/ && !texpresso.active",
+          "command": "texpresso.startDocument",
+          "group": "navigation@0"
+        },
+        {
+          "when": "texpresso.inActiveEditor || texpresso.starting",
+          "command": "texpresso.stop",
+          "group": "navigation@3"
         }
       ],
       "editor/context": [
@@ -226,8 +267,10 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node --test out/test/*.test.js",
-    "test:unit": "npm run compile-tests && node --test out/test/*.test.js"
+    "test": "node scripts/test-node.cjs",
+    "test:unit": "npm run compile-tests && node scripts/test-node.cjs",
+    "test:integration": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs",
+    "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

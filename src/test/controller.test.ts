@@ -37,7 +37,8 @@ test('controller isolates old process exits, reloads root settings, and retains 
       },
       onDidChangeConfiguration: event('configuration'),
       onDidOpenTextDocument: event('open'), onDidCloseTextDocument: event('close'),
-      onDidChangeTextDocument: event('change')
+      onDidChangeTextDocument: event('change'),
+      onWillRenameFiles: event('willRename'), onDidRenameFiles: event('rename')
     },
     window: {
       activeTextEditor: editor,
@@ -90,6 +91,9 @@ test('controller isolates old process exits, reloads root settings, and retains 
       if (name === './session') {
         return { TexpressoSession: TestSession };
       }
+      if (name === './controls') {
+        return { PreviewControls: class { update() {} show() {} dispose() {} } };
+      }
       return localRequire(name);
     }
   });
@@ -105,6 +109,7 @@ test('controller isolates old process exits, reloads root settings, and retains 
     assert.equal(contexts.get('texpresso.running'), true);
     assert.equal(channels.get('TeXpresso')!.text, 'new session output\n');
     assert.equal(errors.length, 0);
+    assert.deepEqual(children[1].commands.at(-1), ['synctex-forward', main.fileName, 1]);
 
     values.packageProvider = 'tectonic';
     // Restart must use the original root, even with an imported file active.
@@ -118,8 +123,12 @@ test('controller isolates old process exits, reloads root settings, and retains 
     assert.equal(launches[2].at(-1), main.fileName);
     assert.ok(scopedReads.every(scope => scope === main.uri));
 
-    children[2].stdout.write('["append-lines","out","failure details"]\n["flush"]\n');
-    children[2].emit('close', 1, null);
+    await commands.get('texpresso.restart')!();
+    assert.equal(launches[3].at(-1), main.fileName);
+    assert.equal(children[2].killed, true);
+
+    children[3].stdout.write('["append-lines","out","failure details"]\n["flush"]\n');
+    children[3].emit('close', 1, null);
     assert.equal(contexts.get('texpresso.running'), false);
     assert.equal(channels.get('TeXpresso')!.text, 'failure details\n');
     assert.equal(errors.length, 1);

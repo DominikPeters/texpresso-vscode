@@ -6,6 +6,7 @@ import { DocumentSync } from './document-sync';
 import { SessionPaths } from './paths';
 import { SessionOutput } from './logs';
 import type { Command, Message, OutputTarget } from './protocol';
+import { EngineFailure, processFailure } from './failures';
 
 export type SessionState = 'starting' | 'running' | 'stopped' | 'failed';
 export interface SessionEvents {
@@ -14,6 +15,7 @@ export interface SessionEvents {
   debug(text: string): void;
   synctex(file: string, line: number, column?: number): void;
   error(error: Error): void;
+  rendered?(): void;
 }
 
 export class TexpressoSession {
@@ -41,7 +43,8 @@ export class TexpressoSession {
       exit: (code, signal, intentional) => {
         this.cleanTemporaryDirectory();
         if (!this.ended && !intentional && (code !== 0 || signal)) {
-          this.fail(new Error('TeXpresso exited with ' + (signal || 'code ' + code)));
+          this.fail(new EngineFailure('exit', 'TeXpresso exited with ' + (signal || 'code ' + code),
+            undefined, this.engine.stderrTail));
         } else {
           this.dispose();
         }
@@ -52,8 +55,21 @@ export class TexpressoSession {
   }
 
   async start(): Promise<void> {
+    let launch;
     try {
-      const launch = buildLaunchCommand(this.configuration, this.paths);
+      launch = buildLaunchCommand(this.configuration, this.paths);
+      const directories: string[] = [];
+      for (let i = 0; i < launch.args.length; i++) {
+        if (launch.args[i] === '-I') {
+          directories.push(launch.args[++i]);
+        }
+      }
+      this.sync.includeDirectories = directories;
+    } catch (error) {
+      this.fail(new EngineFailure('configuration', error instanceof Error ? error.message : String(error)));
+      return;
+    }
+    try {
       this.events.debug('Starting: ' + JSON.stringify([launch.command, ...launch.args]));
       await this.engine.start(launch);
       if (this.ended) {
@@ -63,19 +79,26 @@ export class TexpressoSession {
       this.sync.initialize();
       this.events.state(this.state);
     } catch (error) {
-      this.fail(error instanceof Error ? error : new Error(String(error)));
+      this.fail(error instanceof EngineFailure ? error :
+        processFailure(error instanceof Error ? error : new Error(String(error)), 'launch'));
     }
   }
 
   private handleMessage(message: Message): void {
-    if (this.ended || this.output.handle(message)) {
+    if (this.ended) {
+      return;
+    }
+    if (this.output.handle(message)) {
+      if (message[0] === 'flush') {
+        this.events.rendered?.();
+      }
       return;
     }
     switch (message[0]) {
       case 'input-file': this.sync.announce(message[2]); break;
       case 'reset-sync': this.sync.initialize(); break;
       case 'synctex':
-        this.events.synctex(this.paths.toEditor(message[1]), message[2], message[3]);
+        this.events.synctex(this.sync.editorPath(message[1]), message[2], message[3]);
         break;
       case 'lookup-file': break; // Informational in normal filesystem mode.
       default:

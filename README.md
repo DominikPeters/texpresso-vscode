@@ -7,6 +7,22 @@ After installing the extension, you need to configure the path to the TeXpresso 
 
 To use this extension, open the `.tex` document you wish to edit, then open the command pallete (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>), and select `TeXpresso: Start Document`. A separate window will open showing the compiled preview. The preview immediately updates when you edit the file in VS Code, and using SyncTeX the preview automatically jumps to the current code position (and vice versa for clicks in the preview window). Buttons at the top of the editor are provided to switch pages, and a compile log for seeing compilation errors can be found by using the Output panel.
 
+The TeXpresso status-bar entry opens preview controls: Start, Stop, Restart, Check Setup, logs, and Settings. It shows the main document while running and indicates startup or failure. Start and Stop are also available in the editor toolbar. Stop can cancel a preview that is still starting; Restart keeps the same main document when you are editing an included file.
+
+### Troubleshooting
+
+Run **TeXpresso: Check Setup** from the Command Palette or preview controls. The **TeXpresso Setup** Output channel shows the extension host, main document, execution mode, package provider, executable lookup, and exact launch arguments. It also checks for `kpsewhich` and `tectonic` on the host (or inside WSL). This checks executable discovery; it does not launch TeXpresso or establish which features that build supports.
+
+Launch errors offer **Check Setup**, **Open Settings**, and **Show Engine Log**. The **TeXpresso Engine** channel contains process diagnostics, while **TeXpresso** and **TeXpresso Log** contain compiler output. Logs remain available after the preview exits. An engine crash or unsupported option is reported separately from an executable that cannot be found.
+
+### Synchronization and refresh
+
+With automatic SyncTeX enabled, the preview synchronizes to the active cursor after compilation, including the first compilation and recovery from a temporary syntax error. Source line numbers are translated between VS Code and SyncTeX conventions.
+
+Renaming a tracked source file or its containing folder through VS Code restarts the preview with the current main-document path. Included files found through configured `-I` directories are matched to their editor buffers, including paths containing spaces and buffers opened through directory symlinks.
+
+**Refresh** and a successful **External Compile and Refresh** restart the engine. A plain upstream `rescan` can miss auxiliary files that did not exist at startup, leaving references unresolved. Restarting clears that cache and automatic SyncTeX restores the active source position. It also resets manual preview navigation and zoom. External compilation saves dirty tracked source buffers first.
+
 ## Features
 
 To change pages, use the buttons:
@@ -69,10 +85,11 @@ When VS Code runs on Windows and launches TeXpresso inside WSL, enable `texpress
 `extension.ts` connects VS Code commands and editor events to one active `TexpressoSession`. Each session owns its process, document synchronization state, and output buffers, so a previous process cannot reset a newer session.
 
 - `configuration.ts` resolves settings for the main document and constructs launch arguments.
-- `paths.ts` translates between editor paths and engine paths, including WSL.
+- `paths.ts` translates between editor paths and engine paths, including WSL, symlinks, and include-directory lookup. Logical engine filenames remain distinct from physical editor paths.
 - `engine-process.ts` handles process startup, shutdown, errors, and UTF-8-safe protocol framing.
 - `protocol.ts` validates incoming messages and defines outgoing commands.
-- `document-sync.ts` synchronizes the main document and imported files. Range mode sends UTF-16 edits directly; legacy mode maintains a pre-edit rope for byte offsets.
+- `document-sync.ts` synchronizes the main document and imported files. Range mode sends UTF-16 edits directly; legacy mode calculates byte offsets from a pre-edit text snapshot to preserve surrogate pairs.
+- `controls.ts`, `failures.ts`, and `setup.ts` provide preview controls and troubleshooting.
 - `logs.ts` applies output appends and truncations as TeXpresso backtracks.
 
 Compiler output, compiler logs, process diagnostics, and external builds have separate Output channels. Logs remain available after a session stops or fails.
@@ -81,13 +98,25 @@ Current upstream TeXpresso does not expose a reliable version or capability quer
 
 ### Development checks
 
-Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code. Use the Extension Development Host to check editor and theme integration manually.
+Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code.
 
-## Known Issues
+Run `npm run test:integration` for tests inside a real VS Code Extension Development Host, with an isolated workspace and profile. The suite launches a deterministic protocol fixture as a real child process and exercises imported-file Unicode edits and undo, initial SyncTeX, restart, file/folder renames, external compilation, and recovery after failed startup. It does not require TeXpresso to be installed. CI runs these checks on Linux, macOS, and Windows, plus VS Code 1.88 on Linux.
 
-Loses connection if the filename of the main document is changed.
+Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`.
+
+For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These tests compile and edit an included source through a spaced include path with both TeX Live and Tectonic, in byte and range modes. Both package providers must be installed and their packages cached or downloadable. Tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a graphical display, set `SDL_VIDEODRIVER=dummy`. The local baseline tested for this change is upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d`.
+
+Theme integration and actual Windows/WSL execution still need platform-specific manual checks; the deterministic host fixture does not substitute for a real WSL installation.
 
 ## Release Notes
+
+### Unreleased
+
+- Add preview status and controls, Restart, Check Setup, and actionable process errors.
+- Fix legacy Unicode edit offsets, forward SyncTeX line numbers, initial synchronization, and synchronization after compilation.
+- Restart previews after source renames and external compilation, including newly created auxiliary files.
+- Resolve included editor buffers through include directories and symlinks while retaining engine filenames.
+- Add cross-platform CI, VS Code host integration tests, and optional tests against a real TeXpresso build.
 
 ### 1.8.0
 

@@ -6,6 +6,11 @@ import { readConfiguration } from './configuration';
 import { SessionPaths } from './paths';
 import { TexpressoSession } from './session';
 import { ExternalCompiler } from './external-compile';
+import { PreviewControls } from './controls';
+import { describeFailure } from './failures';
+import { setupReport } from './setup';
+import { renamedPath } from './renames';
+import type { SessionConfiguration } from './configuration';
 
 tmp.setGracefulCleanup();
 let deactivateSession: (() => void) | undefined;
@@ -14,12 +19,16 @@ export function activate(context: vscode.ExtensionContext): void {
   let activeSession: TexpressoSession | undefined;
   let startRequest = 0;
   let disposeTheme = () => {};
+  let pendingRename: TexpressoSession | undefined;
+  let lastError = '';
   const output = vscode.window.createOutputChannel('TeXpresso');
   const log = vscode.window.createOutputChannel('TeXpresso Log');
-  const debug = vscode.window.createOutputChannel('TeXpresso Debug', { log: true });
+  const debug = vscode.window.createOutputChannel('TeXpresso Engine', { log: true });
   const build = vscode.window.createOutputChannel('TeXpresso Build');
+  const setup = vscode.window.createOutputChannel('TeXpresso Setup');
+  const controls = new PreviewControls();
   const compiler = new ExternalCompiler(text => build.append(text));
-  context.subscriptions.push(output, log, debug, build, compiler);
+  context.subscriptions.push(output, log, debug, build, setup, controls, compiler);
   const running = () => activeSession?.state === 'running' ? activeSession : undefined;
   const settings = (document: vscode.TextDocument) => vscode.workspace.getConfiguration('texpresso', document.uri);
 
@@ -27,14 +36,19 @@ export function activate(context: vscode.ExtensionContext): void {
     const editor = vscode.window.activeTextEditor;
     void vscode.commands.executeCommand('setContext', 'texpresso.running', !!running());
     void vscode.commands.executeCommand('setContext', 'texpresso.starting', activeSession?.state === 'starting');
+    void vscode.commands.executeCommand('setContext', 'texpresso.active',
+      activeSession?.state === 'starting' || activeSession?.state === 'running');
+    void vscode.commands.executeCommand('setContext', 'texpresso.hasDocument', !!activeSession);
     void vscode.commands.executeCommand('setContext', 'texpresso.inActiveEditor',
       !!running() && !!editor && !!running()?.sync.contains(editor.document));
+    controls.update(activeSession?.state === 'stopped' ? undefined : activeSession);
   }
 
   function stop(): void {
     startRequest++;
     const previous = activeSession;
     activeSession = undefined;
+    pendingRename = undefined;
     previous?.dispose();
     disposeTheme();
     compiler.dispose();
@@ -43,25 +57,29 @@ export function activate(context: vscode.ExtensionContext): void {
   deactivateSession = stop;
   context.subscriptions.push({ dispose: stop });
 
-  async function reportError(error: unknown): Promise<void> {
-    const message = error instanceof Error ? error.message : String(error);
-    debug.appendLine(message);
+  async function reportError(error: unknown, configuration?: SessionConfiguration): Promise<void> {
+    const failure = describeFailure(error, configuration);
+    lastError = error instanceof Error ? error.message : String(error);
+    debug.appendLine(lastError);
     const action = await vscode.window.showErrorMessage(
-      'TeXpresso: ' + message + '. Check the executable and WSL settings.', 'Open Settings', 'Show Log');
+      failure.message, 'Check Setup', 'Open Settings', 'Show Engine Log');
     if (action === 'Open Settings') {
-      void vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso');
-    } else if (action === 'Show Log') {
+      void vscode.commands.executeCommand('workbench.action.openSettings', failure.setting);
+    } else if (action === 'Show Engine Log') {
       debug.show(true);
+    } else if (action === 'Check Setup') {
+      void checkSetup();
     }
   }
 
-  async function startDocument(document = vscode.window.activeTextEditor?.document): Promise<void> {
+  async function startDocument(document = vscode.window.activeTextEditor?.document, checkRoot = true): Promise<void> {
     const request = ++startRequest;
+    pendingRename = undefined;
     if (!document) {
       void vscode.window.showErrorMessage('TeXpresso: Open a LaTeX document first.');
       return;
     }
-    if (!document.getText().includes('\\begin{document}')) {
+    if (checkRoot && !document.getText().includes('\\begin{document}')) {
       const result = await vscode.window.showWarningMessage(
         'This file does not contain \\begin{document}. Start TeXpresso from this file anyway?',
         { modal: true }, 'Continue');
@@ -101,9 +119,14 @@ export function activate(context: vscode.ExtensionContext): void {
             }
           },
           synctex: (file, line, column) => { void revealSource(session, file, line, column); },
+          rendered: () => {
+            if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
+              syncForward();
+            }
+          },
           error: error => {
             if (activeSession === session) {
-              void reportError(error);
+              void reportError(error, session.configuration);
             }
           }
         }, temporaryDirectory);
@@ -116,6 +139,7 @@ export function activate(context: vscode.ExtensionContext): void {
       output.clear();
       log.clear();
       debug.clear();
+      lastError = '';
       updateContexts();
       await session.start();
       if (running() === session && settings(document).get('useEditorTheme', false)) {
@@ -161,8 +185,16 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand('texpresso.' + name, callback));
   }
   register('startDocument', () => startDocument());
+  register('restart', () => activeSession && startDocument(activeSession.document, false));
   register('stop', stop);
-  register('refresh', () => running()?.sync.refresh());
+  register('showControls', () => controls.show(activeSession?.state === 'stopped' ? undefined : activeSession));
+  register('checkSetup', checkSetup);
+  register('showEngineLog', () => debug.show(true));
+  register('showCompilerOutput', () => output.show(true));
+  register('openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso'));
+  // rescan does not reliably discover previously absent auxiliary files (#13).
+  // Keep Refresh as a compatibility alias for a complete session restart.
+  register('refresh', () => running() && startDocument(running()!.document, false));
   register('nextPage', () => running()?.send(['next-page']));
   register('previousPage', () => running()?.send(['previous-page']));
   register('syncTeXForward', () => syncForward());
@@ -199,7 +231,7 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showInformationMessage('TeXpresso settings changed. Restart the preview to apply them.', 'Restart')
           .then(action => {
             if (action === 'Restart' && running() === session) {
-              void startDocument(session.document);
+              void startDocument(session.document, false);
             }
           });
       }
@@ -207,10 +239,36 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidOpenTextDocument(document => running()?.sync.openDocument(document)),
     vscode.workspace.onDidCloseTextDocument(document => {
       if (document === activeSession?.document) {
-        stop();
+        if (pendingRename !== activeSession) {
+          stop();
+        }
       } else {
         running()?.sync.closeDocument(document);
       }
+    }),
+    vscode.workspace.onWillRenameFiles(event => {
+      const session = activeSession;
+      if (session && renamedPath(session.paths.rootEditorPath, event.files)) {
+        // VS Code may close the old document before firing onDidRenameFiles.
+        pendingRename = session;
+      }
+    }),
+    vscode.workspace.onDidRenameFiles(event => {
+      const session = activeSession;
+      if (!session || !session.sync.trackedPaths.some(file => renamedPath(file, event.files))) {
+        return;
+      }
+      const root = renamedPath(session.paths.rootEditorPath, event.files) || session.paths.rootEditorPath;
+      void vscode.workspace.openTextDocument(vscode.Uri.file(root)).then(document => {
+        if (activeSession === session) {
+          return startDocument(document, false);
+        }
+      }, error => {
+        if (activeSession === session) {
+          stop();
+          void reportError(error, session.configuration);
+        }
+      });
     }),
     vscode.workspace.onDidChangeTextDocument(event => running()?.sync.change(event.document, event.contentChanges)),
     vscode.window.onDidChangeActiveTextEditor(updateContexts),
@@ -227,6 +285,27 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     })
   );
+
+  async function checkSetup(): Promise<void> {
+    const session = activeSession;
+    const document = session?.document || vscode.window.activeTextEditor?.document;
+    if (!document) {
+      void vscode.window.showInformationMessage('Open a LaTeX document to check its TeXpresso settings.');
+      return;
+    }
+    setup.clear();
+    setup.appendLine('Checking TeXpresso setup…');
+    setup.show(true);
+    try {
+      const configuration = readConfiguration(settings(document));
+      const paths = new SessionPaths(session?.paths.rootEditorPath || document.fileName, configuration.useWSL);
+      const host = process.platform + ' ' + process.arch + (vscode.env.remoteName ? ' (' + vscode.env.remoteName + ')' : '');
+      const report = await setupReport(configuration, paths, host);
+      setup.replace(report + (lastError ? '\nLast failure: ' + lastError + '\nSee TeXpresso Engine for engine output.\n' : ''));
+    } catch (error) {
+      setup.appendLine('Setup check failed: ' + String(error));
+    }
+  }
 
   register('externalCompileAndRefresh', async () => {
     const session = running();
@@ -249,7 +328,7 @@ export function activate(context: vscode.ExtensionContext): void {
       build.show(true);
       await compiler.run(settings(session.document).get<string>('externalCompileCommand', 'latexmk'), session.paths);
       if (running() === session) {
-        session.sync.refresh();
+        await startDocument(session.document, false);
       }
     } catch (error) {
       build.appendLine(String(error));

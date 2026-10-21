@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import { windowsToWslSync, wslToWindowsSync } from 'wsl-path';
 
 export interface PathConversion {
@@ -9,6 +10,7 @@ export interface PathConversion {
 export class SessionPaths {
   readonly rootEnginePath: string;
   readonly engineDirectory: string;
+  private identities = new Map<string, string>();
 
   constructor(readonly rootEditorPath: string, readonly useWSL: boolean,
     private conversion: PathConversion = { toEngine: windowsToWslSync, toEditor: wslToWindowsSync }) {
@@ -21,7 +23,7 @@ export class SessionPaths {
   }
 
   toEngine(editorPath: string): string {
-    return this.useWSL ? this.conversion.toEngine(editorPath) : editorPath;
+    return this.useWSL ? this.conversion.toEngine(editorPath) : this.identity(editorPath);
   }
 
   toEditor(enginePath: string): string {
@@ -37,5 +39,33 @@ export class SessionPaths {
       return path.posix.resolve(this.engineDirectory, converted);
     }
     return path.resolve(path.dirname(this.rootEditorPath), directory);
+  }
+
+  identity(editorPath: string): string {
+    let canonical = this.identities.get(editorPath);
+    if (!canonical) {
+      try {
+        canonical = fs.realpathSync.native(editorPath);
+      } catch {
+        canonical = editorPath;
+      }
+      this.identities.set(editorPath, canonical);
+    }
+    return canonical;
+  }
+
+  sourcePath(enginePath: string, includeDirectories: readonly string[]): string {
+    const direct = this.toEditor(enginePath);
+    if (this.enginePath.isAbsolute(enginePath)) {
+      return direct;
+    }
+    // SyncTeX announces logical input names even when -I found the source in a
+    // different directory. Keep the logical name for protocol writes, but match
+    // the actual editor document on disk.
+    const candidates = [direct, ...includeDirectories.map(directory =>
+      this.toEditor(this.enginePath.resolve(this.engineDirectory, directory, enginePath)))];
+    return candidates.find(file => {
+      try { return fs.statSync(file).isFile(); } catch { return false; }
+    }) || direct;
   }
 }

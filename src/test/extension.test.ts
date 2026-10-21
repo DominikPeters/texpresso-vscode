@@ -8,6 +8,7 @@ import { buildLaunchCommand } from '../configuration';
 import { SessionPaths } from '../paths';
 import { DocumentSync } from '../document-sync';
 import { TexpressoSession } from '../session';
+import * as path from 'node:path';
 
 import { config, document, FakeProcess } from './helpers';
 
@@ -67,16 +68,18 @@ test('provider settings override legacy flags without mutating user arguments', 
   const args = ['-tectonic'];
   const configuration = { ...config, packageProvider: 'texlive' as const, arguments: args,
     includeDirectories: ['support files'] };
-  const paths = new SessionPaths('/work/paper/main.tex', false);
+  const root = path.resolve('/work/paper/main.tex');
+  const directory = path.dirname(root);
+  const paths = new SessionPaths(root, false);
   const first = buildLaunchCommand(configuration, paths);
   const second = buildLaunchCommand(configuration, paths);
   assert.deepEqual(first, second);
   assert.deepEqual(args, ['-tectonic']);
-  assert.deepEqual(first.args, ['-texlive', '-I', '/work/paper/support files', '-json', '-lines', '/work/paper/main.tex']);
+  assert.deepEqual(first.args, ['-texlive', '-I', path.join(directory, 'support files'), '-json', '-lines', root]);
   assert.equal(first.command, 'texpresso');
-  assert.equal(first.cwd, '/work/paper');
+  assert.equal(first.cwd, directory);
   assert.deepEqual(buildLaunchCommand({ ...config, arguments: ['-tectonic'] }, paths).args,
-    ['-tectonic', '-json', '-lines', '/work/paper/main.tex']);
+    ['-tectonic', '-json', '-lines', root]);
   assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-tectonic', '-texlive'] }, paths));
   assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-I'] }, paths));
   assert.deepEqual(buildLaunchCommand({ ...configuration, arguments: ['-I', '-tectonic'] }, paths).args.slice(0, 3),
@@ -101,7 +104,7 @@ test('WSL launches and synchronization use engine paths, including paths with sp
   sync.initialize();
   sync.announce('child.tex');
   sync.syncForward(child, 4);
-  assert.deepEqual(sent.at(-1), ['synctex-forward', '/mnt/c/Paper Folder/child.tex', 4]);
+  assert.deepEqual(sent.at(-1), ['synctex-forward', '/mnt/c/Paper Folder/child.tex', 5]);
 });
 
 function edit(offset: number, length: number, text: string): vscode.TextDocumentContentChangeEvent {
