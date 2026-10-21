@@ -134,7 +134,7 @@ Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a
 
 For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These use **TeX Live only by default** and test byte/range edits, filesystem/stream modes, reference convergence, pause/resume, and image updates. Set `TEXPRESSO_TEST_TECTONIC=1` to opt into Tectonic cases, which may download TeX packages. Native tests are skipped when `TEXPRESSO_BINARY` is unset. On machines without a display, set `SDL_VIDEODRIVER=dummy`; set `TEXPRESSO_TEST_ARTIFACTS` to retain native-engine diagnostics on failure. A separate Linux CI job builds upstream commit `e8df7709077b2f86f6e16e6c86ceefb86de06f8d` and runs the TeX Live cases.
 
-Theme integration and actual Windows/WSL execution still need platform-specific manual checks; the deterministic host fixture does not substitute for a real WSL installation.
+Run `npm run test:integration:engine` with `TEXPRESSO_BINARY` set to test real compilation through the extension inside VS Code. On Windows, this launches the binary in the default WSL distribution, so provide its **Linux path**. CI installs Ubuntu 24.04 in WSL 2, builds the pinned TeXpresso revision with TeX Live, and runs Windows VS Code against it. The suite checks magic-root and include-directory paths containing spaces and Unicode, unsaved edits with both byte and range protocols, disk dependency refresh, streaming, restart, and termination of Linux engine/worker processes. The same suite can run against a native engine on Linux/macOS. It selects SDL's dummy video driver, as upstream's own test targets do; visible-window rendering and theme integration still need separate checks.
 
 ## Release Notes
 

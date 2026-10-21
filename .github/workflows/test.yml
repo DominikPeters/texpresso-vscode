@@ -120,3 +120,58 @@ jobs:
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 7
+  wsl:
+    name: Windows VS Code / real TeXpresso in WSL 2
+    runs-on: windows-2022
+    timeout-minutes: 40
+    env:
+      TEXPRESSO_BINARY: /opt/texpresso/build/texpresso
+    steps:
+      - name: Keep Linux build sources in LF format
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: let-def/texpresso
+          ref: e8df7709077b2f86f6e16e6c86ceefb86de06f8d
+          path: .engine
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        timeout-minutes: 4
+      - name: Install Ubuntu, native build dependencies, and TeX Live in WSL
+        uses: Vampire/setup-wsl@3b46b44374d5d0ae94654c45d114a3ed7a0e07a8 # v5.0.1
+        timeout-minutes: 20
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          set-as-default: 'true'
+          wsl-conf: |
+            [boot]
+            systemd=false
+          additional-packages: >-
+            build-essential libsdl2-dev libmupdf-dev libmujs-dev
+            libfreetype-dev libgumbo-dev libjbig2dec0-dev libjpeg-dev
+            libopenjp2-7-dev libfontconfig-dev libharfbuzz-dev
+            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev
+            libtesseract-dev texlive-xetex procps
+      - name: Build pinned engine on the Linux filesystem
+        shell: wsl-bash {0}
+        run: |
+          mkdir -p /opt/texpresso
+          cp -a .engine/. /opt/texpresso/
+          make -C /opt/texpresso -j2 all
+        timeout-minutes: 8
+      - name: Test Windows VS Code launching and synchronizing the real WSL engine
+        run: npm run test:integration:engine
+        timeout-minutes: 8
+      - name: Save Windows host and real-engine diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-wsl-engine-diagnostics
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

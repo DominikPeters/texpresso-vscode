@@ -5,6 +5,11 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 (async () => {
+  const realEngine = process.argv.includes('--real-engine');
+  const useWSL = realEngine && process.platform === 'win32';
+  const binary = process.env.TEXPRESSO_BINARY;
+  if (realEngine && !binary) { throw new Error('--real-engine requires TEXPRESSO_BINARY (a Linux path when using WSL)'); }
+  if (realEngine) { process.env.SDL_VIDEODRIVER = 'dummy'; }
   // macOS Unix-domain sockets have a short path limit; keep the profile nearby.
   // The native implementation also expands Windows 8.3 names (RUNNER~1),
   // matching the paths used by the engine's own canonicalization.
@@ -15,8 +20,10 @@ const { spawnSync } = require('node:child_process');
   const builder = path.resolve(__dirname, '../src/test/fixtures/build.cjs');
   const quote = value => process.platform === 'win32' ? '"' + value + '"' : "'" + value.replace(/'/g, "'\\''") + "'";
   fs.writeFileSync(path.join(workspace, '.vscode/settings.json'), JSON.stringify({
-    'texpresso.command': process.execPath,
-    'texpresso.arguments': [fixture],
+    'texpresso.command': realEngine ? (useWSL ? 'env' : binary) : process.execPath,
+    'texpresso.arguments': realEngine ? (useWSL ? ['SDL_VIDEODRIVER=dummy', binary] : []) : [fixture],
+    'texpresso.useWSL': useWSL,
+    'texpresso.packageProvider': realEngine ? 'texlive' : 'auto',
     'texpresso.useChangeRangeMode': true,
     'texpresso.externalCompileCommand': quote(process.execPath) + ' ' + quote(builder),
     'workbench.startupEditor': 'none',
@@ -60,12 +67,14 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/index.js'),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
         TEXPRESSO_TEST_NODE: process.execPath,
         TEXPRESSO_TEST_ENGINE: fixture,
+        TEXPRESSO_BINARY: binary,
+        TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR
       },
       launchArgs: [workspaceFile, ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
@@ -75,7 +84,7 @@ const { spawnSync } = require('node:child_process');
     failed = false;
   } finally {
     if (failed) {
-      const diagnostics = path.resolve(process.env.TEXPRESSO_TEST_ARTIFACTS || 'artifacts', packaged ? 'packaged-host' : 'development-host');
+      const diagnostics = path.resolve(process.env.TEXPRESSO_TEST_ARTIFACTS || 'artifacts', realEngine ? 'real-engine-host' : packaged ? 'packaged-host' : 'development-host');
       fs.mkdirSync(diagnostics, { recursive: true });
       for (const entry of ['user/logs', 'engine.jsonl', 'workspace', 'fixture.code-workspace']) {
         const source = path.join(root, entry);
