@@ -114,6 +114,7 @@ test('real headless SyncTeX targets prose records above and below their baseline
     await fs.writeFile(main.fileName, contents);
     let state: Extract<PreviewMessage, ['preview-state', ...unknown[]]> | undefined;
     let frame: PreviewImage | undefined;
+    const retries = new Set<number>();
     const targets: Extract<PreviewMessage, ['preview-forward', ...unknown[]]>[] = [];
     const sources: { line: number; word?: string }[] = [];
     let failure: Error | undefined, debug = '', id = 0;
@@ -125,6 +126,8 @@ test('real headless SyncTeX targets prose records above and below their baseline
           if ('header' in event) { frame = event; }
           else if (Array.isArray(event)) {
             if (event[0] === 'preview-state') { state = event; }
+            if (event[0] === 'preview-retry') { retries.add(event[1]); }
+            if (event[0] === 'preview-error') { failure = new Error(event[2]); }
             if (event[0] === 'preview-forward') { targets.push(event); }
           }
         }
@@ -140,8 +143,9 @@ test('real headless SyncTeX targets prose records above and below their baseline
       await session.start();
       for (let attempt = 0; !frame && attempt < 20; attempt++) {
         await until(() => !!state && state[2] === session.previewSequence);
-        session.send(['preview-render', ++id, 0, 1200, state![1], state![2]]);
-        await new Promise(resolve => setTimeout(resolve, 150));
+        const request = ++id;
+        session.send(['preview-render', request, 0, 1200, state![1], state![2]]);
+        await until(() => frame?.header.requestId === request || retries.has(request));
       }
       assert.ok(frame);
       session.sync.syncForward(main, 17);
