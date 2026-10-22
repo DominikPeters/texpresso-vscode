@@ -24,6 +24,11 @@ by a viewport. Nearby pages are prepared after scrolling settles, with bounded
 render caches and page surfaces. Longer documents compile further pages on
 demand rather than rendering the whole document on startup.
 
+With a compatible engine, resting the source cursor prepares a nearby compiler
+checkpoint during idle time to reduce the wait for the first edit. Typing and
+preview navigation interrupt preparation immediately; source changes are sent
+without a debounce. See [edit prewarming](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/edit-prewarming.md) for details.
+
 Pinch on a trackpad (or Control/Command scroll) to zoom around the pointer.
 Rendering uses the display's device pixel ratio and follows changes between
 monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable

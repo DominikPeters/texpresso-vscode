@@ -767,3 +767,112 @@ test('older engines render visible continuous pages without uncancellable specul
     assert.equal(f.commands.length, 2, 'only visible pages are requested without the cancellation capability');
   } finally { f.controller.dispose(); }
 });
+
+function prepareFixture() {
+  const f=fixture();
+  const positions:{document:unknown;offset:number}[]=[];
+  Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+  Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:(document:unknown,offset:number)=>{
+    positions.push({document,offset});
+    return Number.isSafeInteger(offset)&&offset>=0?{path:'/work/main.tex',offset}:undefined;
+  }}});
+  f.controller.handle(['preview-state',1,0,2,true,0]);f.send({type:'ready',page:0,width:1000});
+  f.controller.handle(continuousFrame(f.commands[0],0));f.send({type:'decoded',id:f.commands[0][1]});
+  return {...f,positions};
+}
+
+test('cursor preparation waits for idle and leaves the current page and render cache intact', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    const images=f.messages.filter(m=>m.type==='image').length;
+    const cache=(f.controller as any).pages.size;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'cursor movement never starts synchronous compiler work');
+    t.mock.timers.tick(1000);
+    const prepare=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    assert.ok(prepare);assert.deepEqual(prepare.slice(2),['/work/main.tex',128,1,0]);
+    f.controller.handle(['preview-prepared',prepare[1] as number,1,0,'ready']);
+    assert.equal(f.messages.filter(m=>m.type==='image').length,images,'checkpoint acknowledgment has no preview frame');
+    assert.equal((f.controller as any).pages.size,cache,'prewarming preserves encoded page cache');
+    assert.equal(f.messages.filter(m=>m.type==='jump'||m.type==='invalidate').length,0,'no scroll or source-state UI mutation');
+    assert.equal((f.controller as any).inFlight,undefined,'prewarming does not take render/decode credit');
+    const attempts=f.commands.filter(c=>c[0]==='preview-prepare').length;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,150);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,attempts,'moving within a prepared 64-byte bucket does not repeat speculative compilation');
+  } finally {f.controller.dispose();}
+});
+
+test('cursor retargeting and source edits cancel preparation; stale acknowledgments cannot revive old work', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);
+    const first=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,256);
+    assert.ok(f.commands.some(c=>c[0]==='preview-prepare-cancel'&&(c[1]===first[1]||c[1]===0)),'cursor retarget cancels obsolete native speculative work');
+    t.mock.timers.tick(1000);const second=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    assert.notEqual(second[1],first[1]);assert.equal(second[3],256);
+    f.controller.handle(['preview-prepared',first[1] as number,1,0,'ready']);
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    assert.ok(f.commands.some(c=>c[0]==='preview-prepare-cancel'&&(c[1]===second[1]||c[1]===0)),'typing cancels preparation without waiting for an ACK');
+    const before=f.commands.filter(c=>c[0]==='preview-prepare').length;
+    f.controller.handle(['preview-prepared',second[1] as number,1,0,'ready']);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,before,'old completion cannot start more work under a new source barrier');
+  } finally {f.controller.dispose();}
+});
+
+test('cursor preparation is optional and suspended for hidden or paused previews', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    const prepare=()=>{f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);};
+    Object.assign(f.session,{previewPrepareEdit:false});prepare();
+    Object.assign(f.session,{previewPrepareEdit:true,paused:true});prepare();
+    f.session.paused=false;f.panel.visible=false;f.view();prepare();
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    f.panel.visible=true;f.view();f.send({type:'ready',page:0,width:1000});
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,-1);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'an unresolved or malformed source position is inert');
+  } finally {f.controller.dispose();}
+});
+
+test('preparing an edit preserves acknowledged PNG and SVG patch bases', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});
+  for(const svg of [false,true]) {
+    const f=svg?autoFixture():pngFixture();
+    Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+    Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:()=>({path:'/work/main.tex',offset:128})}});
+    try {
+      f.controller.handle(svg?autoFrame(1,true,12000):pngFrame(1,0));
+      const image=f.messages.filter(m=>m.type==='image').at(-1)!;
+      f.send({type:'decoded',id:1,...(svg?{svg:image.contentId}:{png:image.contentId}),cached:[image.contentId]});
+      const internals=f.controller as any,base=svg?internals.svgBase:internals.rasterBase;
+      assert.ok(base);
+      f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(200);
+      const command=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;assert.ok(command);
+      f.controller.handle(['preview-prepared',command[1] as number,1,0,'ready']);
+      assert.equal(svg?internals.svgBase:internals.rasterBase,base,'checkpoint replay does not invalidate the acknowledged mutable surface');
+      f.session.previewSequence=1;f.controller.handle({sourceSequence:1});f.controller.handle(['preview-state',2,1,3,true,0]);
+      const request=f.commands.at(-1)!;
+      if(!svg){assert.equal(request[6],1,'next PNG edit retains its native raster base');}
+      else {
+        f.controller.handle(autoFrame(request[1] as number,true,12000,1,2));
+        assert.equal(f.messages.filter(m=>m.type==='image').at(-1)!.svgPatch.base,image.contentId,'next SVG edit patches the previously acknowledged DOM');
+      }
+    } finally {f.controller.dispose();}
+  }
+});
+
+test('cursor preparation cannot get ahead of a pending page decode', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});
+  const f=fixture();Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+  Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:()=>({path:'/work/main.tex',offset:128})}});
+  try {
+    f.controller.handle(['preview-state',1,0,2,true,0]);f.send({type:'ready',page:0,width:1000});
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    f.controller.handle(continuousFrame(f.commands[0],0));t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'receiving bytes does not prove a paintable frame');
+    f.send({type:'decoded',id:f.commands[0][1]});t.mock.timers.tick(199);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    t.mock.timers.tick(1);assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,1);
+  } finally {f.controller.dispose();}
+});

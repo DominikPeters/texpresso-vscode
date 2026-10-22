@@ -5,6 +5,7 @@ import type { TexpressoSession } from './session';
 import { canonicalSvg, diffSvg, type SvgDocument } from './svg-patch';
 import type { PreviewImage, PreviewImageHeader, PreviewMessage } from './preview-protocol';
 import { AutoRenderCosts } from './auto-render-costs';
+import { EditPrewarm } from './edit-prewarm';
 
 // Official VS Code product icons, bundled as SVG to avoid shipping an icon font.
 const icons = require('../media/codicons.json') as Record<string, string>;
@@ -24,6 +25,7 @@ type PreviewEvent = PreviewMessage | PreviewImage | { sourceSequence: number };
 
 export class PreviewController {
   private panel: vscode.WebviewPanel;
+  private prewarm: EditPrewarm;
   private readonly instance = randomBytes(16).toString('hex');
   private disposed = false;
   private ready = false;
@@ -79,6 +81,14 @@ export class PreviewController {
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, readonly session: TexpressoSession,
     closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void) {
+    this.prewarm = new EditPrewarm(() => ({
+      available: !!this.session.previewPrepareEdit && !this.disposed && this.panel?.visible && !this.session.paused && this.session.state === 'running',
+      idle: this.ready && !this.dirty && !this.inFlight && !this.region && !this.detail && !this.inverse && !this.destination && !this.gesture &&
+        !!this.presented.get(this.page)?.decoded && this.shown?.sequence === this.session.previewSequence && this.state?.[2] === this.session.previewSequence,
+      revision: this.state?.[1] || 0, sequence: this.session.previewSequence
+    }), command => this.session.send(command), () => ++this.nextId,
+    () => { this.enginePage = undefined; this.cancelPrefetch(); clearTimeout(this.upgradeTimer); this.upgradeTimer = undefined; this.upgradeReady = false; },
+    () => { this.flush(); this.scheduleUpgrade(); this.schedulePrefetch(); });
     const media = api.Uri.joinPath(extensionUri, 'media');
     this.panel = api.window.createWebviewPanel('texpresso.preview', 'TeXpresso — ' + path.basename(session.document.fileName),
       { viewColumn: api.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [media] });
@@ -145,6 +155,7 @@ export class PreviewController {
       this.image(event);
     } else {
       switch (event[0]) {
+        case 'preview-prepared': this.prewarm.handle(event); break;
         case 'preview-state':
           if (this.state && (this.state[1] !== event[1] || this.state[2] !== event[2])) { this.interactive(); this.clearPages(); this.enginePage = undefined; }
           if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
@@ -154,7 +165,7 @@ export class PreviewController {
             if (event[3] > 0 && this.page >= event[3]) { this.page = event[3] - 1; this.dirty = true; }
             this.visible = this.visible.filter(d => d.page < event[3]); this.nearby = this.nearby.filter(d => d.page < event[3]);
           }
-          this.status(); this.flush();
+          this.status(); this.flush(); this.prewarm.refresh();
           break;
         case 'preview-invalidated':
           this.interactive(); this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
@@ -202,12 +213,19 @@ export class PreviewController {
             }
             this.flush();
           } else { void this.post({ type: 'target', ...this.target }); this.target = undefined; }
+          this.prewarm.refresh(true);
           break;
       }
     }
   }
 
-  update(): void { if (this.session.paused) { this.interactive(); } this.status(); }
+  prepareEdit(document?: vscode.TextDocument, utf16Offset = 0): void {
+    const version = document?.version;
+    this.prewarm.select(document ? `${document.uri.toString()}:${version ?? this.session.previewSequence}:${utf16Offset}` : undefined,
+      document ? () => document.version === version ? this.session.sync.sourcePosition(document, utf16Offset) : undefined : undefined);
+  }
+  interruptPreparation(): void { this.prewarm.interrupt(); }
+  update(): void { if (this.session.paused) { this.interactive(); } this.status(); this.prewarm.refresh(); }
   navigate(delta: number): void {
     this.interactive(); this.destination = undefined; this.destinationPage = undefined;
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
@@ -223,7 +241,7 @@ export class PreviewController {
     switch (m.type) {
       case 'interaction':
         if (typeof m.active === 'boolean') { this.gesture = m.active; }
-        this.interactive(); this.scheduleUpgrade(); break;
+        this.interactive(); this.prewarm.refresh(); this.scheduleUpgrade(); break;
       case 'ready':
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
@@ -253,7 +271,7 @@ export class PreviewController {
           this.dirty = !this.failed.has(this.page) && !pendingActive && !this.isPresented({ page: this.page, width: this.width });
           this.schedulePrefetch();
         }
-        this.ready = true; this.status(); this.flush();
+        this.ready = true; this.status(); this.flush(); this.prewarm.refresh();
         break;
       case 'decoded':
         if (!this.inFlight || m.id !== this.inFlight.id) { break; }
@@ -292,7 +310,7 @@ export class PreviewController {
         if (m.id === this.inFlight?.id && Array.isArray(m.cached)) {
           this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 8));
         }
-        if (m.id === this.inFlight?.id) { if (!this.inFlight?.region && this.inFlight?.page === this.destinationPage) { this.destination = undefined; this.destinationPage = undefined; } this.release(); this.flush(); this.scheduleUpgrade(); this.schedulePrefetch(); }
+        if (m.id === this.inFlight?.id) { if (!this.inFlight?.region && this.inFlight?.page === this.destinationPage) { this.destination = undefined; this.destinationPage = undefined; } const foreground = !this.inFlight.background && !this.inFlight.cached; this.release(); this.prewarm.refresh(foreground); this.flush(); this.scheduleUpgrade(); this.schedulePrefetch(); }
         break;
       case 'cache-miss':
         if (this.inFlight && m.id === this.inFlight.id && !this.inFlight.region) {
@@ -401,10 +419,11 @@ export class PreviewController {
     if (this.continuous && this.state[4] && this.state[3] === 0) { this.dirty = false; return; }
     const active = { page: this.page, width: this.width };
     const missing = this.continuous && !this.region ? this.visible.find(d => !this.isPresented(d) && !this.failed.has(d.page)) : undefined;
-    const background = this.continuous && !this.dirty && !missing && !this.region && !this.detail && !this.inverse && !this.upgradeReady && !this.gesture && this.prefetchReady
+    const background = this.continuous && !this.dirty && !missing && !this.region && !this.detail && !this.inverse && !this.upgradeReady && !this.gesture && this.prefetchReady && !this.prewarm.pending
       ? this.nearby.find(d => !this.prefetched.has(d.page) && !this.isPresented(d, false) && !this.failed.has(d.page) && (d.page < this.state![3] || (!this.state![4] && d.page === this.state![3] && this.frontierBudget > 0))) : undefined;
     const demand = this.inverse ? { page: this.inverse.page, width: this.visible.find(d => d.page === this.inverse!.page)?.width || this.width } : this.dirty ? active : missing || background;
     if (demand) {
+      this.prewarm.interrupt();
       const { page, width } = demand;
       const secondary = !!background || (this.continuous && page !== this.page && !this.inverse);
       if (page === this.page) { this.dirty = false; }
@@ -454,6 +473,7 @@ export class PreviewController {
         else { this.session.send([verb, this.nextId, page, width, this.state[1], this.state[2]]); }
       }
     } else if ((this.region || this.detail) && this.headerFor((this.region || this.detail)!.page)) {
+      this.prewarm.interrupt();
       const region = (this.region || this.detail)!; this[region.purpose] = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: region.page, region };
       const b = region.bounds;
@@ -582,7 +602,7 @@ export class PreviewController {
     clearTimeout(this.prefetchTimer); this.prefetchTimer = undefined; this.prefetchReady = false;
   }
   private schedulePrefetch(): void {
-    if (this.prefetchTimer || !this.continuous || this.gesture || !this.ready || !this.panel.visible || this.session.paused) { return; }
+    if (this.prewarm.pending || this.prefetchTimer || !this.continuous || this.gesture || !this.ready || !this.panel.visible || this.session.paused) { return; }
     // Speculation must be cancellable and preserve the foreground raster.
     // Older engines still render every visible page, without speculative demand.
     if (!this.session.previewBackground) { return; }
@@ -628,6 +648,7 @@ export class PreviewController {
     if (this.autoPages.size > 32) { this.autoPages.delete(this.autoPages.keys().next().value as number); }
   }
   private interactive(): void {
+    this.prewarm.interrupt();
     clearTimeout(this.upgradeTimer); this.upgradeTimer = undefined; this.upgradeReady = false;
     // A background request may be superseded. Late frames/ACKs cannot consume
     // the foreground request's credit, and the native pending slot is replaceable.
@@ -644,7 +665,7 @@ export class PreviewController {
     // Keep the comparison raster when PNG is measurably better for edits.
     // An idle SVG would discard that native base and force a full PNG next time.
     if (context && (this.renderCosts.preferPng(context, true) || this.renderCosts.preferPng(context, false))) { return false; }
-    return !this.gesture && this.format === 'auto' && this.session.previewSvg && this.svgDom && !this.svgDecodeFailed &&
+    return !this.prewarm.pending && !this.gesture && this.format === 'auto' && this.session.previewSvg && this.svgDom && !this.svgDecodeFailed &&
       !!h && h.mime === 'image/png' && h.svgEligible === true && !h.fallback &&
       h.page === this.page && h.revision === this.state?.[1] && h.sequence === this.session.previewSequence &&
       (!learned || learned.svg || (h.vectorCost || 0) < learned.cost * 0.75);

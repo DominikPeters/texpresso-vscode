@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
-import { readPreviewProtocol, isImageHeader, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
+import { readPreviewProtocol, isImageHeader, isPreviewMessage, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
 import { TexpressoSession } from '../session';
 import { SessionPaths } from '../paths';
 import { config, document, FakeProcess } from './helpers';
@@ -149,4 +149,17 @@ test('native export timing is optional and rejects nonfinite, negative and nonnu
   assert.equal(isImageHeader({ ...header, exportMs: 0 }), true);
   assert.equal(isImageHeader({ ...header, exportMs: 3.5 }), true);
   for (const exportMs of [-1, Infinity, NaN, '3']) { assert.equal(isImageHeader({ ...header, exportMs }), false); }
+});
+
+
+test('cursor preparation acknowledgments reject malformed identities and unknown statuses', () => {
+  for (const result of ['ready', 'cached', 'skipped', 'cancelled']) {
+    assert.equal(isPreviewMessage(['preview-prepared', 1, 3, 2, result]), true);
+  }
+  for (const value of [
+    ['preview-prepared', 1, 3, 2], ['preview-prepared', 1, 3, 2, 'ready', 'extra'],
+    ['preview-prepared', -1, 3, 2, 'ready'], ['preview-prepared', 1.5, 3, 2, 'ready'],
+    ['preview-prepared', 1, NaN, 2, 'ready'], ['preview-prepared', 1, 3, -1, 'ready'],
+    ['preview-prepared', 1, 3, 2, 'complete']
+  ]) { assert.equal(isPreviewMessage(value), false, JSON.stringify(value)); }
 });

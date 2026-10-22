@@ -38,7 +38,7 @@ both available.
 Open-buffer changes have no debounce: VS Code changes are sent immediately,
 with a source barrier that flushes native buffered changes. The remaining
 100 ms zoom request, 120 ms detail request, 150 ms prefetch, 200 ms disk-watcher,
-350 ms Auto refinement, and 500 ms native auxiliary-rerun delays serve separate
+200 ms cursor-preparation, 350 ms Auto refinement, and 500 ms native auxiliary-rerun delays serve separate
 purposes. None holds the first updated page for an ordinary editor change.
 
 The sections below record the broader design and the rationale for these bounds.

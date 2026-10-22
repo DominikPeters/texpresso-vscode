@@ -11,7 +11,8 @@ export async function run(): Promise<void> {
   const repo = path.resolve(__dirname, '../../..');
   const output = path.resolve(process.env.TEXPRESSO_PROFILE_OUTPUT || 'artifacts/profile-auto-vscode');
   const rapid = process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e';
-  const richDemo = process.env.TEXPRESSO_PROFILE_RICH === '1';
+  const prewarmScenario = process.env.TEXPRESSO_PROFILE_SCENARIO === 'prewarm-e2e';
+  const richDemo = prewarmScenario || process.env.TEXPRESSO_PROFILE_RICH === '1';
   const earlyInput = process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1';
   const resume = process.env.TEXPRESSO_PROFILE_RESUME === '1';
   if (fs.existsSync(output) && fs.readdirSync(output).length && !resume) { throw Error('Choose a new profiler output directory'); }
@@ -19,7 +20,9 @@ export async function run(): Promise<void> {
   const completed = new Set<string>(resume && fs.existsSync(resultFile) ? fs.readFileSync(resultFile, 'utf8').trim().split('\n').filter(Boolean).map(line => { const r=JSON.parse(line); return `${r.fixture}/${r.codec}/${r.repeat}`; }) : []);
   fs.mkdirSync(output, { recursive: true });
   if (process.platform === 'darwin') { cp.execFileSync('xcrun', ['clang', '-O2', path.join(repo, 'scripts/profiling/memory.c'), '-o', path.join(output, 'memory-sampler')]); }
-  const cases = richDemo ? (process.env.TEXPRESSO_PROFILE_AUTORERUN || 'false,true').split(',').map(value=>({
+  const cases = prewarmScenario ? (process.env.TEXPRESSO_PROFILE_PREWARM_MODES || 'cold,warm,early').split(',').map(value=>({
+    ...require('../../../scripts/profiling/rich-demo-native.cjs').richFixture(output,'rich-prewarm-'+value), autoRerun:true,prewarmMode:value
+  })) : richDemo ? (process.env.TEXPRESSO_PROFILE_AUTORERUN || 'false,true').split(',').map(value=>({
     ...require('../../../scripts/profiling/rich-demo-native.cjs').richFixture(output,'rich-rerun-'+value), autoRerun:value==='true'
   })) : fixtures(output, (process.env.TEXPRESSO_PROFILE_PAGES || '1,100').split(',').map(Number),
     (process.env.TEXPRESSO_PROFILE_KINDS || 'dense,tikz').split(','));
@@ -28,7 +31,7 @@ export async function run(): Promise<void> {
   if(richDemo) { await require('./continuous-preview').checkContinuousPreview(vscode.Uri.file(repo)); }
   const bridgeSource = fs.readFileSync(path.join(repo, 'scripts/profiling/auto-client.js'), 'utf8');
   const mainSource = fs.readFileSync(path.join(repo, 'media/preview.js'), 'utf8').replaceAll('acquireVsCodeApi', 'profileAcquireVsCodeApi');
-  const metadata = { richDemo, earlyInput, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
+  const metadata = { richDemo, prewarmScenario, earlyInput, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: prewarmScenario ? 'prewarm-e2e' : rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
     engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd:repo,encoding:'utf8'}).trim(),
     binarySha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(binary)).digest('hex'),
     extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(), transport: 'actual VS Code webview postMessage' };
@@ -42,6 +45,7 @@ export async function run(): Promise<void> {
         fs.writeFileSync(fixture.file, fixture.text);
         const active = new Run(fixture, binary, codec, 1600, output, repeat);
         if(richDemo) { active.session.autoRerun=fixture.autoRerun; active.session.configuration.autoRerun=fixture.autoRerun; }
+        if(prewarmScenario) { Object.defineProperty(active.session.document,'version',{get:()=>active.session.previewSequence}); }
         const sentence='Edit this sentence and watch the preview change.';
         if(richDemo && !active.text.includes(sentence)) {throw Error('The rich demo edit sentence changed; update its benchmark anchor.');}
         const richAnchor=richDemo ? active.text.indexOf(sentence)+sentence.length : 0;
@@ -52,9 +56,22 @@ export async function run(): Promise<void> {
         const uiTrace: string[] = [];
         const timer = setTimeout(() => reject(Error('VS Code Auto benchmark timeout: ' + JSON.stringify(uiTrace) + '\n' + active.trace.slice(-4000))), 120000);
         const requestTrace: any[] = [];
-        active.onPreview = (event: any) => { requestTrace.push({at:performance.now(), received:event.header || event}); controller?.handle(event); };
+        active.onPreview = (event: any) => {
+          const at=performance.now(); requestTrace.push({at, received:event.header || event});
+          if(Array.isArray(event)&&event[0]==='preview-prepared') {
+            void realPanel?.webview.postMessage({type:'profile-prewarm-ack',phase:'complete',request:event[1],revision:event[2],sequence:event[3],result:event[4],hostReceivedAt:at});
+          }
+          controller?.handle(event);
+        };
         const send = active.session.send.bind(active.session);
-        active.session.send = (command: any) => { if(command[0].startsWith('preview-')) { requestTrace.push({at:performance.now(), sent:command}); } send(command); };
+        active.session.send = (command: any) => {
+          const at=performance.now();
+          if(command[0].startsWith('preview-')) { requestTrace.push({at, sent:command}); }
+          if(command[0]==='preview-prepare') {
+            void realPanel?.webview.postMessage({type:'profile-prewarm-ack',phase:'sent',inputId:'warmup',request:command[1],hostSentAt:at});
+          }
+          send(command);
+        };
         active.onState = () => controller?.update();
         const createPanel = (...args: Parameters<typeof vscode.window.createWebviewPanel>) => {
           const panel = vscode.window.createWebviewPanel(...args); realPanel = panel;
@@ -70,6 +87,10 @@ export async function run(): Promise<void> {
                   if (m.partial) { fs.writeFileSync(path.join(output, `${fixture.id}-${codec}-${repeat}-partial.json`), JSON.stringify(m.partial,null,2)); }
                   reject(Error(m.error)); return;
                 }
+                if (m.type === 'profile-prewarm') {
+                  controller!.prepareEdit(active.session.document,richAnchor);
+                  return;
+                }
                 if (m.type === 'profile-edit') {
                   if (m.mode === 'demo') {active.replace(richAnchor+richInserted,0,m.text);richInserted+=m.text.length;}
                   else if (m.mode === 'letter' || m.mode === 'backspace') {
@@ -79,7 +100,8 @@ export async function run(): Promise<void> {
                     active.replace(m.mode === 'letter' ? offset : offset - 1, m.mode === 'letter' ? 0 : 1, m.mode === 'letter' ? m.letter : '');
                   } else if (m.mode === 'font') { active.replace(active.text.indexOf('\\noindent'), 0, '\\textbf{New font} '); }
                   else { active.edit(0, !!m.coordinate); }
-                  if (m.inputId !== undefined) { await panel.webview.postMessage({type:'profile-edit-ack', inputId:m.inputId, sequence:active.session.previewSequence}); }
+                  if (prewarmScenario) { controller!.prepareEdit(active.session.document,richAnchor+richInserted); }
+                  if (m.inputId !== undefined) { await panel.webview.postMessage({type:'profile-edit-ack', inputId:m.inputId, sequence:active.session.previewSequence,hostAppliedAt:performance.now()}); }
                   return;
                 }
                 active.startPromise ||= active.session.start();
@@ -90,7 +112,7 @@ export async function run(): Promise<void> {
                 profileProcessingMs: message.type === 'image' ? performance.now() - active.controllerImageStart : undefined }),
               set html(value: string) {
                 const instance = value.match(/data-instance="([^"]+)"/)![1];
-                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true, rapid, earlyInput, richDemo, autoRerun:fixture.autoRerun }));
+                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true, rapid, earlyInput, richDemo, prewarmScenario, prewarmMode:fixture.prewarmMode, autoRerun:fixture.autoRerun }));
                 value = value.replace('</head>', '<style>html,body{width:800px;height:700px;overflow:hidden}</style></head>');
                 value = value.replace(/<script nonce=/, `<script nonce="${instance}">${bootstrap}</script><script nonce=`);
                 value = value.replace(new RegExp(`<script nonce="${instance}" src="[^"]*/preview\\.js"></script>`), `<script nonce="${instance}">${mainSource}</script>`);

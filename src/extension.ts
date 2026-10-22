@@ -105,6 +105,7 @@ export function activate(context: vscode.ExtensionContext): void {
         });
     }
     preview?.update();
+    updatePrewarm();
   }
 
   async function stop(): Promise<void> {
@@ -262,8 +263,14 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
+  function updatePrewarm(): void {
+    const editor = vscode.window.activeTextEditor;
+    preview?.prepareEdit(editor?.document, editor?.document.offsetAt(editor.selection.start));
+  }
+
   function syncForward(editor = vscode.window.activeTextEditor): void {
     if (editor) {
+      preview?.interruptPreparation();
       running()?.sync.syncForward(editor.document, editor.selection.active.line);
     }
   }
@@ -390,13 +397,14 @@ export function activate(context: vscode.ExtensionContext): void {
         }
       });
     }),
-    vscode.workspace.onDidChangeTextDocument(event => running()?.sync.change(event.document, event.contentChanges)),
+    vscode.workspace.onDidChangeTextDocument(event => { running()?.sync.change(event.document, event.contentChanges); updatePrewarm(); }),
     vscode.window.onDidChangeActiveTextEditor(updateContexts),
     vscode.window.onDidChangeTextEditorSelection(event => {
       const session = running();
       if (session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
         syncForward(event.textEditor);
       }
+      updatePrewarm();
     }),
     vscode.window.onDidChangeActiveColorTheme(() => {
       const session = running();

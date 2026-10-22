@@ -176,6 +176,15 @@ export class DocumentSync {
     return this.find(document) !== undefined;
   }
 
+  sourcePosition(document: vscode.TextDocument, utf16Offset: number): { path: string; offset: number } | undefined {
+    const file = this.find(document);
+    if (!file || document.isClosed || !Number.isSafeInteger(utf16Offset) || utf16Offset < 0) { return; }
+    const text = document.getText();
+    if (utf16Offset > text.length) { return; }
+    const path = [...file.enginePaths][0];
+    return path ? { path, offset: Buffer.byteLength(text.slice(0, utf16Offset), 'utf8') } : undefined;
+  }
+
   syncForward(document: vscode.TextDocument, line: number): void {
     const file = this.find(document);
     if (file) {

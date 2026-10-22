@@ -130,3 +130,7 @@ The current pass also covers [compiler checkpoints](2026-10-22-checkpoints.md),
 and the [richer demo and dashed-stroke fix](2026-10-22-demo.md).
 
 [Rich-demo typing and continuous-preview acceptance](2026-10-22-rich-demo.md) separates the first cold edit, warm typing, and auxiliary-convergence repaint costs, with actual VS Code measurements and source-version checks.
+
+[Cursor checkpoint prewarming](2026-10-22-prewarm.md) measures nineteen characters
+of ordinary 100 ms typing with a cold cursor, a prepared cursor and interrupted
+preparation, using actual VS Code and the production renderers.

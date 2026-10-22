@@ -22,11 +22,12 @@ export type PreviewMessage =
   | ['preview-invalidated', number, number]
   | ['preview-forward', number, number, number, number, number]
   | ['preview-destination', number, number, string, number]
+  | ['preview-prepared', number, number, number, 'ready' | 'cached' | 'skipped' | 'cancelled']
   | ['preview-retry', number]
   | ['preview-error', number, string];
 
 const count = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) >= 0 && (n as number) <= 2147483647;
-const previewNotifications = new Set(['preview-state', 'preview-invalidated', 'preview-forward', 'preview-retry', 'preview-error', 'preview-destination']);
+const previewNotifications = new Set(['preview-state', 'preview-invalidated', 'preview-forward', 'preview-retry', 'preview-error', 'preview-destination', 'preview-prepared']);
 const coordinate = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e9;
 const name = (s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 4096;
 function rectangle(b: unknown): boolean {
@@ -72,6 +73,8 @@ export function isPreviewMessage(value: unknown): value is PreviewMessage {
       value.slice(4).every(n => typeof n === 'number' && Number.isFinite(n));
     case 'preview-destination': return value.length === 5 && count(value[1]) && count(value[2]) && name(value[3]) &&
       Number.isInteger(value[4]) && value[4] >= -1 && value[4] <= 100000;
+    case 'preview-prepared': return value.length === 5 && value.slice(1, 4).every(count) &&
+      ['ready', 'cached', 'skipped', 'cancelled'].includes(value[4]);
     case 'preview-retry': return value.length === 2 && count(value[1]);
     case 'preview-error': return value.length === 3 && count(value[1]) && typeof value[2] === 'string';
     default: return false;

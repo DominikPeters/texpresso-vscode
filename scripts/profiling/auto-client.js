@@ -5,7 +5,7 @@ const profileHost = profileJob.vscode ? acquireVsCodeApi() : undefined;
 const profileRows = [], profileFrames = [], errors = [], pendingMain = new Set();
 let current, latestSequence = 0, latestRequest = 0;
 const displayedMainRequest = new Map();
-const profileInputs = [], rapidPhases = [], visibilityEvents = [];
+const profileInputs = [], rapidPhases = [], visibilityEvents = [], prewarmEvents = [];
 const visibility = () => ({state:document.visibilityState, focused:document.hasFocus()});
 document.addEventListener('visibilitychange',()=>visibilityEvents.push({at:performance.now(),...visibility()}));
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -67,9 +67,10 @@ const profileApi = () => ({
 });
 if (profileHost) window.profileAcquireVsCodeApi = profileApi; else window.acquireVsCodeApi = profileApi;
 const receiveProfileFrame = async data => {
+  if (data.type === 'profile-prewarm-ack') { prewarmEvents.push({...data, receivedAt:performance.now()}); return; }
   if (data.type === 'profile-edit-ack') {
     const input = profileInputs.find(i => i.id === data.inputId);
-    if (input) { input.sequence = data.sequence; input.acknowledgedAt = performance.now(); }
+    if (input) { input.sequence = data.sequence; input.acknowledgedAt = performance.now(); input.hostAppliedAt=data.hostAppliedAt; }
     return;
   }
   if (data.type === 'error' || data.type === 'decode-error') errors.push(data.text || data.type);
@@ -126,7 +127,7 @@ else {
     await operation('page-last-new',profileJob.pages-1,false,()=>navigate(profileJob.pages-1),650);
     await operation('page-first-compiled',0,false,()=>navigate(0),650);
   }
-  if(profileJob.richDemo) {
+  if(profileJob.richDemo && !profileJob.prewarmScenario) {
     const insert = async(name,text,idle=80)=>{
       const input={id:profileInputs.length+1,phase:name,injectedAt:performance.now()};profileInputs.push(input);
       current={name,page:0,start:input.injectedAt,minSequence:Infinity,afterRequest:latestRequest,frames:[]};
@@ -144,7 +145,7 @@ else {
     await insert('demo-warm-edit',' works',1600);
     await insert('demo-after-idle-edit',' instantly',650);
   }
-  if (profileJob.rapid) {
+  if (profileJob.rapid || profileJob.prewarmScenario) {
     // A finite open-loop input schedule. Awaiting a paint would hide queueing and
     // cancellation, while an unbounded flood would measure an unrealistic load.
     const burst = async (name, count, interval, body) => {
@@ -165,15 +166,15 @@ else {
       phase.lastInputAt = profileInputs.at(-1).injectedAt;
       await until(()=>profileInputs.filter(i=>i.phase===name).every(i=>i.sequence!==undefined), 'Input source acknowledgments');
       const finalSequence = profileInputs.at(-1).sequence;
-      await until(()=>profileFrames.some(f=>f.type==='image' && f.sequence===finalSequence && f.paintedAt), 'Final source paint');
-      const finalFrame = profileFrames.find(f=>f.type==='image' && f.sequence===finalSequence && f.paintedAt);
+      await until(()=>profileFrames.some(f=>f.type==='image' && f.page===0 && f.sequence===finalSequence && f.paintedAt), 'Final source paint');
+      const finalFrame = profileFrames.find(f=>f.type==='image' && f.page===0 && f.sequence===finalSequence && f.paintedAt);
       phase.finalSequence = finalSequence;
       phase.lastKeyToPaint = finalFrame.paintedAt-phase.lastInputAt;
       phase.finalPaintAt = finalFrame.paintedAt;
       // One documented idle window observes the production 350 ms SVG refinement.
       await until(()=>performance.now()>=phase.finalPaintAt+700 && !pendingMain.size, 'Post-burst idle refinement');
       phase.end = performance.now();
-      const delivered = profileFrames.slice(phase.firstFrame).filter(f=>f.type==='image');
+      const delivered = profileFrames.slice(phase.firstFrame).filter(f=>f.type==='image' && f.page===0);
       const frames = delivered.filter(f=>f.paintedAt).sort((a,b)=>a.paintedAt-b.paintedAt);
       phase.deliveredFrames = delivered.length;
       phase.cancelledBeforeMount = delivered.filter(f=>f.cancelledBeforeMount).length;
@@ -207,12 +208,38 @@ else {
         phase.visibilityChanges.every(e=>e.state==='visible');
       phase.validComparison = phase.validCadence && phase.visibleThroughout;
       phase.coalescedInputs = profileInputs.filter(i=>i.phase===name && i.exactPaintMs===undefined).length;
-      phase.firstPaintMs = frames.length ? frames[0].paintedAt-phase.start : undefined;
+      const firstChanged=frames.find(f=>f.sequence>=inputs[0].sequence);
+      phase.firstPaintMs = firstChanged ? firstChanged.paintedAt-phase.start : undefined;
       profileRows.push({name,page:0,ms:phase.lastKeyToPaint,settledMs:phase.end-phase.start,frames});
     };
-    await burst('typing-overlap',12,100,i=>({mode:'letter',letter:'abcdefghijkl'[i]}));
-    await burst('backspace-overlap',12,100,()=>({mode:'backspace'}));
-    if(profileJob.fixture.startsWith('tikz')) await burst('coordinate-overlap',8,125,()=>({coordinate:true}));
+    if(profileJob.prewarmScenario) {
+      if(profileJob.prewarmMode!=='cold') {
+        const snapshot=()=>({page:document.getElementById('page').value,scrollTop:document.getElementById('viewport').scrollTop,scrollLeft:document.getElementById('viewport').scrollLeft,statusHidden:document.getElementById('status').hidden,format:document.getElementById('format').value});
+        const before=snapshot(),requestedAt=performance.now();
+        profileHost.postMessage({type:'profile-prewarm',inputId:'warmup',requestedAt});
+        await until(()=>prewarmEvents.some(e=>e.inputId==='warmup'&&e.phase==='sent'),'Cursor prewarm acceptance');
+        const ack=prewarmEvents.find(e=>e.inputId==='warmup'&&e.phase==='sent');
+        if(profileJob.prewarmMode==='early') await wait(Math.max(0,ack.receivedAt+80-performance.now()));
+        else {
+          await until(()=>prewarmEvents.some(e=>e.phase==='complete'&&e.request===ack.request),'Cursor prewarm completion');
+          const completed=prewarmEvents.find(e=>e.phase==='complete'&&e.request===ack.request);
+          if(!['ready','cached'].includes(completed.result)) throw Error('Cursor prewarm did not produce a checkpoint: '+JSON.stringify(completed));
+        }
+        const after=snapshot(),preserved=JSON.stringify(before)===JSON.stringify(after);
+        prewarmEvents.push({phase:'ui',before,after,preserved});
+        if(!preserved)throw Error('Cursor prewarm changed preview navigation or status: '+JSON.stringify({before,after}));
+      }
+      const sentence=' It works instantly';
+      await burst('sentence-typing',sentence.length,100,i=>({mode:'demo',text:sentence[i]}));
+      const phase=rapidPhases.at(-1);
+      const sent=prewarmEvents.find(e=>e.phase==='sent');
+      if(sent&&sent.hostSentAt<=profileInputs[0].hostAppliedAt)phase.hostPrepareToFirstAppliedInputMs=profileInputs[0].hostAppliedAt-sent.hostSentAt;
+      if(!phase.validComparison) throw Error('Invalid sentence input cadence/visibility: '+JSON.stringify(phase));
+    } else {
+      await burst('typing-overlap',12,100,i=>({mode:'letter',letter:'abcdefghijkl'[i]}));
+      await burst('backspace-overlap',12,100,()=>({mode:'backspace'}));
+      if(profileJob.fixture.startsWith('tikz')) await burst('coordinate-overlap',8,125,()=>({coordinate:true}));
+    }
   }
   if (!profileJob.richDemo && !profileJob.rapid && !profileJob.navOnly) {
   for (let i=0;i<5;i++) await operation('edit-letter',0,true,()=>edit({mode:'letter',letter:'abcde'[i]}),i===4?650:80);
@@ -234,7 +261,7 @@ else {
   const uiChecks = {normalStatusHidden:mainFrames.every(f=>f.statusHidden), autoLabelStable:mainFrames.every(f=>f.autoLabel==='Auto')};
   if(profileJob.earlyInput && (!uiChecks.normalStatusHidden || !uiChecks.autoLabelStable)) throw Error('Normal preview UI assertions failed: '+JSON.stringify(uiChecks));
   const result={...profileJob,uiChecks,ua:navigator.userAgent,dpr:devicePixelRatio,viewport:[innerWidth,innerHeight],
-    rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,visibilityEvents,rasterReadbackMs:readback,errors};
+    rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,visibilityEvents,prewarmEvents,rasterReadbackMs:readback,errors};
   if (profileHost) { profileHost.postMessage({type:'profile-result',result});return; }
   await fetch('/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
   const select=name=>profileRows.filter(r=>r.name===name).map(r=>r.ms);
