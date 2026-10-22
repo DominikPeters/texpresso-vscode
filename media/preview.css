@@ -26,7 +26,9 @@ button svg path { fill: currentColor; }
 button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,#555); outline: 1px solid var(--vscode-focusBorder); }
 #viewport.magnify #image { cursor: zoom-in; touch-action: none; }
 #lens { position: fixed; width: 240px; height: 240px; overflow: hidden; border-radius: 50%; border: 2px solid var(--vscode-focusBorder,#2684ff); box-shadow: 0 4px 16px #0008; background: var(--vscode-editor-background); pointer-events: none; z-index: 10; }
-#lensImage, #lensBase { position: absolute; max-width: none; user-select: none; }
+/* VS Code constrains webview images to max-height:100%. These rasters extend
+   beyond the lens and must keep their natural aspect ratio while it clips them. */
+#lensImage, #lensBase { position: absolute; max-width: none; max-height: none; height: auto; user-select: none; }
 #highlight { animation: locate 1.5s ease-out forwards; }
 @keyframes locate { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #highlight { animation: none; } }
