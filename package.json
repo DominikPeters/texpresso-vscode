@@ -344,7 +344,9 @@
     "package:vsix": "node scripts/package.cjs",
     "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged",
     "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview",
-    "demo:preview": "npm run package:vsix && node scripts/open-preview-demo.cjs"
+    "demo:preview": "npm run package:vsix && node scripts/open-preview-demo.cjs",
+    "profile:preview": "npm run compile-tests && node scripts/profile-preview.cjs",
+    "profile:preview:browser": "npm run compile-tests && node scripts/profiling/browser.cjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

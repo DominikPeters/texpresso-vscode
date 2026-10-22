@@ -213,6 +213,9 @@ bundles, and native checks. Ordinary TypeScript development needs no native
 source checkout. Native build outputs stay outside the published VSIX while
 bundled-engine selection and platform packaging are developed.
 
+Developer performance measurements and the repeatable offline suite are in
+[preview profiling](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/profiling/README.md).
+
 ## Release Notes
 
 ### Unreleased

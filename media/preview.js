@@ -38,7 +38,7 @@
     formatSelect.value = format;
   }
 
-  function layout(request = true) {
+  function layout(request = true, immediate = false) {
     const pageWidth = bounds[2] - bounds[0], pageHeight = bounds[3] - bounds[1];
     let scale = Number(zoom) * 96 / 72;
     if (zoom === 'width' || zoom === 'page') {
@@ -58,13 +58,15 @@
     zoomSelect.value = String(zoom);
     if (request) {
       clearTimeout(timer);
-      timer = setTimeout(() => {
+      const requestViewport = () => {
         const pixels = width();
         if (pixels !== lastWidth || page !== lastRequestedPage) {
           lastWidth = pixels; lastRequestedPage = page;
           post({ type: 'viewport', page, width: pixels, format });
         }
-      }, 100);
+      };
+      // Explicit page/format choices should not wait for the gesture debounce.
+      if (immediate) { requestViewport(); } else { timer = setTimeout(requestViewport, 100); }
     }
     scheduleDetail();
     save();
@@ -80,7 +82,7 @@
     if (complete && count > 0) { page = Math.min(page, count - 1); }
     element('links').replaceChildren(); clearDetail(); stale = true; generation++; element('highlight').hidden = true;
     viewport.scrollTop = 0; viewport.scrollLeft = 0;
-    describe(); layout();
+    describe(); layout(true, true);
   }
   function changeZoom(value, origin, anchor) {
     closeLens();
@@ -323,7 +325,7 @@
   formatSelect.onchange = () => {
     format = formatSelect.value; closeLens(); clearDetail();
     // A format change needs a request even when its width happens to match.
-    lastWidth = 0; layout();
+    lastWidth = 0; layout(true, true);
   };
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
   for (const id of ['restart', 'pause', 'output']) { element(id).onclick = () => post({ type: id }); }
