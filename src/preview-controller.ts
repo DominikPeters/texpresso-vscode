@@ -20,6 +20,9 @@ export class PreviewController {
   private dirty = true;
   private page = 0;
   private width = 1200;
+  private format: 'png' | 'svg' = 'png';
+  private svgDecodeFailed = false;
+  private destination?: string;
   private nextId = 0;
   private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest };
   private region?: RegionRequest;
@@ -29,7 +32,7 @@ export class PreviewController {
   private shown?: PreviewImageHeader;
   private target?: { revision: number; sequence: number; page: number; x: number; y: number };
 
-  constructor(api: typeof vscode, extensionUri: vscode.Uri, readonly session: TexpressoSession,
+  constructor(private api: typeof vscode, extensionUri: vscode.Uri, readonly session: TexpressoSession,
     closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void) {
     const media = api.Uri.joinPath(extensionUri, 'media');
     this.panel = api.window.createWebviewPanel('texpresso.preview', 'TeXpresso — ' + path.basename(session.document.fileName),
@@ -45,7 +48,7 @@ export class PreviewController {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible;
       this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
-      this.shown = undefined;
+      this.shown = undefined; this.destination = undefined;
       // A restored webview announces ready; a retained live one answers ping.
       if (this.panel.visible) { void this.post({ type: 'ping' }); }
     });
@@ -66,13 +69,14 @@ export class PreviewController {
       <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="page">Fit page</option>
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
       <option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select>
+      <select id="format" aria-label="Rendering format" title="Rendering format"><option value="png">PNG</option><option value="svg">SVG</option></select>
       <button id="zoomIn" title="Zoom in" aria-label="Zoom in">${icon('zoom-in')}</button></div>
       <div class="actions"><button id="magnify" title="Magnifier: hold the mouse button on the page (M)" aria-label="Magnifier" aria-pressed="false">${icon('search')}</button>
       <button id="pause" title="Pause compilation" aria-label="Pause compilation"><span id="pauseIcon">${icon('debug-pause')}</span><span id="resumeIcon" hidden>${icon('play')}</span></button>
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="status">Waiting for the first page…</div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
-      <div id="sheet" hidden><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="highlight" hidden></div></div>
+      <div id="sheet" hidden><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
       <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
@@ -83,7 +87,7 @@ export class PreviewController {
   handle(event: PreviewEvent): void {
     if (this.disposed) { return; }
     if ('sourceSequence' in event) {
-      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined;
+      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
       void this.post({ type: 'invalidate' });
     } else if ('header' in event) {
       this.image(event);
@@ -95,7 +99,7 @@ export class PreviewController {
           this.status(); this.flush();
           break;
         case 'preview-invalidated':
-          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined;
+          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
           void this.post({ type: 'invalidate' });
           break;
         case 'preview-retry':
@@ -109,10 +113,16 @@ export class PreviewController {
             if (region) { this.flush(); }
           }
           break;
+        case 'preview-destination':
+          if (event[1] !== this.state?.[1] || event[2] !== this.session.previewSequence || event[3] !== this.destination) { break; }
+          if (event[4] < 0) { this.destination = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
+          else { if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; this.status(); this.flush(); }
+          break;
         case 'preview-forward':
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
           this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5] };
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
+            if (this.page !== event[3]) { this.svgDecodeFailed = false; }
             this.page = event[3];
             if (!this.inFlight || this.inFlight.page !== this.page || this.inFlight.revision !== event[1] || this.inFlight.region) {
               this.dirty = true;
@@ -126,6 +136,7 @@ export class PreviewController {
 
   update(): void { this.status(); }
   navigate(delta: number): void {
+    this.svgDecodeFailed = false;
     this.page = Math.max(0, this.page + delta);
     if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; this.status(); this.flush();
@@ -140,20 +151,48 @@ export class PreviewController {
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > 4096) { return; }
-        if (this.page !== m.page || this.width !== m.width || m.type === 'ready') { this.dirty = true; }
-        if (this.page !== m.page) { this.shown = undefined; this.target = undefined; }
+        const format = m.format === 'svg' && this.session.previewSvg ? 'svg' : 'png';
+        if (format !== this.format) { this.svgDecodeFailed = false; }
+        if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
+        this.format = format;
+        if (this.page !== m.page) { this.shown = undefined; this.target = undefined; this.svgDecodeFailed = false; }
         this.page = m.page as number; this.width = Math.round(m.width as number);
         if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
         this.ready = true; this.status(); this.flush();
         break;
       case 'decoded':
-        if (m.id === this.inFlight?.id) { this.release(); this.flush(); }
+        if (m.id === this.inFlight?.id) { if (!this.inFlight?.region) { this.destination = undefined; } this.release(); this.flush(); }
         break;
       case 'decode-error':
         if (m.id === this.inFlight?.id) {
-          this.release(); void this.post({ type: 'error', text: 'Could not decode the preview image. Restart the preview to try again.' });
+          const svg = this.shown && this.shown.requestId === m.id && this.shown.mime === 'image/svg+xml';
+          this.release();
+          if (svg) { this.svgDecodeFailed = true; this.dirty = true; this.flush(); }
+          else { void this.post({ type: 'error', text: 'Could not decode the preview image. Restart the preview to try again.' }); }
         }
         break;
+      case 'link': {
+        const h = this.shown;
+        if (!this.session.previewLinks || !h || h.revision !== m.revision || h.sequence !== m.sequence ||
+            h.sequence !== this.session.previewSequence || h.page !== m.page || !Number.isInteger(m.index)) { break; }
+        const link = h.annotations?.links[m.index as number];
+        if (!link) { break; }
+        if (link.uri.startsWith('#')) {
+          if (link.uri.length === 1) { break; }
+          this.destination = link.uri.slice(1);
+          this.session.send(['preview-destination', h.revision, h.sequence, this.destination]);
+        } else {
+          try {
+            const url = new URL(link.uri);
+            if (['http:', 'https:', 'mailto:'].includes(url.protocol) && !/[\x00-\x1f\x7f]/.test(link.uri)) {
+              void Promise.resolve(this.api.env.openExternal(this.api.Uri.parse(url.href))).then(opened => {
+                if (!opened) { void this.post({ type: 'link-error', text: 'VS Code could not open this link.' }); }
+              }, () => { void this.post({ type: 'link-error', text: 'VS Code could not open this link.' }); });
+            }
+          } catch { /* Unsupported or malformed document links remain inert. */ }
+        }
+        break;
+      }
       case 'region':
       case 'detail': {
         const h = this.shown, b = m.bounds;
@@ -190,7 +229,7 @@ export class PreviewController {
     if (this.dirty) {
       this.dirty = false; this.region = undefined; this.detail = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page };
-      this.session.send(['preview-render', this.nextId, this.page, this.width, this.state[1], this.state[2]]);
+      this.session.send([this.format === 'svg' && !this.svgDecodeFailed ? 'preview-svg' : 'preview-render', this.nextId, this.page, this.width, this.state[1], this.state[2]]);
     } else if ((this.region || this.detail) && this.shown) {
       const region = (this.region || this.detail)!; this[region.purpose] = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, region };
@@ -207,7 +246,7 @@ export class PreviewController {
       this.release(); this.dirty = true; this.flush(); return;
     }
     this.page = h.page;
-    if (!request.region) { this.shown = h; }
+    if (!request.region) { this.shown = h; if (this.svgDecodeFailed) { h.fallback = 'SVG could not be decoded by the preview'; } }
     // Buffer.buffer may expose a larger pooled allocation. Send only image bytes.
     const bytes = new Uint8Array(frame.bytes).buffer;
     this.decodeTimeout = setTimeout(() => {
@@ -218,14 +257,14 @@ export class PreviewController {
       this.target.sequence === h.sequence ? this.target : undefined;
     if (target && !request.region) { this.target = undefined; }
     void this.post(request.region ? { type: request.region.purpose, header: h, bytes, token: request.region.token } :
-      { type: 'image', header: h, bytes, target })
+      { type: 'image', header: h, bytes, target, destination: this.destination })
       .then(delivered => { if (!delivered && this.inFlight?.id === h.requestId) { this.release(); this.ready = false; this.dirty = true; } });
     this.status();
   }
 
   private status(): void {
     void this.post({ type: 'state', page: this.page, count: this.state?.[3] || 0, complete: !!this.state?.[4],
-      regions: this.session.previewRegions, paused: this.session.paused, phase: this.session.state });
+      regions: this.session.previewRegions, svg: this.session.previewSvg, links: this.session.previewLinks, paused: this.session.paused, phase: this.session.state });
   }
   private post(message: object): Promise<boolean> {
     return this.disposed ? Promise.resolve(false) : Promise.resolve(

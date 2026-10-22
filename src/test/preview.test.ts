@@ -101,3 +101,24 @@ test('capability probing distinguishes a missing executable from missing preview
   assert.equal(failure.setting, 'texpresso.previewLocation');
   assert.equal(failure.message, 'Choose another engine or Window.');
 });
+
+test('SVG framing and bounded hyperlink metadata preserve UTF-8, escaping and arbitrary body splits', () => {
+  const bytes = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg">\n<path data-text="é😀"/></svg>');
+  const svg = { ...header, mime: 'image/svg+xml', byteLength: bytes.length, annotations: {
+    links: [{ bounds: [1, 2, 3, 4], uri: 'https://example.com/?x=1&y=2' }], destinations: [{ name: 'é\\()😀', x: 2, y: 3 }]
+  } };
+  const payload = Buffer.concat([Buffer.from(JSON.stringify(['preview-image', svg]) + '\n'), bytes]);
+  for (let split = 1; split < payload.length; split++) {
+    const input = new PassThrough(); const frames: PreviewImage[] = [];
+    const reader = readPreviewProtocol(input, () => {}, image => frames.push(image), error => { throw error; });
+    input.write(payload.subarray(0, split)); input.write(payload.subarray(split));
+    assert.deepEqual(frames[0].header.annotations, svg.annotations); assert.deepEqual(frames[0].bytes, bytes); reader.close();
+  }
+  for (const annotations of [{ links: [{ uri: 'x', bounds: [0, 0, Infinity, 2] }], destinations: [] },
+    { links: [], destinations: [{ name: 'x', x: NaN, y: 0 }] }, { links: Array(4097).fill({ uri: 'x', bounds: [0, 0, 1, 1] }), destinations: [] }]) {
+    const input = new PassThrough(), errors: Error[] = [];
+    readPreviewProtocol(input, () => {}, () => assert.fail('invalid metadata'), error => errors.push(error));
+    input.write(JSON.stringify(['preview-image', { ...svg, annotations }]) + '\n');
+    assert.equal(errors.length, 1);
+  }
+});

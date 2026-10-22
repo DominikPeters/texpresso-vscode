@@ -26,6 +26,9 @@ try {
   fs.mkdirSync(path.join(demo, 'sample/.vscode'), {recursive: true});
   const file = path.join(demo, 'sample/embedded-preview.tex');
   if (!fs.existsSync(file)) fs.copyFileSync(path.join(__dirname, 'preview-demo/sample.tex'), file);
+  const featureSample = path.join(demo, 'sample/svg-and-links.tex');
+  if (!fs.existsSync(featureSample)) fs.copyFileSync(path.join(__dirname, 'preview-demo/sample.tex'), featureSample);
+  const launchFile = process.env.TEXPRESSO_DEMO_SAMPLE === 'original' ? file : path.join(demo, 'sample/svg-and-links.tex');
   const settings = JSON.stringify({
     'texpresso.command': binary, 'texpresso.packageProvider': 'texlive', 'texpresso.previewLocation': 'editor',
     'texpresso.useChangeRangeMode': true, 'texpresso.syncTeXForwardOnSelection': false,
@@ -39,7 +42,7 @@ try {
   const workspace = path.join(demo, 'Preview.code-workspace');
   fs.writeFileSync(workspace, JSON.stringify({folders: [{path: 'sample'}]}));
   const env = {...process.env, PATH: (process.platform === 'darwin' ? '/Library/TeX/texbin' + path.delimiter : '') + process.env.PATH,
-    TEXPRESSO_DEMO_FILE: file};
+    TEXPRESSO_DEMO_FILE: launchFile};
   const profiles = ['--user-data-dir', path.join(profile, 'user'), '--extensions-dir', path.join(profile, 'extensions')];
   run([...profiles, '--install-extension', vsix, '--force'], env);
   const child = spawn(cli, ['--new-window', ...profiles, '--extensionDevelopmentPath', path.join(__dirname, 'preview-demo'),

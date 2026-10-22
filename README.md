@@ -24,6 +24,18 @@ monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable
 engines render the visible area separately for sharp text without rasterizing
 the entire enlarged page.
 
+The **PNG / SVG** selector in the preview toolbar switches image formats. PNG
+remains the default. SVG outlines fonts and stays sharp while zooming or using
+the magnifier. Pages with PDF features the SVG exporter cannot preserve fall
+back to PNG, with the reason shown in the status line. This requires an engine
+advertising SVG support; the option is disabled with older engines.
+
+Hyperref web and email links open through VS Code on a plain click. Internal
+links jump to their named destination, compiling later pages on demand.
+Control/Command click still performs inverse SyncTeX, including on links.
+For TeX Live, TeXpresso excludes documentation/source examples from runtime
+package lookup so example `hyperref.cfg` files cannot override the driver.
+
 The preview toolbar provides page navigation, fit width/page, zoom,
 pause/resume, restart, and compiler output, using VS Code product icons.
 Toggle the magnifier (or press **M** while the preview has focus), then hold the

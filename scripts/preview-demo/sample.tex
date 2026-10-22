@@ -1,6 +1,6 @@
 \documentclass{article}
 \usepackage[margin=26mm]{geometry}
-\usepackage{amsmath}
+\usepackage{amsmath}\usepackage[xetex]{xcolor}\usepackage[xetex,hidelinks]{hyperref}
 \title{TeXpresso inside VS Code}
 \author{A live preview, beside your source}
 \date{}
@@ -21,8 +21,10 @@ Control or Command click on the page to return to the source.
   f(x+h) &= f(x) + h f'(x) + O(h^2),\\
   e^{i\theta} &= \cos\theta + i\sin\theta.
 \end{align*}
+\hyperlink{section.3}{Next page}\quad\href{https://github.com/let-def/texpresso}{TeXpresso on GitHub}
 \newpage
 \typeout{PREVIEW-SECOND}
 \section{The next page}
 Pages are compiled when requested, and images have a bounded pixel budget.
+\hyperlink{section.1}{Back to the first section}.
 \end{document}

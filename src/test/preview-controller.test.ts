@@ -8,20 +8,20 @@ import { PreviewController } from '../preview-controller';
 function fixture() {
   let receive!: (value: unknown) => void, view!: () => void, closed!: () => void;
   let stops = 0;
-  const messages: Record<string, any>[] = [], commands: Command[] = [];
+  const messages: Record<string, any>[] = [], commands: Command[] = [], opened: string[] = [];
   const panel = { visible: true,
     webview: { html: '', cspSource: 'local:', asWebviewUri: () => 'local:/asset',
       onDidReceiveMessage: (callback: typeof receive) => { receive = callback; },
       postMessage: async (message: Record<string, any>) => { messages.push(message); return true; } },
     onDidChangeViewState: (callback: () => void) => { view = callback; },
     onDidDispose: (callback: () => void) => { closed = callback; }, dispose: () => closed() };
-  const api = { Uri: { joinPath: () => ({}) }, ViewColumn: { Beside: 2 }, window: { createWebviewPanel: () => panel } };
+  const api = { Uri: { joinPath: () => ({}), parse: (uri: string) => uri }, ViewColumn: { Beside: 2 }, window: { createWebviewPanel: () => panel }, env: { openExternal: async (uri: string) => { opened.push(uri); return true; } } };
   const session = { embedded: true, state: 'running', paused: false, previewSequence: 0,
     document: { fileName: '/work/main.tex' }, send: (command: Command) => commands.push(command) };
   const controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri,
     session as unknown as TexpressoSession, () => { stops++; }, () => {});
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)![1];
-  return { controller, panel, session, messages, commands, stops: () => stops,
+  return { controller, panel, session, messages, commands, opened, stops: () => stops,
     send: (m: object) => receive({ instance, ...m }), view: () => view() };
 }
 
@@ -176,5 +176,64 @@ test('viewport detail shares decode credit, yields to the magnifier, and keeps i
     f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
     f.controller.handle(frame(f.commands.at(-1)![1] as number, [100, 100, 500, 500]));
     assert.equal(f.messages.filter(m => m.type === 'detail').length, 1, 'stale detail is dropped after edits');
+  } finally { f.controller.dispose(); }
+});
+
+test('SVG selection is capability-gated and decode failure falls back to PNG with shared frame credit', () => {
+  const f = fixture();
+  const frame = (id: number, mime: 'image/png' | 'image/svg+xml', page = 0) => ({ header: { requestId: id, revision: 1, sequence: 0, page,
+    bounds: [0, 0, 612, 792] as [number, number, number, number], width: 612, height: 792, mime, byteLength: 4 }, bytes: Buffer.alloc(4) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1200, format: 'svg' });
+    assert.equal(f.commands[0][0], 'preview-render', 'old engines receive no new verbs');
+    f.controller.handle(frame(1, 'image/png')); f.send({ type: 'decoded', id: 1 });
+    (f.session as typeof f.session & { previewSvg: boolean }).previewSvg = true;
+    f.send({ type: 'viewport', page: 0, width: 1200, format: 'svg' });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-svg');
+    f.controller.handle(frame(2, 'image/svg+xml'));
+    f.send({ type: 'decode-error', id: 2 });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-render');
+    f.controller.handle(frame(3, 'image/png'));
+    const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.match(image.header.fallback, /SVG could not be decoded/);
+    f.send({ type: 'viewport', page: 0, width: 1200, format: 'svg' });
+    f.send({ type: 'decoded', id: 3 });
+    assert.equal(f.commands.length, 3, 'failed SVG is not retried in a loop');
+    f.send({ type: 'viewport', page: 1, width: 1200, format: 'svg' });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-svg', 'decode fallback is scoped to its page');
+    f.controller.handle(frame(4, 'image/svg+xml', 1)); f.send({ type: 'decoded', id: 4 });
+  } finally { f.controller.dispose(); }
+});
+
+test('document links use current engine metadata, allow web/mail URLs, and resolve internal destinations lazily', () => {
+  const f = fixture();
+  (f.session as typeof f.session & { previewLinks: boolean }).previewLinks = true;
+  const frame = (id: number, page: number) => ({ header: { requestId: id, revision: 1, sequence: 0, page,
+    bounds: [0, 0, 612, 792] as [number, number, number, number], width: 612, height: 792,
+    mime: 'image/png' as const, byteLength: 4, annotations: {
+      links: ['https://example.com/', 'mailto:test@example.com', 'javascript:alert(1)', 'command:evil', '#target'].map(uri =>
+        ({ bounds: [10, 10, 100, 30] as [number, number, number, number], uri })),
+      destinations: [{ name: 'target', x: 20, y: 200 }]
+    } }, bytes: Buffer.alloc(4) });
+  const click = (index: number, extra = {}) => f.send({ type: 'link', revision: 1, sequence: 0, page: 0, index, ...extra });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, false, 0]);
+    f.send({ type: 'ready', page: 0, width: 1200 }); f.controller.handle(frame(1, 0)); f.send({ type: 'decoded', id: 1 });
+    click(0, { revision: 0 }); click(0, { index: 99 });
+    assert.deepEqual(f.opened, []);
+    click(0, { uri: 'https://untrusted-webview.example' }); click(1); click(2); click(3);
+    assert.deepEqual(f.opened, ['https://example.com/', 'mailto:test@example.com']);
+    click(4); assert.deepEqual(f.commands.at(-1), ['preview-destination', 1, 0, 'target']);
+    const before = f.commands.length;
+    f.controller.handle(['preview-destination', 0, 0, 'target', 1]);
+    assert.equal(f.commands.length, before);
+    f.controller.handle(['preview-destination', 1, 0, 'target', 1]);
+    assert.equal(f.commands.at(-1)?.[2], 1);
+    f.controller.handle(frame(2, 1));
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)?.destination, 'target');
+    f.send({ type: 'decoded', id: 2 });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); click(0);
+    assert.equal(f.opened.length, 2, 'links from stale source images cannot open anything');
   } finally { f.controller.dispose(); }
 });

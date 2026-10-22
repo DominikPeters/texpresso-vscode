@@ -2,7 +2,7 @@ import { execFile } from 'child_process';
 import type { SessionConfiguration, LaunchCommand } from './configuration';
 import { processFailure } from './failures';
 
-export function probePreview(config: SessionConfiguration, cwd?: string, features?: (value: { regions: boolean }) => void): Promise<boolean> {
+export function probePreview(config: SessionConfiguration, cwd?: string, features?: (value: { regions: boolean; svg: boolean; links: boolean }) => void): Promise<boolean> {
   const launch: LaunchCommand = config.useWSL
     ? { command: 'wsl', args: ['-e', config.command, '-capabilities'] }
     : { command: config.command, args: ['-capabilities'], cwd };
@@ -15,7 +15,7 @@ export function probePreview(config: SessionConfiguration, cwd?: string, feature
       }
       try {
         const capabilities = JSON.parse(stdout);
-        features?.({ regions: capabilities?.regions === true });
+        features?.({ regions: capabilities?.regions === true, svg: capabilities?.codecs?.includes('svg') === true, links: capabilities?.links === true });
         resolve(capabilities?.previewProtocol === 1 && Array.isArray(capabilities.codecs) &&
           capabilities.codecs.includes('png') && capabilities.synctex === true);
       } catch { resolve(false); }

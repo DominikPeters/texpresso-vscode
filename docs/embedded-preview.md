@@ -1,10 +1,10 @@
 # Embedded TeXpresso preview
 
-Status: the first PNG vertical slice is implemented and tested in VS Code.
-It includes headless startup, capability detection, binary framing, page
-navigation/zoom, both SyncTeX directions, source barriers, and panel lifecycle.
-SVG, clipped raster rendering, continuous scrolling, and links remain proposed
-follow-ups below. The current wire contract is
+Status: PNG and outlined SVG previews, clipped high-DPI rendering, both SyncTeX
+directions, source barriers, panel lifecycle, and Hyperref link overlays are
+implemented. The toolbar selects PNG or SVG; PNG remains the default while the
+formats are compared. Continuous scrolling and cross-page glyph reuse remain
+future work. The current wire contract is
 [documented with the engine](../native/texpresso/PREVIEW-PROTOCOL.md).
 
 ## Recommendation
@@ -453,3 +453,37 @@ new compiler format, a second PDF pipeline, or the historical web wrapper.
 * [SVG image restrictions](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_as_an_image#restrictions)
   — isolated image contexts cannot load external resources as ordinary inline
   SVG documents can.
+
+## SVG device audit and initial fallback policy
+
+Audited the bundled MuPDF 1.28.5 source, especially
+[`svg-device.c`](https://github.com/ArtifexSoftware/mupdf/blob/8ad45e92f0935d3d87f1db3f873086472a5e1b24/source/fitz/svg-device.c)
+and [`util.c`](https://github.com/ArtifexSoftware/mupdf/blob/8ad45e92f0935d3d87f1db3f873086472a5e1b24/source/fitz/util.c).
+The preflight replays the retained display list into a small inspection device;
+it does not decode images, outline glyphs, rasterize, or repeat XDV parsing.
+
+| Feature | Source finding | Current behavior |
+| --- | --- | --- |
+| Transparency groups | `svg_dev_begin_group` ignores isolation/knockout and emits CSS mix-blend-mode; it does not reproduce arbitrary PDF blending spaces. | PNG for non-isolated or knockout groups, non-normal blends, and non-RGB/Gray blending spaces. Isolated normal RGB/Gray opacity groups remain SVG. |
+| Soft masks | `svg_dev_begin_mask` initializes luminosity masks to white and does not preserve arbitrary PDF backdrop color/bounds semantics. | PNG for soft masks. |
+| Images | `svg_send_image` delegates to `fz_append_image_as_data_uri`; compressed JPEG/PNG paths can copy original bytes without PDF mask/decode/color-key handling or a PDF-specified color-space conversion. | PNG when a mask, decode array, color key, or non-device RGB/Gray color space is present; ordinary images may remain embedded raster data in SVG. |
+| Shadings | `svg_dev_fill_shade` allocates a pixmap at `raster_scale` and embeds it. | PNG, retaining viewport-aware raster quality and pixel limits. |
+| Tiling patterns | SVG export synthesizes repeated tiles and documents pathological repetition/viewer costs. | Conservative PNG fallback until measured separately. |
+| Type 3 fonts / overprint | Type 3 glyph programs can hide unsupported graphics; SVG color operations do not reproduce print overprint semantics. | PNG. Normal fonts are outlined and reused within the page. |
+| Resource limits / themes | SVG parsing and embedded resources are distinct from raster pixel count; native preview recoloring happens after rasterization. | Bounded vector preflight, 16 MiB output cap, large-image/page checks, PNG for recolored themes or failed exports. |
+
+Fallback is per page and preserves the requested SVG selection; the status line
+explains why the actual frame is PNG. A failing browser SVG decode also retries
+PNG. The engine tests compare a transparency-page fallback byte-for-byte with
+the explicit PNG reference. Native device tests cover normal vectors, isolated
+opacity, non-isolation, knockout, and blending. The device callback signature is
+compatible with both CI's MuPDF 1.23 and the bundled 1.28.5.
+
+Hyperlink geometry is collected while the existing DVI interpreter processes
+specials and paints text/rules/images. The destination-page index is built by
+the existing incremental opcode scan and rolls back with changed XDV. Named
+links request compilation up to their target without exporting intermediate
+pages. Link overlays live outside both image codecs; plain click follows a
+link, Control/Command click retains inverse SyncTeX, and magnifier mode leaves
+pointer input on the page. External HTTP(S)/mailto links are validated by the
+extension host against current engine metadata before VS Code opens them.

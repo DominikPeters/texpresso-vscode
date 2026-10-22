@@ -44,6 +44,8 @@ export class TexpressoSession {
   state: SessionState = 'starting';
   embedded = false;
   previewRegions = false;
+  previewSvg = false;
+  previewLinks = false;
   previewSequence = 0;
   previewState?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
 
@@ -106,7 +108,7 @@ export class TexpressoSession {
       launch = buildLaunchCommand(this.configuration, this.paths);
       const location = this.configuration.previewLocation;
       if (location && location !== 'window') {
-        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; });
+        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; this.previewSvg = features.svg; this.previewLinks = features.links; });
         if (this.ended) { return; }
         if (!this.embedded && location === 'editor') {
           throw new EngineFailure('configuration', 'This TeXpresso build does not support the editor preview. Choose a build with headless preview support, or set Preview Location to Window.', 'PREVIEW_UNSUPPORTED');

@@ -9,7 +9,8 @@ The [embedded preview design](../docs/embedded-preview.md) describes a proposed
 headless viewer backend, PNG/SVG export, transport, and SyncTeX/link integration.
 The [offline rendering experiment](bench/README.md) records initial native and
 browser measurements. The first headless PNG backend and VS Code preview are
-implemented; SVG and link collection remain planned follow-ups. See the engine's
+implemented, along with outlined SVG, automatic fidelity fallbacks, and DVI
+hyperlink collection. See the engine's
 [preview protocol](texpresso/PREVIEW-PROTOCOL.md) for its current wire contract.
 
 ## Working with the fork

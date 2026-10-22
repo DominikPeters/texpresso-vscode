@@ -62,7 +62,7 @@ jobs:
       - name: Install local test provider on the runner
         run: |
           brew install --cask basictex
-          sudo /Library/TeX/texbin/tlmgr install geometry amsmath
+          sudo /Library/TeX/texbin/tlmgr install geometry amsmath hyperref xcolor
       - name: Test the bundle with TeX Live
         run: |
           export PATH="/Library/TeX/texbin:$PATH"

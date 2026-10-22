@@ -34,3 +34,8 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 @media (prefers-reduced-motion: reduce) { #highlight { animation: none; } }
 
 #detail { position: absolute; pointer-events: none; user-select: none; }
+
+#links { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+#links .page-link { position: absolute; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; pointer-events: auto; cursor: pointer; }
+#links .page-link:hover { background: #0088ff22; }
+#viewport.magnify .page-link { pointer-events: none; }

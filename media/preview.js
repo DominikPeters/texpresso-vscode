@@ -5,18 +5,19 @@
   const instance = document.body.dataset.instance;
   const element = id => document.getElementById(id);
   const viewport = element('viewport'), sheet = element('sheet'), image = element('image');
-  const status = element('status'), zoomSelect = element('zoom');
+  const status = element('status'), zoomSelect = element('zoom'), formatSelect = element('format');
   const saved = vscode.getState() || {};
   let page = Number.isInteger(saved.page) && saved.page >= 0 ? saved.page : 0;
   let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= 0.25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
+  let format = saved.format === 'svg' ? 'svg' : 'png';
   let bounds = [0, 0, 595.28, 841.89];
   let header, objectUrl, stale = true, generation = 0, count = 0, complete = false, paused = false;
   let highlightTimer;
   let phase = 'running', timer, lastWidth = 0, lastRequestedPage = -1, restoreScroll = true;
   const post = message => vscode.postMessage({ instance, ...message });
-  const save = () => vscode.setState({ page, zoom, left: viewport.scrollLeft, top: viewport.scrollTop });
+  const save = () => vscode.setState({ page, zoom, format, left: viewport.scrollLeft, top: viewport.scrollTop });
   const { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
-  const width = () => rasterWidth(bounds, sheet.getBoundingClientRect().width, window.devicePixelRatio);
+  const width = () => format === 'svg' ? 1200 : rasterWidth(bounds, sheet.getBoundingClientRect().width, window.devicePixelRatio);
   let customZoomOption, pinchAnchor, pinchOrigin, lastPinchTime = 0;
 
   function describe() {
@@ -32,7 +33,9 @@
     status.textContent = phase === 'failed' ? 'Preview stopped. Open Output or the engine log for details.' :
       phase === 'stopped' ? 'Preview stopped.' : paused ? 'Compilation paused' :
       stale ? (header ? 'Updating preview…' : 'Waiting for the first page…') :
+      header?.fallback ? `PNG fallback: ${header.fallback}. Control or Command click to open source` :
       'Control or Command click to open source';
+    formatSelect.value = format;
   }
 
   function layout(request = true) {
@@ -59,7 +62,7 @@
         const pixels = width();
         if (pixels !== lastWidth || page !== lastRequestedPage) {
           lastWidth = pixels; lastRequestedPage = page;
-          post({ type: 'viewport', page, width: pixels });
+          post({ type: 'viewport', page, width: pixels, format });
         }
       }, 100);
     }
@@ -69,13 +72,13 @@
 
   function ready() {
     layout(false); lastWidth = width(); lastRequestedPage = page;
-    post({ type: 'ready', page, width: lastWidth });
+    post({ type: 'ready', page, width: lastWidth, format });
   }
   function navigate(value) {
     closeLens();
     page = Math.max(0, Math.min(100000, value));
     if (complete && count > 0) { page = Math.min(page, count - 1); }
-    clearDetail(); stale = true; generation++; element('highlight').hidden = true;
+    element('links').replaceChildren(); clearDetail(); stale = true; generation++; element('highlight').hidden = true;
     viewport.scrollTop = 0; viewport.scrollLeft = 0;
     describe(); layout();
   }
@@ -135,7 +138,7 @@
     detailTimer = setTimeout(requestDetail, 120);
   }
   function requestDetail() {
-    if (stale || !header || !regions || detailFailed) { return; }
+    if (stale || !header || header.mime === 'image/svg+xml' || !regions || detailFailed) { return; }
     const view = viewport.getBoundingClientRect();
     const request = detailCache.request(bounds, image.getBoundingClientRect(),
       { left: view.left + viewport.clientLeft, top: view.top + viewport.clientTop,
@@ -178,7 +181,7 @@
     if (lensUrl) { URL.revokeObjectURL(lensUrl); lensUrl = undefined; }
   }
   function setMagnify(value) {
-    magnify = value && regions; closeLens();
+    magnify = value && (regions || header?.mime === 'image/svg+xml'); closeLens();
     viewport.classList.toggle('magnify', magnify);
     element('magnify').setAttribute('aria-pressed', String(magnify));
   }
@@ -202,7 +205,7 @@
     lens.hidden = false;
   }
   function requestLens() {
-    if (!pointer || stale || !header) { return; }
+    if (!pointer || stale || !header || header.mime === 'image/svg+xml') { return; }
     const scale = image.getBoundingClientRect().width / (bounds[2] - bounds[0]);
     const request = lensCache.request(pointer, bounds, lensSize / (scale * magnification),
       scale * magnification * window.devicePixelRatio);
@@ -240,14 +243,18 @@
       case 'ping': ready(); break;
       case 'state':
         count = m.count; complete = m.complete; paused = m.paused; phase = m.phase; regions = m.regions === true;
-        element('magnify').disabled = !regions;
-        element('magnify').title = regions ? 'Magnifier: hold the mouse button on the page (M)' : 'Magnifier requires a newer TeXpresso build';
+        const vector = header?.mime === 'image/svg+xml';
+        element('magnify').disabled = !regions && !vector;
+        element('format').querySelector('[value=svg]').disabled = !m.svg;
+        if (!m.svg && format === 'svg') { format = 'png'; ready(); }
+        element('magnify').title = (regions || vector) ? 'Magnifier: hold the mouse button on the page (M)' : 'Magnifier requires a newer TeXpresso build';
         if (page !== m.page) {
           closeLens(); clearDetail(); page = m.page; stale = true; generation++; element('highlight').hidden = true; layout();
         }
         describe(); break;
-      case 'invalidate': closeLens(); clearDetail(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
-      case 'error': closeLens(); clearDetail(); stale = true; status.textContent = m.text; status.classList.add('error'); break;
+      case 'invalidate': element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
+      case 'error': element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; status.textContent = m.text; status.classList.add('error'); break;
+      case 'link-error': status.textContent = m.text; break;
       case 'target': highlight(m); break;
       case 'region-error':
         if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
@@ -286,12 +293,20 @@
           objectUrl = url; image.src = url; header = m.header; bounds = header.bounds; page = header.page;
           stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
-          layout(); describe();
+          layout(); describe(); renderLinks();
           if (restoreScroll) {
             viewport.scrollLeft = Number(saved.left) || 0; viewport.scrollTop = Number(saved.top) || 0; restoreScroll = false;
           }
           if (previous) { URL.revokeObjectURL(previous); }
           if (m.target) { highlight(m.target); }
+          if (m.destination) {
+            const dest = header.annotations?.destinations.find(d => d.name === m.destination);
+            if (dest) {
+              const rect = image.getBoundingClientRect();
+              viewport.scrollLeft += rect.left + (dest.x - bounds[0]) / (bounds[2] - bounds[0]) * rect.width - viewport.getBoundingClientRect().left - 12;
+              viewport.scrollTop += rect.top + (dest.y - bounds[1]) / (bounds[3] - bounds[1]) * rect.height - viewport.getBoundingClientRect().top - 12;
+            }
+          }
           post({ type: 'decoded', id: header.requestId });
         } catch {
           URL.revokeObjectURL(url); post({ type: 'decode-error', id: m.header.requestId });
@@ -305,6 +320,11 @@
   element('page').onchange = event => { const number = Number(event.target.value); if (Number.isInteger(number) && number > 0) { navigate(number - 1); } };
   element('zoomIn').onclick = () => stepZoom(1.25);
   element('zoomOut').onclick = () => stepZoom(0.8);
+  formatSelect.onchange = () => {
+    format = formatSelect.value; closeLens(); clearDetail();
+    // A format change needs a request even when its width happens to match.
+    lastWidth = 0; layout();
+  };
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
   for (const id of ['restart', 'pause', 'output']) { element(id).onclick = () => post({ type: id }); }
   viewport.addEventListener('scroll', () => { closeLens(); scheduleDetail(); save(); }, { passive: true });
@@ -327,13 +347,33 @@
       event.preventDefault(); navigate(page + (event.key === 'PageDown' ? 1 : -1));
     }
   });
-  image.addEventListener('click', event => {
-    if (stale || !header || !(event.ctrlKey || event.metaKey)) { return; }
+  function inverseAt(event) {
+    if (stale || !header) { return; }
     const rect = image.getBoundingClientRect();
     post({ type: 'inverse', revision: header.revision, sequence: header.sequence, page: header.page,
       x: bounds[0] + (event.clientX - rect.left) / rect.width * (bounds[2] - bounds[0]),
       y: bounds[1] + (event.clientY - rect.top) / rect.height * (bounds[3] - bounds[1]) });
-  });
+  }
+  function renderLinks() {
+    const layer = element('links'); layer.replaceChildren();
+    (header.annotations?.links || []).forEach((link, index) => {
+      if (!link.uri.startsWith('#') && !/^(https?:|mailto:)/i.test(link.uri)) { return; }
+      const b = link.bounds, button = document.createElement('button');
+      button.className = 'page-link'; button.type = 'button'; button.title = link.uri;
+      button.setAttribute('aria-label', link.uri.startsWith('#') ? `Go to ${link.uri.slice(1)}` : `Open ${link.uri}`);
+      button.style.left = `${100 * (b[0] - bounds[0]) / (bounds[2] - bounds[0])}%`;
+      button.style.top = `${100 * (b[1] - bounds[1]) / (bounds[3] - bounds[1])}%`;
+      button.style.width = `${100 * (b[2] - b[0]) / (bounds[2] - bounds[0])}%`;
+      button.style.height = `${100 * (b[3] - b[1]) / (bounds[3] - bounds[1])}%`;
+      button.onclick = event => {
+        event.preventDefault();
+        if (event.ctrlKey || event.metaKey) { inverseAt(event); }
+        else if (!stale) { post({ type: 'link', revision: header.revision, sequence: header.sequence, page: header.page, index }); }
+      };
+      layer.appendChild(button);
+    });
+  }
+  image.addEventListener('click', event => { if (event.ctrlKey || event.metaKey) { inverseAt(event); } });
   const resize = () => { closeLens(); layout(); };
   window.addEventListener('resize', resize);
   let resizeFrame;

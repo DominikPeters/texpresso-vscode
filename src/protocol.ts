@@ -14,6 +14,8 @@ export type Command =
   | ['synctex-forward', string, number]
   | ['theme', number[], number[]]
   | ['preview-barrier', number]
+  | ['preview-destination', number, number, string]
+  | ['preview-svg', number, number, number, number, number]
   | ['preview-render', number, number, number, number, number]
   | ['preview-region', number, number, number, number, number, number, number, number, number]
   | ['preview-inverse', number, number, number, number, number]
