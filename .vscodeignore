@@ -5,6 +5,7 @@
 !assets/texpresso_logo.png
 !dist/extension.js
 !media/preview.js
+!media/preview-cache.js
 !media/preview.css
 !media/codicons-LICENSE
 !media/preview-lens.js

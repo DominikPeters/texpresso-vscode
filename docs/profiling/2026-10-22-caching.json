@@ -1,0 +1,831 @@
+{
+  "method": {
+    "browserSessionsPerSide": 16,
+    "repeatsPerContentCodec": 2,
+    "fixturePages": 10,
+    "dpr": 2,
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "note": "Local HTTP bridge; cached revisits include two requestAnimationFrame callbacks, not GPU completion."
+  },
+  "navigation": [
+    {
+      "kind": "sparse",
+      "codec": "png",
+      "before": {
+        "n": 4,
+        "p50Ms": 39.44999998807907,
+        "p95Ms": 41.40000003576279,
+        "imageBytes": 293808,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.200000017881393,
+        "p95Ms": 24.100000023841858,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "sparse",
+      "codec": "svg",
+      "before": {
+        "n": 4,
+        "p50Ms": 24.0,
+        "p95Ms": 38.799999952316284,
+        "imageBytes": 444670,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.049999982118607,
+        "p95Ms": 23.200000047683716,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "dense",
+      "codec": "png",
+      "before": {
+        "n": 4,
+        "p50Ms": 48.349999994039536,
+        "p95Ms": 48.69999998807907,
+        "imageBytes": 859490,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 16.099999994039536,
+        "p95Ms": 16.69999998807907,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "dense",
+      "codec": "svg",
+      "before": {
+        "n": 4,
+        "p50Ms": 45.54999998211861,
+        "p95Ms": 49.60000002384186,
+        "imageBytes": 1364154,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.25,
+        "p95Ms": 15.800000011920929,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "packed",
+      "codec": "png",
+      "before": {
+        "n": 4,
+        "p50Ms": 48.400000005960464,
+        "p95Ms": 48.80000001192093,
+        "imageBytes": 1264154,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.150000005960464,
+        "p95Ms": 22.19999998807907,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "packed",
+      "codec": "svg",
+      "before": {
+        "n": 4,
+        "p50Ms": 56.70000001788139,
+        "p95Ms": 57.19999998807907,
+        "imageBytes": 2018694,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 17.899999976158142,
+        "p95Ms": 24.19999998807907,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "tikz",
+      "codec": "png",
+      "before": {
+        "n": 4,
+        "p50Ms": 56.70000001788139,
+        "p95Ms": 73.30000001192093,
+        "imageBytes": 1068506,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.400000005960464,
+        "p95Ms": 23.400000035762787,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    },
+    {
+      "kind": "tikz",
+      "codec": "svg",
+      "before": {
+        "n": 4,
+        "p50Ms": 46.400000005960464,
+        "p95Ms": 47.90000003576279,
+        "imageBytes": 1827948,
+        "referenceFrames": 0,
+        "nativeExports": 4
+      },
+      "after": {
+        "n": 4,
+        "p50Ms": 15.650000005960464,
+        "p95Ms": 18.30000001192093,
+        "imageBytes": 0,
+        "referenceFrames": 4,
+        "nativeExports": 0
+      }
+    }
+  ],
+  "editReuse": [
+    {
+      "kind": "sparse",
+      "codec": "png",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "sparse",
+      "codec": "svg",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "dense",
+      "codec": "png",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "dense",
+      "codec": "svg",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "packed",
+      "codec": "png",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "packed",
+      "codec": "svg",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "tikz",
+      "codec": "png",
+      "frames": 6,
+      "reusedImages": 4
+    },
+    {
+      "kind": "tikz",
+      "codec": "svg",
+      "frames": 6,
+      "reusedImages": 4
+    }
+  ],
+  "svgChanges": [
+    {
+      "kind": "sparse",
+      "undoExact": true,
+      "operations": [
+        {
+          "name": "initial",
+          "ms": 501.955292,
+          "bytes": 110913
+        },
+        {
+          "name": "insert-letter",
+          "ms": 328.70425,
+          "bytes": 111553
+        },
+        {
+          "name": "undo-letter",
+          "ms": 8.315459000000033,
+          "bytes": 110913
+        },
+        {
+          "name": "insert-earlier-font",
+          "ms": 18.04641599999991,
+          "bytes": 111535
+        }
+      ],
+      "diffs": [
+        {
+          "edit": "inserted",
+          "svgBytes": 111553,
+          "svgGzipBytes": 16601,
+          "spanPatchBytes": 20997,
+          "spanPatchGzipBytes": 6291,
+          "linePatchBytes": 1238,
+          "linePatchGzipBytes": 442,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 1887,
+          "domPatchGzipBytes": 534,
+          "oldGlyphPaths": 35,
+          "retainedGlyphPathsWithSameId": 35,
+          "newGlyphPaths": 36
+        },
+        {
+          "edit": "font",
+          "svgBytes": 111535,
+          "svgGzipBytes": 16622,
+          "spanPatchBytes": 116771,
+          "spanPatchGzipBytes": 16521,
+          "linePatchBytes": 116776,
+          "linePatchGzipBytes": 16471,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 183309,
+          "domPatchGzipBytes": 17002,
+          "oldGlyphPaths": 35,
+          "retainedGlyphPathsWithSameId": 0,
+          "newGlyphPaths": 36
+        }
+      ]
+    },
+    {
+      "kind": "dense",
+      "undoExact": true,
+      "operations": [
+        {
+          "name": "initial",
+          "ms": 659.402792,
+          "bytes": 340784
+        },
+        {
+          "name": "insert-letter",
+          "ms": 309.77604199999996,
+          "bytes": 341424
+        },
+        {
+          "name": "undo-letter",
+          "ms": 9.255416999999852,
+          "bytes": 340784
+        },
+        {
+          "name": "insert-earlier-font",
+          "ms": 18.79029199999991,
+          "bytes": 341406
+        }
+      ],
+      "diffs": [
+        {
+          "edit": "inserted",
+          "svgBytes": 341424,
+          "svgGzipBytes": 37464,
+          "spanPatchBytes": 28413,
+          "spanPatchGzipBytes": 8657,
+          "linePatchBytes": 1238,
+          "linePatchGzipBytes": 442,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 1887,
+          "domPatchGzipBytes": 534,
+          "oldGlyphPaths": 42,
+          "retainedGlyphPathsWithSameId": 42,
+          "newGlyphPaths": 43
+        },
+        {
+          "edit": "font",
+          "svgBytes": 341406,
+          "svgGzipBytes": 37488,
+          "spanPatchBytes": 361413,
+          "spanPatchGzipBytes": 37472,
+          "linePatchBytes": 361418,
+          "linePatchGzipBytes": 37429,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 607184,
+          "domPatchGzipBytes": 38127,
+          "oldGlyphPaths": 42,
+          "retainedGlyphPathsWithSameId": 0,
+          "newGlyphPaths": 43
+        }
+      ]
+    },
+    {
+      "kind": "packed",
+      "undoExact": true,
+      "operations": [
+        {
+          "name": "initial",
+          "ms": 786.7832079999998,
+          "bytes": 504419
+        },
+        {
+          "name": "insert-letter",
+          "ms": 389.3615,
+          "bytes": 505059
+        },
+        {
+          "name": "undo-letter",
+          "ms": 14.402708000000075,
+          "bytes": 504419
+        },
+        {
+          "name": "insert-earlier-font",
+          "ms": 28.082875000000058,
+          "bytes": 505041
+        }
+      ],
+      "diffs": [
+        {
+          "edit": "inserted",
+          "svgBytes": 505059,
+          "svgGzipBytes": 50753,
+          "spanPatchBytes": 28413,
+          "spanPatchGzipBytes": 8657,
+          "linePatchBytes": 1238,
+          "linePatchGzipBytes": 442,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 1887,
+          "domPatchGzipBytes": 534,
+          "oldGlyphPaths": 42,
+          "retainedGlyphPathsWithSameId": 42,
+          "newGlyphPaths": 43
+        },
+        {
+          "edit": "font",
+          "svgBytes": 505041,
+          "svgGzipBytes": 50778,
+          "spanPatchBytes": 535954,
+          "spanPatchGzipBytes": 50854,
+          "linePatchBytes": 535959,
+          "linePatchGzipBytes": 50809,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 914155,
+          "domPatchGzipBytes": 52211,
+          "oldGlyphPaths": 42,
+          "retainedGlyphPathsWithSameId": 0,
+          "newGlyphPaths": 43
+        }
+      ]
+    },
+    {
+      "kind": "tikz",
+      "undoExact": true,
+      "operations": [
+        {
+          "name": "initial",
+          "ms": 2157.5907500000003,
+          "bytes": 572681
+        },
+        {
+          "name": "insert-letter",
+          "ms": 1494.1140830000004,
+          "bytes": 573321
+        },
+        {
+          "name": "undo-letter",
+          "ms": 1087.3975,
+          "bytes": 572681
+        },
+        {
+          "name": "insert-earlier-font",
+          "ms": 1025.4931250000009,
+          "bytes": 573303
+        }
+      ],
+      "diffs": [
+        {
+          "edit": "inserted",
+          "svgBytes": 573321,
+          "svgGzipBytes": 58888,
+          "spanPatchBytes": 24693,
+          "spanPatchGzipBytes": 7511,
+          "linePatchBytes": 1238,
+          "linePatchGzipBytes": 442,
+          "lineEdits": 2,
+          "domOperations": 2,
+          "domPatchBytes": 1887,
+          "domPatchGzipBytes": 534,
+          "oldGlyphPaths": 38,
+          "retainedGlyphPathsWithSameId": 38,
+          "newGlyphPaths": 39
+        },
+        {
+          "edit": "font",
+          "svgBytes": 573303,
+          "svgGzipBytes": 58911,
+          "spanPatchBytes": 603118,
+          "spanPatchGzipBytes": 59208,
+          "linePatchBytes": 173281,
+          "linePatchGzipBytes": 21953,
+          "lineEdits": 3,
+          "domOperations": 1212,
+          "domPatchBytes": 255766,
+          "domPatchGzipBytes": 25879,
+          "oldGlyphPaths": 38,
+          "retainedGlyphPathsWithSameId": 0,
+          "newGlyphPaths": 39
+        }
+      ]
+    }
+  ],
+  "domExperiment": {
+    "dpr": 2,
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "note": "Preloaded inputs, precomputed patches; excludes compilation, SVG export, diff computation, transport and production integration. Elapsed update/decode and two-RAF paint opportunity, not CPU utilization or GPU completion. Seven measured insert/undo pairs after two warmup pairs. Each DOM result checked against full parsed SVG.",
+    "results": [
+      {
+        "kind": "sparse",
+        "edit": "inserted",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 5.600000023841858,
+          "p95Ms": 9.100000023841858
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 16.69999998807907,
+          "p95Ms": 20.69999998807907
+        }
+      },
+      {
+        "kind": "sparse",
+        "edit": "inserted",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 3.699999988079071,
+          "p95Ms": 5.300000011920929
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 13.799999952316284,
+          "p95Ms": 14.5
+        }
+      },
+      {
+        "kind": "sparse",
+        "edit": "inserted",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 0.30000001192092896,
+          "p95Ms": 0.40000003576278687
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 14.100000023841858,
+          "p95Ms": 15.400000035762787
+        }
+      },
+      {
+        "kind": "sparse",
+        "edit": "font",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 5.200000017881393,
+          "p95Ms": 7.199999988079071
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 16.600000023841858,
+          "p95Ms": 17.19999998807907
+        }
+      },
+      {
+        "kind": "sparse",
+        "edit": "font",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 3.199999988079071,
+          "p95Ms": 3.899999976158142
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 14.349999994039536,
+          "p95Ms": 22.600000023841858
+        }
+      },
+      {
+        "kind": "sparse",
+        "edit": "font",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 8.799999982118607,
+          "p95Ms": 9.400000035762787
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 22.0,
+          "p95Ms": 22.69999998807907
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "inserted",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 15.849999994039536,
+          "p95Ms": 29.600000023841858
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 30.849999994039536,
+          "p95Ms": 35.30000001192093
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "inserted",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 12.500000029802322,
+          "p95Ms": 18.400000035762787
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 41.150000005960464,
+          "p95Ms": 64.40000003576279
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "inserted",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 0.5,
+          "p95Ms": 2.199999988079071
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 9.150000005960464,
+          "p95Ms": 23.899999976158142
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "font",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 16.149999976158142,
+          "p95Ms": 28
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 28.80000001192093,
+          "p95Ms": 34.10000002384186
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "font",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 12.399999976158142,
+          "p95Ms": 17.600000023841858
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 34.89999997615814,
+          "p95Ms": 58
+        }
+      },
+      {
+        "kind": "dense",
+        "edit": "font",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 77.14999997615814,
+          "p95Ms": 80.09999996423721
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 110.09999999403954,
+          "p95Ms": 121.19999998807907
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "inserted",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 30.900000005960464,
+          "p95Ms": 44.09999996423721
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 40.94999998807907,
+          "p95Ms": 52.30000001192093
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "inserted",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 21.349999994039536,
+          "p95Ms": 25.900000035762787
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 61.69999998807907,
+          "p95Ms": 271
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "inserted",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 0.7500000298023224,
+          "p95Ms": 1
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 13.550000011920929,
+          "p95Ms": 25.30000001192093
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "font",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 26.05000001192093,
+          "p95Ms": 80.80000001192093
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 34.39999997615814,
+          "p95Ms": 89.19999998807907
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "font",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 22.5,
+          "p95Ms": 58.5
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 63.79999998211861,
+          "p95Ms": 112.40000003576279
+        }
+      },
+      {
+        "kind": "packed",
+        "edit": "font",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 165.25,
+          "p95Ms": 172.79999995231628
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 237.39999997615814,
+          "p95Ms": 261.5999999642372
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "inserted",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 16.0,
+          "p95Ms": 99.80000001192093
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 25.75,
+          "p95Ms": 107.5
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "inserted",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 10.550000011920929,
+          "p95Ms": 12.099999964237213
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 29.75,
+          "p95Ms": 72.60000002384186
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "inserted",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 0.45000001788139343,
+          "p95Ms": 0.6000000238418579
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 5.450000017881393,
+          "p95Ms": 17.69999998807907
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "font",
+        "mode": "image",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 14.299999982118607,
+          "p95Ms": 19
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 18.150000005960464,
+          "p95Ms": 33.39999997615814
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "font",
+        "mode": "inline-replace",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 10.950000017881393,
+          "p95Ms": 39.10000002384186
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 33.0,
+          "p95Ms": 59
+        }
+      },
+      {
+        "kind": "tikz",
+        "edit": "font",
+        "mode": "inline-patch",
+        "updateDecode": {
+          "n": 14,
+          "p50Ms": 4.600000023841858,
+          "p95Ms": 5.5
+        },
+        "paintOpportunity": {
+          "n": 14,
+          "p50Ms": 14.699999988079071,
+          "p95Ms": 22.400000035762787
+        }
+      }
+    ]
+  }
+}

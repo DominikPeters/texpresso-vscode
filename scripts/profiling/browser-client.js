@@ -68,23 +68,23 @@ const events = new EventSource('/events');
 
 events.onmessage = async event => {
   const data = JSON.parse(event.data);
-  if (data.frame) {
+  if (profileJob.cacheDisabled) data.contentId = undefined;
+  if (data.type === 'image' || data.frame) {
     if (data.type === 'image' && data.header.mime !== (profileJob.codec === 'svg' ? 'image/svg+xml' : 'image/png')) {
       document.getElementById('status').textContent = 'PROFILE ERROR: unexpected codec ' + data.header.mime;
       throw new Error('Unexpected codec');
     }
-    const start = performance.now(), response = await fetch(data.frame);
-    data.bytes = await response.arrayBuffer();
-    const frame = {
-      request: data.header.requestId,
-      mime: data.header.mime,
-      bytes: data.bytes.byteLength,
-      width: data.header.width,
-      height: data.header.height,
-      transferMs: performance.now() - start,
-      dispatched: performance.now()
-    };
-    profileFrames.push(frame);
+    let transferMs = 0;
+    if (data.frame) {
+      const start = performance.now(), response = await fetch(data.frame);
+      data.bytes = await response.arrayBuffer(); transferMs = performance.now() - start;
+    }
+    profileFrames.push({
+      request: data.header.requestId, mime: data.header.mime,
+      bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame,
+      width: data.header.width, height: data.header.height,
+      transferMs, dispatched: performance.now()
+    });
   }
   window.dispatchEvent(new MessageEvent('message', {
     data
@@ -118,6 +118,8 @@ events.onmessage = async event => {
     input.dispatchEvent(new Event('change'));
   };
   await operation('page-next-new', 1, () => navigate(1));
+  await operation('page-previous-cached', 0, () => navigate(0));
+  await operation('page-next-cached', 1, () => navigate(1));
   await operation('page-last-new', profileJob.pages - 1, () => navigate(profileJob.pages - 1));
   await operation('page-first-compiled', 0, () => navigate(0));
   for (let i = 0; i < 3; i++) await operation('edit-text', 0, () => fetch('/edit', {
@@ -183,7 +185,8 @@ events.onmessage = async event => {
         page: select('page-first-compiled'),
         edit: select('edit-text'),
         coordinate: select('edit-coordinate'),
-        decode: profileFrames.map(frame => frame.decodeMs)
+        decode: profileFrames.filter(frame => frame.decodeMs !== undefined).map(frame => frame.decodeMs),
+        cache: select('page-previous-cached').concat(select('page-next-cached'))
       }
     }
   }, location.origin);

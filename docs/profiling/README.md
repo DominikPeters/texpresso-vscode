@@ -103,3 +103,11 @@ Each of the four page-content cases runs in both codecs, alternating order over
 five fresh native sessions per case. The browser suite uses ten-page fixtures;
 the native suite covers the document-length matrix. Use Ctrl-C to close the server
 and its current engine; keep the results directory for later comparisons.
+
+## Caching and SVG update experiments
+
+The [caching follow-up](2026-10-22-caching.md) measures immediate page revisits,
+identical output after undo, SVG ID stability, patch sizes and an experimental
+retained SVG DOM. It includes reproduction commands and a measurement snapshot.
+The production preview now caches exported pages and decoded images; SVG DOM
+patching remains an isolated experiment.

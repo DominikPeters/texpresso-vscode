@@ -104,11 +104,13 @@ async function prepare(index) {
   controller = new PreviewController(api, {
     path: repo
   }, active.session, () => {}, () => {});
+  if (process.env.TEXPRESSO_PROFILE_DISABLE_CACHE === '1') { controller.cachePage = () => {}; }
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)[1];
   const bridge = fs.readFileSync(path.join(__dirname, 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
     ...job,
     index,
-    pages: fixture.pages
+    pages: fixture.pages,
+    cacheDisabled: process.env.TEXPRESSO_PROFILE_DISABLE_CACHE === '1'
   }));
   return panel.webview.html.replace('default-src \'none\';', 'default-src \'none\'; connect-src \'self\';').replace('</head>', '<link rel="stylesheet" href="/theme.css"></head>').replace(/<script nonce=/, `<script nonce="${instance}">${bridge}<\/script><script nonce=`);
 }
@@ -158,17 +160,25 @@ const server = http.createServer(async (req, res) => {
         run.startPromise = run.session.start();
       }
       await run.startPromise;
-      if (active === run) receive(m);
+      if (active === run) {
+        run.uiMessages ||= [];
+        run.uiMessages.push({ type: m.type, id: m.id, cached: m.cached, at: performance.now() });
+        receive(m);
+      }
       res.end('ok');
     } else if (url.pathname === '/edit') {
       const m = await json();
       active.edit(m.page, !!m.coordinate);
       res.end('ok');
+    } else if (url.pathname === '/status') {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ completed: results.length, total: jobs.length }));
     } else if (url.pathname === '/result') {
       const result = await json();
       const row = {
         ...result,
         nativeProfile: active.profile,
+        uiMessages: active.uiMessages,
         memory: active.memory,
         node: process.memoryUsage()
       };
@@ -178,7 +188,7 @@ const server = http.createServer(async (req, res) => {
     } else if (url.pathname === '/theme.css') {
       res.setHeader('Content-Type', 'text/css');
       res.end('@layer vscode-default{img,video{max-width:100%;max-height:100%}}:root{color-scheme:dark;--vscode-foreground:#ccc;--vscode-editor-background:#1f1f1f;--vscode-input-foreground:#ccc;--vscode-input-background:#313131;--vscode-sideBar-background:#181818;--vscode-descriptionForeground:#999;--vscode-focusBorder:#007fd4;--vscode-font-family:-apple-system,BlinkMacSystemFont,sans-serif;--vscode-font-size:13px}');
-    } else if ([ '/preview.js', '/preview-lens.js', '/preview-viewport.js', '/preview.css' ].includes(url.pathname)) {
+    } else if ([ '/preview.js', '/preview-cache.js', '/preview-lens.js', '/preview-viewport.js', '/preview.css' ].includes(url.pathname)) {
       res.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'text/javascript' : 'text/css');
       res.end(fs.readFileSync(path.join(repo, 'media', url.pathname.slice(1))));
     } else {

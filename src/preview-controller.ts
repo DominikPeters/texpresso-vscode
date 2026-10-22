@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import * as path from 'path';
 import type { TexpressoSession } from './session';
 import type { PreviewImage, PreviewImageHeader, PreviewMessage } from './preview-protocol';
@@ -24,7 +24,14 @@ export class PreviewController {
   private svgDecodeFailed = false;
   private destination?: string;
   private nextId = 0;
-  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest };
+  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean };
+  // Encoded pages are valid only within an engine revision and source barrier.
+  private pages = new Map<string, PreviewImage>();
+  private pageBytes = 0;
+  private decodedImages = new Set<string>();
+  private enginePage?: { revision: number; sequence: number; page: number };
+  private inverse?: { revision: number; sequence: number; page: number; x: number; y: number };
+  private forceNative = false;
   private region?: RegionRequest;
   private detail?: RegionRequest;
   private decodeTimeout?: NodeJS.Timeout;
@@ -40,6 +47,7 @@ export class PreviewController {
     const webview = this.panel.webview;
     const script = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.js'));
     const viewportScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-viewport.js'));
+    const cacheScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-cache.js'));
     const lensScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-lens.js'));
     const style = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.css'));
     let visible = this.panel.visible;
@@ -48,13 +56,13 @@ export class PreviewController {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible;
       this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
-      this.shown = undefined; this.destination = undefined;
+      this.shown = undefined; this.destination = undefined; this.decodedImages.clear(); this.inverse = undefined; this.forceNative = false;
       // A restored webview announces ready; a retained live one answers ping.
       if (this.panel.visible) { void this.post({ type: 'ping' }); }
     });
     this.panel.onDidDispose(() => {
       const notify = !this.disposed;
-      this.disposed = true; this.release();
+      this.disposed = true; this.release(); this.clearPages(); this.decodedImages.clear();
       if (notify) { closed(); }
     });
     webview.html = `<!doctype html><html><head><meta charset="utf-8">
@@ -80,6 +88,7 @@ export class PreviewController {
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
       <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
+      <script nonce="${this.instance}" src="${cacheScript}"></script>
       <script nonce="${this.instance}" src="${script}"></script></body></html>`;
     if (session.previewState) { this.handle(session.previewState); }
   }
@@ -87,6 +96,7 @@ export class PreviewController {
   handle(event: PreviewEvent): void {
     if (this.disposed) { return; }
     if ('sourceSequence' in event) {
+      this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
       this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
       void this.post({ type: 'invalidate' });
     } else if ('header' in event) {
@@ -94,11 +104,14 @@ export class PreviewController {
     } else {
       switch (event[0]) {
         case 'preview-state':
+          if (this.state && (this.state[1] !== event[1] || this.state[2] !== event[2])) { this.clearPages(); this.enginePage = undefined; }
+          if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
           this.state = event;
           if (event[4] && event[3] > 0) { this.page = Math.min(this.page, event[3] - 1); }
           this.status(); this.flush();
           break;
         case 'preview-invalidated':
+          this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
           this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
           void this.post({ type: 'invalidate' });
           break;
@@ -119,6 +132,7 @@ export class PreviewController {
           else { if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; this.status(); this.flush(); }
           break;
         case 'preview-forward':
+          this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
           this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5] };
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
@@ -136,7 +150,7 @@ export class PreviewController {
 
   update(): void { this.status(); }
   navigate(delta: number): void {
-    this.svgDecodeFailed = false;
+    this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
     this.page = Math.max(0, this.page + delta);
     if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; this.status(); this.flush();
@@ -151,17 +165,26 @@ export class PreviewController {
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > 4096) { return; }
+        if (m.type === 'ready') { this.decodedImages.clear(); }
         const format = m.format === 'svg' && this.session.previewSvg ? 'svg' : 'png';
         if (format !== this.format) { this.svgDecodeFailed = false; }
         if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
         this.format = format;
-        if (this.page !== m.page) { this.shown = undefined; this.target = undefined; this.svgDecodeFailed = false; }
+        if (this.page !== m.page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; this.target = undefined; this.svgDecodeFailed = false; }
         this.page = m.page as number; this.width = Math.round(m.width as number);
         if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
         this.ready = true; this.status(); this.flush();
         break;
       case 'decoded':
+        if (m.id === this.inFlight?.id && Array.isArray(m.cached)) {
+          this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 4));
+        }
         if (m.id === this.inFlight?.id) { if (!this.inFlight?.region) { this.destination = undefined; } this.release(); this.flush(); }
+        break;
+      case 'cache-miss':
+        if (this.inFlight && m.id === this.inFlight.id && !this.inFlight.region) {
+          this.decodedImages.clear(); this.release(); this.dirty = true; this.flush();
+        }
         break;
       case 'decode-error':
         if (m.id === this.inFlight?.id) {
@@ -213,7 +236,14 @@ export class PreviewController {
         if (h && m.revision === h.revision && m.sequence === this.session.previewSequence && m.page === h.page &&
             typeof m.x === 'number' && typeof m.y === 'number' && Number.isFinite(m.x) && Number.isFinite(m.y) &&
             m.x >= h.bounds[0] && m.x <= h.bounds[2] && m.y >= h.bounds[1] && m.y <= h.bounds[3]) {
-          this.session.send(['preview-inverse', h.revision, h.sequence, h.page, m.x, m.y]);
+          if (this.enginePage?.revision === h.revision && this.enginePage.sequence === h.sequence && this.enginePage.page === h.page) {
+            this.session.send(['preview-inverse', h.revision, h.sequence, h.page, m.x, m.y]);
+          } else {
+            // A cache hit need not move the native viewer. Load its hit-testing
+            // display list only when inverse search actually needs it.
+            this.inverse = { revision: h.revision, sequence: h.sequence, page: h.page, x: m.x, y: m.y };
+            this.forceNative = true; this.dirty = true; this.flush();
+          }
         }
         break;
       }
@@ -228,12 +258,24 @@ export class PreviewController {
     // All requests share one frame/decode credit.
     if (this.dirty) {
       this.dirty = false; this.region = undefined; this.detail = undefined;
-      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page };
-      this.session.send([this.format === 'svg' && !this.svgDecodeFailed ? 'preview-svg' : 'preview-render', this.nextId, this.page, this.width, this.state[1], this.state[2]]);
+      const verb = this.format === 'svg' && !this.svgDecodeFailed ? 'preview-svg' : 'preview-render';
+      const key = `${this.state[1]}:${this.state[2]}:${this.page}:${this.width}:${verb}`;
+      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, key };
+      const cached = !this.forceNative && this.pages.get(key);
+      this.forceNative = false;
+      if (cached) {
+        this.pages.delete(key); this.pages.set(key, cached);
+        this.inFlight.cached = true;
+        this.image({ header: { ...cached.header, requestId: this.nextId }, bytes: cached.bytes });
+      } else {
+        this.enginePage = undefined;
+        this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2]]);
+      }
     } else if ((this.region || this.detail) && this.shown) {
       const region = (this.region || this.detail)!; this[region.purpose] = undefined;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, region };
       const b = region.bounds;
+      this.enginePage = undefined;
       this.session.send(['preview-region', this.nextId, this.page, region.width, this.state[1], this.state[2], b[0], b[1], b[2], b[3]]);
     }
   }
@@ -245,10 +287,20 @@ export class PreviewController {
         request.page !== this.page || h.page !== request.page || this.dirty) {
       this.release(); this.dirty = true; this.flush(); return;
     }
+    if (!request.cached) {
+      this.enginePage = { revision: h.revision, sequence: h.sequence, page: h.page };
+      if (request.key) { this.cachePage(request.key, frame); }
+    }
     this.page = h.page;
     if (!request.region) { this.shown = h; if (this.svgDecodeFailed) { h.fallback = 'SVG could not be decoded by the preview'; } }
     // Buffer.buffer may expose a larger pooled allocation. Send only image bytes.
-    const bytes = new Uint8Array(frame.bytes).buffer;
+    const contentId = !request.region ? createHash('sha256').update(h.mime).update(frame.bytes).digest('hex') : undefined;
+    const bytes = contentId && this.decodedImages.has(contentId) ? undefined : new Uint8Array(frame.bytes).buffer;
+    if (!request.cached && this.inverse && this.inverse.revision === h.revision &&
+        this.inverse.sequence === h.sequence && this.inverse.page === h.page) {
+      const point = this.inverse; this.inverse = undefined;
+      this.session.send(['preview-inverse', h.revision, h.sequence, h.page, point.x, point.y]);
+    }
     this.decodeTimeout = setTimeout(() => {
       this.release(); this.ready = false;
       void this.post({ type: 'error', text: 'The preview did not acknowledge its image. Reopen the preview tab or restart.' });
@@ -257,9 +309,22 @@ export class PreviewController {
       this.target.sequence === h.sequence ? this.target : undefined;
     if (target && !request.region) { this.target = undefined; }
     void this.post(request.region ? { type: request.region.purpose, header: h, bytes, token: request.region.token } :
-      { type: 'image', header: h, bytes, target, destination: this.destination })
+      { type: 'image', header: h, bytes, contentId, target, destination: this.destination })
       .then(delivered => { if (!delivered && this.inFlight?.id === h.requestId) { this.release(); this.ready = false; this.dirty = true; } });
     this.status();
+  }
+
+  private clearPages(): void { this.pages.clear(); this.pageBytes = 0; this.inverse = undefined; this.forceNative = false; }
+  private cachePage(key: string, frame: PreviewImage): void {
+    const previous = this.pages.get(key);
+    if (previous) { this.pageBytes -= previous.bytes.length; this.pages.delete(key); }
+    // Metadata is bounded by the protocol; cap both entry count and image bytes.
+    if (frame.bytes.length > 8 * 1024 * 1024) { return; }
+    this.pages.set(key, { header: { ...frame.header }, bytes: frame.bytes }); this.pageBytes += frame.bytes.length;
+    while (this.pages.size > 8 || this.pageBytes > 8 * 1024 * 1024) {
+      const oldest = this.pages.keys().next().value as string;
+      this.pageBytes -= this.pages.get(oldest)!.bytes.length; this.pages.delete(oldest);
+    }
   }
 
   private status(): void {
@@ -271,5 +336,5 @@ export class PreviewController {
       this.panel.webview.postMessage({ instance: this.instance, ...message })).catch(() => false);
   }
   private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; }
-  dispose(): void { if (!this.disposed) { this.disposed = true; this.release(); this.panel.dispose(); } }
+  dispose(): void { if (!this.disposed) { this.disposed = true; this.release(); this.clearPages(); this.decodedImages.clear(); this.panel.dispose(); } }
 }

@@ -487,3 +487,18 @@ pages. Link overlays live outside both image codecs; plain click follows a
 link, Control/Command click retains inverse SyncTeX, and magnifier mode leaves
 pointer input on the page. External HTTP(S)/mailto links are validated by the
 extension host against current engine metadata before VS Code opens them.
+
+## Implemented preview caches (October 2026)
+
+The controller now retains up to eight exported pages / 8 MiB of image bytes,
+scoped to engine revision, source sequence, page, requested width and format.
+The webview retains up to four decoded images with a 32 MiB estimated accounting
+budget. A SHA-256 identity over MIME and encoded bytes allows references to
+previously decoded output across revisions, while frame and link metadata remain
+current. Immediate cached navigation sends no native render command; inverse
+SyncTeX prepares the native page on demand when it differs. All caches are per
+preview panel and bounded; cache misses resend bytes.
+
+The [caching report](profiling/2026-10-22-caching.md) documents measurements,
+validity rules, memory accounting and a separate experiment with retained SVG DOM
+patches. Production SVG still uses the Blob-backed image renderer.

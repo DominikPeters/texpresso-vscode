@@ -193,13 +193,12 @@ test('SVG selection is capability-gated and decode failure falls back to PNG wit
     assert.equal(f.commands.at(-1)?.[0], 'preview-svg');
     f.controller.handle(frame(2, 'image/svg+xml'));
     f.send({ type: 'decode-error', id: 2 });
-    assert.equal(f.commands.at(-1)?.[0], 'preview-render');
-    f.controller.handle(frame(3, 'image/png'));
+    assert.equal(f.commands.length, 2, 'decode fallback reuses the already cached PNG');
     const image = f.messages.filter(m => m.type === 'image').at(-1)!;
     assert.match(image.header.fallback, /SVG could not be decoded/);
     f.send({ type: 'viewport', page: 0, width: 1200, format: 'svg' });
     f.send({ type: 'decoded', id: 3 });
-    assert.equal(f.commands.length, 3, 'failed SVG is not retried in a loop');
+    assert.equal(f.commands.length, 2, 'failed SVG is not retried in a loop');
     f.send({ type: 'viewport', page: 1, width: 1200, format: 'svg' });
     assert.equal(f.commands.at(-1)?.[0], 'preview-svg', 'decode fallback is scoped to its page');
     f.controller.handle(frame(4, 'image/svg+xml', 1)); f.send({ type: 'decoded', id: 4 });
@@ -236,4 +235,121 @@ test('document links use current engine metadata, allow web/mail URLs, and resol
     f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); click(0);
     assert.equal(f.opened.length, 2, 'links from stale source images cannot open anything');
   } finally { f.controller.dispose(); }
+});
+
+function cachedFrame(id: number, page = 0, byte = page, revision = 1, sequence = 0, size = 4) {
+  return { header: { requestId: id, revision, sequence, page,
+    bounds: [0, 0, 612, 792] as [number, number, number, number], width: 1000, height: 1295,
+    mime: 'image/png' as const, byteLength: size }, bytes: Buffer.alloc(size, byte) };
+}
+
+test('previous/next reuse exported pages and decoded images without asking the engine', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 }); f.controller.handle(cachedFrame(1));
+    const first = f.messages.find(m => m.type === 'image')!;
+    f.send({ type: 'decoded', id: 1, cached: [first.contentId] });
+    f.send({ type: 'viewport', page: 1, width: 1000 }); f.controller.handle(cachedFrame(2, 1));
+    const second = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: 2, cached: [first.contentId, second.contentId] });
+    f.send({ type: 'viewport', page: 0, width: 1000 });
+    const reused = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(f.commands.length, 2); assert.equal(reused.header.page, 0);
+    assert.equal(reused.header.requestId, 3); assert.equal(reused.contentId, first.contentId);
+    assert.equal(reused.bytes, undefined, 'cache reference avoids retransmitting the image');
+    f.send({ type: 'viewport', page: 1, width: 1000 });
+    assert.equal(f.messages.filter(m => m.type === 'image').length, 3, 'cache hits still use decode credit');
+    f.send({ type: 'decoded', id: 3, cached: [first.contentId, second.contentId] });
+    assert.equal(f.commands.length, 2);
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.header.page, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('cached navigation synchronizes the native page before inverse search and drops abandoned clicks', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 }); f.controller.handle(cachedFrame(1)); f.send({ type: 'decoded', id: 1 });
+    f.send({ type: 'viewport', page: 1, width: 1000 }); f.controller.handle(cachedFrame(2, 1)); f.send({ type: 'decoded', id: 2 });
+    f.send({ type: 'viewport', page: 0, width: 1000 }); f.send({ type: 'decoded', id: 3 });
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 100, y: 200 });
+    assert.deepEqual(f.commands.at(-1), ['preview-render', 4, 0, 1000, 1, 0]);
+    f.controller.handle(cachedFrame(4));
+    assert.deepEqual(f.commands.at(-1), ['preview-inverse', 1, 0, 0, 100, 200]);
+    f.send({ type: 'decoded', id: 4 });
+    f.send({ type: 'viewport', page: 1, width: 1000 }); f.send({ type: 'decoded', id: 5 });
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 1, x: 100, y: 200 });
+    f.send({ type: 'viewport', page: 0, width: 1000 });
+    f.controller.handle(cachedFrame(6, 1));
+    assert.equal(f.commands.filter(c => c[0] === 'preview-inverse').length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('undo may reuse identical image content but always compiles and refreshes link metadata for the new revision', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 }); f.controller.handle(cachedFrame(1));
+    const first = f.messages.find(m => m.type === 'image')!;
+    f.send({ type: 'decoded', id: 1, cached: [first.contentId] });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-invalidated', 2, 1]); f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+    assert.equal(f.commands.length, 2, 'no guessed source-state cache');
+    const next = cachedFrame(2, 0, 0, 2, 1);
+    const annotations = { links: [{ bounds: [0, 0, 10, 10] as [number, number, number, number], uri: 'https://example.com/new' }], destinations: [] };
+    f.controller.handle({ ...next, header: { ...next.header, annotations } });
+    const reused = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(reused.bytes, undefined); assert.equal(reused.header.revision, 2); assert.equal(reused.header.sequence, 1);
+    assert.deepEqual(reused.header.annotations, annotations, 'image identity does not determine hyperlinks');
+  } finally { f.controller.dispose(); }
+});
+
+test('webview cache misses and panel reloads resend bytes without another engine render', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 }); f.controller.handle(cachedFrame(1));
+    const id = f.messages.find(m => m.type === 'image')!.contentId;
+    f.send({ type: 'decoded', id: 1, cached: [id] });
+    f.controller.navigate(0);
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.bytes, undefined);
+    f.send({ type: 'cache-miss', id: 2 });
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.bytes.byteLength, 4);
+    assert.equal(f.commands.length, 1);
+    f.send({ type: 'decoded', id: 3, cached: [id] });
+    f.panel.visible = false; f.view(); f.panel.visible = true; f.view();
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    assert.equal(f.commands.length, 1); assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.bytes.byteLength, 4);
+  } finally { f.controller.dispose(); }
+});
+
+test('encoded pages have LRU byte/entry limits and distinguish width and format', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 20, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    for (let page = 0; page < 9; page++) {
+      if (page) { f.send({ type: 'viewport', page, width: 1000 }); }
+      f.controller.handle(cachedFrame(page + 1, page)); f.send({ type: 'decoded', id: page + 1 });
+    }
+    f.send({ type: 'viewport', page: 0, width: 1000 });
+    assert.equal(f.commands.length, 10, 'oldest of nine entries was evicted');
+    f.controller.handle(cachedFrame(10)); f.send({ type: 'decoded', id: 10 });
+    f.send({ type: 'viewport', page: 0, width: 1200 });
+    assert.equal(f.commands.length, 11, 'different PNG resolution needs a render');
+    f.controller.handle(cachedFrame(11)); f.send({ type: 'decoded', id: 11 });
+    (f.session as typeof f.session & { previewSvg: boolean }).previewSvg = true;
+    f.send({ type: 'viewport', page: 0, width: 1200, format: 'svg' });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-svg');
+  } finally { f.controller.dispose(); }
+  const g = fixture();
+  try {
+    g.controller.handle(['preview-state', 1, 0, 20, true, 0]); g.send({ type: 'ready', page: 0, width: 1000 });
+    g.controller.handle(cachedFrame(1, 0, 0, 1, 0, 5 * 1024 * 1024)); g.send({ type: 'decoded', id: 1 });
+    g.send({ type: 'viewport', page: 1, width: 1000 });
+    g.controller.handle(cachedFrame(2, 1, 1, 1, 0, 5 * 1024 * 1024)); g.send({ type: 'decoded', id: 2 });
+    g.send({ type: 'viewport', page: 0, width: 1000 });
+    assert.equal(g.commands.length, 3, 'aggregate byte budget evicts even with only two pages');
+  } finally { g.controller.dispose(); }
 });

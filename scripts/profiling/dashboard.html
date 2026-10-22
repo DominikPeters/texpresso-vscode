@@ -3,7 +3,7 @@
 body{margin:18px;background:#202020;color:#ddd;font:13px system-ui}h1{font-size:20px;margin:0 0 12px}button{padding:6px 12px;margin-right:12px}table{border-collapse:collapse;margin:14px 0;width:800px;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:7px 11px;border-bottom:1px solid #444}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}th{color:#aaa;font-weight:500}caption{text-align:left;margin-bottom:7px;color:#aaa}iframe{width:800px;height:700px;border:1px solid #555}details{margin:12px 0;color:#aaa}
 </style></head><body>
 <h1>TeXpresso preview profiling</h1><button id="start">Run preview profiles</button><span id="status"></span>
-<table><caption>Median milliseconds · production UI over a local binary HTTP bridge · <span id="dpr"></span></caption><thead><tr><th>Page content</th><th>Format</th><th>Initial</th><th>Back to page 1</th><th>Text edit</th><th>Curve edit</th><th>Image decode</th></tr></thead><tbody id="metrics"></tbody></table>
+<table><caption>Median milliseconds · production UI over a local binary HTTP bridge · <span id="dpr"></span></caption><thead><tr><th>Page content</th><th>Format</th><th>Initial</th><th>Back to page 1</th><th>Cached revisit</th><th>Text edit</th><th>Curve edit</th><th>Image decode</th></tr></thead><tbody id="metrics"></tbody></table>
 <details><summary>Completed cases</summary><pre id="results"></pre></details>
 <iframe id="preview" title="Production preview webview"></iframe>
 <script>
@@ -21,7 +21,7 @@ window.onmessage=event=>{
  for(const fixture of [...new Set(measurements.map(r=>r.fixture))])for(const codec of ['png','svg']){
   const selected=measurements.filter(r=>r.fixture===fixture&&r.codec===codec);if(!selected.length)continue;
   const row=document.createElement('tr');
-  for(const value of [fixture.replace('-10',''),codec.toUpperCase(),...['initial','page','edit','coordinate','decode'].map(key=>median(selected.flatMap(r=>r.metrics[key])))]){
+  for(const value of [fixture.replace('-10',''),codec.toUpperCase(),...['initial','page','cache','edit','coordinate','decode'].map(key=>median(selected.flatMap(r=>r.metrics[key])))]){
    const cell=document.createElement('td');cell.textContent=value;row.appendChild(cell);
   }
   rows.push(row);

@@ -1,0 +1,63 @@
+<!doctype html><meta charset="utf-8"><title>SVG update experiment</title>
+<style>body{background:#222;color:#ddd;font:13px system-ui}#page{width:800px;background:white;color:black}#page>svg,#page>img{display:block;width:800px;height:auto}td,th{padding:5px 10px;text-align:right}</style>
+<h1>SVG update experiment</h1><button id="start">Run comparison</button> <span id="status">Ready</span>
+<p>Browser work only · preloaded inputs and precomputed patches · two animation frames after each update</p>
+<table><thead><tr><th>Content</th><th>Edit</th><th>Mode</th><th>Update/decode ms</th><th>Paint opportunity ms</th></tr></thead><tbody id="rows"></tbody></table><div id="page"></div>
+<script>
+const element=id=>document.getElementById(id), parser=new DOMParser(), ns='http://www.w3.org/2000/svg';
+const parse=xml=>{const doc=parser.parseFromString(xml,'image/svg+xml');if(doc.querySelector('parsererror'))throw Error('Invalid XML');return doc.documentElement;};
+const paint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+const canonical=node=>JSON.stringify([node.namespaceURI,node.localName,[...node.attributes].filter(a=>a.namespaceURI!=='http://www.w3.org/2000/xmlns/').map(a=>[a.namespaceURI,a.localName,a.value]).sort(),[...node.children].map(c=>JSON.parse(canonical(c)))]);
+function patch(root, operations){
+ for(const op of operations){
+  let node=root;for(const i of op.path)node=node.children[i];
+  if(op.op==='attributes'){
+   for(const attr of [...node.attributes])if(attr.namespaceURI!=='http://www.w3.org/2000/xmlns/')node.removeAttributeNode(attr);
+   for(const [name,value] of Object.entries(op.attributes)){
+    const match=name.match(/^\{([^}]+)\}(.*)$/);if(match)node.setAttributeNS(match[1],match[1]==='http://www.w3.org/1999/xlink'?'xlink:'+match[2]:match[2],value);else node.setAttribute(name,value);
+   }
+  }else{
+   const fragment=parse('<svg xmlns="'+ns+'">'+op.xml+'</svg>');
+   for(let i=0;i<op.remove;i++)node.children[op.start].remove();
+   const anchor=node.children[op.start]||null;for(const child of [...fragment.children])node.insertBefore(document.importNode(child,true),anchor);
+  }
+ }
+}
+const median=values=>[...values].sort((a,b)=>a-b)[Math.floor(values.length/2)];
+element('start').onclick=()=>{element('start').disabled=true;element('status').textContent='Waiting for UI to settle…';setTimeout(run,8000);};
+async function run(){
+ const results=[];
+ try{
+ for(const kind of ['sparse','dense','packed','tikz'])for(const edit of ['inserted','font']){
+  const [before,after,delta]=await Promise.all([fetch('/'+kind+'-baseline.svg').then(r=>r.text()),fetch('/'+kind+'-'+edit+'.svg').then(r=>r.text()),fetch('/'+kind+'-'+edit+'-dom.json').then(r=>r.json())]);
+  const expected=[canonical(parse(before)),canonical(parse(after))];
+  for(const mode of ['image','inline-replace','inline-patch']){
+   let root,previousUrl;
+   const set=async(target,index)=>{
+    const start=performance.now();
+    if(mode==='image'){
+     const url=URL.createObjectURL(new Blob([target],{type:'image/svg+xml'})),image=new Image();image.src=url;await image.decode();
+     element('page').replaceChildren(image);if(previousUrl)URL.revokeObjectURL(previousUrl);previousUrl=url;
+    }else if(mode==='inline-replace'||!root){root=document.importNode(parse(target),true);element('page').replaceChildren(root);}
+    else patch(root,index?delta.forward:delta.backward);
+    const workMs=performance.now()-start;await paint();const ms=performance.now()-start;
+    if(mode!=='image'&&canonical(root)!==expected[index])throw Error('DOM patch differs from complete SVG');
+    return {workMs,ms};
+   };
+   await set(before,0);
+   const samples=[];
+   for(let i=0;i<9;i++){
+    const forward=await set(after,1),backward=await set(before,0);
+    if(i>=2)samples.push({forward,backward});
+   }
+   if(previousUrl)URL.revokeObjectURL(previousUrl);
+   const row={kind,edit,mode,samples};results.push(row);
+   const tr=document.createElement('tr');for(const text of [kind,edit,mode,median(samples.flatMap(s=>[s.forward.workMs,s.backward.workMs])).toFixed(2),median(samples.flatMap(s=>[s.forward.ms,s.backward.ms])).toFixed(2)]){const td=document.createElement('td');td.textContent=text;tr.appendChild(td);}element('rows').appendChild(tr);
+   element('status').textContent=results.length+'/24';
+  }
+ }
+ await fetch('/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ua:navigator.userAgent,dpr:devicePixelRatio,results})});
+ element('status').textContent='Complete: all DOM patches match full SVG trees';document.title='SVG update experiment complete';
+ }catch(error){element('status').textContent=error.stack;}
+}
+</script>

@@ -1,4 +1,4 @@
-/* global acquireVsCodeApi, TexpressoLensCache, TexpressoViewport */
+/* global acquireVsCodeApi, TexpressoLensCache, TexpressoViewport, TexpressoImageCache */
 (() => {
   'use strict';
   const vscode = acquireVsCodeApi();
@@ -11,6 +11,8 @@
   let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= 0.25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
   let format = saved.format === 'svg' ? 'svg' : 'png';
   let bounds = [0, 0, 595.28, 841.89];
+  const images = new TexpressoImageCache(entry => URL.revokeObjectURL(entry.url));
+  let imageId;
   let header, objectUrl, stale = true, generation = 0, count = 0, complete = false, paused = false;
   let highlightTimer;
   let phase = 'running', timer, lastWidth = 0, lastRequestedPage = -1, restoreScroll = true;
@@ -286,12 +288,22 @@
       case 'image': {
         closeLens(); clearDetail();
         const token = ++generation;
-        const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
-        const candidate = new Image(); candidate.src = url;
+        const cached = images.get(m.contentId);
+        if (!cached && !m.bytes) { post({ type: 'cache-miss', id: m.header.requestId }); break; }
+        const url = cached ? cached.url : URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
+        const candidate = cached ? cached.image : new Image();
+        if (!cached) { candidate.src = url; }
         try {
-          await candidate.decode();
-          if (token !== generation) { URL.revokeObjectURL(url); post({ type: 'decoded', id: m.header.requestId }); break; }
-          const previous = objectUrl;
+          if (!cached) { await candidate.decode(); }
+          if (token !== generation) { if (!cached) { URL.revokeObjectURL(url); } post({ type: 'decoded', id: m.header.requestId, cached: images.keys() }); break; }
+          const previous = objectUrl, previousId = imageId;
+          if (!cached) {
+            const rect = sheet.getBoundingClientRect();
+            const pixels = m.header.mime === 'image/png' ? m.header.width * m.header.height :
+              Math.ceil(rect.width * devicePixelRatio) * Math.ceil(rect.height * devicePixelRatio);
+            images.put(m.contentId, { url, image: candidate }, m.header.byteLength + pixels * 4);
+          }
+          imageId = m.contentId;
           objectUrl = url; image.src = url; header = m.header; bounds = header.bounds; page = header.page;
           stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
@@ -299,7 +311,7 @@
           if (restoreScroll) {
             viewport.scrollLeft = Number(saved.left) || 0; viewport.scrollTop = Number(saved.top) || 0; restoreScroll = false;
           }
-          if (previous) { URL.revokeObjectURL(previous); }
+          if (previous && previous !== url && !images.has(previousId)) { URL.revokeObjectURL(previous); }
           if (m.target) { highlight(m.target); }
           if (m.destination) {
             const dest = header.annotations?.destinations.find(d => d.name === m.destination);
@@ -309,9 +321,10 @@
               viewport.scrollTop += rect.top + (dest.y - bounds[1]) / (bounds[3] - bounds[1]) * rect.height - viewport.getBoundingClientRect().top - 12;
             }
           }
-          post({ type: 'decoded', id: header.requestId });
+          post({ type: 'decoded', id: header.requestId, cached: images.keys() });
         } catch {
-          URL.revokeObjectURL(url); post({ type: 'decode-error', id: m.header.requestId });
+          if (cached) { images.forget(m.contentId); } else { URL.revokeObjectURL(url); }
+          post({ type: 'decode-error', id: m.header.requestId });
         }
         break;
       }
@@ -391,6 +404,6 @@
   }
   function densityChanged() { watchResolution(); resize(); }
   watchResolution();
-  window.addEventListener('pagehide', () => { closeLens(); clearDetail(); observer.disconnect(); cancelAnimationFrame(resizeFrame); resolution?.removeEventListener('change', densityChanged); clearTimeout(timer); clearTimeout(highlightTimer); if (objectUrl) { URL.revokeObjectURL(objectUrl); } });
+  window.addEventListener('pagehide', () => { closeLens(); clearDetail(); observer.disconnect(); cancelAnimationFrame(resizeFrame); resolution?.removeEventListener('change', densityChanged); clearTimeout(timer); clearTimeout(highlightTimer); images.clear(); if (objectUrl) { URL.revokeObjectURL(objectUrl); } });
   ready();
 })();
