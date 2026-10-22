@@ -55,3 +55,27 @@ test('shutdown kills an unresponsive launcher and its worker', { timeout: 30000 
     }
   } finally { await engine.dispose(); }
 });
+
+
+test('macOS EPERM is ignored only after verifying the owned process group has no live workers',
+  { skip: process.platform !== 'darwin' }, async context => {
+    const cp = require('node:child_process');
+    const denied = Object.assign(new Error('kill denied'), { code: 'EPERM' });
+    context.mock.method(process, 'kill', () => { throw denied; });
+    for (const [output, psError, succeeds] of [
+      ['123 S\n42000 Z\n', null, true],
+      ['123 S\n', null, true],
+      ['42000 S\n', null, false],
+      ['malformed', null, false],
+      ['', new Error('ps failed'), false]
+    ] as const) {
+      const ps = context.mock.method(cp, 'execFile', (_command: string, args: string[], _options: object, callback: Function) => {
+        assert.deepEqual(args, ['-axo', 'pgid=,stat=']); callback(psError, output);
+      });
+      const child = new FakeProcess(); Object.assign(child, { pid: 42000 });
+      const { terminate } = require('../process-lifecycle') as typeof import('../process-lifecycle');
+      if (succeeds) { await terminate(child.asChild()); }
+      else { await assert.rejects(terminate(child.asChild()), error => error === denied); }
+      ps.mock.restore();
+    }
+  });

@@ -29,18 +29,35 @@ async function stop(child: ChildProcess): Promise<void> {
       });
     });
   } else {
-    const signal = (value: NodeJS.Signals | 0) => {
+    const signal = async (value: NodeJS.Signals | 0) => {
       try { process.kill(-pid, value); return true; }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ESRCH') { return false; }
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === 'ESRCH') { return false; }
+        if (code === 'EPERM' && process.platform === 'darwin') {
+          // macOS can deny group signaling after the last live task exits.
+          // Confirm that only zombies/no members remain; a denied signal to
+          // any live worker is still an error, never a successful shutdown.
+          const alive = await new Promise<boolean>((resolve, reject) => {
+            execFile('ps', ['-axo', 'pgid=,stat='], { timeout: 2000 }, (psError, output) => {
+              const rows = output.trim().split('\n').filter(Boolean);
+              if (psError || !rows.length || rows.some(row => !/^\s*\d+\s+\S+\s*$/.test(row))) { reject(error); return; }
+              resolve(rows.some(row => {
+                const [group, state] = row.trim().split(/\s+/);
+                return Number(group) === pid && !state.startsWith('Z');
+              }));
+            });
+          });
+          if (!alive) { return false; }
+        }
         throw error;
       }
     };
-    if (!signal('SIGTERM')) { return; }
+    if (!await signal('SIGTERM')) { return; }
     const deadline = delay(750);
     await Promise.race([close, deadline]);
     // The launcher may exit while a worker ignores TERM or closes its pipes.
-    if (signal(0)) { await deadline; signal('SIGKILL'); }
+    if (await signal(0)) { await deadline; await signal('SIGKILL'); }
   }
   if (!closed) { await Promise.race([close, delay(750)]); }
   // Bound shutdown even if a broken launcher leaves inherited pipes open.
