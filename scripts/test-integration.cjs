@@ -72,6 +72,7 @@ const { spawnSync } = require('node:child_process');
       extensionDevelopmentPath: development,
       extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
+        TEXPRESSO_TEST_WEBVIEW_ONLY: process.env.TEXPRESSO_TEST_WEBVIEW_ONLY,
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
         TEXPRESSO_TEST_NODE: process.execPath,
@@ -79,6 +80,8 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_BINARY: binary,
         TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR,
+        TEXPRESSO_PROFILE_RICH: process.env.TEXPRESSO_PROFILE_RICH,
+        TEXPRESSO_PROFILE_AUTORERUN: process.env.TEXPRESSO_PROFILE_AUTORERUN,
         TEXPRESSO_PROFILE_RAPID_EARLY: process.env.TEXPRESSO_PROFILE_RAPID_EARLY,
         TEXPRESSO_PROFILE_SCENARIO: process.env.TEXPRESSO_PROFILE_SCENARIO,
         TEXPRESSO_PROFILE_OUTPUT: process.env.TEXPRESSO_PROFILE_OUTPUT,

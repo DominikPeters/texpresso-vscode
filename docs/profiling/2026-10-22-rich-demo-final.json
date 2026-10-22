@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "richDemo": true,
+    "earlyInput": false,
+    "backgroundThrottlingDisabled": true,
+    "cadenceLatenessBudgetMs": 20,
+    "scenario": "auto-e2e",
+    "created": "2026-10-22T13:39:41.888Z",
+    "vscode": "1.143.0",
+    "binary": "/Users/dominik/GitHub/texpresso-vscode/native/.bundles/darwin-arm64-preview/bin/texpresso",
+    "pages": [
+      "rich-rerun-true"
+    ],
+    "repeats": 1,
+    "engine": "7f3d752832d3de75d79408a839d1e132f281063f",
+    "binarySha256": "839c449ed58ca3bf1043f8e3bd67df1a51bd3b14c66f649fa7da6a2629db3e5b",
+    "extension": "c7ae6353c0fd38ee4d51ba6f85d5bbc28e34367b",
+    "transport": "actual VS Code webview postMessage"
+  },
+  "sessions": [
+    {
+      "fixture": "rich-rerun-true",
+      "codec": "auto",
+      "autoRerun": true,
+      "uiChecks": {
+        "normalStatusHidden": true,
+        "autoLabelStable": true
+      },
+      "errors": [],
+      "operations": [
+        {
+          "name": "initial",
+          "firstPaintMs": 1825.199999988079,
+          "finalObservedPaintMs": 2925.5,
+          "frames": [
+            {
+              "request": 1,
+              "page": 0,
+              "sequence": 1,
+              "mime": "image/png",
+              "bytes": 193569,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 18.196,
+              "hostProcessingMs": 0.2391249999991487,
+              "dispatchToApplyMs": 7.300000011920929,
+              "dispatchToPaintMs": 22.5
+            },
+            {
+              "request": 3,
+              "page": 0,
+              "sequence": 1,
+              "mime": "image/svg+xml",
+              "bytes": 266435,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": true,
+              "exportMs": 7.392,
+              "hostProcessingMs": 8.55199999999968,
+              "dispatchToApplyMs": 27.5,
+              "dispatchToPaintMs": 30.5
+            },
+            {
+              "request": 4,
+              "page": 0,
+              "sequence": 1,
+              "mime": "image/svg+xml",
+              "bytes": 266435,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 7.392,
+              "hostProcessingMs": 0.26900000000023283,
+              "dispatchToApplyMs": 0.2999999523162842,
+              "dispatchToPaintMs": 22.099999964237213
+            },
+            {
+              "request": 5,
+              "page": 0,
+              "sequence": 1,
+              "mime": "image/svg+xml",
+              "bytes": 0,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": true,
+              "upgrade": false,
+              "exportMs": 2.091,
+              "hostProcessingMs": 0.1866250000002765,
+              "dispatchToApplyMs": 0.19999998807907104,
+              "dispatchToPaintMs": 27.399999976158142
+            }
+          ]
+        },
+        {
+          "name": "demo-first-edit",
+          "firstPaintMs": 606.2999999523163,
+          "finalObservedPaintMs": 606.2999999523163,
+          "sourceSequence": 2,
+          "frames": [
+            {
+              "request": 7,
+              "page": 0,
+              "sequence": 2,
+              "mime": "image/svg+xml",
+              "bytes": 266380,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 1.859,
+              "hostProcessingMs": 3.258040999999139,
+              "dispatchToApplyMs": 15.599999964237213,
+              "dispatchToPaintMs": 23.299999952316284
+            }
+          ]
+        },
+        {
+          "name": "demo-warm-edit",
+          "firstPaintMs": 63.39999997615814,
+          "finalObservedPaintMs": 63.39999997615814,
+          "sourceSequence": 3,
+          "frames": [
+            {
+              "request": 8,
+              "page": 0,
+              "sequence": 3,
+              "mime": "image/svg+xml",
+              "bytes": 0,
+              "patchBytes": 9818,
+              "svgPatch": true,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 2.043,
+              "hostProcessingMs": 2.518332999999984,
+              "dispatchToApplyMs": 2.699999988079071,
+              "dispatchToPaintMs": 29.5
+            }
+          ]
+        },
+        {
+          "name": "demo-warm-edit",
+          "firstPaintMs": 68.5,
+          "finalObservedPaintMs": 802,
+          "sourceSequence": 4,
+          "frames": [
+            {
+              "request": 9,
+              "page": 0,
+              "sequence": 4,
+              "mime": "image/svg+xml",
+              "bytes": 267117,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 2.051,
+              "hostProcessingMs": 2.7663750000010623,
+              "dispatchToApplyMs": 17.399999976158142,
+              "dispatchToPaintMs": 31.899999976158142
+            },
+            {
+              "request": 11,
+              "page": 0,
+              "sequence": 4,
+              "mime": "image/svg+xml",
+              "bytes": 0,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": true,
+              "upgrade": false,
+              "exportMs": 3.58,
+              "hostProcessingMs": 0.35129199999937555,
+              "dispatchToApplyMs": 0.5,
+              "dispatchToPaintMs": 32.09999996423721
+            }
+          ]
+        },
+        {
+          "name": "demo-after-idle-edit",
+          "firstPaintMs": 81.19999998807907,
+          "finalObservedPaintMs": 614.6000000238419,
+          "sourceSequence": 5,
+          "frames": [
+            {
+              "request": 13,
+              "page": 0,
+              "sequence": 5,
+              "mime": "image/svg+xml",
+              "bytes": 268208,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": false,
+              "upgrade": false,
+              "exportMs": 2.435,
+              "hostProcessingMs": 2.802749999998923,
+              "dispatchToApplyMs": 20.900000035762787,
+              "dispatchToPaintMs": 30.69999998807907
+            },
+            {
+              "request": 14,
+              "page": 0,
+              "sequence": 5,
+              "mime": "image/svg+xml",
+              "bytes": 0,
+              "patchBytes": 0,
+              "svgPatch": false,
+              "rasterPatch": false,
+              "cacheReference": true,
+              "upgrade": false,
+              "exportMs": 3.307,
+              "hostProcessingMs": 0.25566599999910977,
+              "dispatchToApplyMs": 0.40000003576278687,
+              "dispatchToPaintMs": 30.900000035762787
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

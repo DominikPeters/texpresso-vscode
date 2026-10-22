@@ -10,7 +10,10 @@ import { AutoRenderCosts } from './auto-render-costs';
 const icons = require('../media/codicons.json') as Record<string, string>;
 const icon = (name: string) => icons[name].replace('<svg ', '<svg aria-hidden="true" focusable="false" ');
 
-type RegionRequest = { token: number; bounds: number[]; width: number; purpose: 'region' | 'detail' };
+type PageDemand = { page: number; width: number };
+type PresentedPage = { header: PreviewImageHeader; width: number; format: string; decoded: boolean };
+
+type RegionRequest = { page: number; token: number; bounds: number[]; width: number; purpose: 'region' | 'detail' };
 
 type PreparedSvg = { document?: SvgDocument; bytes: Buffer; id: string; cost: number };
 
@@ -27,6 +30,17 @@ export class PreviewController {
   private dirty = true;
   private page = 0;
   private width = 1200;
+  private continuous = false;
+  private visible: PageDemand[] = [];
+  private nearby: PageDemand[] = [];
+  private resident = new Set<number>();
+  private presented = new Map<number, PresentedPage>();
+  private failed = new Set<number>();
+  private viewportEpoch = -1;
+  private frontierBudget = 2;
+  private prefetchReady = false;
+  private prefetched = new Set<number>();
+  private prefetchTimer?: ReturnType<typeof setTimeout>;
   private format: 'auto' | 'png' | 'svg' = 'auto';
   private autoPages = new Map<number, { svg: boolean; cost: number; bounds?: number[] }>();
   private renderCosts = new AutoRenderCosts();
@@ -34,9 +48,11 @@ export class PreviewController {
   private upgradeReady = false;
   private gesture = false;
   private svgDecodeFailed = false;
+  private svgFailures = new Set<number>();
   private destination?: string;
+  private destinationPage?: number;
   private nextId = 0;
-  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number; costContext?: string; raster?: boolean; contentId?: string };
+  private inFlight?: { id: number; revision: number; sequence: number; page: number; background?: boolean; format?: string; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number; costContext?: string; raster?: boolean; contentId?: string };
   // Encoded pages are valid only within an engine revision and source barrier.
   private pages = new Map<string, PreviewImage>();
   private pageBytes = 0;
@@ -50,6 +66,7 @@ export class PreviewController {
   private svgBase?: { contentId: string; page: number; document: SvgDocument };
   private svgPending?: { id: number; contentId: string; page: number; document: SvgDocument };
   private decodedImages = new Set<string>();
+  private decodedPages = new Map<number, Set<string>>();
   private enginePage?: { revision: number; sequence: number; page: number };
   private inverse?: { revision: number; sequence: number; page: number; x: number; y: number };
   private forceNative = false;
@@ -79,13 +96,13 @@ export class PreviewController {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible;
       this.interactive(); this.gesture = false; this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
-      this.shown = undefined; this.destination = undefined; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
+      this.shown = undefined; this.presented.clear(); this.resident.clear(); this.visible = []; this.nearby = []; this.cancelPrefetch(); this.destination = undefined; this.destinationPage = undefined; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
       // A restored webview announces ready; a retained live one answers ping.
       if (this.panel.visible) { void this.post({ type: 'ping' }); }
     });
     this.panel.onDidDispose(() => {
       const notify = !this.disposed;
-      this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined;
+      this.disposed = true; this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined;
       if (notify) { closed(); }
     });
     webview.html = `<!doctype html><html><head><meta charset="utf-8">
@@ -93,9 +110,9 @@ export class PreviewController {
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob:; style-src ${webview.cspSource}; script-src 'nonce-${this.instance}';">
       <link rel="stylesheet" href="${style}"></head><body data-instance="${this.instance}">
       <header aria-label="Preview controls"><div class="navigation">
-      <button id="previous" title="Previous page (Page Up)" aria-label="Previous page">${icon('chevron-left')}</button>
+      <button id="previous" title="Previous page" aria-label="Previous page">${icon('chevron-left')}</button>
       <label>Page <input id="page" type="number" min="1" value="1" aria-label="Page number"></label><span id="total">/ …</span>
-      <button id="next" title="Next page (Page Down)" aria-label="Next page">${icon('chevron-right')}</button>
+      <button id="next" title="Next page" aria-label="Next page">${icon('chevron-right')}</button>
       <button id="zoomOut" title="Zoom out" aria-label="Zoom out">${icon('zoom-out')}</button>
       <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="page">Fit page</option>
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
@@ -122,7 +139,7 @@ export class PreviewController {
     if (this.disposed) { return; }
     if ('sourceSequence' in event) {
       this.interactive(); this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
-      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
+      this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.destinationPage = undefined; this.svgDecodeFailed = false;
       void this.post({ type: 'invalidate' });
     } else if ('header' in event) {
       this.image(event);
@@ -132,16 +149,20 @@ export class PreviewController {
           if (this.state && (this.state[1] !== event[1] || this.state[2] !== event[2])) { this.interactive(); this.clearPages(); this.enginePage = undefined; }
           if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
           this.state = event;
-          if (event[4] && event[3] > 0) { this.page = Math.min(this.page, event[3] - 1); }
+          if (event[4]) {
+            if (event[3] === 0) { this.page = 0; this.dirty = false; }
+            if (event[3] > 0 && this.page >= event[3]) { this.page = event[3] - 1; this.dirty = true; }
+            this.visible = this.visible.filter(d => d.page < event[3]); this.nearby = this.nearby.filter(d => d.page < event[3]);
+          }
           this.status(); this.flush();
           break;
         case 'preview-invalidated':
           this.interactive(); this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
-          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.svgDecodeFailed = false;
+          this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.destinationPage = undefined; this.svgDecodeFailed = false;
           void this.post({ type: 'invalidate' });
           break;
         case 'preview-retry':
-          if (this.inFlight?.id === event[1]) { this.release(); this.dirty = true; this.flush(); }
+          if (this.inFlight?.id === event[1]) { const background = this.inFlight.background; this.release(); if (!background) { this.dirty = true; } this.flush(); }
           break;
         case 'preview-error':
           if (this.inFlight?.id === event[1]) {
@@ -149,27 +170,30 @@ export class PreviewController {
             // barrier. It must not swallow the newer dirty request or display a
             // transient error for source which is no longer being compiled.
             if (this.inFlight.sequence !== this.session.previewSequence || this.inFlight.revision !== this.state?.[1] ||
-                this.inFlight.sequence !== this.state?.[2] || this.inFlight.page !== this.page) {
+                this.inFlight.sequence !== this.state?.[2] || (!this.continuous && this.inFlight.page !== this.page)) {
               this.release(); this.dirty = true; this.flush(); break;
             }
-            const region = this.inFlight.region, upgrade = this.inFlight.upgrade;
+            const region = this.inFlight.region, upgrade = this.inFlight.upgrade, background = this.inFlight.background, page = this.inFlight.page;
+            if (!region && !upgrade) { this.failed.add(page); }
             this.release();
+            if (background) { this.flush(); break; }
             if (upgrade) { this.rememberAuto(this.page, false, this.shown?.vectorCost || 0); void this.post({ type: 'refinement-end' }); this.flush(); break; }
             if (region) { this[region.purpose] = undefined; }
-            void this.post({ type: region ? 'region-error' : 'error', text: event[2], purpose: region?.purpose });
+            void this.post({ type: region ? 'region-error' : 'error', text: event[2], page, purpose: region?.purpose });
             if (region) { this.flush(); }
           }
           break;
         case 'preview-destination':
           if (event[1] !== this.state?.[1] || event[2] !== this.session.previewSequence || event[3] !== this.destination) { break; }
-          if (event[4] < 0) { this.destination = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
-          else { if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; this.status(); this.flush(); }
+          if (event[4] < 0) { this.destination = undefined; this.destinationPage = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
+          else { if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
           break;
         case 'preview-forward':
           this.interactive();
           this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
           this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5] };
+          if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
             if (this.page !== event[3]) { this.svgDecodeFailed = false; }
             this.page = event[3];
@@ -183,13 +207,13 @@ export class PreviewController {
     }
   }
 
-  update(): void { this.status(); }
+  update(): void { if (this.session.paused) { this.interactive(); } this.status(); }
   navigate(delta: number): void {
-    this.interactive();
+    this.interactive(); this.destination = undefined; this.destinationPage = undefined;
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
     this.page = Math.max(0, this.page + delta);
-    if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
-    this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; this.status(); this.flush();
+    if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
+    this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
   }
 
   private receive(value: unknown): void {
@@ -204,7 +228,8 @@ export class PreviewController {
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > 4096) { return; }
-        if (m.type === 'ready') { this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; this.pngCanvas = m.pngCanvas === true; }
+        if (m.continuous === true) { this.continuous = true; }
+        if (m.type === 'ready') { this.presented.clear(); this.failed.clear(); this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; this.pngCanvas = m.pngCanvas === true; }
         const format = m.format === 'svg' && this.session.previewSvg ? 'svg' : m.format === 'png' ? 'png' : 'auto';
         if (format !== this.format) { this.svgDecodeFailed = false; }
         if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
@@ -212,13 +237,37 @@ export class PreviewController {
         this.format = format;
         if (this.page !== m.page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; this.target = undefined; this.svgDecodeFailed = false; }
         this.page = m.page as number; this.width = Math.round(m.width as number);
-        if (this.state?.[4] && this.state[3] > 0) { this.page = Math.min(this.page, this.state[3] - 1); }
+        if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
+        if (this.continuous) {
+          this.visible = this.demands(m.visible, 12);
+          if (!this.visible.some(d => d.page === this.page)) { this.visible.unshift({ page: this.page, width: this.width }); this.visible = this.visible.slice(0, 12); }
+          this.nearby = this.demands(m.nearby, 2).filter(d => !this.visible.some(v => v.page === d.page));
+          this.resident = new Set(Array.isArray(m.resident) ? m.resident.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 100000).slice(0, 12) : this.visible.map(d => d.page));
+          if (m.scroll === true && Number.isSafeInteger(m.epoch) && m.epoch !== this.viewportEpoch) { this.frontierBudget = 1; this.prefetched.clear(); }
+          if (Number.isSafeInteger(m.epoch)) { this.viewportEpoch = m.epoch as number; }
+          if (m.jump === true) { this.failed.clear(); this.prefetched.clear(); this.destination = undefined; this.destinationPage = undefined; }
+          this.shown = this.presented.get(this.page)?.header;
+          const pending = this.inFlight;
+          const pendingActive = pending && !pending.region && pending.page === this.page && pending.width === this.width &&
+            pending.revision === this.state?.[1] && pending.sequence === this.session.previewSequence && pending.format === this.format;
+          this.dirty = !this.failed.has(this.page) && !pendingActive && !this.isPresented({ page: this.page, width: this.width });
+          this.schedulePrefetch();
+        }
         this.ready = true; this.status(); this.flush();
         break;
       case 'decoded':
         if (!this.inFlight || m.id !== this.inFlight.id) { break; }
         if (!this.inFlight.region) {
-          if (this.shown?.requestId === m.id && this.shown.page === this.page && this.inFlight.page === this.page &&
+          const presented = this.presented.get(this.inFlight.page);
+          if (presented?.header.requestId === m.id) {
+            presented.decoded = true; this.resident.add(this.inFlight.page);
+            const id = this.inFlight.contentId;
+            if (id) {
+              this.decodedPages.delete(this.inFlight.page); this.decodedPages.set(this.inFlight.page, new Set([id]));
+              while (this.decodedPages.size > 16) { this.decodedPages.delete(this.decodedPages.keys().next().value as number); }
+            }
+          }
+          if (!this.inFlight.background && this.shown?.requestId === m.id && this.shown.page === this.page && this.inFlight.page === this.page &&
               this.shown.revision === this.state?.[1] && this.shown.sequence === this.session.previewSequence) {
             this.session.previewDecoded?.(this.shown, typeof m.svg === 'string');
             if (!this.inFlight.cached && this.inFlight.costContext && this.shown.exportMs !== undefined &&
@@ -234,34 +283,58 @@ export class PreviewController {
               this.rememberAuto(this.page, typeof m.svg === 'string' && (this.shown.exportMs || 0) + (this.inFlight.processingMs || 0) + renderMs <= (this.inFlight.patched ? 24 : 80), cost);
             }
           }
-          if (this.svgPending && this.svgPending.id === m.id && this.svgPending.contentId === m.svg) { this.svgBase = this.svgPending; }
-          else if (this.svgBase?.contentId !== m.svg) { this.svgBase = undefined; }
+          if (!this.inFlight.background && this.svgPending && this.svgPending.id === m.id && this.svgPending.contentId === m.svg) { this.svgBase = this.svgPending; }
+          else if (!this.inFlight.background && this.svgBase?.contentId !== m.svg) { this.svgBase = undefined; }
           this.svgPending = undefined;
-          this.rasterBase = this.rasterPending?.id === m.id && this.rasterPending.contentId === m.png ? this.rasterPending : undefined;
+          if (!this.inFlight.background && !this.inFlight.cached) { this.rasterBase = this.rasterPending?.id === m.id && this.rasterPending.contentId === m.png ? this.rasterPending : undefined; }
           this.rasterPending = undefined;
         }
         if (m.id === this.inFlight?.id && Array.isArray(m.cached)) {
-          this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 4));
+          this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 8));
         }
-        if (m.id === this.inFlight?.id) { if (!this.inFlight?.region) { this.destination = undefined; } this.release(); this.flush(); this.scheduleUpgrade(); }
+        if (m.id === this.inFlight?.id) { if (!this.inFlight?.region && this.inFlight?.page === this.destinationPage) { this.destination = undefined; this.destinationPage = undefined; } this.release(); this.flush(); this.scheduleUpgrade(); this.schedulePrefetch(); }
         break;
       case 'cache-miss':
         if (this.inFlight && m.id === this.inFlight.id && !this.inFlight.region) {
+          const failedPage = this.inFlight.page, background = this.inFlight.background; this.presented.delete(failedPage);
           if (m.pngUnsupported === true) { this.pngCanvas = false; }
           else if (this.inFlight.raster) { this.forceNative = true; }
-          this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.release(); this.dirty = true; this.flush();
+          this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.release(); if (!background) { this.dirty = true; } this.flush();
         }
         break;
       case 'decode-error':
-        if (m.id === this.inFlight?.id) {
+        if (this.inFlight && m.id === this.inFlight.id) {
+          if (this.inFlight.background) {
+            const page = this.inFlight.page;
+            if (this.presented.get(page)?.header.mime === 'image/svg+xml' && !this.svgFailures.has(page)) { this.svgFailures.add(page); }
+            else { this.failed.add(page); }
+            this.presented.delete(page); this.release(); this.flush(); break;
+          }
           const svg = this.shown && this.shown.requestId === m.id && this.shown.mime === 'image/svg+xml';
           this.svgBase = undefined; this.svgPending = undefined; this.release();
           if (svg) { this.rememberAuto(this.page, false, this.shown?.vectorCost || 0); this.svgDecodeFailed = true; this.dirty = true; this.flush(); }
-          else { void this.post({ type: 'error', text: 'Could not decode the preview image. Restart the preview to try again.' }); }
+          else { this.failed.add(this.page); this.presented.delete(this.page); void this.post({ type: 'error', page: this.page, text: 'Could not decode the preview image. Restart the preview to try again.' }); }
         }
         break;
+      case 'rasterize': {
+        const matching = this.inFlight && m.id === this.inFlight.id && m.page === this.inFlight.page && !this.inFlight.region;
+        const shown = typeof m.page === 'number' ? this.presented.get(m.page)?.header : undefined;
+        if (this.continuous && (matching || (shown?.requestId === m.id && shown?.sequence === this.session.previewSequence))) {
+          const page = m.page as number;
+          if (this.svgFailures.has(page)) { break; }
+          this.svgFailures.add(page); this.presented.delete(page); this.prefetched.delete(page);
+          if (matching) { this.release(); }
+          if (page === this.page) { this.dirty = true; }
+          this.flush();
+        }
+        break;
+      }
+      case 'evicted':
+        if (this.continuous && Number.isInteger(m.page)) { this.resident.delete(m.page as number); this.presented.delete(m.page as number); this.decodedPages.delete(m.page as number); }
+        if (Array.isArray(m.cached)) { this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 8)); }
+        break;
       case 'link': {
-        const h = this.shown;
+        const h = this.headerFor(m.page);
         if (!this.session.previewLinks || !h || h.revision !== m.revision || h.sequence !== m.sequence ||
             h.sequence !== this.session.previewSequence || h.page !== m.page || !Number.isInteger(m.index)) { break; }
         this.interactive();
@@ -269,7 +342,7 @@ export class PreviewController {
         if (!link) { break; }
         if (link.uri.startsWith('#')) {
           if (link.uri.length === 1) { break; }
-          this.destination = link.uri.slice(1);
+          this.destination = link.uri.slice(1); this.destinationPage = undefined;
           this.session.send(['preview-destination', h.revision, h.sequence, this.destination]);
         } else {
           try {
@@ -285,22 +358,22 @@ export class PreviewController {
       }
       case 'region':
       case 'detail': {
-        const h = this.shown, b = m.bounds;
+        const h = this.headerFor(m.page), b = m.bounds;
         if (this.session.previewRegions && h && m.revision === h.revision && m.sequence === this.session.previewSequence &&
             m.page === h.page && Number.isSafeInteger(m.token) && (m.token as number) >= 0 &&
             Array.isArray(b) && b.length === 4 && b.every(n => typeof n === 'number' && Number.isFinite(n)) &&
             b[0] >= h.bounds[0] && b[1] >= h.bounds[1] && b[2] <= h.bounds[2] && b[3] <= h.bounds[3] &&
             b[2] > b[0] && b[3] > b[1] && Number.isFinite(m.width) && (m.width as number) >= 1 && (m.width as number) <= (m.type === 'detail' ? 4096 : 1024)) {
           this.interactive();
-          this[m.type] = { token: m.token as number, bounds: b, width: Math.round(m.width as number), purpose: m.type };
+          this[m.type] = { page: h.page, token: m.token as number, bounds: b, width: Math.round(m.width as number), purpose: m.type };
           this.flush();
         }
         break;
       }
-      case 'cancel-region': this.region = undefined; break;
-      case 'cancel-detail': this.detail = undefined; break;
+      case 'cancel-region': if (m.page === undefined || m.page === this.region?.page) { this.region = undefined; } break;
+      case 'cancel-detail': if (m.page === undefined || m.page === this.detail?.page) { this.detail = undefined; } break;
       case 'inverse': {
-        const h = this.shown;
+        const h = this.headerFor(m.page);
         if (h && m.revision === h.revision && m.sequence === this.session.previewSequence && m.page === h.page &&
             typeof m.x === 'number' && typeof m.y === 'number' && Number.isFinite(m.x) && Number.isFinite(m.y) &&
             m.x >= h.bounds[0] && m.x <= h.bounds[2] && m.y >= h.bounds[1] && m.y <= h.bounds[3]) {
@@ -311,7 +384,7 @@ export class PreviewController {
             // A cache hit need not move the native viewer. Load its hit-testing
             // display list only when inverse search actually needs it.
             this.inverse = { revision: h.revision, sequence: h.sequence, page: h.page, x: m.x, y: m.y };
-            this.forceNative = true; this.dirty = true; this.flush();
+            this.forceNative = true; this.dirty ||= !this.continuous; this.flush();
           }
         }
         break;
@@ -325,26 +398,40 @@ export class PreviewController {
         !this.state || this.state[2] !== this.session.previewSequence || this.session.state !== 'running') { return; }
     // Page updates take priority; interactive magnification precedes background detail.
     // All requests share one frame/decode credit.
-    if (this.dirty) {
-      this.dirty = false; this.region = undefined; this.detail = undefined;
-      const learned = this.autoPages.get(this.page);
+    if (this.continuous && this.state[4] && this.state[3] === 0) { this.dirty = false; return; }
+    const active = { page: this.page, width: this.width };
+    const missing = this.continuous && !this.region ? this.visible.find(d => !this.isPresented(d) && !this.failed.has(d.page)) : undefined;
+    const background = this.continuous && !this.dirty && !missing && !this.region && !this.detail && !this.inverse && !this.upgradeReady && !this.gesture && this.prefetchReady
+      ? this.nearby.find(d => !this.prefetched.has(d.page) && !this.isPresented(d, false) && !this.failed.has(d.page) && (d.page < this.state![3] || (!this.state![4] && d.page === this.state![3] && this.frontierBudget > 0))) : undefined;
+    const demand = this.inverse ? { page: this.inverse.page, width: this.visible.find(d => d.page === this.inverse!.page)?.width || this.width } : this.dirty ? active : missing || background;
+    if (demand) {
+      const { page, width } = demand;
+      const secondary = !!background || (this.continuous && page !== this.page && !this.inverse);
+      if (page === this.page) { this.dirty = false; }
+      if (!background) { this.region = undefined; this.detail = undefined; }
+      if (background) { this.prefetched.add(page); }
+      if (background && page >= this.state[3]) { this.frontierBudget--; }
+      const learned = this.autoPages.get(page);
       // Full-mount costs cannot predict a warm edit. Only compare naturally
       // observed matching phases, viewport and page-complexity class.
-      const previous = this.svgBase?.page === this.page || this.rasterBase?.page === this.page;
-      const context = this.costContext(this.page, this.width, this.shown?.bounds || learned?.bounds, learned?.cost);
+      const previous = this.svgBase?.page === page || this.rasterBase?.page === page;
+      const context = this.costContext(page, width, this.shown?.bounds || learned?.bounds, learned?.cost);
       const preferPng = context && this.renderCosts.preferPng(context, !!previous);
       const useSvg = learned?.svg && !preferPng;
       const limit = preferPng ? 0 : learned ? learned.svg ? Math.min(200000, Math.max(16000, Math.ceil(learned.cost * 1.3))) : 0 : 16000;
-      const verb = this.svgDecodeFailed ? 'preview-render' : this.format === 'svg' ? 'preview-svg' :
+      const verb = (secondary && this.format === 'auto') || this.svgFailures.has(page) ? 'preview-render' : this.svgDecodeFailed ? 'preview-render' : this.format === 'svg' ? 'preview-svg' :
         this.format === 'auto' && this.session.previewAuto && this.session.previewSvg ? 'preview-auto' : 'preview-render';
-      const key = this.pageKey(verb === 'preview-auto' ? `auto:${limit}` : verb === 'preview-svg' ? 'svg' : 'png');
-      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, key, width: this.width };
+      const key = this.pageKey(verb === 'preview-auto' ? `auto:${limit}` : verb === 'preview-svg' ? 'svg' : 'png', page, width);
+      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page, key, width, background: secondary, format: this.format };
       const cached = !this.forceNative && (verb === 'preview-auto' ?
-        (useSvg ? this.pages.get(this.pageKey('svg')) : undefined) || this.pages.get(key) || this.pages.get(this.pageKey('png')) : this.pages.get(key));
-      const rasterKey = this.pageKey('png');
+        (useSvg ? this.pages.get(this.pageKey('svg', page, width)) : undefined) || this.pages.get(key) || this.pages.get(this.pageKey('png', page, width)) : this.pages.get(key));
+      const rasterKey = this.pageKey('png', page, width);
       const raster = !this.forceNative && (this.rasterPages.get(key) || this.rasterPages.get(rasterKey));
-      const reference = raster && this.decodedImages.has(raster.contentId) && verb !== 'preview-svg' ? raster : undefined;
+      const reference = raster && this.hasDecoded(raster.contentId, page) && verb !== 'preview-svg' ? raster : undefined;
       const force = this.forceNative; this.forceNative = false;
+      if ((cached || reference) && this.continuous && this.session.previewBackground && !secondary && !force && this.enginePage?.page !== page) {
+        this.session.send(['preview-cancel', 0, page]); this.enginePage = undefined;
+      }
       if (!cached && reference) {
         this.inFlight.cached = true; this.inFlight.contentId = reference.contentId;
         this.image({ header: { ...reference.header, requestId: this.nextId }, bytes: Buffer.alloc(0) });
@@ -353,25 +440,29 @@ export class PreviewController {
         this.inFlight.cached = true;
         this.image({ header: { ...cached.header, requestId: this.nextId }, bytes: cached.bytes });
       } else {
-        this.enginePage = undefined;
+        if (!secondary || !this.session.previewBackground) { this.enginePage = undefined; }
+        if (secondary && this.session.previewBackground) {
+          this.session.send(['preview-background', this.nextId, page, width, this.state[1], this.state[2], verb === 'preview-svg' ? 1 : 0, limit]);
+          return;
+        }
         const patches = this.pngCanvas && this.session.previewPngPatches;
-        const base = !force && this.rasterBase?.page === this.page && this.decodedImages.has(this.rasterBase.contentId) ? this.rasterBase.rasterId : 0;
+        const base = !force && this.rasterBase?.page === page && this.decodedImages.has(this.rasterBase.contentId) ? this.rasterBase.rasterId : 0;
         if (verb === 'preview-auto') {
-          if (patches) { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2], limit, base]); }
-          else { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2], limit]); }
-        } else if (verb === 'preview-render' && patches) { this.session.send(['preview-png', this.nextId, this.page, this.width, this.state[1], this.state[2], base]); }
-        else { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2]]); }
+          if (patches) { this.session.send([verb, this.nextId, page, width, this.state[1], this.state[2], limit, base]); }
+          else { this.session.send([verb, this.nextId, page, width, this.state[1], this.state[2], limit]); }
+        } else if (verb === 'preview-render' && patches) { this.session.send(['preview-png', this.nextId, page, width, this.state[1], this.state[2], base]); }
+        else { this.session.send([verb, this.nextId, page, width, this.state[1], this.state[2]]); }
       }
-    } else if ((this.region || this.detail) && this.shown) {
+    } else if ((this.region || this.detail) && this.headerFor((this.region || this.detail)!.page)) {
       const region = (this.region || this.detail)!; this[region.purpose] = undefined;
-      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, region };
+      this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: region.page, region };
       const b = region.bounds;
       this.enginePage = undefined;
-      this.session.send(['preview-region', this.nextId, this.page, region.width, this.state[1], this.state[2], b[0], b[1], b[2], b[3]]);
+      this.session.send(['preview-region', this.nextId, region.page, region.width, this.state[1], this.state[2], b[0], b[1], b[2], b[3]]);
     } else if (this.upgradeReady && this.canUpgrade()) {
       this.upgradeReady = false;
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page,
-        key: this.pageKey('svg'), upgrade: true, width: this.width };
+        key: this.pageKey('svg'), upgrade: true, width: this.width, format: this.format };
       const cached = this.pages.get(this.pageKey('svg'));
       if (cached) {
         this.inFlight.cached = true;
@@ -389,14 +480,14 @@ export class PreviewController {
     if (!h.patch && !request.cached && request.key && h.sequence === this.session.previewSequence &&
         h.revision === this.state?.[1] && h.page === request.page) { this.cachePage(request.key, frame); this.cachePage(this.pageKey(h.mime === 'image/svg+xml' ? 'svg' : 'png', h.page, request.width), frame); }
     if (!this.ready || !this.panel.visible || h.sequence !== this.session.previewSequence || h.revision !== this.state?.[1] ||
-        request.page !== this.page || h.page !== request.page || this.dirty) {
-      this.release(); this.dirty = true; this.flush(); return;
+        (!this.continuous && request.page !== this.page) || h.page !== request.page || (this.dirty && request.page === this.page)) {
+      this.release(); if (!request.background) { this.dirty = true; } this.flush(); return;
     }
-    if (!request.cached) {
+    if (!request.cached && !request.background) {
       this.enginePage = { revision: h.revision, sequence: h.sequence, page: h.page };
     }
-    this.page = h.page;
-    if (!request.region && this.svgDecodeFailed) { h.fallback = 'SVG could not be decoded by the preview'; }
+    if (!this.continuous) { this.page = h.page; }
+    if (!request.region && (this.svgDecodeFailed || this.svgFailures.has(h.page))) { h.fallback = this.svgDecodeFailed ? 'SVG could not be decoded by the preview' : 'SVG exceeded the preview budget or could not be decoded'; }
     // Buffer.buffer may expose a larger pooled allocation. Send only image bytes.
     const prepared = this.svgDom && !request.region && h.mime === 'image/svg+xml' ? this.prepareSvg(frame.bytes) : undefined;
     if (request.upgrade && (!prepared?.document || h.mime !== 'image/svg+xml')) {
@@ -405,7 +496,11 @@ export class PreviewController {
     }
     const svgDocument = prepared?.document, payload = prepared?.bytes || frame.bytes;
     const displayHeader = { ...h, byteLength: payload.length };
-    if (!request.region) { this.shown = displayHeader; }
+    if (!request.region) {
+      if (h.page === this.page) { this.shown = displayHeader; }
+      this.presented.delete(h.page); this.presented.set(h.page, { header: displayHeader, width: request.width || this.width, format: request.format || this.format, decoded: false });
+      while (this.presented.size > 16) { this.presented.delete(this.presented.keys().next().value as number); }
+    }
     let rasterPatch: { base: string; rect: number[] } | undefined;
     if (h.patch) {
       const base = this.rasterBase;
@@ -426,8 +521,8 @@ export class PreviewController {
     const contentId = !request.region ? request.contentId || (rasterPatch ? frame.bytes.length ?
       createHash('sha256').update('png-patch').update(rasterPatch.base).update(JSON.stringify(rasterPatch.rect)).update(payload).digest('hex') : rasterPatch.base :
       prepared?.id || createHash('sha256').update(h.mime).update(payload).digest('hex')) : undefined;
-    request.raster = !request.region && this.pngCanvas && h.rasterId !== undefined;
-    this.rasterPending = request.raster && contentId ? { id: h.requestId, rasterId: h.rasterId!, contentId, page: h.page, width: h.width, height: h.height, bounds: h.bounds } : undefined;
+    request.raster = !request.region && this.pngCanvas && h.mime === 'image/png';
+    this.rasterPending = request.raster && h.rasterId !== undefined && !request.background && contentId ? { id: h.requestId, rasterId: h.rasterId!, contentId, page: h.page, width: h.width, height: h.height, bounds: h.bounds } : undefined;
     if (request.raster && contentId && request.key) {
       const cachedHeader = { ...displayHeader }; delete cachedHeader.patch;
       for (const key of [request.key, this.pageKey('png', h.page, request.width)]) {
@@ -435,16 +530,17 @@ export class PreviewController {
       }
       while (this.rasterPages.size > 8) { this.rasterPages.delete(this.rasterPages.keys().next().value as string); }
     }
-    const svgPatch = svgDocument && contentId && !this.decodedImages.has(contentId) && this.svgBase?.page === h.page
+    const svgPatch = !request.background && svgDocument && contentId && !this.hasDecoded(contentId, h.page) && this.svgBase?.page === h.page && (!this.continuous || this.hasDecoded(this.svgBase.contentId, h.page))
       ? diffSvg(this.svgBase.document, svgDocument, this.svgBase.contentId) : undefined;
     request.patched = !!svgPatch;
     // A native frame can still be a decoded-content hit or a no-op patch. Its
     // near-zero browser work is neither a full mount nor a meaningful edit.
-    request.costContext = (contentId && this.decodedImages.has(contentId)) || svgPatch?.operations.length === 0 ||
+    request.costContext = request.background || (contentId && this.hasDecoded(contentId, h.page)) || svgPatch?.operations.length === 0 ||
       (h.patch && !h.byteLength) ? undefined : this.costContext(h.page, request.width || this.width, h.bounds,
       h.vectorCost ?? this.autoPages.get(h.page)?.cost);
     this.svgPending = svgDocument && contentId ? { id: h.requestId, page: h.page, contentId, document: svgDocument } : undefined;
-    const bytes = (contentId && this.decodedImages.has(contentId)) || svgPatch || request.contentId ? undefined : new Uint8Array(payload).buffer;
+    const bytes = (contentId && this.hasDecoded(contentId, h.page)) || svgPatch || request.contentId ? undefined : new Uint8Array(payload).buffer;
+    request.contentId = contentId;
     if (!request.cached && this.inverse && this.inverse.revision === h.revision &&
         this.inverse.sequence === h.sequence && this.inverse.page === h.page) {
       const point = this.inverse; this.inverse = undefined;
@@ -459,9 +555,38 @@ export class PreviewController {
       this.target.sequence === h.sequence ? this.target : undefined;
     if (target && !request.region) { this.target = undefined; }
     void this.post(request.region ? { type: request.region.purpose, header: displayHeader, bytes, token: request.region.token } :
-      { type: 'image', header: displayHeader, bytes, contentId, inlineSvg: !!svgDocument, inlinePng: request.raster, rasterPatch, svgPatch, target, destination: this.destination, refining: this.canUpgrade() })
+      { type: 'image', header: displayHeader, bytes, contentId, inlineSvg: !!svgDocument, inlinePng: request.raster, rasterPatch, svgPatch, target, destination: h.page === this.destinationPage ? this.destination : undefined, background: !!request.background, refining: this.canUpgrade() })
       .then(delivered => { if (!delivered && this.inFlight?.id === h.requestId) { this.release(); this.ready = false; this.dirty = true; } });
     this.status();
+  }
+
+  private hasDecoded(id: string, page: number): boolean {
+    return this.decodedImages.has(id) && (!this.continuous || this.decodedPages.get(page)?.has(id) === true);
+  }
+  private demands(value: unknown, limit: number): PageDemand[] {
+    if (!Array.isArray(value)) { return []; }
+    const seen = new Set<number>();
+    return value.slice(0, limit).filter((d): d is PageDemand => !!d && typeof d === 'object' &&
+      Number.isInteger(d.page) && d.page >= 0 && d.page <= 100000 && Number.isFinite(d.width) && d.width >= 1 && d.width <= 4096 &&
+      (!this.state?.[4] || d.page < this.state[3]) && !seen.has(d.page) && !!seen.add(d.page)).map(d => ({ page: d.page, width: Math.round(d.width) }));
+  }
+  private isPresented(d: PageDemand, resident = true): boolean {
+    const p = this.presented.get(d.page);
+    return !!p && p.decoded && p.header.revision === this.state?.[1] && p.header.sequence === this.session.previewSequence &&
+      (p.width === d.width || p.header.mime === 'image/svg+xml') && p.format === this.format && (!resident || this.resident.has(d.page));
+  }
+  private headerFor(page: unknown): PreviewImageHeader | undefined {
+    return this.continuous && typeof page === 'number' ? this.presented.get(page)?.header : this.shown;
+  }
+  private cancelPrefetch(): void {
+    clearTimeout(this.prefetchTimer); this.prefetchTimer = undefined; this.prefetchReady = false;
+  }
+  private schedulePrefetch(): void {
+    if (this.prefetchTimer || !this.continuous || this.gesture || !this.ready || !this.panel.visible || this.session.paused) { return; }
+    // Speculation must be cancellable and preserve the foreground raster.
+    // Older engines still render every visible page, without speculative demand.
+    if (!this.session.previewBackground) { return; }
+    this.prefetchTimer = setTimeout(() => { this.prefetchTimer = undefined; this.prefetchReady = true; this.flush(); }, 150);
   }
 
   private prepareSvg(bytes: Buffer): PreparedSvg {
@@ -506,6 +631,11 @@ export class PreviewController {
     clearTimeout(this.upgradeTimer); this.upgradeTimer = undefined; this.upgradeReady = false;
     // A background request may be superseded. Late frames/ACKs cannot consume
     // the foreground request's credit, and the native pending slot is replaceable.
+    this.cancelPrefetch();
+    if (this.inFlight?.background) {
+      if (this.session.previewBackground) { this.session.send(['preview-cancel', this.inFlight.id, this.page]); }
+      this.release();
+    }
     if (this.inFlight?.upgrade) { this.release(); this.svgPending = undefined; }
   }
   private canUpgrade(): boolean {
@@ -529,7 +659,7 @@ export class PreviewController {
     }, 350);
   }
 
-  private clearPages(): void { this.rasterPages.clear(); this.pages.clear(); this.pageBytes = 0; this.inverse = undefined; this.forceNative = false; }
+  private clearPages(): void { this.presented.clear(); this.failed.clear(); this.svgFailures.clear(); this.prefetched.clear(); this.cancelPrefetch(); this.rasterPages.clear(); this.pages.clear(); this.pageBytes = 0; this.inverse = undefined; this.forceNative = false; }
   private cachePage(key: string, frame: PreviewImage): void {
     const previous = this.pages.get(key);
     if (previous) { this.pageBytes -= previous.bytes.length; this.pages.delete(key); }
@@ -551,5 +681,5 @@ export class PreviewController {
       this.panel.webview.postMessage({ instance: this.instance, ...message })).catch(() => false);
   }
   private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; this.rasterPending = undefined; }
-  dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
+  dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
 }

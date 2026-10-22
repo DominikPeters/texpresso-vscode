@@ -15,6 +15,8 @@ export type Command =
   | ['theme', number[], number[]]
   | ['preview-barrier', number]
   | ['preview-destination', number, number, string]
+  | ['preview-background', number, number, number, number, number, 0 | 1 | 2, number]
+  | ['preview-cancel', number, number]
   | ['preview-auto', number, number, number, number, number, number, number?]
   | ['preview-svg', number, number, number, number, number]
   | ['preview-png', number, number, number, number, number, number]

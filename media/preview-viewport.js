@@ -62,5 +62,45 @@
       this.pending = undefined; this.cached = header; return true;
     }
   }
-  return { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache };
+  // Compact geometry survives surface eviction. Unknown pages use a stable
+  // estimate; no DOM placeholder or render is needed to measure distant pages.
+  class PageLayout {
+    constructor() { this.sizes = new Map(); this.fallback = [0, 0, 595.28, 841.89]; this.gap = 8; this.version = 0; this.configure({}); }
+    configure({ count = 0, complete = false, active = 0, zoom = 'width', width = 800, height = 700 } = {}) {
+      const length = Math.min(100001, complete ? Math.max(1,count) : Math.max(count+1,active+1,1));
+      width = Math.max(1,width); height = Math.max(1,height);
+      const key = `${length}:${zoom}:${width}:${height}:${this.version}`;
+      if (key === this.key) { return; } this.key = key;
+      this.count = length;
+      this.zoom = zoom; this.width = width; this.height = height;
+      this.offsets = new Float64Array(this.count + 1); this.rects = new Array(this.count); this.maxWidth = this.width;
+      for (let page = 0; page < this.count; page++) {
+        const b = this.sizes.get(page) || this.fallback, w = b[2] - b[0], h = b[3] - b[1];
+        let scale = Number(zoom) * 96 / 72;
+        if (zoom === 'width' || zoom === 'page') { scale = Math.max(.05, this.width / w); if (zoom === 'page') { scale = Math.min(scale, Math.max(.05, this.height / h)); } }
+        this.rects[page] = { top: this.offsets[page], width: w * scale, height: h * scale, bounds: b };
+        this.maxWidth = Math.max(this.maxWidth,w*scale);
+        this.offsets[page + 1] = this.offsets[page] + h * scale + (page + 1 < this.count ? this.gap : 0);
+      }
+      this.total = this.offsets[this.count];
+    }
+    setBounds(page, bounds) {
+      if (!Number.isInteger(page) || page < 0 || page > 100000 || !Array.isArray(bounds) || bounds.length !== 4 ||
+          !bounds.every(Number.isFinite) || bounds[2] <= bounds[0] || bounds[3] <= bounds[1]) { return false; }
+      const old = this.sizes.get(page); if (old && old.every((n, i) => n === bounds[i])) { return false; }
+      this.sizes.set(page, bounds.slice()); this.version++; return true;
+    }
+    pageAt(y) {
+      let lo = 0, hi = this.count - 1; y = Math.max(0, y);
+      while (lo < hi) { const mid = Math.floor((lo + hi + 1) / 2); if (this.offsets[mid] <= y) { lo = mid; } else { hi = mid - 1; } }
+      return lo;
+    }
+    window(top, height, limit = 12) {
+      const first = this.pageAt(top), last = this.pageAt(top + Math.max(0, height - .01)), center = this.pageAt(top + height / 2);
+      let start = this.pageAt(Math.max(0, top - height)), end = this.pageAt(top + 2 * height);
+      if (end - start + 1 > limit) { start = Math.max(start, center - Math.floor(limit / 2)); end = Math.min(this.count - 1, start + limit - 1); }
+      return { first, last, center, start, end };
+    }
+  }
+  return { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache, PageLayout };
 });

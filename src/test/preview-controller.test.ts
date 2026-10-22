@@ -620,3 +620,150 @@ test('a late SVG acknowledgment cannot teach the page navigated to in the meanti
     assert.equal(f.commands.at(-1)![6], 16000, 'new page starts with default complexity selection, not old-page failure');
   } finally { f.controller.dispose(); }
 });
+
+function continuousFrame(command: Command, page: number, extra: object = {}) {
+  return { header: { requestId: command[1] as number, revision: command[4] as number, sequence: command[5] as number, page,
+    bounds: [0, 0, 600, 800] as [number, number, number, number], width: 1000, height: 1333,
+    mime: 'image/png' as const, byteLength: 4, ...extra }, bytes: Buffer.from([1, 2, 3, 4]) };
+}
+const prefetchDelay = () => new Promise(resolve => setTimeout(resolve, 175));
+
+test('continuous viewport serves visible neighbors without turning native page observations into jumps', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000},{page:1,width:1000}],nearby:[],resident:[0,1],epoch:0});
+    f.controller.handle(continuousFrame(f.commands[0],0));
+    const first=f.messages.filter(m=>m.type==='image').at(-1)!;
+    f.send({type:'decoded',id:first.header.requestId,page:0,cached:[first.contentId]});
+    assert.equal(f.commands.at(-1)?.[2],1,'visible neighbor gets the next shared credit');
+    f.controller.handle(['preview-state',1,0,3,true,2]);
+    f.controller.handle(continuousFrame(f.commands.at(-1)!,1));
+    const neighbor=f.messages.filter(m=>m.type==='image').at(-1)!;
+    assert.equal(neighbor.header.page,1);
+    assert.ok(neighbor.bytes instanceof ArrayBuffer,'identical bytes on another page still need an independently owned surface');
+    f.send({type:'decoded',id:neighbor.header.requestId,page:1,cached:[first.contentId]});
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,0,'neighbor/native observations cannot move the scroll anchor');
+    assert.equal(f.messages.filter(m=>m.type==='state').at(-1)?.page,0,'toolbar follows browser active page');
+  } finally {f.controller.dispose();}
+});
+
+test('continuous page metadata routes links and cached-page inverse search by owning page', () => {
+  const f=fixture();Object.assign(f.session,{previewLinks:true});
+  try {
+    f.controller.handle(['preview-state',1,0,2,true,0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000},{page:1,width:1000}],nearby:[],resident:[0,1],epoch:0});
+    for(const page of [0,1]) {
+      const command=f.commands.at(-1)!;
+      f.controller.handle(continuousFrame(command,page,{annotations:{links:[{bounds:[10,10,100,30],uri:`https://example.com/page-${page}`}],destinations:[]}}));
+      const image=f.messages.filter(m=>m.type==='image').at(-1)!;
+      f.send({type:'decoded',id:image.header.requestId,page,cached:[image.contentId]});
+    }
+    f.send({type:'link',revision:1,sequence:0,page:1,index:0});
+    f.send({type:'link',revision:1,sequence:0,page:0,index:0});
+    assert.deepEqual(f.opened,['https://example.com/page-1','https://example.com/page-0']);
+    f.send({type:'inverse',revision:1,sequence:0,page:0,x:100,y:200});
+    const preparation=f.commands.at(-1)!;
+    assert.equal(preparation[2],0,'restore page-zero hit testing after the neighbor changed native display list');
+    f.controller.handle(continuousFrame(preparation,0));
+    assert.deepEqual(f.commands.at(-1),['preview-inverse',1,0,0,100,200]);
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    f.send({type:'link',revision:1,sequence:0,page:1,index:0});
+    assert.equal(f.opened.length,2,'invalidation disables every stale page link');
+  } finally {f.controller.dispose();}
+});
+
+test('continuous background export is canceled by source edits and its late frame cannot consume foreground credit', async () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  try {
+    f.controller.handle(['preview-state',1,0,2,true,0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[{page:1,width:1000}],resident:[0],epoch:0});
+    f.controller.handle(continuousFrame(f.commands[0],0));f.send({type:'decoded',id:1,page:0});
+    await prefetchDelay();const background=f.commands.at(-1)!;
+    assert.equal(background[0],'preview-background');assert.equal(background[2],1);
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    assert.ok(f.commands.some(c=>c[0]==='preview-cancel'&&c[1]===background[1]),'native speculative demand is canceled, not only its host queue');
+    f.controller.handle(['preview-state',2,1,2,true,0]);
+    const foreground=f.commands.at(-1)!;assert.equal(foreground[2],0);
+    f.controller.handle(continuousFrame(background,1));
+    assert.equal(f.messages.filter(m=>m.type==='image'&&m.header.page===1).length,0);
+    f.controller.handle(continuousFrame(foreground,0));
+    const current=f.messages.filter(m=>m.type==='image').at(-1)!;
+    assert.equal(current.header.sequence,1);assert.equal(current.header.requestId,foreground[1]);
+    f.send({type:'decoded',id:background[1],page:1});
+    assert.equal((f.controller as any).inFlight.id,foreground[1],'late neighbor ACK cannot release current frame credit');
+  } finally {f.controller.dispose();}
+});
+
+test('continuous unknown frontier has a finite initial allowance and one advance per real scroll epoch', async () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  const viewport=(nearby:number,epoch=0,scroll=false)=>f.send({type:'viewport',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[{page:nearby,width:1000}],resident:[0],epoch,scroll});
+  const finish=(page:number)=>{const command=f.commands.at(-1)!;f.controller.handle(['preview-state',1,0,page+1,false,0]);f.controller.handle(continuousFrame(command,page));f.send({type:'decoded',id:command[1],page});};
+  try {
+    f.controller.handle(['preview-state',1,0,1,false,0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[{page:1,width:1000}],resident:[0],epoch:0});
+    finish(0);await prefetchDelay();assert.equal(f.commands.at(-1)?.[2],1);finish(1);
+    viewport(2);await prefetchDelay();assert.equal(f.commands.at(-1)?.[2],2);finish(2);
+    const initial=f.commands.length;viewport(3);await prefetchDelay();
+    assert.equal(f.commands.length,initial,'response/layout callbacks cannot grow the document indefinitely');
+    viewport(3,1,true);await prefetchDelay();assert.equal(f.commands.at(-1)?.[2],3);finish(3);
+    const scrolled=f.commands.length;viewport(4,1,true);await prefetchDelay();
+    assert.equal(f.commands.length,scrolled,'the same scroll epoch cannot renew speculative demand');
+  } finally {f.controller.dispose();}
+});
+
+test('continuous neighbor acknowledgment cannot clear an unresolved internal-link destination', async () => {
+  const f=fixture();Object.assign(f.session,{previewLinks:true,previewBackground:true});
+  const viewport={page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[{page:1,width:1000}],resident:[0],epoch:0};
+  try {
+    f.controller.handle(['preview-state',1,0,3,true,0]);f.send({type:'ready',...viewport});
+    f.controller.handle(continuousFrame(f.commands[0],0,{annotations:{links:[{bounds:[10,10,100,30],uri:'#target'}],destinations:[]}}));
+    const first=f.messages.filter(m=>m.type==='image').at(-1)!;f.send({type:'decoded',id:first.header.requestId,page:0,cached:[first.contentId]});
+    f.send({type:'link',revision:1,sequence:0,page:0,index:0});
+    assert.deepEqual(f.commands.at(-1),['preview-destination',1,0,'target']);
+    f.send({type:'viewport',...viewport});await prefetchDelay();
+    const neighbor=f.commands.at(-1)!;assert.equal(neighbor[0],'preview-background');assert.equal(neighbor[2],1);
+    f.controller.handle(continuousFrame(neighbor,1));const image=f.messages.filter(m=>m.type==='image').at(-1)!;
+    f.send({type:'decoded',id:image.header.requestId,page:1,cached:[first.contentId,image.contentId]});
+    f.controller.handle(['preview-destination',1,0,'target',2]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,2,'lookup result survives unrelated neighbor decode');
+    const target=f.commands.at(-1)!;assert.equal(target[2],2);
+    f.controller.handle(continuousFrame(target,2));
+    assert.equal(f.messages.filter(m=>m.type==='image').at(-1)?.destination,'target','resolved destination follows its owning target frame');
+  } finally {f.controller.dispose();}
+});
+
+test('continuous terminal zero-page state cannot retain an out-of-range active page after shrinking', () => {
+  const f=fixture();
+  try {
+    f.controller.handle(['preview-state',1,0,10000,true,4000]);
+    f.send({type:'ready',page:4000,width:1000,continuous:true,visible:[{page:4000,width:1000}],nearby:[],resident:[4000],epoch:0});
+    const first=f.commands.at(-1)!;f.controller.handle(continuousFrame(first,4000));f.send({type:'decoded',id:first[1],page:4000});
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    f.controller.handle(['preview-invalidated',2,1]);const before=f.commands.length;f.controller.handle(['preview-state',2,1,0,true,0]);
+    assert.equal(f.messages.filter(m=>m.type==='state').at(-1)?.page,0,'terminal empty document selects its empty start, not a vanished page');
+    const next=f.commands.slice(before).find(c=>/^preview-(?:render|svg|auto|png)$/.test(c[0]));
+    assert.ok(!next||next[2]===0,'empty document does not request the old distant page');
+    if(next){f.controller.handle(['preview-error',next[1] as number,'The document has not produced a page.']);}
+    const count=f.commands.length;f.controller.update();assert.equal(f.commands.length,count,'terminal empty state does not loop renderer requests');
+  } finally {f.controller.dispose();}
+});
+
+test('older engines render visible continuous pages without uncancellable speculative demand', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] });
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }, { page: 1, width: 1000 }],
+      nearby: [{ page: 2, width: 1000 }], resident: [0, 1], epoch: 0 });
+    for (const page of [0, 1]) {
+      const command = f.commands.at(-1)!;
+      assert.equal(command[0], 'preview-render'); assert.equal(command[2], page);
+      f.controller.handle(continuousFrame(command, page));
+      f.send({ type: 'decoded', id: command[1], page });
+    }
+    t.mock.timers.tick(2000);
+    assert.equal(f.commands.length, 2, 'only visible pages are requested without the cancellation capability');
+  } finally { f.controller.dispose(); }
+});

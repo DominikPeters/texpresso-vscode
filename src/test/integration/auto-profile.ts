@@ -11,6 +11,7 @@ export async function run(): Promise<void> {
   const repo = path.resolve(__dirname, '../../..');
   const output = path.resolve(process.env.TEXPRESSO_PROFILE_OUTPUT || 'artifacts/profile-auto-vscode');
   const rapid = process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e';
+  const richDemo = process.env.TEXPRESSO_PROFILE_RICH === '1';
   const earlyInput = process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1';
   const resume = process.env.TEXPRESSO_PROFILE_RESUME === '1';
   if (fs.existsSync(output) && fs.readdirSync(output).length && !resume) { throw Error('Choose a new profiler output directory'); }
@@ -18,13 +19,16 @@ export async function run(): Promise<void> {
   const completed = new Set<string>(resume && fs.existsSync(resultFile) ? fs.readFileSync(resultFile, 'utf8').trim().split('\n').filter(Boolean).map(line => { const r=JSON.parse(line); return `${r.fixture}/${r.codec}/${r.repeat}`; }) : []);
   fs.mkdirSync(output, { recursive: true });
   if (process.platform === 'darwin') { cp.execFileSync('xcrun', ['clang', '-O2', path.join(repo, 'scripts/profiling/memory.c'), '-o', path.join(output, 'memory-sampler')]); }
-  const cases = fixtures(output, (process.env.TEXPRESSO_PROFILE_PAGES || '1,100').split(',').map(Number),
+  const cases = richDemo ? (process.env.TEXPRESSO_PROFILE_AUTORERUN || 'false,true').split(',').map(value=>({
+    ...require('../../../scripts/profiling/rich-demo-native.cjs').richFixture(output,'rich-rerun-'+value), autoRerun:value==='true'
+  })) : fixtures(output, (process.env.TEXPRESSO_PROFILE_PAGES || '1,100').split(',').map(Number),
     (process.env.TEXPRESSO_PROFILE_KINDS || 'dense,tikz').split(','));
   const binary = process.env.TEXPRESSO_BINARY!;
   const repeats = Number(process.env.TEXPRESSO_PROFILE_REPEATS || 3);
+  if(richDemo) { await require('./continuous-preview').checkContinuousPreview(vscode.Uri.file(repo)); }
   const bridgeSource = fs.readFileSync(path.join(repo, 'scripts/profiling/auto-client.js'), 'utf8');
   const mainSource = fs.readFileSync(path.join(repo, 'media/preview.js'), 'utf8').replaceAll('acquireVsCodeApi', 'profileAcquireVsCodeApi');
-  const metadata = { earlyInput, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
+  const metadata = { richDemo, earlyInput, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
     engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd:repo,encoding:'utf8'}).trim(),
     binarySha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(binary)).digest('hex'),
     extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(), transport: 'actual VS Code webview postMessage' };
@@ -37,6 +41,11 @@ export async function run(): Promise<void> {
         console.log(`PROFILE starting ${fixture.id} ${codec} #${repeat + 1}`);
         fs.writeFileSync(fixture.file, fixture.text);
         const active = new Run(fixture, binary, codec, 1600, output, repeat);
+        if(richDemo) { active.session.autoRerun=fixture.autoRerun; active.session.configuration.autoRerun=fixture.autoRerun; }
+        const sentence='Edit this sentence and watch the preview change.';
+        if(richDemo && !active.text.includes(sentence)) {throw Error('The rich demo edit sentence changed; update its benchmark anchor.');}
+        const richAnchor=richDemo ? active.text.indexOf(sentence)+sentence.length : 0;
+        let richInserted=0;
         let controller: PreviewController | undefined, realPanel: vscode.WebviewPanel | undefined;
         let resolve!: (result: any) => void, reject!: (error: Error) => void;
         const result = new Promise<any>((ok, fail) => { resolve = ok; reject = fail; });
@@ -62,7 +71,8 @@ export async function run(): Promise<void> {
                   reject(Error(m.error)); return;
                 }
                 if (m.type === 'profile-edit') {
-                  if (m.mode === 'letter' || m.mode === 'backspace') {
+                  if (m.mode === 'demo') {active.replace(richAnchor+richInserted,0,m.text);richInserted+=m.text.length;}
+                  else if (m.mode === 'letter' || m.mode === 'backspace') {
                     const marker = active.text.match(/(Profiling marker 0000 )([a-z]{4,16})(\.)/);
                     if (!marker) { reject(Error('Missing typing marker')); return; }
                     const offset = marker.index + marker[1].length + marker[2].length;
@@ -80,7 +90,7 @@ export async function run(): Promise<void> {
                 profileProcessingMs: message.type === 'image' ? performance.now() - active.controllerImageStart : undefined }),
               set html(value: string) {
                 const instance = value.match(/data-instance="([^"]+)"/)![1];
-                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true, rapid, earlyInput }));
+                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true, rapid, earlyInput, richDemo, autoRerun:fixture.autoRerun }));
                 value = value.replace('</head>', '<style>html,body{width:800px;height:700px;overflow:hidden}</style></head>');
                 value = value.replace(/<script nonce=/, `<script nonce="${instance}">${bootstrap}</script><script nonce=`);
                 value = value.replace(new RegExp(`<script nonce="${instance}" src="[^"]*/preview\\.js"></script>`), `<script nonce="${instance}">${mainSource}</script>`);

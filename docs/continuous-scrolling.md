@@ -1,7 +1,7 @@
 # Continuous preview scrolling and bounded prefetch
 
-Design proposal, 22 October 2026. This describes the next preview architecture;
-production still displays one page at a time. The implementation should remain
+Implementation notes and design, 22 October 2026. The preview now uses continuous
+scrolling with bounded mounted surfaces and shared rendering credit. The implementation should remain
 inside the existing session, headless engine, stdio transport and webview.
 
 The intended experience is a vertically scrolling document with adjacent pages
@@ -9,6 +9,39 @@ visible together, immediate reuse when scrolling back, and enough preparation
 in the direction of travel to avoid waiting at every boundary. Typing, source
 navigation and magnification retain priority. Opening a long document must not
 compile, export or mount all its pages.
+
+## Current implementation
+
+`media/preview.js` owns a virtual page stack and per-page views; the pure
+`PageLayout` geometry model lives in `preview-viewport.js`. At most twelve shells
+are mounted. The shared decoded cache is limited to eight entries and 32 MiB
+of estimated cost, with a 40,000-node aggregate SVG limit. Visible raster pages
+share a four-megapixel base-image allowance, with more density for the active
+page; speculative neighbors use smaller images. Oversized SVGs use PNG.
+
+The host receives bounded visible/nearby demands and resident-page inventory.
+It updates the active page first, keeps one render/decode credit, and starts
+speculation after 150 ms. Each neighbor is attempted once per scroll epoch,
+and the unknown frontier has two initial speculative advances, then one per
+user scroll epoch. Page arrival and geometry corrections cannot replenish that
+budget. Active images and metadata are separate from the engine's current page.
+Identical content has separately owned mutable browser surfaces on each page.
+
+The `backgroundRendering` engine capability enables full-frame neighbor exports
+that preserve the foreground PNG comparison buffer and display list. Export uses one
+temporary background display list, released before returning to foreground work. The
+`preview-cancel` command stops speculative demand on edits, hiding and pause.
+Older engines can display continuous pages. Speculative preparation requires the
+new capability so cancellation and foreground comparison-base preservation are
+both available.
+
+Open-buffer changes have no debounce: VS Code changes are sent immediately,
+with a source barrier that flushes native buffered changes. The remaining
+100 ms zoom request, 120 ms detail request, 150 ms prefetch, 200 ms disk-watcher,
+350 ms Auto refinement, and 500 ms native auxiliary-rerun delays serve separate
+purposes. None holds the first updated page for an ordinary editor change.
+
+The sections below record the broader design and the rationale for these bounds.
 
 ## What can be reused
 
@@ -206,7 +239,7 @@ all page views rather than multiplying today's budgets per page.
 | Mounted SVG complexity | At most 40,000 aggregate nodes, in addition to current per-page validation limits. |
 | Raster | Preserve the current 4 megapixel per-frame limit; allocate a smaller density when several visible pages compete. |
 | Transient decode/detail | One main candidate and one clipped detail/magnifier candidate, each under existing pixel limits; no speculative duplicate while these are occupied. |
-| Native | One current display list and one retained PNG comparison raster initially; no per-page native raster cache. |
+| Native | One foreground display list, one temporary background display list during export, and one retained PNG comparison raster; no per-page native raster cache. |
 
 The host and browser must agree on the cache inventory limit: today the host
 accepts only four decoded IDs, so raising the browser entry limit alone would

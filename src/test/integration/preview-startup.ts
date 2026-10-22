@@ -35,6 +35,7 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
             const report = (startupCheck, id) => api.postMessage({startupCheck, id, ...snapshot()});
             const paint = callback => requestAnimationFrame(() => requestAnimationFrame(callback));
             window.startupApi = () => ({getState:()=>({format:'png',zoom:'page'}), setState:()=>{}, postMessage:m=>{
+              if(m.type==='ready') m.pngCanvas=false; // This test isolates the ordinary IMG fallback.
               api.postMessage(m);
               if (m.type === 'ready' || m.type === 'decoded') paint(()=>report(m.type,m.id));
             }});
@@ -68,7 +69,7 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
   const red = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC', 'base64');
   const frame = (command: Command, bytes: Buffer, width = 2) => controller.handle({ header: {
     requestId: command[1] as number, page: 0, revision: command[4] as number, sequence: command[5] as number,
-    bounds: [0, 0, 600, 800], width, height: width, mime: 'image/png', byteLength: bytes.length }, bytes });
+    bounds: [0, 0, 595.28, 841.89], width, height: width, mime: 'image/png', byteLength: bytes.length }, bytes });
   const advance = () => { session.previewSequence++; controller.handle({ sourceSequence: session.previewSequence });
     controller.handle(['preview-state', session.previewSequence + 1, session.previewSequence, 1, true, 0]); };
   const release = () => panel!.webview.postMessage({ startupRelease: true });
@@ -77,13 +78,15 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     await until(() => reports.some(r => r.startupCheck === 'ready') && commands.length > 0, 'startup ready');
     const initial = reports.find(r => r.startupCheck === 'ready');
     assert.equal(initial.hidden, true, 'source-less image is hidden');
-    assert.equal(initial.sheetHeight, 0, 'measurement sheet does not expose a blank page');
+    assert.ok(initial.sheetHeight > 0, 'continuous layout reserves stable page geometry before pixels arrive');
+    assert.equal(initial.src, null, 'startup has no source-less image load');
     frame(commands[0], png);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 1, 'first delayed decode');
     advance(); await release();
     await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === commands[0][1]) && commands.length === 2, 'obsolete startup decode released');
     const obsolete = reports.find(r => r.startupCheck === 'decoded' && r.id === commands[0][1]);
-    assert.equal(obsolete.hidden, true); assert.equal(obsolete.sheetHeight, 0, 'stale decode cannot reveal an empty image');
+    assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'stale decode cannot reveal an empty image');
+    assert.equal(obsolete.sheetHeight, initial.sheetHeight, 'canceling a decode preserves the page geometry');
     frame(commands[1], png);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 2, 'current startup decode');
     await release();
@@ -107,5 +110,6 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     assert.equal(failed.identity, replaced.identity, 'failed replacement retains the last good image');
     assert.equal(failed.complete, true); assert.equal(failed.naturalWidth, 1); assert.equal(failed.hidden, false);
     console.log('PASS: startup hides empty images; canceled/failed decodes preserve surfaces and fallback mounts the decoded element');
-  } finally { controller.dispose(); }
+  } catch(error) { console.error('Startup browser diagnostics: '+JSON.stringify({reports,commands})); throw error; }
+  finally { controller.dispose(); }
 }

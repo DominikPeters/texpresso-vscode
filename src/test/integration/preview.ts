@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as assert from 'node:assert/strict';
 import { checkPreviewStartup } from './preview-startup';
+import { checkContinuousPreview } from './continuous-preview';
 
 async function logs(directory = process.env.TEXPRESSO_TEST_LOGS!): Promise<string> {
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
@@ -19,7 +20,7 @@ async function until(check: () => Promise<boolean>, description: string, timeout
   }
 }
 async function renders(): Promise<{ id: number; page: number }[]> {
-  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto|png)",(\d+),(\d+),/g)]
+  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto|png|background)",(\d+),(\d+),/g)]
     .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
 }
 
@@ -80,6 +81,8 @@ export async function run(): Promise<void> {
   assert.ok(extension); await extension.activate();
   await checkPreviewStartup(extension.extensionUri);
   await checkSvgWebview(extension.extensionUri);
+  await checkContinuousPreview(extension.extensionUri);
+  if(process.env.TEXPRESSO_TEST_WEBVIEW_ONLY==='1') {return;}
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
   const file = path.join(root, 'embedded-preview.tex');
   await fs.writeFile(file, String.raw`\documentclass{article}

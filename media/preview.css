@@ -13,8 +13,6 @@ input { width: 52px; margin-left: 3px; }
 #status { padding: 4px 8px; min-height: 24px; color: var(--vscode-descriptionForeground); font-size: 12px; }
 #status.error { color: var(--vscode-errorForeground,#f66); }
 main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
-#sheet { position: relative; margin: 0 auto; background: white;  flex-shrink: 0; }
-#sheet.waiting { height: 0 !important; overflow: hidden; }
 #image { width: 100%; height: 100%; display: block; user-select: none; }
 #highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; }
 #empty { margin: 64px auto; text-align: center; color: var(--vscode-descriptionForeground); }
@@ -50,3 +48,16 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 #raster, #raster > canvas { display: block; width: 100%; height: 100%; user-select: none; }
 #viewport.magnify #raster { cursor: zoom-in; touch-action: none; }
 #lensCanvas { position: absolute; max-width: none; max-height: none; height: auto; }
+
+/* Continuous page shells are lightweight; distant page surfaces are unmounted. */
+.page-stack { position: relative; min-width: 100%; margin: 0; }
+.page-sheet { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; background: white; overflow: hidden; }
+.page-sheet.waiting::after { content: 'Preparing page…'; position: absolute; top: 24px; left: 0; width: 100%; text-align: center; color: #777; font: 12px var(--vscode-font-family,sans-serif); }
+.page-image, .page-raster, .page-raster > canvas, .page-vector { width: 100%; height: 100%; display: block; user-select: none; }
+.page-detail { position: absolute; pointer-events: none; user-select: none; }
+.page-links { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.page-links .page-link { position: absolute; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; pointer-events: auto; cursor: pointer; }
+.page-links .page-link:hover { background: #0088ff22; }
+.page-highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; animation: locate 1.5s ease-out forwards; }
+#viewport.magnify .page-image, #viewport.magnify .page-vector, #viewport.magnify .page-raster { cursor: zoom-in; touch-action: none; }
+@media (prefers-reduced-motion: reduce) { .page-highlight { animation: none; } }

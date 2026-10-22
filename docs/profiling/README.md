@@ -128,3 +128,5 @@ Native PNG dirty rectangles are implemented and measured in [the PNG patch repor
 The current pass also covers [compiler checkpoints](2026-10-22-checkpoints.md),
 [SVG host processing](2026-10-22-svg-host.md), [render-cost calibration](2026-10-22-auto-calibration.md),
 and the [richer demo and dashed-stroke fix](2026-10-22-demo.md).
+
+[Rich-demo typing and continuous-preview acceptance](2026-10-22-rich-demo.md) separates the first cold edit, warm typing, and auxiliary-convergence repaint costs, with actual VS Code measurements and source-version checks.

@@ -3,7 +3,8 @@
 const profileJob = __JOB__;
 const profileHost = profileJob.vscode ? acquireVsCodeApi() : undefined;
 const profileRows = [], profileFrames = [], errors = [], pendingMain = new Set();
-let current, latestSequence = 0, latestRequest = 0, displayedMainRequest = 0;
+let current, latestSequence = 0, latestRequest = 0;
+const displayedMainRequest = new Map();
 const profileInputs = [], rapidPhases = [], visibilityEvents = [];
 const visibility = () => ({state:document.visibilityState, focused:document.hasFocus()});
 document.addEventListener('visibilitychange',()=>visibilityEvents.push({at:performance.now(),...visibility()}));
@@ -38,14 +39,14 @@ const profileApi = () => ({
     }
     frame.inlineSvg = !!m.svg; frame.canvasPng = !!m.png;
     frame.dispatchToDecoded = performance.now() - frame.dispatched;
-    if (frame.type === 'image') displayedMainRequest = m.id;
+    if (frame.type === 'image') displayedMainRequest.set(frame.page,m.id);
     frame.decodedAt = performance.now();
     latestSequence = Math.max(latestSequence, frame.sequence);
     latestRequest = Math.max(latestRequest, m.id);
     const op = current;
     painted().then(() => {
       // A decoded bitmap replaced before the paint opportunity was never visible.
-      if (frame.type === 'image' && displayedMainRequest !== m.id) {
+      if (frame.type === 'image' && displayedMainRequest.get(frame.page) !== m.id) {
         frame.supersededBeforePaint = true; pendingMain.delete(m.id); return;
       }
       frame.paintedAt = performance.now();
@@ -110,7 +111,7 @@ else {
     op.canvasPixels = [...document.querySelectorAll('canvas')].reduce((n,c)=>n+c.width*c.height,0);
     profileRows.push(op); current = undefined;
   };
-  await finish(profileJob.earlyInput ? 80 : 650);
+  await finish(profileJob.richDemo ? 1600 : profileJob.earlyInput ? 80 : 650);
   const operation = async (name,page,edit,action,idle=80) => {
     current = {name,page,start:performance.now(),minSequence:latestSequence+(edit?1:0),afterRequest:latestRequest,frames:[]};
     await action(); await finish(idle);
@@ -118,12 +119,30 @@ else {
   const navigate = page => { const input=document.getElementById('page');input.value=String(page+1);input.dispatchEvent(new Event('change')); };
   const edit = body => profileHost ? profileHost.postMessage({type:'profile-edit',page:0,...body}) :
     fetch('/edit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:0,...body})});
-  if (!profileJob.rapid && profileJob.pages > 1) {
+  if (!profileJob.richDemo && !profileJob.rapid && profileJob.pages > 1) {
     await operation('page-next-new',1,false,()=>navigate(1),650);
     await operation('page-previous-cached',0,false,()=>navigate(0));
     await operation('page-next-cached',1,false,()=>navigate(1));
     await operation('page-last-new',profileJob.pages-1,false,()=>navigate(profileJob.pages-1),650);
     await operation('page-first-compiled',0,false,()=>navigate(0),650);
+  }
+  if(profileJob.richDemo) {
+    const insert = async(name,text,idle=80)=>{
+      const input={id:profileInputs.length+1,phase:name,injectedAt:performance.now()};profileInputs.push(input);
+      current={name,page:0,start:input.injectedAt,minSequence:Infinity,afterRequest:latestRequest,frames:[]};
+      profileHost.postMessage({type:'profile-edit',mode:'demo',text,inputId:input.id});
+      await until(()=>input.sequence!==undefined,'Rich demo source acknowledgment');
+      current.minSequence=input.sequence;current.sourceSequence=input.sequence;
+      // A very fast image can reach its paint opportunity before its source ACK.
+      for(const frame of profileFrames.filter(f=>f.type==='image'&&f.page===0&&f.sequence>=input.sequence&&f.request>current.afterRequest&&f.paintedAt>=current.start)) {
+        current.frames.push(frame);current.ms??=frame.paintedAt-current.start;current.settledMs=frame.paintedAt-current.start;
+      }
+      await finish(idle);
+    };
+    await insert('demo-first-edit',' I');
+    await insert('demo-warm-edit','t');
+    await insert('demo-warm-edit',' works',1600);
+    await insert('demo-after-idle-edit',' instantly',650);
   }
   if (profileJob.rapid) {
     // A finite open-loop input schedule. Awaiting a paint would hide queueing and
@@ -195,7 +214,7 @@ else {
     await burst('backspace-overlap',12,100,()=>({mode:'backspace'}));
     if(profileJob.fixture.startsWith('tikz')) await burst('coordinate-overlap',8,125,()=>({coordinate:true}));
   }
-  if (!profileJob.rapid && !profileJob.navOnly) {
+  if (!profileJob.richDemo && !profileJob.rapid && !profileJob.navOnly) {
   for (let i=0;i<5;i++) await operation('edit-letter',0,true,()=>edit({mode:'letter',letter:'abcde'[i]}),i===4?650:80);
   for (let i=0;i<2;i++) await operation('edit-backspace',0,true,()=>edit({mode:'backspace'}),i===1?650:80);
   for (let i=0;i<3;i++) await operation('edit-text',0,true,()=>edit({}),i===2?650:80);

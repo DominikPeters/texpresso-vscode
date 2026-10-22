@@ -18,6 +18,12 @@ an ordinary older/upstream installation may still require Window. Point
 `texpresso.command` at the new build's `bin/texpresso` to try it. The extension
 does not yet install or bundle the engine automatically.
 
+The preview scrolls continuously across pages. The page field follows the
+viewport; the arrows and page field jump to a page, while Page Up/Down scroll
+by a viewport. Nearby pages are prepared after scrolling settles, with bounded
+render caches and page surfaces. Longer documents compile further pages on
+demand rather than rendering the whole document on startup.
+
 Pinch on a trackpad (or Control/Command scroll) to zoom around the pointer.
 Rendering uses the display's device pixel ratio and follows changes between
 monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable
