@@ -215,28 +215,22 @@ class Run {
   }
   edit(page, coordinate = false) {
     const marker = String(page).padStart(4, '0');
-    const pattern = coordinate ? new RegExp(`(12,)([12]\\.0)(\\) \\.\\. \\(24,24\\); %COORD-${marker})`) : new RegExp(`(Profiling marker ${marker} )([ab]{4})(\\.)`);
+    const pattern = coordinate ? new RegExp(`(12,)([12]\\.0)(\\) \\.\\. \\(24,24\\); %COORD-${marker})`) : new RegExp(`(Profiling marker ${marker} )([a-z]{4,16})(\\.)`);
     const match = this.text.match(pattern);
     if (!match) throw new Error('No edit target ' + pattern);
     const offset = match.index + match[1].length, old = match[2], replacement = coordinate ? old === '1.0' ? '2.0' : '1.0' : old === 'aaaa' ? 'bbbb' : 'aaaa';
-    const before = this.text.slice(0, offset), line = before.split('\n').length - 1, character = offset - (before.lastIndexOf('\n') + 1);
-    this.text = this.text.slice(0, offset) + replacement + this.text.slice(offset + old.length);
-    this.session.sync.change(this.main, [ {
-      rangeOffset: offset,
-      rangeLength: old.length,
-      text: replacement,
-      range: {
-        start: {
-          line,
-          character
-        },
-        end: {
-          line,
-          character: character + old.length
-        }
-      }
-    } ]);
+    this.replace(offset, old.length, replacement);
   }
+  replace(offset, length, replacement) {
+    const position = offset => {
+      const before = this.text.slice(0, offset);
+      return { line: before.split('\n').length - 1, character: offset - before.lastIndexOf('\n') - 1 };
+    };
+    const range = { start: position(offset), end: position(offset + length) };
+    this.text = this.text.slice(0, offset) + replacement + this.text.slice(offset + length);
+    this.session.sync.change(this.main, [{ rangeOffset: offset, rangeLength: length, text: replacement, range }]);
+  }
+
   async dispose() {
     this.sampler?.kill();
     try {

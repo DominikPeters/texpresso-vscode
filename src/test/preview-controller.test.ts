@@ -353,3 +353,52 @@ test('encoded pages have LRU byte/entry limits and distinguish width and format'
     assert.equal(g.commands.length, 3, 'aggregate byte budget evicts even with only two pages');
   } finally { g.controller.dispose(); }
 });
+
+test('SVG DOM patches require an acknowledged base and recover with full bytes after a browser miss', () => {
+  const f = fixture();
+  (f.session as typeof f.session & { previewSvg: boolean }).previewSvg = true;
+  const xml = (value: number) => '<svg xmlns="http://www.w3.org/2000/svg">' +
+    Array.from({ length: 80 }, (_, i) => `<path d="M${i === 20 ? value : i} 0L1 1"/>`).join('') + '</svg>';
+  const frame = (id: number, revision: number, sequence: number, value: number) => {
+    const bytes = Buffer.from(xml(value));
+    return { header: { ...cachedFrame(id).header, revision, sequence, mime: 'image/svg+xml' as const, byteLength: bytes.length }, bytes };
+  };
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1200, format: 'svg', svgDom: true });
+    f.controller.handle(frame(1, 1, 0, 20));
+    const first = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(first.inlineSvg, true); assert.ok(first.bytes); assert.equal(first.svgPatch, undefined);
+    f.send({ type: 'decoded', id: 1, svg: first.contentId, cached: [first.contentId] });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-invalidated', 2, 1]); f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+    f.controller.handle(frame(2, 2, 1, 500));
+    const patch = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(patch.svgPatch.base, first.contentId); assert.equal(patch.bytes, undefined);
+    assert.equal(patch.svgPatch.operations.length, 1); assert.equal(patch.header.revision, 2);
+    f.send({ type: 'cache-miss', id: 2 });
+    const full = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(full.svgPatch, undefined); assert.ok(full.bytes); assert.equal(full.header.requestId, 3);
+    assert.equal(f.commands.length, 2, 'full resynchronization uses encoded cache');
+    f.send({ type: 'decoded', id: 1, svg: first.contentId });
+    f.send({ type: 'decoded', id: 3, svg: full.contentId, cached: [full.contentId] });
+    f.session.previewSequence = 2; f.controller.handle({ sourceSequence: 2 });
+    f.controller.handle(['preview-invalidated', 3, 2]); f.controller.handle(['preview-state', 3, 2, 1, true, 0]);
+    f.controller.handle(frame(4, 3, 2, 20));
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.svgPatch.base, full.contentId);
+  } finally { f.controller.dispose(); }
+});
+
+test('a page rendered during navigation stays cached even if its display was superseded', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    f.send({ type: 'viewport', page: 1, width: 1000 });
+    f.controller.handle(cachedFrame(1));
+    f.controller.handle(cachedFrame(2, 1)); f.send({ type: 'decoded', id: 2 });
+    f.send({ type: 'viewport', page: 0, width: 1000 });
+    assert.equal(f.commands.length, 2, 'returning uses the previously superseded page frame');
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.header.page, 0);
+  } finally { f.controller.dispose(); }
+});

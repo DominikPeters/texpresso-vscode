@@ -15,3 +15,11 @@ test('decoded image cache enforces byte and entry budgets with LRU disposal and 
   cache.clear(); assert.equal(cache.bytes, 0); assert.deepEqual(cache.keys(), []);
   assert.deepEqual(disposed, ['second', 'first', 'third', 'fourth']);
 });
+
+test('moving a retained SVG between cache identities does not dispose its live layer', () => {
+  const disposed: object[] = [], value = {};
+  const cache = new ImageCache((entry: object) => disposed.push(entry), 100, 2);
+  cache.put('before', value, 40); assert.equal(cache.take('before'), value);
+  assert.equal(cache.bytes, 0); assert.deepEqual(disposed, []);
+  cache.put('after', value, 40); cache.clear(); assert.deepEqual(disposed, [value]);
+});

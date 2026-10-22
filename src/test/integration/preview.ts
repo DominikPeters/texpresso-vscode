@@ -22,9 +22,51 @@ async function renders(): Promise<{ id: number; page: number }[]> {
     .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
 }
 
+async function decoded(): Promise<{ id: number; page: number }[]> {
+  return [...(await logs()).matchAll(/\[preview-ui\] \["decoded",(\d+),(\d+),/g)]
+    .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
+}
+
+async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
+  const media = vscode.Uri.joinPath(extensionUri, 'media');
+  const panel = vscode.window.createWebviewPanel('texpresso.svg-check', 'SVG renderer test',
+    { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [media] });
+  const nonce = 'texpresso-svg-test';
+  try {
+    const result = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('SVG webview test timeout')), 30000);
+      panel.webview.onDidReceiveMessage(message => { clearTimeout(timer); if (message.ok) { resolve(); } else { reject(new Error(message.error)); } });
+    });
+    const script = panel.webview.asWebviewUri(vscode.Uri.joinPath(media, 'preview-svg.js'));
+    panel.webview.html = `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}';"><body>
+      <script nonce="${nonce}" src="${script}"></script><script nonce="${nonce}">
+      const api = acquireVsCodeApi(), ns = 'http://www.w3.org/2000/svg';
+      const svg = body => '<svg xmlns="' + ns + '" width="100" height="100">' + body + '</svg>';
+      const assert = (ok, text) => { if (!ok) throw Error(text); };
+      try {
+        const page = TexpressoSvgPage.create(svg('<defs><path id="glyph" d="M0 0L10 10"/></defs><use href="#glyph"/><path d="M1 1"/>'), 'before');
+        assert(page, 'SVG module loaded'); document.body.appendChild(page.root);
+        const retained = page.root.children[1];
+        page.patch({ base:'before', operations:[{ path:[], start:2, remove:1, xml:'<path d="M2 2"/>' }] }, 'after');
+        assert(page.root.children[1] === retained, 'Unchanged node retained');
+        assert(page.root.children[2].getAttribute('d') === 'M2 2', 'Changed node replaced');
+        const clone = page.clone(); assert(clone.querySelector('[id]').id !== page.root.querySelector('[id]').id, 'Magnifier IDs scoped');
+        for (const body of ['<script/>', '<foreignObject/>', '<use href="https://example.com/x"/>', '<path onload="alert(1)"/>', '<g style="fill:red"/>']) {
+          assert(!TexpressoSvgPage.create(svg(body), 'bad'), 'Unsupported SVG rejected');
+        }
+        let rejected = false; try { page.patch({ base:'stale', operations:[] }, 'bad'); } catch { rejected = true; }
+        assert(rejected, 'Stale patch rejected'); api.postMessage({ ok:true });
+      } catch (error) { api.postMessage({ error:String(error.stack || error) }); }
+      </script>`;
+    await result;
+    console.log('PASS: actual VS Code webview loads the SVG renderer, retains nodes, scopes clones and rejects active content');
+  } finally { panel.dispose(); }
+}
+
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('DominikPeters.texpresso-basic');
   assert.ok(extension); await extension.activate();
+  await checkSvgWebview(extension.extensionUri);
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
   const file = path.join(root, 'embedded-preview.tex');
   await fs.writeFile(file, String.raw`\documentclass{article}
@@ -64,13 +106,16 @@ Pages are compiled when requested, and images have a bounded pixel budget.
   try {
     await command('startDocument');
     await until(async () => (await renders()).some(r => r.page === 0), 'first webview render request', 90000);
+    await until(async () => (await decoded()).at(-1)?.page === 0, 'first page decoded');
     assert.ok(vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)));
     await command('nextPage');
     await until(async () => (await renders()).some(r => r.page === 1) && (await logs()).includes('PREVIEW-SECOND'),
       'decoded first frame grants credit for the next page');
-    const before = (await renders()).length;
+    await until(async () => (await decoded()).at(-1)?.page === 1, 'second page decoded');
+    const before = (await renders()).length, lastDecoded = (await decoded()).at(-1)!.id;
     await command('previousPage');
-    await until(async () => (await renders()).length > before && (await renders()).at(-1)!.page === 0, 'return to first page');
+    await until(async () => (await decoded()).at(-1)!.id > lastDecoded && (await decoded()).at(-1)!.page === 0, 'cached first page decoded');
+    assert.equal((await renders()).length, before, 'cached navigation skips native export');
 
     const offset = document.getText().indexOf('PREVIEW-BEFORE');
     await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false, preserveFocus: false });
@@ -93,10 +138,10 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     const previewGroup = vscode.window.tabGroups.all.find(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview))!;
     const scratch = await vscode.workspace.openTextDocument({ content: 'Temporary tab for preview lifecycle test', language: 'plaintext' });
     await vscode.window.showTextDocument(scratch, { viewColumn: previewGroup.viewColumn, preview: false });
-    const hiddenId = (await renders()).at(-1)!.id;
+    const hiddenId = (await decoded()).at(-1)!.id;
     await new Promise(resolve => setTimeout(resolve, 200));
     await vscode.commands.executeCommand('workbench.action.previousEditor');
-    await until(async () => (await renders()).at(-1)!.id > hiddenId, 'hidden preview restores its webview and rendering credit');
+    await until(async () => (await decoded()).at(-1)!.id > hiddenId, 'hidden preview restores its webview and rendering credit');
     console.log('PASS: hidden webview restores without retaining its DOM');
 
     const capture = process.env.TEXPRESSO_CAPTURE_DIR;

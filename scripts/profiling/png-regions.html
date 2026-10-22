@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>PNG region updates</title>
+<style>body{background:#222;color:#ddd;font:13px system-ui}#page{width:800px;background:white}#page>*{display:block;width:800px;height:auto}td,th{text-align:right;padding:4px 8px}</style>
+<h1>PNG region updates</h1><button id="start">Run comparison</button> <span id="status">Ready</span>
+<p>Preloaded PNGs · includes image decode and canvas update · exact pixel checks outside timed intervals</p>
+<table><thead><tr><th>Content/edit</th><th>Mode</th><th>Update/decode ms</th><th>Paint opportunity ms</th></tr></thead><tbody id="rows"></tbody></table><div id="page"></div>
+<script>
+const element=id=>document.getElementById(id), paint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+const median=values=>[...values].sort((a,b)=>a-b)[Math.floor(values.length/2)];
+async function image(blob){const url=URL.createObjectURL(blob), img=new Image();img.src=url;await img.decode();return {url,img};}
+element('start').onclick=()=>{element('start').disabled=true;element('status').textContent='Waiting for UI to settle…';setTimeout(run,8000);};
+async function run(){
+ const results=[];
+ try{
+ for(const job of await fetch('/regions.json').then(r=>r.json())){
+  const blobs={};await Promise.all(['before','after','forward','backward'].map(async key=>{blobs[key]=await fetch('/'+job.stem+'-'+key+'.png').then(r=>r.blob());}));
+  const expected=await image(blobs.after), reference=document.createElement('canvas');reference.width=job.width;reference.height=job.height;
+  const referenceContext=reference.getContext('2d',{willReadFrequently:true});referenceContext.drawImage(expected.img,0,0);const expectedPixels=referenceContext.getImageData(0,0,job.width,job.height).data;URL.revokeObjectURL(expected.url);
+  for(const mode of ['image','canvas-full','canvas-region']){
+   const canvas=document.createElement('canvas');canvas.width=job.width;canvas.height=job.height;
+   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+   let previousUrl;
+   const set=async key=>{
+    const start=performance.now(), decoded=await image(blobs[mode==='canvas-region'?(key==='after'?'forward':'backward'):key]);
+    if(mode==='image'){element('page').replaceChildren(decoded.img);if(previousUrl)URL.revokeObjectURL(previousUrl);previousUrl=decoded.url;}
+    else {ctx.drawImage(decoded.img,mode==='canvas-region'?job.rect.x:0,mode==='canvas-region'?job.rect.y:0);URL.revokeObjectURL(decoded.url);}
+    const updateMs=performance.now()-start;await paint();return {updateMs,ms:performance.now()-start};
+   };
+   const baseline=await image(blobs.before);ctx.drawImage(baseline.img,0,0);URL.revokeObjectURL(baseline.url);element('page').replaceChildren(canvas);
+   const samples=[];
+   for(let i=0;i<9;i++){const forward=await set('after'),backward=await set('before');if(i>=2)samples.push({forward,backward});}
+   await set('after');
+   if(mode!=='image'){
+    const actual=ctx.getImageData(0,0,job.width,job.height).data;
+    if(actual.length!==expectedPixels.length||actual.some((v,i)=>v!==expectedPixels[i]))throw Error('Canvas patch pixel mismatch: '+job.stem+' '+mode);
+   }
+   if(previousUrl)URL.revokeObjectURL(previousUrl);
+   const result={...job,mode,samples,exactPixels:mode!=='image'};results.push(result);
+   const row=document.createElement('tr');for(const text of [job.stem,mode,median(samples.flatMap(s=>[s.forward.updateMs,s.backward.updateMs])).toFixed(2),median(samples.flatMap(s=>[s.forward.ms,s.backward.ms])).toFixed(2)]){const td=document.createElement('td');td.textContent=text;row.appendChild(td);}element('rows').appendChild(row);element('status').textContent=results.length+'/27';
+  }
+ }
+ await fetch('/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ua:navigator.userAgent,dpr:devicePixelRatio,results})});element('status').textContent='Complete: canvas updates match all full-frame pixels';document.title='PNG region updates complete';
+ }catch(error){element('status').textContent=error.stack;}
+}
+</script>

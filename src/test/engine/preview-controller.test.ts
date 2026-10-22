@@ -11,7 +11,8 @@ import type { Command } from '../../protocol';
 import { config, document } from '../helpers';
 
 const binary = process.env.TEXPRESSO_BINARY;
-test('real controller revisits cached pages without native work and prepares the correct page for inverse SyncTeX',
+for (const format of ['png', 'svg'] as const) {
+test('real controller revisits cached pages without native work and prepares the correct page for inverse SyncTeX (' + format + ')',
   { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 90000 }, async () => {
     const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'texpresso-page-cache-')));
     const main = document(path.join(root, 'main.tex'), '\\documentclass{article}\n\\begin{document}\nFirst page target.\\par\n\\newpage\nSecond page target.\\par\n\\end{document}\n');
@@ -46,22 +47,23 @@ test('real controller revisits cached pages without native work and prepares the
       controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri, session, () => {}, () => {});
       const instance = panel.webview.html.match(/data-instance="([^"]+)"/)![1];
       const send = (message: object) => receive({ instance, ...message });
-      send({ type: 'ready', page: 0, width: 1200 });
+      send({ type: 'ready', page: 0, width: 1200, format, svgDom: format === 'svg' });
       await until(() => messages.some(m => m.type === 'image'));
       const first = messages.filter(m => m.type === 'image').at(-1)!;
-      send({ type: 'decoded', id: first.header.requestId, cached: [first.contentId] });
+      if (format === 'svg') { assert.equal(first.inlineSvg, true); }
+      send({ type: 'decoded', id: first.header.requestId, svg: format === 'svg' ? first.contentId : undefined, cached: [first.contentId] });
       session.sync.syncForward(main, 2); await until(() => targets.length > 0);
       const point = targets[0];
-      send({ type: 'viewport', page: 1, width: 1200 });
+      send({ type: 'viewport', page: 1, width: 1200, format });
       await until(() => messages.filter(m => m.type === 'image').length >= 2);
       const second = messages.filter(m => m.type === 'image').at(-1)!;
-      send({ type: 'decoded', id: second.header.requestId, cached: [first.contentId, second.contentId] });
-      const nativeRenders = () => commands.filter(c => c[0] === 'preview-render').length;
+      send({ type: 'decoded', id: second.header.requestId, svg: format === 'svg' ? second.contentId : undefined, cached: [first.contentId, second.contentId] });
+      const nativeRenders = () => commands.filter(c => c[0] === 'preview-render' || c[0] === 'preview-svg').length;
       const before = nativeRenders();
-      send({ type: 'viewport', page: 0, width: 1200 });
+      send({ type: 'viewport', page: 0, width: 1200, format });
       const cached = messages.filter(m => m.type === 'image').at(-1)!;
       assert.equal(cached.header.page, 0); assert.equal(cached.bytes, undefined); assert.equal(nativeRenders(), before);
-      send({ type: 'decoded', id: cached.header.requestId, cached: [first.contentId, second.contentId] });
+      send({ type: 'decoded', id: cached.header.requestId, svg: format === 'svg' ? cached.contentId : undefined, cached: [first.contentId, second.contentId] });
       send({ type: 'inverse', revision: cached.header.revision, sequence: cached.header.sequence, page: 0, x: point[3], y: point[4] });
       await until(() => sources.length > 0);
       assert.equal(nativeRenders(), before + 1, 'only inverse search requests native page preparation');
@@ -69,3 +71,5 @@ test('real controller revisits cached pages without native work and prepares the
       assert.doesNotMatch(debug, /\[fatal\]/);
     } finally { controller?.dispose(); await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
   });
+
+}

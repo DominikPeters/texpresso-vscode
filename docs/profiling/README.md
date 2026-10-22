@@ -109,5 +109,12 @@ and its current engine; keep the results directory for later comparisons.
 The [caching follow-up](2026-10-22-caching.md) measures immediate page revisits,
 identical output after undo, SVG ID stability, patch sizes and an experimental
 retained SVG DOM. It includes reproduction commands and a measurement snapshot.
-The production preview now caches exported pages and decoded images; SVG DOM
-patching remains an isolated experiment.
+That pass introduced exported-page and decoded-image caches and explored SVG
+DOM patching in a separate experiment.
+
+## Retained SVG and PNG rectangles
+
+The [retained SVG follow-up](2026-10-22-svg-dom.md) implements the SVG DOM renderer,
+content-addressed glyph identities and bounded patches. It measures actual
+controller/webview work and a separate exact-pixel PNG dirty-rectangle prototype.
+PNG remains the default.

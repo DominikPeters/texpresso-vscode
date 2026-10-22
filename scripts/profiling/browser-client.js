@@ -41,6 +41,8 @@ window.acquireVsCodeApi = () => ({
       body: JSON.stringify(m)
     });
     if (m.type === 'decoded') {
+      const entry = profileFrames.find(f => f.request === m.id);
+      if (entry) entry.inlineSvg = !!m.svg;
       const frame = profileFrames.find(f => f.request === m.id);
       if (frame) {
         frame.dispatchToDecoded = performance.now() - frame.dispatched;
@@ -81,8 +83,10 @@ events.onmessage = async event => {
     }
     profileFrames.push({
       request: data.header.requestId, mime: data.header.mime,
-      bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame,
+      bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame && !data.svgPatch,
+      svgPatch: !!data.svgPatch, patchBytes: data.svgPatch ? new TextEncoder().encode(JSON.stringify(data.svgPatch)).length : 0,
       width: data.header.width, height: data.header.height,
+      processingMs: data.profileProcessingMs,
       transferMs, dispatched: performance.now()
     });
   }
@@ -122,6 +126,12 @@ events.onmessage = async event => {
   await operation('page-next-cached', 1, () => navigate(1));
   await operation('page-last-new', profileJob.pages - 1, () => navigate(profileJob.pages - 1));
   await operation('page-first-compiled', 0, () => navigate(0));
+  for (const letter of 'abcde') await operation('edit-letter', 0, () => fetch('/edit', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: 0, mode: 'letter', letter })
+  }));
+  for (let i = 0; i < 2; i++) await operation('edit-backspace', 0, () => fetch('/edit', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: 0, mode: 'backspace' })
+  }));
   for (let i = 0; i < 3; i++) await operation('edit-text', 0, () => fetch('/edit', {
     method: 'POST',
     headers: {
@@ -141,8 +151,12 @@ events.onmessage = async event => {
       coordinate: true
     })
   }));
+  await operation('edit-font', 0, () => fetch('/edit', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: 0, mode: 'font' })
+  }));
   const image = document.getElementById('image'), raster = [];
-  for (let i = 0; i < 7; i++) {
+  const inline = document.getElementById('vector');
+  for (let i = 0; i < (inline.hidden ? 7 : 0); i++) {
     const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
     const rect = image.getBoundingClientRect();
     canvas.width = Math.ceil(rect.width * devicePixelRatio);
@@ -185,6 +199,7 @@ events.onmessage = async event => {
         page: select('page-first-compiled'),
         edit: select('edit-text'),
         coordinate: select('edit-coordinate'),
+        typing: select('edit-letter'),
         decode: profileFrames.filter(frame => frame.decodeMs !== undefined).map(frame => frame.decodeMs),
         cache: select('page-previous-cached').concat(select('page-next-cached'))
       }

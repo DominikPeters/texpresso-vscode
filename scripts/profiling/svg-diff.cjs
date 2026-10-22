@@ -20,15 +20,22 @@ const change = (run, offset, old, replacement) => {
 };
 (async () => {
   const results = [];
-  for (const fixture of fixtures(output, [10], ['sparse', 'dense', 'packed', 'tikz'])) {
+  const corpus = fixtures(output, [10], ['sparse', 'dense', 'packed', 'tikz']);
+  if (process.argv.includes('--math')) {
+    const root = path.join(output, 'fixtures', 'math'), file = path.join(root, 'main.tex');
+    const text = fs.readFileSync(path.join(__dirname, '../preview-demo/sample.tex'), 'utf8');
+    fs.mkdirSync(root, { recursive: true }); fs.writeFileSync(file, text);
+    corpus.push({ id: 'math', kind: 'math', root, file, text, pages: 2 });
+  }
+  for (const fixture of corpus) {
     const run = new Run(fixture, binary, 'svg', 1600, output, 0);
     try {
       run.started = performance.now(); await run.session.start();
       const baseline = await run.operation('initial', 0);
-      const offset = run.text.indexOf('aaaa.');
+      const offset = run.text.indexOf(fixture.kind === 'math' ? 'x^2' : 'aaaa.');
       const inserted = await run.operation('insert-letter', 0, () => change(run, offset, '', 'z'));
       const undo = await run.operation('undo-letter', 0, () => change(run, offset, 'z', ''));
-      const fontOffset = run.text.indexOf('\\noindent');
+      const fontOffset = run.text.indexOf(fixture.kind === 'math' ? '\\maketitle' : '\\noindent');
       const font = await run.operation('insert-earlier-font', 0, () => change(run, fontOffset, '', '\\textbf{Z} '));
       for (const [name, frame] of Object.entries({ baseline, inserted, undo, font })) {
         if (frame.header.mime !== 'image/svg+xml') throw new Error('Unexpected fallback');

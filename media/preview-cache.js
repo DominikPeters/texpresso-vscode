@@ -21,6 +21,10 @@
       while (this.bytes > this.maxBytes || this.entries.size > this.maxEntries) { this.forget(this.entries.keys().next().value); }
       return true;
     }
+    take(id) {
+      const entry = this.entries.get(id);
+      if (entry) { this.entries.delete(id); this.bytes -= entry.cost; return entry.value; }
+    }
     forget(id) {
       const entry = this.entries.get(id);
       if (entry) { this.entries.delete(id); this.bytes -= entry.cost; this.dispose(entry.value); }

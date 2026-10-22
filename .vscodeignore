@@ -6,6 +6,7 @@
 !dist/extension.js
 !media/preview.js
 !media/preview-cache.js
+!media/preview-svg.js
 !media/preview.css
 !media/codicons-LICENSE
 !media/preview-lens.js

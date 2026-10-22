@@ -9,7 +9,7 @@ import type { Command, Message, OutputTarget } from './protocol';
 import { EngineFailure, processFailure } from './failures';
 import { Dependencies, WatchFile } from './dependencies';
 import { probePreview } from './preview-capabilities';
-import { isPreviewMessage, type PreviewImage, type PreviewMessage } from './preview-protocol';
+import { isPreviewMessage, type PreviewImage, type PreviewImageHeader, type PreviewMessage } from './preview-protocol';
 import * as path from 'path';
 
 export type SessionState = 'starting' | 'running' | 'stopped' | 'failed';
@@ -31,6 +31,11 @@ export interface SessionServices {
 }
 
 export class TexpressoSession {
+  previewDecoded(header: PreviewImageHeader, svgDom: boolean): void {
+    this.events.debug('[preview-ui] ' + JSON.stringify(['decoded', header.requestId, header.page,
+      header.revision, header.sequence, svgDom]) + '\n');
+  }
+
   private engine: EngineProcess;
   private output: SessionOutput;
   private ended = false;

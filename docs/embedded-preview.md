@@ -501,4 +501,7 @@ preview panel and bounded; cache misses resend bytes.
 
 The [caching report](profiling/2026-10-22-caching.md) documents measurements,
 validity rules, memory accounting and a separate experiment with retained SVG DOM
-patches. Production SVG still uses the Blob-backed image renderer.
+patches. The [SVG renderer follow-up](profiling/2026-10-22-svg-dom.md) now implements a
+validated retained SVG DOM, stable outline-based glyph IDs and acknowledged
+patches. Unsupported static features retain the isolated image path. It also
+measures PNG dirty rectangles as a future native optimization.
