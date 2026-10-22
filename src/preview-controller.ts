@@ -4,6 +4,7 @@ import * as path from 'path';
 import type { TexpressoSession } from './session';
 import { canonicalSvg, diffSvg, type SvgDocument } from './svg-patch';
 import type { PreviewImage, PreviewImageHeader, PreviewMessage } from './preview-protocol';
+import { AutoRenderCosts } from './auto-render-costs';
 
 // Official VS Code product icons, bundled as SVG to avoid shipping an icon font.
 const icons = require('../media/codicons.json') as Record<string, string>;
@@ -27,14 +28,15 @@ export class PreviewController {
   private page = 0;
   private width = 1200;
   private format: 'auto' | 'png' | 'svg' = 'auto';
-  private autoPages = new Map<number, { svg: boolean; cost: number }>();
+  private autoPages = new Map<number, { svg: boolean; cost: number; bounds?: number[] }>();
+  private renderCosts = new AutoRenderCosts();
   private upgradeTimer?: ReturnType<typeof setTimeout>;
   private upgradeReady = false;
   private gesture = false;
   private svgDecodeFailed = false;
   private destination?: string;
   private nextId = 0;
-  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number; raster?: boolean; contentId?: string };
+  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number; costContext?: string; raster?: boolean; contentId?: string };
   // Encoded pages are valid only within an engine revision and source barrier.
   private pages = new Map<string, PreviewImage>();
   private pageBytes = 0;
@@ -103,7 +105,7 @@ export class PreviewController {
       <div class="actions"><button id="magnify" title="Magnifier: hold the mouse button on the page (M)" aria-label="Magnifier" aria-pressed="false">${icon('search')}</button>
       <button id="pause" title="Pause compilation" aria-label="Pause compilation"><span id="pauseIcon">${icon('debug-pause')}</span><span id="resumeIcon" hidden>${icon('play')}</span></button>
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
-      <div id="status" role="status">Waiting for the first page…</div>
+      <div id="status" role="alert" hidden></div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
       <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><canvas id="lensCanvas" hidden></canvas><div id="lensVector" hidden></div><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
@@ -143,6 +145,13 @@ export class PreviewController {
           break;
         case 'preview-error':
           if (this.inFlight?.id === event[1]) {
+            // Older engines can report a failure for work superseded by a source
+            // barrier. It must not swallow the newer dirty request or display a
+            // transient error for source which is no longer being compiled.
+            if (this.inFlight.sequence !== this.session.previewSequence || this.inFlight.revision !== this.state?.[1] ||
+                this.inFlight.sequence !== this.state?.[2] || this.inFlight.page !== this.page) {
+              this.release(); this.dirty = true; this.flush(); break;
+            }
             const region = this.inFlight.region, upgrade = this.inFlight.upgrade;
             this.release();
             if (upgrade) { this.rememberAuto(this.page, false, this.shown?.vectorCost || 0); void this.post({ type: 'refinement-end' }); this.flush(); break; }
@@ -209,12 +218,20 @@ export class PreviewController {
       case 'decoded':
         if (!this.inFlight || m.id !== this.inFlight.id) { break; }
         if (!this.inFlight.region) {
-          if (this.shown?.requestId === m.id) {
+          if (this.shown?.requestId === m.id && this.shown.page === this.page && this.inFlight.page === this.page &&
+              this.shown.revision === this.state?.[1] && this.shown.sequence === this.session.previewSequence) {
             this.session.previewDecoded?.(this.shown, typeof m.svg === 'string');
-            if (this.format === 'auto' && this.shown.mime === 'image/svg+xml' && (!this.inFlight.cached || this.inFlight.upgrade)) {
+            if (!this.inFlight.cached && this.inFlight.costContext && this.shown.exportMs !== undefined &&
+                typeof m.renderMs === 'number' && Number.isFinite(m.renderMs) && m.renderMs >= 0 &&
+                (this.shown.mime === 'image/png' || typeof m.svg === 'string')) {
+              this.renderCosts.record(this.inFlight.costContext, this.shown.mime === 'image/png' ? 'png' : 'svg',
+                this.shown.mime === 'image/png' ? !!this.shown.patch : !!this.inFlight.patched,
+                { native: this.shown.exportMs, host: this.inFlight.processingMs || 0, webview: m.renderMs });
+            }
+            if (this.shown.mime === 'image/svg+xml' && (!this.inFlight.cached || this.inFlight.upgrade)) {
               const cost = this.shown.vectorCost || 0;
               const renderMs = typeof m.renderMs === 'number' && Number.isFinite(m.renderMs) && m.renderMs >= 0 ? m.renderMs : 0;
-              this.rememberAuto(this.page, typeof m.svg === 'string' && (this.inFlight.processingMs || 0) + renderMs <= (this.inFlight.patched ? 24 : 80), cost);
+              this.rememberAuto(this.page, typeof m.svg === 'string' && (this.shown.exportMs || 0) + (this.inFlight.processingMs || 0) + renderMs <= (this.inFlight.patched ? 24 : 80), cost);
             }
           }
           if (this.svgPending && this.svgPending.id === m.id && this.svgPending.contentId === m.svg) { this.svgBase = this.svgPending; }
@@ -311,13 +328,19 @@ export class PreviewController {
     if (this.dirty) {
       this.dirty = false; this.region = undefined; this.detail = undefined;
       const learned = this.autoPages.get(this.page);
-      const limit = learned ? learned.svg ? Math.min(200000, Math.max(16000, Math.ceil(learned.cost * 1.3))) : 0 : 16000;
+      // Full-mount costs cannot predict a warm edit. Only compare naturally
+      // observed matching phases, viewport and page-complexity class.
+      const previous = this.svgBase?.page === this.page || this.rasterBase?.page === this.page;
+      const context = this.costContext(this.page, this.width, this.shown?.bounds || learned?.bounds, learned?.cost);
+      const preferPng = context && this.renderCosts.preferPng(context, !!previous);
+      const useSvg = learned?.svg && !preferPng;
+      const limit = preferPng ? 0 : learned ? learned.svg ? Math.min(200000, Math.max(16000, Math.ceil(learned.cost * 1.3))) : 0 : 16000;
       const verb = this.svgDecodeFailed ? 'preview-render' : this.format === 'svg' ? 'preview-svg' :
         this.format === 'auto' && this.session.previewAuto && this.session.previewSvg ? 'preview-auto' : 'preview-render';
       const key = this.pageKey(verb === 'preview-auto' ? `auto:${limit}` : verb === 'preview-svg' ? 'svg' : 'png');
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, key, width: this.width };
       const cached = !this.forceNative && (verb === 'preview-auto' ?
-        (learned?.svg ? this.pages.get(this.pageKey('svg')) : undefined) || this.pages.get(key) || this.pages.get(this.pageKey('png')) : this.pages.get(key));
+        (useSvg ? this.pages.get(this.pageKey('svg')) : undefined) || this.pages.get(key) || this.pages.get(this.pageKey('png')) : this.pages.get(key));
       const rasterKey = this.pageKey('png');
       const raster = !this.forceNative && (this.rasterPages.get(key) || this.rasterPages.get(rasterKey));
       const reference = raster && this.decodedImages.has(raster.contentId) && verb !== 'preview-svg' ? raster : undefined;
@@ -415,6 +438,11 @@ export class PreviewController {
     const svgPatch = svgDocument && contentId && !this.decodedImages.has(contentId) && this.svgBase?.page === h.page
       ? diffSvg(this.svgBase.document, svgDocument, this.svgBase.contentId) : undefined;
     request.patched = !!svgPatch;
+    // A native frame can still be a decoded-content hit or a no-op patch. Its
+    // near-zero browser work is neither a full mount nor a meaningful edit.
+    request.costContext = (contentId && this.decodedImages.has(contentId)) || svgPatch?.operations.length === 0 ||
+      (h.patch && !h.byteLength) ? undefined : this.costContext(h.page, request.width || this.width, h.bounds,
+      h.vectorCost ?? this.autoPages.get(h.page)?.cost);
     this.svgPending = svgDocument && contentId ? { id: h.requestId, page: h.page, contentId, document: svgDocument } : undefined;
     const bytes = (contentId && this.decodedImages.has(contentId)) || svgPatch || request.contentId ? undefined : new Uint8Array(payload).buffer;
     if (!request.cached && this.inverse && this.inverse.revision === h.revision &&
@@ -464,8 +492,14 @@ export class PreviewController {
   private pageKey(codec: string, page = this.page, width = this.width): string {
     return `${this.state![1]}:${this.state![2]}:${page}:${codec === 'svg' ? 0 : width}:${codec}`;
   }
+  private costContext(page: number, width: number, bounds?: number[], cost?: number): string | undefined {
+    // Manual PNG can contribute after Auto/SVG established this page's complexity.
+    // A different density class or physical raster width starts fresh evidence.
+    return bounds && cost !== undefined ? `${page}:${width}:${bounds.join(',')}:${Math.round(Math.log(Math.max(1, cost)) / Math.log(1.25))}` : undefined;
+  }
   private rememberAuto(page: number, svg: boolean, cost: number): void {
-    this.autoPages.delete(page); this.autoPages.set(page, { svg, cost });
+    const bounds = this.shown?.page === page ? this.shown.bounds : this.autoPages.get(page)?.bounds;
+    this.autoPages.delete(page); this.autoPages.set(page, { svg, cost, bounds });
     if (this.autoPages.size > 32) { this.autoPages.delete(this.autoPages.keys().next().value as number); }
   }
   private interactive(): void {
@@ -476,6 +510,10 @@ export class PreviewController {
   }
   private canUpgrade(): boolean {
     const h = this.shown, learned = this.autoPages.get(this.page);
+    const context = this.costContext(this.page, this.width, h?.bounds || learned?.bounds, learned?.cost);
+    // Keep the comparison raster when PNG is measurably better for edits.
+    // An idle SVG would discard that native base and force a full PNG next time.
+    if (context && (this.renderCosts.preferPng(context, true) || this.renderCosts.preferPng(context, false))) { return false; }
     return !this.gesture && this.format === 'auto' && this.session.previewSvg && this.svgDom && !this.svgDecodeFailed &&
       !!h && h.mime === 'image/png' && h.svgEligible === true && !h.fallback &&
       h.page === this.page && h.revision === this.state?.[1] && h.sequence === this.session.previewSequence &&

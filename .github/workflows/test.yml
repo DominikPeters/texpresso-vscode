@@ -114,7 +114,7 @@ jobs:
       - name: Build pinned engine
         run: |
           make -C .engine -j2 all test-synctex
-          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations
+          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes
         timeout-minutes: 4
       - name: Test native synchronization, controls, and dependencies
         run: npm run test:engine

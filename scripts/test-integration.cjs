@@ -79,6 +79,8 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_BINARY: binary,
         TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR,
+        TEXPRESSO_PROFILE_RAPID_EARLY: process.env.TEXPRESSO_PROFILE_RAPID_EARLY,
+        TEXPRESSO_PROFILE_SCENARIO: process.env.TEXPRESSO_PROFILE_SCENARIO,
         TEXPRESSO_PROFILE_OUTPUT: process.env.TEXPRESSO_PROFILE_OUTPUT,
         TEXPRESSO_PROFILE_RESUME: process.env.TEXPRESSO_PROFILE_RESUME,
         TEXPRESSO_PROFILE_PAGES: process.env.TEXPRESSO_PROFILE_PAGES,
@@ -86,7 +88,11 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_PROFILE_REPEATS: process.env.TEXPRESSO_PROFILE_REPEATS,
         TEXPRESSO_PROFILE_CODECS: process.env.TEXPRESSO_PROFILE_CODECS
       },
-      launchArgs: [workspaceFile, ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
+      // Profilers generate browser-timed input; background/occlusion throttling
+      // must not silently turn 100 ms typing into 1000 ms typing.
+      // https://www.electronjs.org/docs/latest/api/command-line-switches
+      // https://github.com/GoogleChrome/chrome-launcher/blob/main/docs/chrome-flags-for-tools.md
+      launchArgs: [workspaceFile, ...(profileAuto ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,
         ...(process.env.TEXPRESSO_DEBUG_PORT ? ['--remote-debugging-port=' + process.env.TEXPRESSO_DEBUG_PORT] : [])]
     });

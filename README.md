@@ -28,7 +28,7 @@ The **Auto / PNG / SVG** selector chooses the rendering strategy. **Auto** is
 selected for new previews: small pages start as SVG; larger pages appear as PNG
 and can upgrade to SVG after a short pause. Auto learns which pages handle SVG
 updates quickly and retains their DOM for small edits. The selector shows the
-current format as **Auto · PNG** or **Auto · SVG**. Explicit PNG and SVG choices
+choice with a stable **Auto** label. Explicit PNG and SVG choices
 remain available. SVG stays sharp while zooming or using the magnifier; PDF
 features that cannot be preserved in SVG use PNG. Older engines use PNG in Auto.
 
@@ -70,7 +70,11 @@ For a local demo, build the pinned engine into
 then run `npm run demo:preview`. This packages the current extension and opens
 an editable sample beside its preview in an isolated VS Code profile. It
 preserves sample edits and uses the installed TeX Live without downloading an
-engine or TeX packages. `VSCODE_CLI` can select a different Code executable.
+engine or TeX packages. The three-page sample includes clickable cleveref
+references, equations, a TikZ diagram, a table and a BibTeX bibliography. Local
+`latexmk -xelatex` prepares the references before launch; automatic reruns are
+enabled. After editing `showcase.bib`, use **TeXpresso: External Compile and
+Refresh**. Set `TEXPRESSO_DEMO_SAMPLE=original` for the earlier minimal example. `VSCODE_CLI` can select a different Code executable.
 
 ### Troubleshooting
 

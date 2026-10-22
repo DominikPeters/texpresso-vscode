@@ -65,3 +65,30 @@ test('equal glyph outlines are deduplicated with stable references', () => {
 test('SVG indexing enforces the same element budget as the webview', () => {
   assert.equal(parseSvg('<svg>' + '<path d="M0 0"/>'.repeat(20000) + '</svg>', 1000), undefined);
 });
+
+test('canonical span remapping matches an independent parse across nested references and removed duplicate outlines', () => {
+  for (let variation = 0; variation < 40; variation++) {
+    const font = (n: number, shape = n) => `<path id="font_${variation}_${n}" d="M${shape} 0L${shape + 1} 2"/>`;
+    const use = (n: number) => `<use xlink:href="#font_${variation}_${n}" transform="translate(${n} 2)"/>`;
+    const first = Array.from({ length: 8 }, (_, i) => font((i + variation) % 8)).join('');
+    const duplicate = font(8, 2);
+    const source = `<svg width="200"><defs>${first}<clipPath id="clip"><g>${path(50)}</g></clipPath>${duplicate}</defs>` +
+      `<g id="font_${variation}_2"><g>${use(2)}${use(8)}</g>${use(7)}</g>` +
+      `<defs>${font(9)}</defs><g>${use(9)}<rect x="1"/></g></svg>`;
+    const result = canonicalSvg(source, 1000)!;
+    assert.ok(result);
+    assert.deepEqual(result.root, parseSvg(result.text, 1000)!.root);
+    assert.ok(!result.text.includes('font_'));
+    const next = canonicalSvg(source.replace('translate(2 2)', 'translate(8 3)'), 1000)!;
+    const patch = diffSvg(result, next, 'base', { maxMs: 1000, maxBytes: 65536 })!;
+    assert.ok(patch); assert.equal(apply(result.text, patch), next.text);
+  }
+});
+
+test('cached glyph identities never bypass structural validation or conflicting definition checks', () => {
+  const good = '<svg><defs><path id="font_1_1" d="M1 1"/></defs><use href="#font_1_1"/></svg>';
+  assert.ok(canonicalSvg(good, 1000));
+  assert.equal(canonicalSvg(good.replace('</svg>', '<script/></svg>'), 1000), undefined);
+  assert.equal(canonicalSvg(good.replace('</defs>', '<path id="font_1_1" d="M9 9"/></defs>'), 1000), undefined);
+  assert.equal(canonicalSvg(good, -1), undefined);
+});

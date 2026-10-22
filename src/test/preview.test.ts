@@ -142,3 +142,11 @@ test('PNG patch framing accepts metadata-only frames immediately and validates c
     assert.equal(isImageHeader({ ...empty, ...change }), false);
   }
 });
+
+
+test('native export timing is optional and rejects nonfinite, negative and nonnumeric costs', () => {
+  assert.equal(isImageHeader(header), true);
+  assert.equal(isImageHeader({ ...header, exportMs: 0 }), true);
+  assert.equal(isImageHeader({ ...header, exportMs: 3.5 }), true);
+  for (const exportMs of [-1, Infinity, NaN, '3']) { assert.equal(isImageHeader({ ...header, exportMs }), false); }
+});

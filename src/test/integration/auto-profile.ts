@@ -10,6 +10,8 @@ const { Run, fixtures } = require('../../../scripts/profile-preview.cjs');
 export async function run(): Promise<void> {
   const repo = path.resolve(__dirname, '../../..');
   const output = path.resolve(process.env.TEXPRESSO_PROFILE_OUTPUT || 'artifacts/profile-auto-vscode');
+  const rapid = process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e';
+  const earlyInput = process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1';
   const resume = process.env.TEXPRESSO_PROFILE_RESUME === '1';
   if (fs.existsSync(output) && fs.readdirSync(output).length && !resume) { throw Error('Choose a new profiler output directory'); }
   const resultFile = path.join(output, 'browser.jsonl');
@@ -22,7 +24,9 @@ export async function run(): Promise<void> {
   const repeats = Number(process.env.TEXPRESSO_PROFILE_REPEATS || 3);
   const bridgeSource = fs.readFileSync(path.join(repo, 'scripts/profiling/auto-client.js'), 'utf8');
   const mainSource = fs.readFileSync(path.join(repo, 'media/preview.js'), 'utf8').replaceAll('acquireVsCodeApi', 'profileAcquireVsCodeApi');
-  const metadata = { created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
+  const metadata = { earlyInput, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
+    engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd:repo,encoding:'utf8'}).trim(),
+    binarySha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(binary)).digest('hex'),
     extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(), transport: 'actual VS Code webview postMessage' };
   if (!resume) { fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify(metadata, null, 2)); }
   for (let repeat = 0; repeat < repeats; repeat++) {
@@ -38,7 +42,10 @@ export async function run(): Promise<void> {
         const result = new Promise<any>((ok, fail) => { resolve = ok; reject = fail; });
         const uiTrace: string[] = [];
         const timer = setTimeout(() => reject(Error('VS Code Auto benchmark timeout: ' + JSON.stringify(uiTrace) + '\n' + active.trace.slice(-4000))), 120000);
-        active.onPreview = (event: any) => controller?.handle(event);
+        const requestTrace: any[] = [];
+        active.onPreview = (event: any) => { requestTrace.push({at:performance.now(), received:event.header || event}); controller?.handle(event); };
+        const send = active.session.send.bind(active.session);
+        active.session.send = (command: any) => { if(command[0].startsWith('preview-')) { requestTrace.push({at:performance.now(), sent:command}); } send(command); };
         active.onState = () => controller?.update();
         const createPanel = (...args: Parameters<typeof vscode.window.createWebviewPanel>) => {
           const panel = vscode.window.createWebviewPanel(...args); realPanel = panel;
@@ -50,7 +57,10 @@ export async function run(): Promise<void> {
               onDidReceiveMessage: (callback: (message: any) => void) => panel.webview.onDidReceiveMessage(async m => {
                 uiTrace.push(m.type + ':' + (m.id ?? '')); if (uiTrace.length > 30) { uiTrace.shift(); }
                 if (m.type === 'profile-result') { resolve(m.result); return; }
-                if (m.type === 'profile-error') { reject(Error(m.error)); return; }
+                if (m.type === 'profile-error') {
+                  if (m.partial) { fs.writeFileSync(path.join(output, `${fixture.id}-${codec}-${repeat}-partial.json`), JSON.stringify(m.partial,null,2)); }
+                  reject(Error(m.error)); return;
+                }
                 if (m.type === 'profile-edit') {
                   if (m.mode === 'letter' || m.mode === 'backspace') {
                     const marker = active.text.match(/(Profiling marker 0000 )([a-z]{4,16})(\.)/);
@@ -59,16 +69,18 @@ export async function run(): Promise<void> {
                     active.replace(m.mode === 'letter' ? offset : offset - 1, m.mode === 'letter' ? 0 : 1, m.mode === 'letter' ? m.letter : '');
                   } else if (m.mode === 'font') { active.replace(active.text.indexOf('\\noindent'), 0, '\\textbf{New font} '); }
                   else { active.edit(0, !!m.coordinate); }
+                  if (m.inputId !== undefined) { await panel.webview.postMessage({type:'profile-edit-ack', inputId:m.inputId, sequence:active.session.previewSequence}); }
                   return;
                 }
                 active.startPromise ||= active.session.start();
                 try { await active.startPromise; callback(m); } catch (error) { reject(error as Error); }
               }),
               postMessage: (message: any) => panel.webview.postMessage({ ...message,
+                profileUpgrade: (controller as any)?.inFlight?.upgrade === true,
                 profileProcessingMs: message.type === 'image' ? performance.now() - active.controllerImageStart : undefined }),
               set html(value: string) {
                 const instance = value.match(/data-instance="([^"]+)"/)![1];
-                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true }));
+                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, pages: fixture.pages, vscode: true, rapid, earlyInput }));
                 value = value.replace('</head>', '<style>html,body{width:800px;height:700px;overflow:hidden}</style></head>');
                 value = value.replace(/<script nonce=/, `<script nonce="${instance}">${bootstrap}</script><script nonce=`);
                 value = value.replace(new RegExp(`<script nonce="${instance}" src="[^"]*/preview\\.js"></script>`), `<script nonce="${instance}">${mainSource}</script>`);
@@ -88,6 +100,8 @@ export async function run(): Promise<void> {
           fs.appendFileSync(path.join(output, 'browser.jsonl'), JSON.stringify(saved) + '\n');
           console.log(`PROFILE ${fixture.id} ${codec} #${repeat + 1}: initial ${row.rows[0].ms.toFixed(1)} ms, settled ${row.rows[0].settledMs.toFixed(1)} ms`);
         } finally {
+          fs.writeFileSync(path.join(output, `${fixture.id}-${codec}-${repeat}-trace.log`), active.trace);
+          fs.writeFileSync(path.join(output, `${fixture.id}-${codec}-${repeat}-requests.json`), JSON.stringify(requestTrace,null,2));
           clearTimeout(timer); controller?.dispose(); realPanel?.dispose(); await active.dispose();
         }
       }

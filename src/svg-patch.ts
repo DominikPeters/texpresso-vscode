@@ -89,36 +89,112 @@ export function diffSvg(old: SvgDocument, next: SvgDocument, base: string,
   return patch;
 }
 
+// Outline identities recur across almost every text edit. Retain only this small,
+// deterministic computation, never documents or validation decisions.
+const glyphIds = new Map<string, string>();
+const glyphCacheLimit = 256 * 1024;
+let glyphCacheBytes = 0;
+function glyphId(shape: string): string {
+  const cached = glyphIds.get(shape);
+  if (cached) { glyphIds.delete(shape); glyphIds.set(shape, cached); return cached; }
+  const id = 'g_' + createHash('sha256').update(shape).digest().subarray(0, 16).toString('base64url');
+  const cost = (shape.length + id.length) * 2 + 64;
+  if (cost <= glyphCacheLimit) {
+    // RegExp captures may share the original multi-megabyte SVG backing store.
+    // Own the cached outline's UTF-16 storage so this bound covers retained text.
+    const owned = Buffer.from(shape, 'utf16le').toString('utf16le');
+    glyphIds.set(owned, id); glyphCacheBytes += cost;
+    while (glyphCacheBytes > glyphCacheLimit) {
+      const oldest = glyphIds.keys().next().value as string;
+      glyphCacheBytes -= (oldest.length + glyphIds.get(oldest)!.length) * 2 + 64;
+      glyphIds.delete(oldest);
+    }
+  }
+  return id;
+}
+
+interface Rewrite { start: number; end: number; text: string; node?: Node }
+// Rewrites only replace standalone paths or attribute values with generated ASCII
+// identifiers. Reuse the validated tree and remap its spans in document order,
+// instead of tokenizing and allocating a second complete node tree.
+function rewriteSvg(doc: SvgDocument, edits: Rewrite[], deadline: number): SvgDocument | undefined {
+  const parts: string[] = [];
+  let offset = 0;
+  for (const edit of edits) { parts.push(doc.text.slice(offset, edit.start), edit.text); offset = edit.end; }
+  parts.push(doc.text.slice(offset));
+  const text = parts.join('');
+  if (text.length > 2 * 1024 * 1024) { return; }
+  let cursor = 0, delta = 0, count = 0;
+  const position = (value: number) => {
+    while (cursor < edits.length && edits[cursor].end <= value) {
+      const edit = edits[cursor++]; delta += edit.text.length - (edit.end - edit.start);
+    }
+    return value + delta;
+  };
+  const visit = (node: Node): Node | undefined => {
+    if (++count % 256 === 0 && performance.now() > deadline) { throw new Error('SVG rewrite budget'); }
+    const start = position(node.start), end = node.end;
+    const edit = edits[cursor];
+    if (edit?.node === node) {
+      const mappedEnd = position(end);
+      if (!edit.text) { return; }
+      node.start = start; node.end = mappedEnd; node.openEnd = mappedEnd;
+      return node;
+    }
+    node.start = start; node.openEnd = position(node.openEnd);
+    let length = 0, descendants = 1;
+    for (const child of node.children) {
+      const mapped = visit(child);
+      if (mapped) { node.children[length++] = mapped; descendants += mapped.count; }
+    }
+    node.children.length = length;
+    node.end = position(end); node.count = descendants;
+    return node;
+  };
+  try {
+    const root = visit(doc.root)!;
+    return performance.now() <= deadline ? { text, root } : undefined;
+  } catch { return; }
+}
+
 // Use the exact outline as the identity of a standalone font path. Unlike
 // MuPDF's encounter-order font counter, this survives adding an earlier font.
 // Matching geometry is reusable under each original <use> transform/paint.
 export function canonicalSvg(text: string, maxMs = 20): SvgDocument | undefined {
   const start = performance.now(), doc = parseSvg(text, maxMs);
   if (!doc) { return; }
-  const fonts: { node: Node; id: string; shape: string }[] = [];
+  const fonts: { node: Node }[] = [];
   const names = new Map<string, string>(), shapes = new Map<string, string>();
   for (const defs of doc.root.children.filter(node => node.name === 'defs')) {
     for (const node of defs.children) {
       const match = text.slice(node.start, node.end).match(/^<path\s+id="(font_\d+_\d+)"\s+d="([^"&]*)"\s*\/>$/);
       if (!match) { continue; }
       const [, oldId, shape] = match;
-      const id = 'g_' + createHash('sha256').update(shape).digest().subarray(0, 16).toString('base64url');
+      const id = glyphId(shape);
       // Verify equality even on a digest collision; never alias unequal paths.
       if ((shapes.has(id) && shapes.get(id) !== shape) || (names.has(oldId) && names.get(oldId) !== id)) { return; }
-      names.set(oldId, id); shapes.set(id, shape); fonts.push({ node, id, shape });
+      names.set(oldId, id); shapes.set(id, shape); fonts.push({ node });
+      if (fonts.length % 256 === 0 && performance.now() - start > maxMs) { return; }
     }
   }
   if (!fonts.length) { return doc; }
   const ordered = [...shapes].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
-  let result = '', offset = 0;
+  const edits: Rewrite[] = [];
   for (let i = 0; i < fonts.length; i++) {
+    if (i % 256 === 0 && performance.now() - start > maxMs) { return; }
     const node = fonts[i].node, entry = ordered[i];
-    result += text.slice(offset, node.start) + (entry ? `<path id="${entry[0]}" d="${entry[1]}"/>` : '');
-    offset = node.end;
+    edits.push({ start: node.start, end: node.end, node,
+      text: entry ? `<path id="${entry[0]}" d="${entry[1]}"/>` : '' });
   }
-  result += text.slice(offset);
-  result = result.replace(/(\s(?:id|(?:xlink:)?href))="(#?)(font_\d+_\d+)"/g,
-    (whole, attribute, prefix, name) => names.has(name) ? `${attribute}="${prefix}${names.get(name)}"` : whole);
-  const remaining = maxMs - (performance.now() - start);
-  return remaining > 0 ? parseSvg(result, remaining) : undefined;
+  let font = 0, references = 0;
+  for (const match of text.matchAll(/(\s(?:id|(?:xlink:)?href))="(#?)(font_\d+_\d+)"/g)) {
+    if (++references % 256 === 0 && performance.now() - start > maxMs) { return; }
+    const at = match.index!;
+    while (font < fonts.length && fonts[font].node.end <= at) { font++; }
+    if (font < fonts.length && fonts[font].node.start <= at) { continue; }
+    const id = names.get(match[3]);
+    if (id) { edits.push({ start: at, end: at + match[0].length, text: `${match[1]}="${match[2]}${id}"` }); }
+  }
+  edits.sort((a, b) => a.start - b.start);
+  return rewriteSvg(doc, edits, start + maxMs);
 }

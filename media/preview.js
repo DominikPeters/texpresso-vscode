@@ -19,6 +19,7 @@
   let imageId;
   let header, objectUrl, stale = true, generation = 0, count = 0, complete = false, paused = false;
   let highlightTimer;
+  let problem = '';
   let phase = 'running', timer, lastWidth = 0, lastRequestedPage = -1, restoreScroll = true;
   const post = message => vscode.postMessage({ instance, ...message });
   const save = () => vscode.setState({ page, zoom, format, left: viewport.scrollLeft, top: viewport.scrollTop });
@@ -35,14 +36,13 @@
     element('pause').title = paused ? 'Resume compilation' : 'Pause compilation';
     element('pause').setAttribute('aria-label', element('pause').title);
     element('pause').disabled = phase !== 'running';
-    status.classList.remove('error');
-    status.textContent = phase === 'failed' ? 'Preview stopped. Open Output or the engine log for details.' :
-      phase === 'stopped' ? 'Preview stopped.' : paused ? 'Compilation paused' :
-      stale ? (header ? 'Updating preview…' : 'Waiting for the first page…') :
-      header?.fallback ? `PNG fallback: ${header.fallback}. Control or Command click to open source` :
-      'Control or Command click to open source';
+    // Normal compilation and source hints need no banner or layout change.
+    // Keep actionable failures visible until a new source attempt or good frame.
+    const text = problem || (phase === 'failed' ? 'Preview stopped. Open Output or the engine log for details.' : '');
+    status.hidden = !text; status.textContent = text;
+    status.classList.toggle('error', !!text);
     formatSelect.value = format;
-    formatSelect.querySelector('[value=auto]').textContent = header && !stale ? `Auto · ${header.mime === 'image/svg+xml' ? 'SVG' : 'PNG'}` : 'Auto';
+    formatSelect.title = header?.fallback ? `Rendering format. PNG fallback: ${header.fallback}` : 'Rendering format';
   }
 
   function layout(request = true, immediate = false) {
@@ -266,6 +266,7 @@
     switch (m.type) {
       case 'ping': ready(); break;
       case 'state':
+        if (m.phase === 'starting' && phase !== 'starting') { problem = ''; }
         count = m.count; complete = m.complete; paused = m.paused; phase = m.phase; regions = m.regions === true;
         const vectorReady = header?.mime === 'image/svg+xml';
         element('magnify').disabled = !regions && !vectorReady;
@@ -276,9 +277,9 @@
           closeLens(); clearDetail(); page = m.page; stale = true; generation++; element('highlight').hidden = true; layout();
         }
         describe(); break;
-      case 'invalidate': element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
-      case 'error': element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; status.textContent = m.text; status.classList.add('error'); break;
-      case 'link-error': status.textContent = m.text; break;
+      case 'invalidate': problem = ''; element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; generation++; element('highlight').hidden = true; describe(); break;
+      case 'error': element('links').replaceChildren(); closeLens(); clearDetail(); stale = true; problem = m.text; describe(); break;
+      case 'link-error': problem = m.text; describe(); break;
       case 'target': highlight(m); break;
       case 'region-error':
         if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
@@ -367,7 +368,7 @@
             svgPage.layer.classList.add('active');
           } else if (pngPage) { raster.replaceChildren(pngPage.canvas); } else { image.src = url; }
           objectUrl = url; header = m.header; bounds = header.bounds; page = header.page;
-          stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
+          problem = ''; stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
           layout(); describe(); renderLinks();
           if (restoreScroll) {

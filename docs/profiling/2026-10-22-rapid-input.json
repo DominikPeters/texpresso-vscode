@@ -1,0 +1,864 @@
+{
+  "created": "2026-10-22T12:41:02.365Z",
+  "engine": "140b9ca4235f09470de1b6a4b45f24cb94aa37aa",
+  "binarySha256": "3e001cb19a1003b77c3254442b35b6bd6d0fe9a6bc072dc30f9f4c61e8bf82f4",
+  "transport": "actual VS Code webview IPC",
+  "warmMetadata": {
+    "backgroundThrottlingDisabled": true,
+    "cadenceLatenessBudgetMs": 20,
+    "scenario": "rapid-e2e",
+    "created": "2026-10-22T12:35:46.264Z",
+    "vscode": "1.143.0",
+    "binary": "/Users/dominik/GitHub/texpresso-vscode/native/.bundles/darwin-arm64-preview/bin/texpresso",
+    "pages": [
+      "dense-1",
+      "tikz-1"
+    ],
+    "repeats": 2,
+    "extension": "c8de7af1e41ba3c7878f155e9f3978c783cf6850",
+    "transport": "actual VS Code webview postMessage"
+  },
+  "earlyMetadata": {
+    "earlyInput": true,
+    "backgroundThrottlingDisabled": true,
+    "cadenceLatenessBudgetMs": 20,
+    "scenario": "rapid-e2e",
+    "created": "2026-10-22T12:38:46.536Z",
+    "vscode": "1.143.0",
+    "binary": "/Users/dominik/GitHub/texpresso-vscode/native/.bundles/darwin-arm64-preview/bin/texpresso",
+    "pages": [
+      "dense-1",
+      "tikz-1"
+    ],
+    "repeats": 2,
+    "engine": "140b9ca4235f09470de1b6a4b45f24cb94aa37aa",
+    "binarySha256": "3e001cb19a1003b77c3254442b35b6bd6d0fe9a6bc072dc30f9f4c61e8bf82f4",
+    "extension": "c8de7af1e41ba3c7878f155e9f3978c783cf6850",
+    "transport": "actual VS Code webview postMessage"
+  },
+  "sessions": 16,
+  "validPhases": 40,
+  "totalPhases": 40,
+  "errors": 0,
+  "maxTimerLatenessMs": 5.599999964237213,
+  "warm": [
+    {
+      "key": "dense-1/png/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 151.0999999642372,
+      "firstPaintMs": 1019.0999999940395,
+      "coalescedInputs": 9.5,
+      "visibleFrames": 2.5,
+      "deliveredFrames": 2.5,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 1620.5,
+      "errors": 0,
+      "timerLatenessMs": 1,
+      "caughtUpPaintMs": 468.40000000596046
+    },
+    {
+      "key": "dense-1/png/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 42.900000005960464,
+      "firstPaintMs": 176.15000000596046,
+      "coalescedInputs": 1,
+      "visibleFrames": 11,
+      "deliveredFrames": 11,
+      "discardedFrames": 0,
+      "staleAtPaint": 1,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 1311,
+      "errors": 0,
+      "timerLatenessMs": 1.300000011920929,
+      "caughtUpPaintMs": 40.80000001192093
+    },
+    {
+      "key": "dense-1/svg/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 30.5,
+      "firstPaintMs": 315.44999998807907,
+      "coalescedInputs": 2.5,
+      "visibleFrames": 9.5,
+      "deliveredFrames": 10,
+      "discardedFrames": 1,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 4098,
+      "errors": 0,
+      "timerLatenessMs": 0.7999999821186066,
+      "caughtUpPaintMs": 39.64999997615814
+    },
+    {
+      "key": "dense-1/svg/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 44.55000001192093,
+      "firstPaintMs": 45.94999998807907,
+      "coalescedInputs": 0,
+      "visibleFrames": 12,
+      "deliveredFrames": 12,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 3106,
+      "errors": 0,
+      "timerLatenessMs": 1.0499999821186066,
+      "caughtUpPaintMs": 44.89999997615814
+    },
+    {
+      "key": "dense-1/auto/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 34.900000005960464,
+      "firstPaintMs": 286.3499999642372,
+      "coalescedInputs": 2,
+      "visibleFrames": 10,
+      "deliveredFrames": 10,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 4098,
+      "errors": 0,
+      "timerLatenessMs": 0.6999999582767487,
+      "caughtUpPaintMs": 39.349999994039536
+    },
+    {
+      "key": "dense-1/auto/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 43.84999996423721,
+      "firstPaintMs": 44.89999997615814,
+      "coalescedInputs": 0,
+      "visibleFrames": 12,
+      "deliveredFrames": 12,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 3106,
+      "errors": 0,
+      "timerLatenessMs": 1.0999999642372131,
+      "caughtUpPaintMs": 43.09999996423721
+    },
+    {
+      "key": "tikz-1/png/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1333.8999999761581,
+      "firstPaintMs": 2434.4999999701977,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 1464,
+      "errors": 0,
+      "timerLatenessMs": 0.8499999642372131,
+      "caughtUpPaintMs": 1883.6499999761581
+    },
+    {
+      "key": "tikz-1/png/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 934.6499999761581,
+      "firstPaintMs": 2036.300000011921,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 175,
+      "errors": 0,
+      "timerLatenessMs": 1.2500000298023224,
+      "caughtUpPaintMs": 1485.300000011921
+    },
+    {
+      "key": "tikz-1/png/coordinate-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 962.6000000238419,
+      "firstPaintMs": 1838.6500000059605,
+      "coalescedInputs": 7,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 0,
+      "errors": 0,
+      "timerLatenessMs": 1,
+      "caughtUpPaintMs": 1399.9000000357628
+    },
+    {
+      "key": "tikz-1/svg/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 988.5,
+      "firstPaintMs": 2089.300000011921,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 1769,
+      "errors": 0,
+      "timerLatenessMs": 1.050000011920929,
+      "caughtUpPaintMs": 1537.800000011921
+    },
+    {
+      "key": "tikz-1/svg/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 902.5500000119209,
+      "firstPaintMs": 2003.6500000059605,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 260,
+      "errors": 0,
+      "timerLatenessMs": 1.2999999523162842,
+      "caughtUpPaintMs": 1452.2000000178814
+    },
+    {
+      "key": "tikz-1/svg/coordinate-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1392.199999988079,
+      "firstPaintMs": 2267.899999976158,
+      "coalescedInputs": 7,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 0,
+      "errors": 0,
+      "timerLatenessMs": 0.9999999701976776,
+      "caughtUpPaintMs": 1827.8499999940395
+    },
+    {
+      "key": "tikz-1/auto/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 963.2499999701977,
+      "firstPaintMs": 2064.1500000059605,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 161294.5,
+      "errors": 0,
+      "timerLatenessMs": 0.7000000476837158,
+      "caughtUpPaintMs": 1513.199999988079
+    },
+    {
+      "key": "tikz-1/auto/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 884.9000000357628,
+      "firstPaintMs": 1986.1000000238419,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 217.5,
+      "errors": 0,
+      "timerLatenessMs": 1.050000011920929,
+      "caughtUpPaintMs": 1435.3500000238419
+    },
+    {
+      "key": "tikz-1/auto/coordinate-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 915.5,
+      "firstPaintMs": 1791.0999999940395,
+      "coalescedInputs": 7,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 0,
+      "errors": 0,
+      "timerLatenessMs": 0.8999999761581421,
+      "caughtUpPaintMs": 1352.5
+    }
+  ],
+  "early": [
+    {
+      "key": "dense-1/auto/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1408.9000000059605,
+      "firstPaintMs": 2509.2999999821186,
+      "coalescedInputs": 11,
+      "visibleFrames": 1.5,
+      "deliveredFrames": 1.5,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 2,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 1,
+      "bytes": 194132.5,
+      "errors": 0,
+      "timerLatenessMs": 0.699999988079071,
+      "caughtUpPaintMs": 1958.5999999940395
+    },
+    {
+      "key": "dense-1/auto/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 691.3000000119209,
+      "firstPaintMs": 1791.300000011921,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 105185,
+      "errors": 0,
+      "timerLatenessMs": 0.9500000178813934,
+      "caughtUpPaintMs": 1240.199999988079
+    },
+    {
+      "key": "tikz-1/auto/typing-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1173.2999999821186,
+      "firstPaintMs": 2274.0999999940395,
+      "coalescedInputs": 11,
+      "visibleFrames": 2,
+      "deliveredFrames": 2,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 2,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 2,
+      "bytes": 594425,
+      "errors": 0,
+      "timerLatenessMs": 0.949999988079071,
+      "caughtUpPaintMs": 1723.199999988079
+    },
+    {
+      "key": "tikz-1/auto/backspace-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1299.199999988079,
+      "firstPaintMs": 2399.600000023842,
+      "coalescedInputs": 11,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 260,
+      "errors": 0,
+      "timerLatenessMs": 1.1500000357627869,
+      "caughtUpPaintMs": 1848.3499999940395
+    },
+    {
+      "key": "tikz-1/auto/coordinate-overlap",
+      "sessions": 2,
+      "validSessions": 2,
+      "excludedSessions": 0,
+      "lastKeyToPaintMs": 1103.6500000059605,
+      "firstPaintMs": 1982.0999999940395,
+      "coalescedInputs": 7,
+      "visibleFrames": 1,
+      "deliveredFrames": 1,
+      "discardedFrames": 0,
+      "staleAtPaint": 0,
+      "upgradeRequestsDuringInput": 0,
+      "upgradeRequestsAfterInput": 0,
+      "refinementsDuringInput": 0,
+      "refinementsAfterInput": 0,
+      "bytes": 0,
+      "errors": 0,
+      "timerLatenessMs": 1.149999976158142,
+      "caughtUpPaintMs": 1543.7999999821186
+    }
+  ],
+  "earlyUiChecks": [
+    {
+      "fixture": "dense-1",
+      "repeat": 0,
+      "normalStatusHidden": true,
+      "autoLabelStable": true
+    },
+    {
+      "fixture": "tikz-1",
+      "repeat": 0,
+      "normalStatusHidden": true,
+      "autoLabelStable": true
+    },
+    {
+      "fixture": "dense-1",
+      "repeat": 1,
+      "normalStatusHidden": true,
+      "autoLabelStable": true
+    },
+    {
+      "fixture": "tikz-1",
+      "repeat": 1,
+      "normalStatusHidden": true,
+      "autoLabelStable": true
+    }
+  ],
+  "latencySamples": [
+    {
+      "fixture": "dense-1",
+      "codec": "png",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 264.7999999523163,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 41,
+          "coalescedInputs": 2,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "svg",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 29.30000001192093,
+          "coalescedInputs": 3,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 45.10000002384186,
+          "coalescedInputs": 0,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "auto",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 31.30000001192093,
+          "coalescedInputs": 2,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 44.799999952316284,
+          "coalescedInputs": 0,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "png",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1178.199999988079,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 945,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 968.4000000357628,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "svg",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 892.5,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 912.4000000357628,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 919.5999999642372,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "auto",
+      "repeat": 0,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1010.2999999523163,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 871.1000000238419,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 880.8999999761581,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "svg",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 31.69999998807907,
+          "coalescedInputs": 2,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 44,
+          "coalescedInputs": 0,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "auto",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 38.5,
+          "coalescedInputs": 2,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 42.89999997615814,
+          "coalescedInputs": 0,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "png",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 37.39999997615814,
+          "coalescedInputs": 8,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 44.80000001192093,
+          "coalescedInputs": 0,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "svg",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1084.5,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 892.6999999880791,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 1864.800000011921,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "auto",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 916.1999999880791,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 898.7000000476837,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 950.1000000238419,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "png",
+      "repeat": 1,
+      "earlyInput": false,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1489.5999999642372,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 924.2999999523163,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 956.8000000119209,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "auto",
+      "repeat": 0,
+      "earlyInput": true,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1125.800000011921,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 1033.1000000238419,
+          "coalescedInputs": 11,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "auto",
+      "repeat": 0,
+      "earlyInput": true,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 966.5,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 1709.8999999761581,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 1326.7000000476837,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "dense-1",
+      "codec": "auto",
+      "repeat": 1,
+      "earlyInput": true,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1692,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 349.5,
+          "coalescedInputs": 11,
+          "validComparison": true
+        }
+      ]
+    },
+    {
+      "fixture": "tikz-1",
+      "codec": "auto",
+      "repeat": 1,
+      "earlyInput": true,
+      "phases": [
+        {
+          "name": "typing-overlap",
+          "lastKeyToPaintMs": 1380.0999999642372,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "backspace-overlap",
+          "lastKeyToPaintMs": 888.5,
+          "coalescedInputs": 11,
+          "validComparison": true
+        },
+        {
+          "name": "coordinate-overlap",
+          "lastKeyToPaintMs": 880.5999999642372,
+          "coalescedInputs": 7,
+          "validComparison": true
+        }
+      ]
+    }
+  ]
+}

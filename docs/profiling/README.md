@@ -117,8 +117,14 @@ DOM patching in a separate experiment.
 The [retained SVG follow-up](2026-10-22-svg-dom.md) implements the SVG DOM renderer,
 content-addressed glyph identities and bounded patches. It measures actual
 controller/webview work and a separate exact-pixel PNG dirty-rectangle prototype.
-PNG remains the default.
+At that stage PNG remained the default; current previews default to Auto.
 
 Native PNG dirty rectangles are implemented and measured in [the PNG patch report](2026-10-22-png-patches.md).
 
 [Auto end-to-end measurements](2026-10-22-auto.md) compare PNG/SVG/Auto through the production browser pipeline and actual VS Code IPC, with a decoded-cache improvement and reproduction commands.
+
+[Fixed-interval overlapping-input measurements](2026-10-22-rapid-input.md) cover source coalescing, final-key paint latency, Auto idle upgrades, and recovery from interrupted compiler workers, with strict cadence and visibility validation.
+
+The current pass also covers [compiler checkpoints](2026-10-22-checkpoints.md),
+[SVG host processing](2026-10-22-svg-host.md), [render-cost calibration](2026-10-22-auto-calibration.md),
+and the [richer demo and dashed-stroke fix](2026-10-22-demo.md).

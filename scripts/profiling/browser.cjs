@@ -34,7 +34,7 @@ for (let repeat = 0; repeat < repeats; repeat++) for (const fixture of cases) fo
   repeat
 });
 
-if (process.platform === 'darwin' && process.env.TEXPRESSO_PROFILE_SCENARIO === 'auto-e2e') {
+if (process.platform === 'darwin' && ['auto-e2e', 'rapid-e2e'].includes(process.env.TEXPRESSO_PROFILE_SCENARIO)) {
   cp.execFileSync('xcrun', ['clang', '-O2', path.join(__dirname, 'memory.c'), '-o', path.join(output, 'memory-sampler')]);
 }
 fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify({
@@ -84,6 +84,7 @@ async function prepare(index) {
       },
       postMessage: message => {
         message.profileSentAt = performance.now();
+        message.profileUpgrade = controller?.inFlight?.upgrade === true;
         if (message.type === 'image') { message.profileProcessingMs = performance.now() - active.controllerImageStart; }
         if (message.bytes) {
           frames.set(message.header.requestId, Buffer.from(message.bytes));
@@ -121,8 +122,10 @@ async function prepare(index) {
   controller.image = function(frame) { active.controllerImageStart = performance.now(); return image.call(this, frame); };
   if (process.env.TEXPRESSO_PROFILE_DISABLE_CACHE === '1') { controller.cachePage = () => {}; }
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)[1];
-  const bridge = fs.readFileSync(path.join(__dirname, process.env.TEXPRESSO_PROFILE_SCENARIO === 'auto-e2e' ? 'auto-client.js' : 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
+  const bridge = fs.readFileSync(path.join(__dirname, ['auto-e2e', 'rapid-e2e'].includes(process.env.TEXPRESSO_PROFILE_SCENARIO) ? 'auto-client.js' : 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
     ...job,
+    rapid: process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e',
+    earlyInput: process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1',
     manual: process.env.TEXPRESSO_PROFILE_MANUAL === '1',
     navOnly: process.env.TEXPRESSO_PROFILE_NAV_ONLY === '1',
     index,

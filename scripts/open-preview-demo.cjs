@@ -28,10 +28,29 @@ try {
   if (!fs.existsSync(file)) fs.copyFileSync(path.join(__dirname, 'preview-demo/sample.tex'), file);
   const featureSample = path.join(demo, 'sample/svg-and-links.tex');
   if (!fs.existsSync(featureSample)) fs.copyFileSync(path.join(__dirname, 'preview-demo/sample.tex'), featureSample);
-  const launchFile = process.env.TEXPRESSO_DEMO_SAMPLE === 'original' ? file : path.join(demo, 'sample/svg-and-links.tex');
+  // A new filename makes the richer demo available without overwriting edits
+  // made to either of the earlier samples.
+  const showcase = path.join(demo, 'sample/showcase.tex');
+  for (const name of ['showcase.tex', 'showcase.bib']) {
+    const target = path.join(demo, 'sample', name);
+    if (!fs.existsSync(target)) fs.copyFileSync(path.join(__dirname, 'preview-demo', name), target);
+  }
+  const launchFile = process.env.TEXPRESSO_DEMO_SAMPLE === 'original' ? file :
+    process.env.TEXPRESSO_DEMO_SAMPLE === 'links' ? featureSample : showcase;
+  const env = {...process.env, PATH: (process.platform === 'darwin' ? '/Library/TeX/texbin' + path.delimiter : '') + process.env.PATH,
+    TEXPRESSO_DEMO_FILE: launchFile};
+  if (launchFile === showcase) {
+    // Prepare the .bbl and cross-reference files using the local TeX install.
+    // latexmk never installs packages. Keep the source and .bib writable.
+    const prepare = spawnSync('latexmk', ['-xelatex', '-interaction=nonstopmode', '-halt-on-error', '-synctex=1', path.basename(showcase)],
+      {cwd: path.dirname(showcase), env, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 * 1024, shell: process.platform === 'win32'});
+    if (prepare.error) throw new Error('The richer demo needs local latexmk, XeLaTeX, BibTeX, cleveref and TikZ. ' + prepare.error.message);
+    if (prepare.status !== 0) throw new Error('Preparing the demo failed. Check the local TeX installation.\n' + (prepare.stdout + prepare.stderr).slice(-6000));
+  }
   const settings = JSON.stringify({
     'texpresso.command': binary, 'texpresso.packageProvider': 'texlive', 'texpresso.previewLocation': 'editor',
     'texpresso.useChangeRangeMode': true, 'texpresso.syncTeXForwardOnSelection': false,
+    'texpresso.autoRerun': true, 'texpresso.externalCompileCommand': 'latexmk -xelatex -interaction=nonstopmode -halt-on-error',
     'workbench.startupEditor': 'none', 'workbench.colorTheme': 'Default Dark Modern',
     'chat.disableAIFeatures': true, 'editor.fontSize': 16, 'editor.minimap.enabled': false,
     'window.zoomLevel': 0, 'telemetry.telemetryLevel': 'off'
@@ -41,8 +60,6 @@ try {
   fs.writeFileSync(path.join(profile, 'user/User/settings.json'), settings);
   const workspace = path.join(demo, 'Preview.code-workspace');
   fs.writeFileSync(workspace, JSON.stringify({folders: [{path: 'sample'}]}));
-  const env = {...process.env, PATH: (process.platform === 'darwin' ? '/Library/TeX/texbin' + path.delimiter : '') + process.env.PATH,
-    TEXPRESSO_DEMO_FILE: launchFile};
   const profiles = ['--user-data-dir', path.join(profile, 'user'), '--extensions-dir', path.join(profile, 'extensions')];
   run([...profiles, '--install-extension', vsix, '--force'], env);
   const child = spawn(cli, ['--new-window', ...profiles, '--extensionDevelopmentPath', path.join(__dirname, 'preview-demo'),

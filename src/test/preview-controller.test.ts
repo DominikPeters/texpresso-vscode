@@ -576,3 +576,47 @@ test('Auto revisits a cached PNG fallback after SVG failure changes its learned 
     assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.header.mime, 'image/png');
   } finally { f.controller.dispose(); }
 });
+
+
+test('an obsolete render error cannot hide or strand a newer source update', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1200 });
+    const obsolete = f.commands.at(-1)![1] as number;
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 1, false, 0]);
+    assert.equal(f.commands.length, 1, 'new source waits for old request credit');
+    f.controller.handle(['preview-error', obsolete, 'The document has not produced a page.']);
+    assert.equal(f.messages.filter(m => m.type === 'error').length, 0);
+    assert.deepEqual(f.commands.at(-1), ['preview-render', 2, 0, 1200, 2, 1]);
+    f.controller.handle(['preview-error', 2, 'A real current render failure']);
+    assert.equal(f.messages.filter(m => m.type === 'error').length, 1, 'current failures remain actionable');
+  } finally { f.controller.dispose(); }
+});
+
+
+test('Auto includes native export work in its SVG safety budget', () => {
+  const f = autoFixture();
+  try {
+    const frame = autoFrame(1, true, 12000);
+    f.controller.handle({ ...frame, header: { ...frame.header, exportMs: 90 } });
+    const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: 1, svg: image.contentId, renderMs: 1 });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    assert.equal(f.commands.at(-1)![6], 0, 'cheap browser decoding cannot hide expensive native SVG export');
+  } finally { f.controller.dispose(); }
+});
+
+test('a late SVG acknowledgment cannot teach the page navigated to in the meantime', () => {
+  const f = autoFixture();
+  try {
+    f.controller.handle(autoFrame(1, true, 12000));
+    const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'viewport', page: 1, width: 1200, format: 'auto' });
+    f.send({ type: 'decoded', id: 1, svg: image.contentId, renderMs: 100 });
+    assert.equal(f.commands.at(-1)![2], 1);
+    assert.equal(f.commands.at(-1)![6], 16000, 'new page starts with default complexity selection, not old-page failure');
+  } finally { f.controller.dispose(); }
+});

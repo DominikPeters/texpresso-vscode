@@ -9,7 +9,8 @@ exports.activate = async function(context) {
     const document = await vscode.workspace.openTextDocument(path.resolve(file));
     const options = {viewColumn: vscode.ViewColumn.One, preview: false, preserveFocus: false};
     const editor = await vscode.window.showTextDocument(document, options);
-    editor.selection = new vscode.Selection(10, 0, 10, 0);
+    const start = Math.max(0, document.getText().split('\n').findIndex(line => line.startsWith('Edit this sentence') || line.startsWith('Edit the source')));
+    editor.selection = new vscode.Selection(start, 0, start, 0);
     await vscode.commands.executeCommand('workbench.action.closeSidebar');
     await vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
     await vscode.commands.executeCommand('texpresso.startDocument');

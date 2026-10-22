@@ -12,6 +12,8 @@ export interface PreviewImageHeader {
   mime: 'image/png' | 'image/svg+xml'; byteLength: number;
   rasterId?: number; patch?: { base: number; rect: [number, number, number, number] };
   svgEligible?: boolean; vectorCost?: number;
+  /** Native export wall time, excluding compilation and pipe transfer. */
+  exportMs?: number;
   fallback?: string; annotations?: PreviewAnnotations;
 }
 export interface PreviewImage { header: PreviewImageHeader; bytes: Buffer }
@@ -57,6 +59,7 @@ export function isImageHeader(value: unknown): value is PreviewImageHeader {
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
     (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
     (h.vectorCost === undefined || count(h.vectorCost)) &&
+    (h.exportMs === undefined || (typeof h.exportMs === 'number' && Number.isFinite(h.exportMs) && h.exportMs >= 0 && h.exportMs < 1e9)) &&
     (h.annotations === undefined || annotations(h.annotations));
 }
 

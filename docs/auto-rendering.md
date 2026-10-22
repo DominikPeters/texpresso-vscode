@@ -1,7 +1,9 @@
 # Automatic preview rendering
 
 Auto is the toolbar default for fresh previews. Existing explicit PNG/SVG choices
-remain saved in the webview state. The label shows the currently displayed codec.
+remain saved in the webview state. The Auto label stays fixed while its chosen
+codec changes. Normal updates have no status banner; actionable failures still
+appear, and explicit SVG fallback details are available in the format tooltip.
 
 ## First frame and updates
 
@@ -31,8 +33,11 @@ scroll and source/link coordinates.
 
 ## Learning and bounds
 
-The controller measures its preparation/diff work and the webview reports its
-image/DOM-update elapsed time. These timings exclude GPU completion. A first SVG
+New engines report `exportMs`, measured after compilation/display-list creation
+and before pipe writing. The controller adds its preparation/diff work and the
+webview's image/DOM-update elapsed time. These render-work timings exclude
+compiler rollback, pipe/IPC delivery and GPU completion. Older engines can omit
+the field and retain the earlier host/browser safety budgets. A first SVG
 mount may take up to an 80 ms policy budget; subsequent DOM patches have a tighter
 24 ms budget. Distinguishing those cases avoids abandoning fast incremental SVG
 updates because the initial mount was expensive.
@@ -45,6 +50,20 @@ complexity. The learned page table holds at most 32 entries. Existing encoded,
 decoded and prepared-SVG cache budgets remain in force; SVG cache keys are
 independent of raster width. These are starting policy thresholds, not universal
 performance guarantees.
+
+Comparative learning also retains up to eight recent observations per codec and
+phase in at most 64 page/viewport/complexity contexts. Full mounts and incremental
+patches are never compared against one another; decoded-cache hits and detail
+regions are excluded. PNG observations come from natural Auto frames or manual
+PNG edits, without speculative rendering probes. Five observations of each codec
+within 30 seconds are required before speed can select PNG. Its upper quartile
+must beat SVG's lower quartile by both 3 ms and 25%; reversal requires similarly
+strong evidence. Small differences and single stalls do not change the choice.
+An established PNG speed preference also suppresses idle SVG conversion so the
+native comparison raster remains available for subsequent crops. Absent
+comparable warm PNG observations, warm SVG retains its existing policy.
+This makes calibration conservative; a PNG-first/SVG-idle pair alone cannot
+establish which incremental path is faster.
 
 Auto currently prioritizes responsiveness without gating work on battery state.
 Energy preferences can be added separately from format selection.
