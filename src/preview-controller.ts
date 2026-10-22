@@ -316,7 +316,8 @@ export class PreviewController {
         this.format === 'auto' && this.session.previewAuto && this.session.previewSvg ? 'preview-auto' : 'preview-render';
       const key = this.pageKey(verb === 'preview-auto' ? `auto:${limit}` : verb === 'preview-svg' ? 'svg' : 'png');
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, key, width: this.width };
-      const cached = !this.forceNative && (verb === 'preview-auto' && learned?.svg ? this.pages.get(this.pageKey('svg')) || this.pages.get(key) : this.pages.get(key));
+      const cached = !this.forceNative && (verb === 'preview-auto' ?
+        (learned?.svg ? this.pages.get(this.pageKey('svg')) : undefined) || this.pages.get(key) || this.pages.get(this.pageKey('png')) : this.pages.get(key));
       const rasterKey = this.pageKey('png');
       const raster = !this.forceNative && (this.rasterPages.get(key) || this.rasterPages.get(rasterKey));
       const reference = raster && this.decodedImages.has(raster.contentId) && verb !== 'preview-svg' ? raster : undefined;

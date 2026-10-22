@@ -14,9 +14,9 @@ const { decode } = require('../../../scripts/profiling/png-regions.cjs') as {
 };
 function rgb(bytes: Buffer) {
   const p = decode(bytes), pixels = Buffer.alloc(p.width * p.height * 3);
-  for (let y = 0; y < p.height; y++) for (let x = 0; x < p.width; x++) for (let c = 0; c < 3; c++) {
+  for (let y = 0; y < p.height; y++) {for (let x = 0; x < p.width; x++) {for (let c = 0; c < 3; c++) {
     pixels[(y * p.width + x) * 3 + c] = p.raw[y * p.stride + 1 + x * p.channels + (p.channels === 1 ? 0 : c)];
-  }
+  }}}
   return { width: p.width, height: p.height, pixels };
 }
 const binary = process.env.TEXPRESSO_BINARY;
@@ -72,7 +72,7 @@ Second page.
       const apply = (frame: PreviewImage) => {
         assert.equal(frame.header.patch?.base, base); assert.ok(frame.bytes.length < full.bytes.length / 3);
         const [x,y,w,h] = frame.header.patch!.rect, crop = rgb(frame.bytes); assert.equal(crop.width,w); assert.equal(crop.height,h);
-        for (let row=0;row<h;row++) crop.pixels.copy(composite, ((y+row)*baseline.width+x)*3, row*w*3,(row+1)*w*3);
+        for (let row=0;row<h;row++) {crop.pixels.copy(composite, ((y+row)*baseline.width+x)*3, row*w*3,(row+1)*w*3);}
         base = frame.header.rasterId!; chain.push(frame);
       };
       change('aaaa','aaaac'); apply(await render(base));

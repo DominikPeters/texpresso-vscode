@@ -558,3 +558,21 @@ test('identical PNG pixels reuse canvas identity with fresh metadata; unsupporte
     assert.equal(fallback.inlinePng, false); assert.ok(fallback.bytes, 'full encoded PNG can use the ordinary image decoder');
   } finally { f.controller.dispose(); }
 });
+
+
+test('Auto revisits a cached PNG fallback after SVG failure changes its learned limit', () => {
+  const f = autoFixture();
+  try {
+    f.controller.handle(autoFrame(1, true, 12000));
+    f.send({ type: 'decode-error', id: 1 });
+    assert.equal(f.commands.at(-1)![0], 'preview-render');
+    f.controller.handle(autoFrame(2, false, 12000)); f.send({ type: 'decoded', id: 2 });
+    f.send({ type: 'viewport', page: 1, width: 1200, format: 'auto' });
+    const other = autoFrame(3, false);
+    f.controller.handle({ ...other, header: { ...other.header, page: 1 } }); f.send({ type: 'decoded', id: 3 });
+    const count = f.commands.length;
+    f.send({ type: 'viewport', page: 0, width: 1200, format: 'auto' });
+    assert.equal(f.commands.length, count, 'Auto uses the PNG codec cache when the selection threshold changed');
+    assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.header.mime, 'image/png');
+  } finally { f.controller.dispose(); }
+});
