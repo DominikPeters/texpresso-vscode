@@ -4,7 +4,8 @@
   const vscode = acquireVsCodeApi();
   const instance = document.body.dataset.instance;
   const element = id => document.getElementById(id);
-  const viewport = element('viewport'), sheet = element('sheet'), image = element('image');
+  const viewport = element('viewport'), sheet = element('sheet');
+  let image = element('image');
   const status = element('status'), zoomSelect = element('zoom'), formatSelect = element('format');
   const saved = vscode.getState() || {};
   let page = Number.isInteger(saved.page) && saved.page >= 0 ? saved.page : 0;
@@ -348,8 +349,11 @@
           const previous = objectUrl, previousId = imageId;
           if (!cached || m.svgPatch || commitRaster) {
             const rect = sheet.getBoundingClientRect();
+            // The startup measurement sheet has zero height. Estimate the full
+            // SVG surface from its page aspect ratio, including that first frame.
+            const pageHeight = rect.width * (m.header.bounds[3] - m.header.bounds[1]) / (m.header.bounds[2] - m.header.bounds[0]);
             const pixels = m.header.mime === 'image/png' ? m.header.width * m.header.height :
-              Math.ceil(rect.width * devicePixelRatio) * Math.ceil(rect.height * devicePixelRatio);
+              Math.ceil(rect.width * devicePixelRatio) * Math.ceil(pageHeight * devicePixelRatio);
             images.put(m.contentId, nextVector ? { vector: nextVector } : nextRaster ? { raster: nextRaster } : { url, image: candidate }, m.header.byteLength + pixels * 4);
           }
           if (svgPage && svgPage !== nextVector) {
@@ -358,7 +362,7 @@
           }
           if (pngPage && pngPage !== nextRaster && !images.has(pngPage.contentId)) { pngPage.canvas.remove(); pngPage.canvas.width = 0; }
           imageId = m.contentId; svgPage = nextVector; pngPage = nextRaster;
-          vector.hidden = !svgPage; raster.hidden = !pngPage; image.hidden = !!svgPage || !!pngPage;
+          vector.hidden = !svgPage; raster.hidden = !pngPage;
           if (svgPage) {
             if (!svgPage.layer) {
               svgPage.layer = document.createElement('div'); svgPage.layer.className = 'texpresso-svg-layer';
@@ -366,7 +370,14 @@
             }
             if (svgPage.layer.parentNode !== vector) { vector.appendChild(svgPage.layer); }
             svgPage.layer.classList.add('active');
-          } else if (pngPage) { raster.replaceChildren(pngPage.canvas); } else { image.src = url; }
+          } else if (pngPage) { raster.replaceChildren(pngPage.canvas); }
+          else {
+            // Mount the element whose decode completed. Assigning its URL to a
+            // separate <img> starts another load and can flash a broken image.
+            candidate.id = 'image'; candidate.draggable = false;
+            if (candidate !== image) { image.replaceWith(candidate); image = candidate; }
+          }
+          image.hidden = !!svgPage || !!pngPage;
           objectUrl = url; header = m.header; bounds = header.bounds; page = header.page;
           problem = ''; stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;

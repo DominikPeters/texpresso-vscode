@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as assert from 'node:assert/strict';
+import { checkPreviewStartup } from './preview-startup';
 
 async function logs(directory = process.env.TEXPRESSO_TEST_LOGS!): Promise<string> {
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
@@ -77,6 +78,7 @@ async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('DominikPeters.texpresso-basic');
   assert.ok(extension); await extension.activate();
+  await checkPreviewStartup(extension.extensionUri);
   await checkSvgWebview(extension.extensionUri);
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
   const file = path.join(root, 'embedded-preview.tex');

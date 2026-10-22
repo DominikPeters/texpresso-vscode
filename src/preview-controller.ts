@@ -107,7 +107,7 @@ export class PreviewController {
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="alert" hidden></div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
-      <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
+      <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false" hidden><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><canvas id="lensCanvas" hidden></canvas><div id="lensVector" hidden></div><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
       <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
