@@ -239,7 +239,7 @@
   }
   element('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   sheet.addEventListener('pointerdown', event => {
-    if (!magnify || stale || !header || event.button !== 0 || event.ctrlKey || event.metaKey) { return; }
+    if (!magnify || stale || !header || event.button !== 0 || event.ctrlKey || event.metaKey || event.target.closest('.page-link')) { return; }
     event.preventDefault(); viewport.focus({ preventScroll: true }); sheet.setPointerCapture(event.pointerId); moveLens(event);
   });
   sheet.addEventListener('pointermove', event => { if (pointer) { moveLens(event); } });

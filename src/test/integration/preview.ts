@@ -155,7 +155,8 @@ Pages are compiled when requested, and images have a bounded pixel budget.
         'preview browser interaction and screenshot', 180000);
     }
     await command('stop');
-    assert.ok(!vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)));
+    await until(async () => !vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)),
+      'Stop closes the preview tab');
     console.log('PASS: Stop closes the preview panel');
   } finally {
     await command('stop'); await document.save();
