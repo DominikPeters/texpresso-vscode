@@ -3,7 +3,7 @@
  * replaces VS Code IPC, so its transfer timings are reported separately. */
 'use strict';
 
-const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
+const http = require('node:http'), fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process');
 
 const {Run, fixtures} = require('../profile-preview.cjs');
 
@@ -22,17 +22,28 @@ fs.mkdirSync(output, {
 
 const binary = path.resolve(process.env.TEXPRESSO_BINARY || `native/.bundles/${process.platform}-${process.arch}-preview/bin/texpresso`);
 
-const cases = fixtures(output, [ 10 ], (process.env.TEXPRESSO_PROFILE_KINDS || 'sparse,dense,packed,tikz').split(','));
+const cases = fixtures(output, (process.env.TEXPRESSO_PROFILE_PAGES || '10').split(',').map(Number), (process.env.TEXPRESSO_PROFILE_KINDS || 'sparse,dense,packed,tikz').split(','));
 
 const jobs = [];
 
 const repeats = Number(process.env.TEXPRESSO_PROFILE_REPEATS || 5);
 
-for (let repeat = 0; repeat < repeats; repeat++) for (const fixture of cases) for (const codec of (repeat % 2 ? [ 'svg', 'png', 'auto' ] : [ 'png', 'svg', 'auto' ]).filter(codec => (process.env.TEXPRESSO_PROFILE_CODECS || 'png,svg').split(',').includes(codec))) jobs.push({
+for (let repeat = 0; repeat < repeats; repeat++) for (const fixture of cases) for (const codec of [ ['png', 'svg', 'auto'], ['svg', 'auto', 'png'], ['auto', 'png', 'svg'] ][repeat % 3].filter(codec => (process.env.TEXPRESSO_PROFILE_CODECS || 'png,svg').split(',').includes(codec))) jobs.push({
   fixture: fixture.id,
   codec,
   repeat
 });
+
+if (process.platform === 'darwin' && process.env.TEXPRESSO_PROFILE_SCENARIO === 'auto-e2e') {
+  cp.execFileSync('xcrun', ['clang', '-O2', path.join(__dirname, 'memory.c'), '-o', path.join(output, 'memory-sampler')]);
+}
+fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify({
+  created: new Date().toISOString(), binary, binarySha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(binary)).digest('hex'),
+  platform: process.platform, architecture: process.arch, node: process.version,
+  engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd: repo, encoding:'utf8'}).trim(),
+  extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], {cwd: repo, encoding:'utf8'}).trim(),
+  scenario: process.env.TEXPRESSO_PROFILE_SCENARIO || 'legacy', jobs
+}, null, 2));
 
 let active, controller, panel, receive, stream, queue = [], frames = new Map, caseIndex = -1;
 
@@ -110,9 +121,10 @@ async function prepare(index) {
   controller.image = function(frame) { active.controllerImageStart = performance.now(); return image.call(this, frame); };
   if (process.env.TEXPRESSO_PROFILE_DISABLE_CACHE === '1') { controller.cachePage = () => {}; }
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)[1];
-  const bridge = fs.readFileSync(path.join(__dirname, 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
+  const bridge = fs.readFileSync(path.join(__dirname, process.env.TEXPRESSO_PROFILE_SCENARIO === 'auto-e2e' ? 'auto-client.js' : 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
     ...job,
     manual: process.env.TEXPRESSO_PROFILE_MANUAL === '1',
+    navOnly: process.env.TEXPRESSO_PROFILE_NAV_ONLY === '1',
     index,
     pages: fixture.pages,
     svgDomDisabled: process.env.TEXPRESSO_PROFILE_DISABLE_SVG_DOM === '1',
@@ -160,7 +172,7 @@ const server = http.createServer(async (req, res) => {
       // Production creates the panel after capability probing. Keep that ordering
       // while including startup in the browser clock: queue all UI messages until
       // features are known, so an early SVG ready cannot be downgraded to PNG.
-            const run = active;
+      const run = active;
       if (!run || m.instance !== controller?.instance) { res.writeHead(409); res.end('Preview session changed'); return; }
       if (!run.startPromise) {
         run.started = performance.now();
@@ -172,6 +184,7 @@ const server = http.createServer(async (req, res) => {
         run.uiMessages.push({ type: m.type, id: m.id, cached: m.cached, svg: m.svg, png: m.png, at: performance.now() });
         if (process.env.TEXPRESSO_PROFILE_DISABLE_PNG_PATCH === '1') { m.pngCanvas = false; }
         if ((process.env.TEXPRESSO_PROFILE_DISABLE_SVG_DOM === '1' || process.env.TEXPRESSO_PROFILE_DISABLE_CACHE === '1')) { m.svgDom = false; }
+        m.profileReceivedAt = performance.now();
         receive(m);
       }
       res.end('ok');
@@ -187,7 +200,8 @@ const server = http.createServer(async (req, res) => {
         const offset = active.text.indexOf('\\noindent');
         active.replace(offset, 0, '\\textbf{New font} ');
       } else { active.edit(m.page, !!m.coordinate); }
-      res.end('ok');
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ sequence: active.session.previewSequence }));
     } else if (url.pathname === '/status') {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ completed: results.length, total: jobs.length }));
@@ -201,6 +215,7 @@ const server = http.createServer(async (req, res) => {
         node: process.memoryUsage()
       };
       results.push(row);
+      console.log(`${results.length}/${jobs.length}: ${row.fixture} ${row.codec} #${row.repeat + 1}`);
       fs.appendFileSync(path.join(output, 'browser.jsonl'), JSON.stringify(row) + '\n');
       res.end('ok');
     } else if (url.pathname === '/theme.css') {

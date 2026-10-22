@@ -5,7 +5,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 (async () => {
-  const preview = process.argv.includes('--preview');
+  const profileAuto = process.argv.includes('--profile-auto');
+  const preview = process.argv.includes('--preview') || profileAuto;
   const realEngine = process.argv.includes('--real-engine') || preview;
   const useWSL = realEngine && process.platform === 'win32';
   const binary = process.env.TEXPRESSO_BINARY;
@@ -69,7 +70,7 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
@@ -77,7 +78,13 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_TEST_ENGINE: fixture,
         TEXPRESSO_BINARY: binary,
         TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
-        TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR
+        TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR,
+        TEXPRESSO_PROFILE_OUTPUT: process.env.TEXPRESSO_PROFILE_OUTPUT,
+        TEXPRESSO_PROFILE_RESUME: process.env.TEXPRESSO_PROFILE_RESUME,
+        TEXPRESSO_PROFILE_PAGES: process.env.TEXPRESSO_PROFILE_PAGES,
+        TEXPRESSO_PROFILE_KINDS: process.env.TEXPRESSO_PROFILE_KINDS,
+        TEXPRESSO_PROFILE_REPEATS: process.env.TEXPRESSO_PROFILE_REPEATS,
+        TEXPRESSO_PROFILE_CODECS: process.env.TEXPRESSO_PROFILE_CODECS
       },
       launchArgs: [workspaceFile, ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,

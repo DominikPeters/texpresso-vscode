@@ -338,6 +338,12 @@
           if (commitRaster) {
             images.take(pngPage.contentId); commitRaster(); nextRaster.contentId = m.contentId;
           }
+          // The idle SVG supersedes this page's transient PNG. Keeping both
+          // decoded versions evicts useful neighboring pages from the LRU.
+          if (format === 'auto' && nextVector && pngPage && header && header.page === m.header.page &&
+              header.revision === m.header.revision && header.sequence === m.header.sequence) {
+            images.forget(pngPage.contentId);
+          }
           const previous = objectUrl, previousId = imageId;
           if (!cached || m.svgPatch || commitRaster) {
             const rect = sheet.getBoundingClientRect();

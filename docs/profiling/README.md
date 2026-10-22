@@ -120,3 +120,5 @@ controller/webview work and a separate exact-pixel PNG dirty-rectangle prototype
 PNG remains the default.
 
 Native PNG dirty rectangles are implemented and measured in [the PNG patch report](2026-10-22-png-patches.md).
+
+[Auto end-to-end measurements](2026-10-22-auto.md) compare PNG/SVG/Auto through the production browser pipeline and actual VS Code IPC, with a decoded-cache improvement and reproduction commands.
