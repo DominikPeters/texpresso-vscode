@@ -34,6 +34,8 @@ class Signing(unittest.TestCase):
         calls = []
         def run(args, **options):
             calls.append(args)
+            if args[:2] == ['security', 'find-identity']:
+                return subprocess.CompletedProcess(args, 0, '  1) ' + 'A' * 40 + ' \"Developer ID Application: Test\"', '')
             if '--force' in args:
                 file = args[-1]
                 file.write_bytes(file.read_bytes() + b'-signed')
@@ -69,7 +71,7 @@ class Signing(unittest.TestCase):
 
     def test_reject_adhoc_or_untimestamped_signatures(self):
         result = subprocess.CompletedProcess([], 0, '', 'TeamIdentifier=TEAM\nCodeDirectory flags=0x0(none)\n')
-        with patch.object(notarize, 'command', return_value=result), self.assertRaisesRegex(ValueError, 'timestamped Developer ID'):
+        with patch.object(notarize, 'imported_identity', return_value='IDENTITY'), patch.object(notarize, 'command', return_value=result), self.assertRaisesRegex(ValueError, 'timestamped Developer ID'):
             notarize.sign_bundle(self.source, self.root / 'signed', 'IDENTITY', 'KEYCHAIN')
         self.assertFalse((self.root / 'signed.zip').exists())
 
@@ -130,3 +132,15 @@ class Signing(unittest.TestCase):
             notarize.private_key('invalid')
         with self.assertRaises(ValueError):
             notarize.binary_secret('invalid')
+
+    def test_resolve_uploaded_certificate_and_fail_if_private_key_is_missing(self):
+        fingerprint = 'A' * 40
+        identity = 'Developer ID Application: Test (TEAM)'
+        result = subprocess.CompletedProcess([], 0, f'  1) {fingerprint} "{identity}"\n 1 valid identities found', '')
+        with patch.object(notarize, 'command', return_value=result):
+            self.assertEqual(notarize.imported_identity(identity, 'KEYCHAIN'), fingerprint)
+            self.assertEqual(notarize.imported_identity(fingerprint.lower(), 'KEYCHAIN'), fingerprint)
+            self.assertEqual(notarize.imported_identity('stale name', 'KEYCHAIN'), fingerprint)
+        with patch.object(notarize, 'command', return_value=subprocess.CompletedProcess([], 0, '0 valid identities found', '')):
+            with self.assertRaisesRegex(ValueError, 'private key'):
+                notarize.imported_identity(identity, 'KEYCHAIN')

@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import shutil
+import shlex
 import subprocess
 import tempfile
 import zipfile
@@ -69,10 +70,29 @@ def bundle_inputs(source):
     return manifest, sorted(paths, key=lambda p: (p.parts[0] == 'bin', str(p)))
 
 
+def imported_identity(requested, keychain):
+    result = command(['security', 'find-identity', '-v', '-p', 'codesigning', keychain], sensitive=True)
+    identities = re.findall(r'^\s*\d+\) ([A-Fa-f0-9]{40}) "(Developer ID Application:[^"\n]+)"', result.stdout, re.M)
+    normalized = requested.replace(' ', '').upper()
+    matches = [(fingerprint, name) for fingerprint, name in identities if
+               fingerprint.upper() == normalized or requested.strip() == name]
+    if len(matches) == 1:
+        return matches[0][0]
+    if len(identities) == 1:
+        # The uploaded PKCS#12 is the source of the signing key. Its certificate
+        # name can differ from a stale/misspelled Actions identity setting.
+        print('Using the sole imported Developer ID Application certificate; its name differs from APPLE_SIGNING_IDENTITY', flush=True)
+        return identities[0][0]
+    if not identities:
+        raise ValueError('No valid Developer ID Application signing identity in the imported PKCS#12. Export the certificate together with its private key and certificate chain; an Apple Development/Distribution certificate cannot notarize this bundle.')
+    raise ValueError('Multiple imported Developer ID Application identities; APPLE_SIGNING_IDENTITY must match one certificate name or SHA-1')
+
+
 def sign_bundle(source, destination, identity, keychain):
     if destination.exists() or destination.with_suffix('.zip').exists():
         raise ValueError('Signed output already exists; choose a new destination')
     manifest, paths = bundle_inputs(source)
+    identity = imported_identity(identity, keychain)
     shutil.copytree(source, destination)
     team = None
     for relative in paths:
@@ -152,9 +172,11 @@ def main():
         p12, p8 = folder / 'certificate.p12', folder / 'AuthKey.p8'
         p12.write_bytes(certificate); p8.write_text(key)
         p12.chmod(0o600); p8.chmod(0o600)
+        original_keychains = shlex.split(command(['security', 'list-keychains', '-d', 'user'], sensitive=True).stdout)
         try:
             password = os.environ['KEYCHAIN_PASSWORD']
             command(['security', 'create-keychain', '-p', password, keychain], sensitive=True)
+            command(['security', 'list-keychains', '-d', 'user', '-s', keychain, *original_keychains], sensitive=True)
             command(['security', 'set-keychain-settings', '-lut', '21600', keychain], sensitive=True)
             command(['security', 'unlock-keychain', '-p', password, keychain], sensitive=True)
             command(['security', 'import', p12, '-k', keychain, '-P', os.environ['APPLE_CERTIFICATE_PASSWORD'], '-t', 'cert', '-f', 'pkcs12', '-T', '/usr/bin/codesign'], sensitive=True)
@@ -166,6 +188,7 @@ def main():
             archive = sign_bundle(args.bundle, args.output, os.environ['APPLE_SIGNING_IDENTITY'], keychain)
             notarize(archive, args.reports, keychain, args.timeout)
         finally:
+            command(['security', 'list-keychains', '-d', 'user', '-s', *original_keychains], sensitive=True, check=False)
             command(['security', 'delete-keychain', keychain], sensitive=True, check=False)
 
 
