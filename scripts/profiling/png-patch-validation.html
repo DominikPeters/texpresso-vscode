@@ -1,0 +1,39 @@
+<!doctype html><meta charset="utf-8"><title>Native PNG patch validation</title>
+<style>body{background:#222;color:#ddd;font:14px system-ui;margin:20px}button{padding:8px}#pages{display:flex;gap:20px}#pages canvas{width:480px;height:auto;background:white}pre{white-space:pre-wrap}</style>
+<h1>Native PNG dirty rectangles</h1><button id="start">Verify production renderer</button><pre id="status">Ready</pre><div id="pages"></div>
+<script src="/preview-png.js"></script><script>
+const status=document.getElementById('status'),checks=[];
+const assert=(ok,label)=>{if(!ok)throw Error(label);checks.push(label);};
+const pixels=canvas=>canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+const equal=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+const load=name=>fetch('/'+name).then(r=>{if(!r.ok)throw Error(name);return r.arrayBuffer();});
+document.getElementById('start').onclick=async()=>{
+try{
+ const frames=await fetch('/frames.json').then(r=>r.json()),first=frames[0];
+ const page=await TexpressoPngPage.create(await load('0.png'),first.width,first.height,String(first.rasterId));
+ document.getElementById('pages').appendChild(page.canvas);
+ for(let i=1;i<frames.length;i++){
+  const h=frames[i],before=page.canvas,commit=await page.prepare({base:String(h.patch.base),rect:h.patch.rect},await load(i+'.png'));
+  commit();page.contentId=String(h.rasterId);assert(before===page.canvas,'Retained canvas for frame '+i);
+ }
+ const reference=await TexpressoPngPage.create(await load('reference.png'),first.width,first.height,'reference');
+ document.getElementById('pages').appendChild(reference.canvas);
+ assert(equal(pixels(page.canvas),pixels(reference.canvas)),'Every RGBA pixel matches full reference after gray, color and erasure patches');
+ const before=pixels(page.canvas);
+ for(const patch of [{base:'stale',rect:[0,0,0,0]},{base:page.contentId,rect:[-1,0,1,1]},
+   {base:page.contentId,rect:[first.width,0,1,1]},{base:page.contentId,rect:[0,0,0,1]}]){
+  let rejected=false;try{await page.prepare(patch,new ArrayBuffer(0));}catch{rejected=true;}
+  assert(rejected,'Rejected invalid base/geometry '+JSON.stringify(patch));
+ }
+ let rejected=false;try{await page.prepare({base:page.contentId,rect:[0,0,1,1]},await load('0.png'));}catch{rejected=true;}
+ assert(rejected,'Rejected mismatched PNG dimensions before mutation');
+ rejected=false;try{await page.prepare({base:page.contentId,rect:[0,0,1,1]},new Uint8Array([1,2,3]).buffer);}catch{rejected=true;}
+ assert(rejected,'Rejected malformed PNG before mutation');
+ assert(equal(before,pixels(page.canvas)),'Rejected patches leave every existing pixel untouched');
+ const noop=await page.prepare({base:page.contentId,rect:[0,0,0,0]},new ArrayBuffer(0));noop();
+ assert(equal(before,pixels(page.canvas)),'Metadata-only update leaves every pixel untouched');
+ status.textContent='PASS: '+checks.length+' checks\n'+checks.join('\n')+'\nBytes: '+frames.map(f=>f.byteLength).join(' → ');
+ await fetch('/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ok:true,checks,frames:frames.map(f=>({bytes:f.byteLength,patch:f.patch})),dpr:devicePixelRatio})});
+}catch(error){status.textContent='FAIL '+error.stack;await fetch('/result',{method:'POST',body:JSON.stringify({ok:false,error:String(error.stack)})});}
+};
+</script>

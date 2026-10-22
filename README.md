@@ -33,6 +33,11 @@ remain available. SVG stays sharp while zooming or using the magnifier; PDF
 features that cannot be preserved in SVG use PNG. Older engines use PNG in Auto.
 
 
+With a compatible engine, PNG updates transfer only the changed pixel rectangle
+and reuse a canvas. Unchanged pixels require no image payload. Missing bases,
+large changes and unsupported engines use full PNGs.
+
+
 Hyperref web and email links open through VS Code on a plain click. Internal
 links jump to their named destination, compiling later pages on demand.
 Control/Command click still performs inverse SyncTeX, including on links.

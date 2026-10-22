@@ -46,3 +46,7 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 #viewport.magnify #vector { cursor: zoom-in; touch-action: none; }
 #lensVector { position: absolute; max-width: none; max-height: none; }
 #lensVector > svg { display: block; width: 100%; height: auto; }
+
+#raster, #raster > canvas { display: block; width: 100%; height: 100%; user-select: none; }
+#viewport.magnify #raster { cursor: zoom-in; touch-action: none; }
+#lensCanvas { position: absolute; max-width: none; max-height: none; height: auto; }

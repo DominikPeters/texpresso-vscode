@@ -18,7 +18,7 @@ async function until(check: () => Promise<boolean>, description: string, timeout
   }
 }
 async function renders(): Promise<{ id: number; page: number }[]> {
-  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto)",(\d+),(\d+),/g)]
+  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto|png)",(\d+),(\d+),/g)]
     .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
 }
 
@@ -38,12 +38,13 @@ async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
       panel.webview.onDidReceiveMessage(message => { clearTimeout(timer); if (message.ok) { resolve(); } else { reject(new Error(message.error)); } });
     });
     const script = panel.webview.asWebviewUri(vscode.Uri.joinPath(media, 'preview-svg.js'));
-    panel.webview.html = `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}';"><body>
-      <script nonce="${nonce}" src="${script}"></script><script nonce="${nonce}">
+    const pngScript = panel.webview.asWebviewUri(vscode.Uri.joinPath(media, 'preview-png.js'));
+    panel.webview.html = `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob:; script-src 'nonce-${nonce}';"><body>
+      <script nonce="${nonce}" src="${pngScript}"></script><script nonce="${nonce}" src="${script}"></script><script nonce="${nonce}">
       const api = acquireVsCodeApi(), ns = 'http://www.w3.org/2000/svg';
       const svg = body => '<svg xmlns="' + ns + '" width="100" height="100">' + body + '</svg>';
       const assert = (ok, text) => { if (!ok) throw Error(text); };
-      try {
+      (async () => { try {
         const page = TexpressoSvgPage.create(svg('<defs><path id="glyph" d="M0 0L10 10"/></defs><use href="#glyph"/><path d="M1 1"/>'), 'before');
         assert(page, 'SVG module loaded'); document.body.appendChild(page.root);
         const retained = page.root.children[1];
@@ -55,11 +56,21 @@ async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
           assert(!TexpressoSvgPage.create(svg(body), 'bad'), 'Unsupported SVG rejected');
         }
         let rejected = false; try { page.patch({ base:'stale', operations:[] }, 'bad'); } catch { rejected = true; }
-        assert(rejected, 'Stale patch rejected'); api.postMessage({ ok:true });
-      } catch (error) { api.postMessage({ error:String(error.stack || error) }); }
+        assert(rejected, 'Stale patch rejected');
+        const bytes = text => Uint8Array.from(atob(text), c => c.charCodeAt(0)).buffer;
+        const raster = await TexpressoPngPage.create(bytes('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADklEQVR4nGP4DwYMEAoAU7oL9ZisIGcAAAAASUVORK5CYII='), 2, 2, 'before');
+        document.body.appendChild(raster.canvas);
+        const commit = await raster.prepare({ base:'before',rect:[1,1,1,1] }, bytes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC'));
+        commit(); raster.contentId = 'after';
+        const rgba = raster.context.getImageData(0,0,2,2).data;
+        assert(rgba[0] === 255 && rgba[1] === 255 && rgba[12] === 255 && rgba[13] === 0 && rgba[14] === 0, 'PNG crop replaces only the target pixel');
+        const noop = await raster.prepare({base:'after',rect:[0,0,0,0]}, new ArrayBuffer(0));noop();
+        let bad = false;try { await raster.prepare({base:'before',rect:[1,1,1,1]}, bytes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC')); }catch{bad=true;}
+        assert(bad, 'Stale PNG base rejected'); api.postMessage({ ok:true });
+      } catch (error) { api.postMessage({ error:String(error.stack || error) }); } })();
       </script>`;
     await result;
-    console.log('PASS: actual VS Code webview loads the SVG renderer, retains nodes, scopes clones and rejects active content');
+    console.log('PASS: actual VS Code webview loads SVG/PNG renderers, patches exact pixels, retains nodes and rejects invalid content');
   } finally { panel.dispose(); }
 }
 

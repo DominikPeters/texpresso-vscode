@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
-import { readPreviewProtocol, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
+import { readPreviewProtocol, isImageHeader, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
 import { TexpressoSession } from '../session';
 import { SessionPaths } from '../paths';
 import { config, document, FakeProcess } from './helpers';
@@ -120,5 +120,25 @@ test('SVG framing and bounded hyperlink metadata preserve UTF-8, escaping and ar
     readPreviewProtocol(input, () => {}, () => assert.fail('invalid metadata'), error => errors.push(error));
     input.write(JSON.stringify(['preview-image', { ...svg, annotations }]) + '\n');
     assert.equal(errors.length, 1);
+  }
+});
+
+
+test('PNG patch framing accepts metadata-only frames immediately and validates crop bounds', () => {
+  const empty = { ...header, byteLength: 0, rasterId: 2, patch: { base: 1, rect: [0, 0, 0, 0] } };
+  const input = new PassThrough(), images: PreviewImage[] = [], messages: unknown[] = [];
+  const reader = readPreviewProtocol(input, m => messages.push(m), f => images.push(f), e => { throw e; });
+  input.write(JSON.stringify(['preview-image', empty]) + '\n');
+  assert.equal(images.length, 1, 'zero-byte frames do not wait for a following chunk');
+  assert.equal(images[0].bytes.length, 0);
+  for (const byte of frame) { input.write(Buffer.from([byte])); }
+  input.write('["flush"]\n');
+  assert.equal(images.length, 2); assert.deepEqual(images[1].bytes, body); assert.deepEqual(messages, [['flush']]);
+  reader.close();
+  assert.ok(isImageHeader({ ...header, rasterId: 3, patch: { base: 2, rect: [1, 2, 3, 4] } }));
+  for (const change of [{ patch: undefined }, { mime: 'image/svg+xml' }, { rasterId: -1 },
+    { patch: { base: 0, rect: [0, 0, 0, 0] } }, { patch: { base: 1, rect: [0, 0, 1, 0] } },
+    { byteLength: 4, patch: { base: 1, rect: [99, 0, 2, 1] } }, { patch: { base: 1, rect: [0.5, 0, 0, 0] } }]) {
+    assert.equal(isImageHeader({ ...empty, ...change }), false);
   }
 });

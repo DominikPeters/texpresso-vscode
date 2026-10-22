@@ -1,4 +1,4 @@
-/* global acquireVsCodeApi, TexpressoLensCache, TexpressoViewport, TexpressoImageCache, TexpressoSvgPage */
+/* global acquireVsCodeApi, TexpressoLensCache, TexpressoViewport, TexpressoImageCache, TexpressoSvgPage, TexpressoPngPage */
 (() => {
   'use strict';
   const vscode = acquireVsCodeApi();
@@ -11,11 +11,11 @@
   let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= 0.25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
   let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let bounds = [0, 0, 595.28, 841.89];
-  const images = new TexpressoImageCache(entry => { if (entry.url) { URL.revokeObjectURL(entry.url); } if (entry.vector) { (entry.vector.layer || entry.vector.root).remove(); } });
-  const vector = element('vector'), lensVector = element('lensVector');
-  let svgPage;
-  const surface = () => svgPage ? vector : image;
-  const acknowledge = (id, renderMs) => post({ type: 'decoded', id, cached: images.keys(), svg: svgPage?.contentId, renderMs });
+  const images = new TexpressoImageCache(entry => { if (entry.url) { URL.revokeObjectURL(entry.url); } if (entry.vector) { (entry.vector.layer || entry.vector.root).remove(); } if (entry.raster) { entry.raster.canvas.remove(); entry.raster.canvas.width = 0; } });
+  const vector = element('vector'), lensVector = element('lensVector'), raster = element('raster'), lensCanvas = element('lensCanvas');
+  let svgPage, pngPage;
+  const surface = () => svgPage ? vector : pngPage ? raster : image;
+  const acknowledge = (id, renderMs) => post({ type: 'decoded', id, cached: images.keys(), svg: svgPage?.contentId, png: pngPage?.contentId, renderMs });
   let imageId;
   let header, objectUrl, stale = true, generation = 0, count = 0, complete = false, paused = false;
   let highlightTimer;
@@ -81,7 +81,7 @@
 
   function ready() {
     layout(false); lastWidth = width(); lastRequestedPage = page;
-    post({ type: 'ready', page, width: lastWidth, format, svgDom: true });
+    post({ type: 'ready', page, width: lastWidth, format, svgDom: true, pngCanvas: true });
   }
   function navigate(value) {
     closeLens();
@@ -185,7 +185,7 @@
   let magnify = false, regions = false, pointer, lensUrl, lensHeader;
   function closeLens() {
     pointer = undefined; lensCache.reset(); lens.hidden = true;
-    lensHeader = undefined; lensImage.hidden = true; lensVector.hidden = true; lensVector.replaceChildren();
+    lensHeader = undefined; lensImage.hidden = true; lensVector.hidden = true; lensVector.replaceChildren(); lensCanvas.hidden = true; lensCanvas.width = 0;
     post({ type: 'cancel-region' });
     if (lensUrl) { URL.revokeObjectURL(lensUrl); lensUrl = undefined; }
   }
@@ -202,13 +202,21 @@
     lens.style.left = `${left}px`; lens.style.top = `${top}px`;
     // A cached copy of the current image follows the pointer immediately while
     // the sharp, clipped rendering is in flight. No extra full-page raster.
-    lensBase.hidden = !!svgPage;
+    lensBase.hidden = !!svgPage || !!pngPage;
+    lensCanvas.hidden = !pngPage;
     if (svgPage) {
       if (!lensVector.firstChild) { lensVector.appendChild(svgPage.clone()); }
       lensVector.hidden = false;
       lensVector.style.width = `${rect.width * magnification}px`;
       lensVector.style.left = `${lensSize / 2 - (pointer.clientX - rect.left) * magnification}px`;
       lensVector.style.top = `${lensSize / 2 - (pointer.clientY - rect.top) * magnification}px`;
+    } else if (pngPage) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2), size = Math.ceil(lensSize * dpr);
+      if (lensCanvas.width !== size) { lensCanvas.width = size; lensCanvas.height = size; }
+      lensCanvas.style.width = `${lensSize}px`; lensCanvas.style.left = '0px'; lensCanvas.style.top = '0px';
+      const ctx = lensCanvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, lensSize, lensSize);
+      ctx.drawImage(pngPage.canvas, lensSize / 2 - (pointer.clientX - rect.left) * magnification,
+        lensSize / 2 - (pointer.clientY - rect.top) * magnification, rect.width * magnification, rect.height * magnification);
     } else if (lensBase.src !== image.src) { lensBase.src = image.src; }
     lensBase.style.width = `${rect.width * magnification}px`;
     lensBase.style.left = `${lensSize / 2 - (pointer.clientX - rect.left) * magnification}px`;
@@ -304,8 +312,8 @@
         closeLens(); clearDetail();
         const token = ++generation;
         const cached = images.get(m.contentId);
-        if (!cached && !m.bytes && !m.svgPatch) { post({ type: 'cache-miss', id: m.header.requestId }); break; }
-        let url, candidate, nextVector;
+        if (!cached && !m.bytes && !m.svgPatch && !m.rasterPatch) { post({ type: 'cache-miss', id: m.header.requestId }); break; }
+        let url, candidate, nextVector, nextRaster, commitRaster;
         try {
           if (m.svgPatch) {
             if (!svgPage || svgPage.contentId !== m.svgPatch.base) { throw Error('SVG patch base unavailable'); }
@@ -313,25 +321,37 @@
             svgPage.patch(m.svgPatch, m.contentId); nextVector = svgPage;
           } else if (cached?.vector) { nextVector = cached.vector; }
           else if (m.inlineSvg && m.bytes) { nextVector = TexpressoSvgPage.create(new TextDecoder().decode(m.bytes), m.contentId); }
-          if (!nextVector) {
+          if (cached?.raster) { nextRaster = cached.raster; }
+          else if (m.rasterPatch) {
+            if (!pngPage || pngPage.canvas.width !== m.header.width || pngPage.canvas.height !== m.header.height) { throw Error('PNG patch base unavailable'); }
+            commitRaster = await pngPage.prepare(m.rasterPatch, m.bytes);
+            nextRaster = pngPage;
+          } else if (m.inlinePng && m.bytes) { nextRaster = await TexpressoPngPage.create(m.bytes, m.header.width, m.header.height, m.contentId); }
+          if (!nextVector && !nextRaster) {
             url = cached ? cached.url : URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
             candidate = cached ? cached.image : new Image();
             if (!cached) { candidate.src = url; await candidate.decode(); }
           }
-          if (token !== generation) { if (url && !cached) { URL.revokeObjectURL(url); } acknowledge(m.header.requestId); break; }
+          if (token !== generation) { if (url && !cached) { URL.revokeObjectURL(url); }
+            if (nextRaster && nextRaster !== pngPage && !cached) { nextRaster.canvas.width = 0; }
+            acknowledge(m.header.requestId); break; }
+          if (commitRaster) {
+            images.take(pngPage.contentId); commitRaster(); nextRaster.contentId = m.contentId;
+          }
           const previous = objectUrl, previousId = imageId;
-          if (!cached || m.svgPatch) {
+          if (!cached || m.svgPatch || commitRaster) {
             const rect = sheet.getBoundingClientRect();
             const pixels = m.header.mime === 'image/png' ? m.header.width * m.header.height :
               Math.ceil(rect.width * devicePixelRatio) * Math.ceil(rect.height * devicePixelRatio);
-            images.put(m.contentId, nextVector ? { vector: nextVector } : { url, image: candidate }, m.header.byteLength + pixels * 4);
+            images.put(m.contentId, nextVector ? { vector: nextVector } : nextRaster ? { raster: nextRaster } : { url, image: candidate }, m.header.byteLength + pixels * 4);
           }
           if (svgPage && svgPage !== nextVector) {
             if (!images.has(svgPage.contentId)) { svgPage.layer?.remove(); }
             else { svgPage.layer?.classList.remove('active'); }
           }
-          imageId = m.contentId; svgPage = nextVector;
-          vector.hidden = !svgPage; image.hidden = !!svgPage;
+          if (pngPage && pngPage !== nextRaster && !images.has(pngPage.contentId)) { pngPage.canvas.remove(); pngPage.canvas.width = 0; }
+          imageId = m.contentId; svgPage = nextVector; pngPage = nextRaster;
+          vector.hidden = !svgPage; raster.hidden = !pngPage; image.hidden = !!svgPage || !!pngPage;
           if (svgPage) {
             if (!svgPage.layer) {
               svgPage.layer = document.createElement('div'); svgPage.layer.className = 'texpresso-svg-layer';
@@ -339,7 +359,7 @@
             }
             if (svgPage.layer.parentNode !== vector) { vector.appendChild(svgPage.layer); }
             svgPage.layer.classList.add('active');
-          } else { image.src = url; }
+          } else if (pngPage) { raster.replaceChildren(pngPage.canvas); } else { image.src = url; }
           objectUrl = url; header = m.header; bounds = header.bounds; page = header.page;
           stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
@@ -358,10 +378,12 @@
             }
           }
           vector.setAttribute('aria-label', image.alt);
+          pngPage?.canvas.setAttribute('aria-label', image.alt);
           acknowledge(header.requestId, performance.now() - renderStart);
         } catch (error) {
           console.warn('TeXpresso preview image update failed', error);
-          if (m.svgPatch) { images.forget(m.svgPatch.base); stale = true; describe(); post({ type: 'cache-miss', id: m.header.requestId }); }
+          if (m.rasterPatch || m.inlinePng) { stale = true; describe(); post({ type: 'cache-miss', id: m.header.requestId, pngUnsupported: !m.rasterPatch }); }
+          else if (m.svgPatch) { images.forget(m.svgPatch.base); stale = true; describe(); post({ type: 'cache-miss', id: m.header.requestId }); }
           else {
             if (cached) { images.forget(m.contentId); } else if (url) { URL.revokeObjectURL(url); }
             post({ type: 'decode-error', id: m.header.requestId });

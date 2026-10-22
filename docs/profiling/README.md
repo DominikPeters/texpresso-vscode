@@ -118,3 +118,5 @@ The [retained SVG follow-up](2026-10-22-svg-dom.md) implements the SVG DOM rende
 content-addressed glyph identities and bounded patches. It measures actual
 controller/webview work and a separate exact-pixel PNG dirty-rectangle prototype.
 PNG remains the default.
+
+Native PNG dirty rectangles are implemented and measured in [the PNG patch report](2026-10-22-png-patches.md).

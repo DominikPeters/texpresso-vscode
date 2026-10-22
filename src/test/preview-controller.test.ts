@@ -502,3 +502,59 @@ test('Auto rejects unsupported idle SVG without replacing PNG, and cancels upgra
     assert.equal(f.commands.at(-1)![1], 5);
   } finally { f.controller.dispose(); }
 });
+
+function pngFixture() {
+  const f = fixture(); Object.assign(f.session, { previewPngPatches: true });
+  f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+  f.send({ type: 'ready', page: 0, width: 1000, format: 'png', pngCanvas: true });
+  return f;
+}
+function pngFrame(id: number, sequence: number, patch?: { base: number; rect: [number, number, number, number] }) {
+  const f = cachedFrame(id, 0, id, sequence + 1, sequence, patch?.rect[2] === 0 ? 0 : 4);
+  return { ...f, header: { ...f.header, rasterId: id, patch } };
+}
+
+test('PNG patches require an acknowledged canvas base, survive source edits and cache page revisits', () => {
+  const f = pngFixture();
+  try {
+    assert.deepEqual(f.commands[0], ['preview-png', 1, 0, 1000, 1, 0, 0]);
+    f.controller.handle(pngFrame(1, 0));
+    const first = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(first.inlinePng, true);
+    f.send({ type: 'decoded', id: 1, png: first.contentId, cached: [first.contentId] });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); f.controller.handle(['preview-state', 2, 1, 2, true, 0]);
+    assert.deepEqual(f.commands.at(-1), ['preview-png', 2, 0, 1000, 2, 1, 1]);
+    f.controller.handle(pngFrame(2, 1, { base: 1, rect: [10, 20, 30, 40] }));
+    const changed = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(changed.rasterPatch.base, first.contentId); assert.ok(changed.bytes);
+    f.send({ type: 'decoded', id: 2, png: changed.contentId, cached: [changed.contentId] });
+    f.send({ type: 'viewport', page: 1, width: 1000, format: 'png' });
+    const second = { ...cachedFrame(3, 1, 9, 2, 1), header: { ...cachedFrame(3, 1, 9, 2, 1).header, rasterId: 3 } };
+    f.controller.handle(second);
+    const other = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: 3, png: other.contentId, cached: [changed.contentId, other.contentId] });
+    const before = f.commands.length;
+    f.send({ type: 'viewport', page: 0, width: 1000, format: 'png' });
+    const cached = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(cached.contentId, changed.contentId); assert.equal(cached.bytes, undefined); assert.equal(f.commands.length, before);
+    f.send({ type: 'cache-miss', id: cached.header.requestId });
+    assert.equal(f.commands.at(-1)![0], 'preview-png'); assert.equal(f.commands.at(-1)![6], 0, 'lost canvas forces a keyframe, not an unreconstructable patch replay');
+  } finally { f.controller.dispose(); }
+});
+
+test('identical PNG pixels reuse canvas identity with fresh metadata; unsupported canvases fall back to images', () => {
+  const f = pngFixture();
+  try {
+    f.controller.handle(pngFrame(1, 0)); const first = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: 1, png: first.contentId, cached: [first.contentId] });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); f.controller.handle(['preview-state', 2, 1, 2, true, 0]);
+    f.controller.handle(pngFrame(2, 1, { base: 1, rect: [0, 0, 0, 0] }));
+    const same = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(same.contentId, first.contentId); assert.equal(same.bytes, undefined); assert.equal(same.header.sequence, 1);
+    f.send({ type: 'cache-miss', id: 2 });
+    assert.equal(f.commands.at(-1)![6], 0);
+    f.controller.handle(pngFrame(3, 1)); f.send({ type: 'cache-miss', id: 3, pngUnsupported: true });
+    const fallback = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(fallback.inlinePng, false); assert.ok(fallback.bytes, 'full encoded PNG can use the ordinary image decoder');
+  } finally { f.controller.dispose(); }
+});

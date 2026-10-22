@@ -10,6 +10,7 @@ export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
   bounds: [number, number, number, number]; width: number; height: number;
   mime: 'image/png' | 'image/svg+xml'; byteLength: number;
+  rasterId?: number; patch?: { base: number; rect: [number, number, number, number] };
   svgEligible?: boolean; vectorCost?: number;
   fallback?: string; annotations?: PreviewAnnotations;
 }
@@ -37,12 +38,21 @@ function annotations(a: unknown): boolean {
     Array.isArray(value.destinations) && value.destinations.length <= 4096 && value.destinations.every(dest =>
       dest && name(dest.name) && coordinate(dest.x) && coordinate(dest.y));
 }
+function rasterPatch(h: PreviewImageHeader): boolean {
+  if (h.rasterId !== undefined && (!count(h.rasterId) || h.rasterId < 1 || h.mime !== 'image/png')) { return false; }
+  if (h.patch === undefined) { return h.byteLength > 0; }
+  const p = h.patch, r = p?.rect;
+  if (!p || !count(p.base) || p.base < 1 || h.rasterId === undefined || !Array.isArray(r) || r.length !== 4 || !r.every(count)) { return false; }
+  const [x, y, w, height] = r;
+  return h.byteLength === 0 ? r.every(n => n === 0) :
+    w > 0 && height > 0 && x + w <= h.width && y + height <= h.height;
+}
 export function isImageHeader(value: unknown): value is PreviewImageHeader {
   if (!value || typeof value !== 'object') { return false; }
   const h = value as PreviewImageHeader;
   return [h.requestId, h.revision, h.sequence, h.page, h.width, h.height, h.byteLength].every(count) &&
     h.width > 0 && h.height > 0 && h.width <= 8192 && h.height <= 8192 &&
-    h.width * h.height <= 4000000 && h.byteLength > 0 && h.byteLength <= MAX_IMAGE_BYTES &&
+    h.width * h.height <= 4000000 && rasterPatch(h) && h.byteLength <= MAX_IMAGE_BYTES &&
     (h.mime === 'image/png' || h.mime === 'image/svg+xml') && rectangle(h.bounds) &&
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
     (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
@@ -106,7 +116,8 @@ export function readPreviewProtocol(input: Readable, message: (value: Message | 
           const value: unknown = JSON.parse(text);
           if (Array.isArray(value) && value[0] === 'preview-image') {
             if (value.length !== 2 || !isImageHeader(value[1])) { throw new Error('Invalid preview image header.'); }
-            header = value[1]; body = Buffer.allocUnsafe(header.byteLength);
+            if (value[1].byteLength === 0) { image({ header: value[1], bytes: Buffer.alloc(0) }); }
+            else { header = value[1]; body = Buffer.allocUnsafe(header.byteLength); }
           } else {
             if (!isPreviewMessage(value) && (!validateMessage(value) ||
                 (Array.isArray(value) && previewNotifications.has(value[0])))) {

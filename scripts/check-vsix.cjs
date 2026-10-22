@@ -32,7 +32,7 @@ function readVSIX(file) {
 function checkVSIX(file) {
   const files = readVSIX(file);
   const allowed = ['package.json', 'readme.md', 'LICENSE.txt', 'assets/texpresso_logo.png', 'dist/extension.js',
-    'media/preview.js', 'media/preview-cache.js', 'media/preview-svg.js', 'media/preview.css', 'media/preview-lens.js', 'media/preview-viewport.js', 'media/codicons-LICENSE'];
+    'media/preview.js', 'media/preview-cache.js', 'media/preview-svg.js', 'media/preview-png.js', 'media/preview.css', 'media/preview-lens.js', 'media/preview-viewport.js', 'media/codicons-LICENSE'];
   assert.deepEqual([...files.keys()].filter(name => name.startsWith('extension/')).sort(),
     allowed.map(name => 'extension/' + name).sort(), 'VSIX contains exactly the production payload');
   for (const name of allowed) {

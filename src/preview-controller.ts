@@ -13,6 +13,9 @@ type RegionRequest = { token: number; bounds: number[]; width: number; purpose: 
 
 type PreparedSvg = { document?: SvgDocument; bytes: Buffer; id: string; cost: number };
 
+type RasterBase = { id: number; rasterId: number; contentId: string; page: number; width: number; height: number; bounds: number[] };
+type RasterPage = { header: PreviewImageHeader; contentId: string };
+
 type PreviewEvent = PreviewMessage | PreviewImage | { sourceSequence: number };
 
 export class PreviewController {
@@ -31,11 +34,15 @@ export class PreviewController {
   private svgDecodeFailed = false;
   private destination?: string;
   private nextId = 0;
-  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number };
+  private inFlight?: { id: number; revision: number; sequence: number; page: number; region?: RegionRequest; key?: string; cached?: boolean; width?: number; upgrade?: boolean; patched?: boolean; processingMs?: number; raster?: boolean; contentId?: string };
   // Encoded pages are valid only within an engine revision and source barrier.
   private pages = new Map<string, PreviewImage>();
   private pageBytes = 0;
   private svgDom = false;
+  private pngCanvas = false;
+  private rasterBase?: RasterBase;
+  private rasterPending?: RasterBase;
+  private rasterPages = new Map<string, RasterPage>();
   private svgDocuments = new Map<string, PreparedSvg>();
   private svgDocumentBytes = 0;
   private svgBase?: { contentId: string; page: number; document: SvgDocument };
@@ -59,6 +66,7 @@ export class PreviewController {
     const webview = this.panel.webview;
     const script = webview.asWebviewUri(api.Uri.joinPath(media, 'preview.js'));
     const viewportScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-viewport.js'));
+    const pngScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-png.js'));
     const svgScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-svg.js'));
     const cacheScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-cache.js'));
     const lensScript = webview.asWebviewUri(api.Uri.joinPath(media, 'preview-lens.js'));
@@ -69,13 +77,13 @@ export class PreviewController {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible;
       this.interactive(); this.gesture = false; this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
-      this.shown = undefined; this.destination = undefined; this.decodedImages.clear(); this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
+      this.shown = undefined; this.destination = undefined; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
       // A restored webview announces ready; a retained live one answers ping.
       if (this.panel.visible) { void this.post({ type: 'ping' }); }
     });
     this.panel.onDidDispose(() => {
       const notify = !this.disposed;
-      this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.svgBase = undefined; this.svgPending = undefined;
+      this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined;
       if (notify) { closed(); }
     });
     webview.html = `<!doctype html><html><head><meta charset="utf-8">
@@ -97,11 +105,12 @@ export class PreviewController {
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="status">Waiting for the first page…</div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
-      <div id="sheet" hidden><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
-      <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><div id="lensVector" hidden></div><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
+      <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false"><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
+      <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><canvas id="lensCanvas" hidden></canvas><div id="lensVector" hidden></div><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
       <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
       <script nonce="${this.instance}" src="${cacheScript}"></script>
+      <script nonce="${this.instance}" src="${pngScript}"></script>
       <script nonce="${this.instance}" src="${svgScript}"></script>
       <script nonce="${this.instance}" src="${script}"></script></body></html>`;
     if (session.previewState) { this.handle(session.previewState); }
@@ -186,7 +195,7 @@ export class PreviewController {
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > 4096) { return; }
-        if (m.type === 'ready') { this.decodedImages.clear(); this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; }
+        if (m.type === 'ready') { this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; this.pngCanvas = m.pngCanvas === true; }
         const format = m.format === 'svg' && this.session.previewSvg ? 'svg' : m.format === 'png' ? 'png' : 'auto';
         if (format !== this.format) { this.svgDecodeFailed = false; }
         if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
@@ -211,6 +220,8 @@ export class PreviewController {
           if (this.svgPending && this.svgPending.id === m.id && this.svgPending.contentId === m.svg) { this.svgBase = this.svgPending; }
           else if (this.svgBase?.contentId !== m.svg) { this.svgBase = undefined; }
           this.svgPending = undefined;
+          this.rasterBase = this.rasterPending?.id === m.id && this.rasterPending.contentId === m.png ? this.rasterPending : undefined;
+          this.rasterPending = undefined;
         }
         if (m.id === this.inFlight?.id && Array.isArray(m.cached)) {
           this.decodedImages = new Set(m.cached.filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{64}$/.test(id)).slice(0, 4));
@@ -219,7 +230,9 @@ export class PreviewController {
         break;
       case 'cache-miss':
         if (this.inFlight && m.id === this.inFlight.id && !this.inFlight.region) {
-          this.decodedImages.clear(); this.svgBase = undefined; this.svgPending = undefined; this.release(); this.dirty = true; this.flush();
+          if (m.pngUnsupported === true) { this.pngCanvas = false; }
+          else if (this.inFlight.raster) { this.forceNative = true; }
+          this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.release(); this.dirty = true; this.flush();
         }
         break;
       case 'decode-error':
@@ -304,14 +317,25 @@ export class PreviewController {
       const key = this.pageKey(verb === 'preview-auto' ? `auto:${limit}` : verb === 'preview-svg' ? 'svg' : 'png');
       this.inFlight = { id: ++this.nextId, revision: this.state[1], sequence: this.state[2], page: this.page, key, width: this.width };
       const cached = !this.forceNative && (verb === 'preview-auto' && learned?.svg ? this.pages.get(this.pageKey('svg')) || this.pages.get(key) : this.pages.get(key));
-      this.forceNative = false;
-      if (cached) {
+      const rasterKey = this.pageKey('png');
+      const raster = !this.forceNative && (this.rasterPages.get(key) || this.rasterPages.get(rasterKey));
+      const reference = raster && this.decodedImages.has(raster.contentId) && verb !== 'preview-svg' ? raster : undefined;
+      const force = this.forceNative; this.forceNative = false;
+      if (!cached && reference) {
+        this.inFlight.cached = true; this.inFlight.contentId = reference.contentId;
+        this.image({ header: { ...reference.header, requestId: this.nextId }, bytes: Buffer.alloc(0) });
+      } else if (cached) {
         this.cachePage(key, cached);
         this.inFlight.cached = true;
         this.image({ header: { ...cached.header, requestId: this.nextId }, bytes: cached.bytes });
       } else {
         this.enginePage = undefined;
-        if (verb === 'preview-auto') { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2], limit]); }
+        const patches = this.pngCanvas && this.session.previewPngPatches;
+        const base = !force && this.rasterBase?.page === this.page && this.decodedImages.has(this.rasterBase.contentId) ? this.rasterBase.rasterId : 0;
+        if (verb === 'preview-auto') {
+          if (patches) { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2], limit, base]); }
+          else { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2], limit]); }
+        } else if (verb === 'preview-render' && patches) { this.session.send(['preview-png', this.nextId, this.page, this.width, this.state[1], this.state[2], base]); }
         else { this.session.send([verb, this.nextId, this.page, this.width, this.state[1], this.state[2]]); }
       }
     } else if ((this.region || this.detail) && this.shown) {
@@ -338,7 +362,7 @@ export class PreviewController {
     if (!request || h.requestId !== request.id) { return; }
     // An obsolete viewport can still supply a useful page/size for a later
     // revisit. Never retain it across a source barrier or engine revision.
-    if (!request.cached && request.key && h.sequence === this.session.previewSequence &&
+    if (!h.patch && !request.cached && request.key && h.sequence === this.session.previewSequence &&
         h.revision === this.state?.[1] && h.page === request.page) { this.cachePage(request.key, frame); this.cachePage(this.pageKey(h.mime === 'image/svg+xml' ? 'svg' : 'png', h.page, request.width), frame); }
     if (!this.ready || !this.panel.visible || h.sequence !== this.session.previewSequence || h.revision !== this.state?.[1] ||
         request.page !== this.page || h.page !== request.page || this.dirty) {
@@ -358,12 +382,40 @@ export class PreviewController {
     const svgDocument = prepared?.document, payload = prepared?.bytes || frame.bytes;
     const displayHeader = { ...h, byteLength: payload.length };
     if (!request.region) { this.shown = displayHeader; }
-    const contentId = !request.region ? prepared?.id || createHash('sha256').update(h.mime).update(payload).digest('hex') : undefined;
+    let rasterPatch: { base: string; rect: number[] } | undefined;
+    if (h.patch) {
+      const base = this.rasterBase;
+      if (!this.pngCanvas || !base || h.patch.base !== base.rasterId || h.page !== base.page ||
+          h.width !== base.width || h.height !== base.height || h.bounds.some((n, i) => n !== base.bounds[i]) || !this.decodedImages.has(base.contentId)) {
+        this.rasterBase = undefined; this.forceNative = true; this.release(); this.dirty = true; this.flush(); return;
+      }
+      rasterPatch = { base: base.contentId, rect: h.patch.rect };
+      // Older full PNG bytes cannot reconstruct an updated canvas. Retain the
+      // decoded-page reference instead; a missing canvas requests a keyframe.
+      for (const [key, cached] of this.pages) {
+        if (cached.header.mime === 'image/png' && cached.header.page === h.page &&
+            cached.header.width === h.width && cached.header.height === h.height) {
+          this.pageBytes -= cached.bytes.length; this.pages.delete(key);
+        }
+      }
+    }
+    const contentId = !request.region ? request.contentId || (rasterPatch ? frame.bytes.length ?
+      createHash('sha256').update('png-patch').update(rasterPatch.base).update(JSON.stringify(rasterPatch.rect)).update(payload).digest('hex') : rasterPatch.base :
+      prepared?.id || createHash('sha256').update(h.mime).update(payload).digest('hex')) : undefined;
+    request.raster = !request.region && this.pngCanvas && h.rasterId !== undefined;
+    this.rasterPending = request.raster && contentId ? { id: h.requestId, rasterId: h.rasterId!, contentId, page: h.page, width: h.width, height: h.height, bounds: h.bounds } : undefined;
+    if (request.raster && contentId && request.key) {
+      const cachedHeader = { ...displayHeader }; delete cachedHeader.patch;
+      for (const key of [request.key, this.pageKey('png', h.page, request.width)]) {
+        this.rasterPages.delete(key); this.rasterPages.set(key, { header: cachedHeader, contentId });
+      }
+      while (this.rasterPages.size > 8) { this.rasterPages.delete(this.rasterPages.keys().next().value as string); }
+    }
     const svgPatch = svgDocument && contentId && !this.decodedImages.has(contentId) && this.svgBase?.page === h.page
       ? diffSvg(this.svgBase.document, svgDocument, this.svgBase.contentId) : undefined;
     request.patched = !!svgPatch;
     this.svgPending = svgDocument && contentId ? { id: h.requestId, page: h.page, contentId, document: svgDocument } : undefined;
-    const bytes = (contentId && this.decodedImages.has(contentId)) || svgPatch ? undefined : new Uint8Array(payload).buffer;
+    const bytes = (contentId && this.decodedImages.has(contentId)) || svgPatch || request.contentId ? undefined : new Uint8Array(payload).buffer;
     if (!request.cached && this.inverse && this.inverse.revision === h.revision &&
         this.inverse.sequence === h.sequence && this.inverse.page === h.page) {
       const point = this.inverse; this.inverse = undefined;
@@ -378,7 +430,7 @@ export class PreviewController {
       this.target.sequence === h.sequence ? this.target : undefined;
     if (target && !request.region) { this.target = undefined; }
     void this.post(request.region ? { type: request.region.purpose, header: displayHeader, bytes, token: request.region.token } :
-      { type: 'image', header: displayHeader, bytes, contentId, inlineSvg: !!svgDocument, svgPatch, target, destination: this.destination, refining: this.canUpgrade() })
+      { type: 'image', header: displayHeader, bytes, contentId, inlineSvg: !!svgDocument, inlinePng: request.raster, rasterPatch, svgPatch, target, destination: this.destination, refining: this.canUpgrade() })
       .then(delivered => { if (!delivered && this.inFlight?.id === h.requestId) { this.release(); this.ready = false; this.dirty = true; } });
     this.status();
   }
@@ -438,7 +490,7 @@ export class PreviewController {
     }, 350);
   }
 
-  private clearPages(): void { this.pages.clear(); this.pageBytes = 0; this.inverse = undefined; this.forceNative = false; }
+  private clearPages(): void { this.rasterPages.clear(); this.pages.clear(); this.pageBytes = 0; this.inverse = undefined; this.forceNative = false; }
   private cachePage(key: string, frame: PreviewImage): void {
     const previous = this.pages.get(key);
     if (previous) { this.pageBytes -= previous.bytes.length; this.pages.delete(key); }
@@ -459,6 +511,6 @@ export class PreviewController {
     return this.disposed ? Promise.resolve(false) : Promise.resolve(
       this.panel.webview.postMessage({ instance: this.instance, ...message })).catch(() => false);
   }
-  private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; }
-  dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
+  private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; this.rasterPending = undefined; }
+  dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
 }

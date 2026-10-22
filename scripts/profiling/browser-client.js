@@ -42,7 +42,7 @@ window.acquireVsCodeApi = () => ({
     });
     if (m.type === 'decoded') {
       const trace = document.getElementById('manual-frames');
-      if (trace) trace.textContent = 'Received: ' + profileFrames.map(f => (f.mime === 'image/svg+xml' ? 'SVG' : 'PNG') + (f.type === 'image' ? '' : '(' + f.type + ')')).join(' → ');
+      if (trace) trace.textContent = 'Received: ' + profileFrames.map(f => (f.mime === 'image/svg+xml' ? 'SVG' : 'PNG') + (f.rasterPatch ? ' patch ' + f.bytes + 'B' : '') + (f.type === 'image' ? '' : '(' + f.type + ')')).join(' → ');
       const entry = profileFrames.find(f => f.request === m.id);
       if (entry) entry.inlineSvg = !!m.svg;
       const frame = profileFrames.find(f => f.request === m.id);
@@ -85,8 +85,8 @@ events.onmessage = async event => {
     }
     profileFrames.push({
       type: data.type, request: data.header.requestId, mime: data.header.mime,
-      bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame && !data.svgPatch,
-      svgPatch: !!data.svgPatch, patchBytes: data.svgPatch ? new TextEncoder().encode(JSON.stringify(data.svgPatch)).length : 0,
+      bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame && !data.svgPatch && !data.rasterPatch,
+      rasterPatch: data.rasterPatch, svgPatch: !!data.svgPatch, patchBytes: data.svgPatch ? new TextEncoder().encode(JSON.stringify(data.svgPatch)).length : 0,
       width: data.header.width, height: data.header.height,
       processingMs: data.profileProcessingMs,
       transferMs, dispatched: performance.now()
