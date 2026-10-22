@@ -1,12 +1,17 @@
 name: Native development bundle
 on:
   workflow_dispatch:
+    inputs:
+      notarize:
+        description: Sign with Developer ID and submit to Apple for notarization
+        type: boolean
+        default: true
 permissions:
   contents: read
 jobs:
   macos:
     runs-on: macos-latest
-    timeout-minutes: 35
+    timeout-minutes: 65
     env:
       SDL_VIDEODRIVER: dummy
       TEXPRESSO_TEST_TECTONIC: '0'
@@ -69,14 +74,61 @@ jobs:
           export TEXPRESSO_BINARY="$PWD/native/.bundles/macos/bin/texpresso"
           npm run test:engine
         timeout-minutes: 8
+      - name: Sign and notarize the tested bundle
+        id: notarize
+        if: inputs.notarize
+        timeout-minutes: 25
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+        run: >-
+          python3 native/scripts/notarize.py
+          --bundle native/.bundles/macos
+          --output native/.bundles/macos-signed
+          --reports native/.bundles/notarization
+      - name: Test the Developer ID signed bundle
+        if: inputs.notarize
+        run: |
+          export PATH="/Library/TeX/texbin:$PATH"
+          export TEXPRESSO_BINARY="$PWD/native/.bundles/macos-signed/bin/texpresso"
+          npm run test:engine
+        timeout-minutes: 8
+      - name: Save accepted signed bundle
+        if: success() && inputs.notarize
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-${{ runner.arch }}-notarized
+          path: |
+            native/.bundles/macos-signed.zip
+            native/.bundles/macos-signed.zip.sha256
+            native/.bundles/macos-signed/build-manifest.json
+            native/.bundles/notarization/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Clean up signing credentials even after cancellation
+        if: always() && inputs.notarize
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil, subprocess
+          for folder in pathlib.Path(os.environ['RUNNER_TEMP']).glob('texpresso-sign-*'):
+              subprocess.run(['security', 'delete-keychain', str(folder / 'signing.keychain-db')],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+              shutil.rmtree(folder)
+          PY
       - name: Save development bundle and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-macos-${{ runner.arch }}
           path: |
-            native/.bundles/*.zip
-            native/.bundles/*/build-manifest.json
+            native/.bundles/macos.zip
+            native/.bundles/macos/build-manifest.json
+            native/.bundles/notarization/
             artifacts/
           if-no-files-found: ignore
           retention-days: 14

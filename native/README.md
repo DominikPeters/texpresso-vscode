@@ -108,12 +108,56 @@ and package downloads occur on the GitHub runner, with the large source/build
 inputs cached. It does not publish a release or modify the extension's default
 engine selection.
 
+## Developer ID signing and notarization
+
+The manual **Native development bundle** workflow signs and notarizes by default.
+It tests the ad-hoc bundle first, then signs a separate copy of both executables
+and every bundled dylib using Developer ID Application, hardened runtime, and
+secure timestamps. All signatures must have the same Team ID. It refreshes the
+manifest's binary hashes after signing, submits the resulting ZIP using
+`notarytool`, and tests the signed bundle with local TeX Live again.
+
+Repository Actions secrets:
+
+| Secret | Contents |
+| --- | --- |
+| `APPLE_CERTIFICATE` | Base64-encoded Developer ID Application `.p12`, including its private key |
+| `APPLE_CERTIFICATE_PASSWORD` | Password protecting that `.p12` |
+| `APPLE_SIGNING_IDENTITY` | The Developer ID Application identity name or certificate SHA-1 |
+| `KEYCHAIN_PASSWORD` | Password for the runner's temporary keychain |
+| `APPLE_API_KEY` | App Store Connect team API key ID |
+| `APPLE_API_ISSUER` | App Store Connect team API issuer UUID |
+| `APPLE_API_PRIVATE_KEY` | The matching `.p8` PEM text, or its base64 encoding |
+
+Credentials are scoped to the signing step, imported into a private temporary
+keychain, and removed on completion, failure, or cancellation. They are never
+included in artifacts. The workflow is manually dispatched, not run on PRs.
+Disable its `notarize` input to make only an ad-hoc development bundle; missing
+secrets fail a requested notarization rather than silently skipping it.
+
+The `native-macos-<arch>-notarized` artifact is uploaded only after Apple's
+`Accepted` result and successful signed-engine tests. It contains the signed ZIP,
+its SHA-256, the updated manifest, and Apple's receipt/log. Development ZIPs and
+notarization diagnostics are saved separately, including on failure. A submission
+ID is saved before waiting so a timeout can be investigated without resubmitting.
+Plain Mach-O command-line binaries and ZIP archives cannot have tickets stapled;
+Gatekeeper retrieves their notarization tickets online. An offline-stapled
+container would require a later DMG or installer packaging step.
+
+For a local CI-like signing run, set the same environment variables and use:
+
+```sh
+python3 native/scripts/notarize.py --bundle /path/to/adhoc-bundle \
+  --output /path/to/new-signed-bundle --reports /path/to/notarization-reports
+```
+
+Signing does not publish a release or add native files to the VSIX.
+
 ## Before distributing bundled builds
 
 The initial host build records system dependency versions but is not yet a
 fully pinned toolchain. Release work includes pinning the remaining codec/font
 dependencies and build SDKs, completing notice/source-distribution review,
 building Linux and other supported targets, and testing on clean machines.
-Developer ad-hoc signing also needs the release signing/notarization policy.
 Native archives stay outside the ordinary VSIX until runtime selection and
 platform-specific packaging have been implemented and tested together.
