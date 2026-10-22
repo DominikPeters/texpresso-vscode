@@ -6,7 +6,7 @@
   const template = globalElement('sheet').cloneNode(true); globalElement('sheet').remove();
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
-  const { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
+  const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
   const status = globalElement('status'), zoomSelect = globalElement('zoom'), formatSelect = globalElement('format');
   let layoutEnd;
   let currentPage = Number.isInteger(saved.page) ? clamp(saved.page, 0, 100000) : 0;
@@ -177,7 +177,28 @@
     const rect = geometry.rects[currentPage], effective = Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96;
     const next = clamp(effective * factor, .25, 4); if (next !== effective) { changeZoom(next, origin, anchor); }
   }
-  function target(target) { navigate(target.page, false); views.get(target.page)?.highlight(target); requestViewport(false); }
+  function revealTarget(target) {
+    const sheet = views.get(target.page)?.sheet, page = geometry.rects[target.page];
+    if (!sheet || !page) { return; }
+    const rect = sheet.getBoundingClientRect(), clip = viewport.getBoundingClientRect(), b = page.bounds;
+    const delta = syncScrollCorrection({
+      x: rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
+      y: rect.top + (target.y - b[1]) / (b[3] - b[1]) * rect.height
+    }, { left: clip.left + viewport.clientLeft, top: clip.top + viewport.clientTop,
+      width: viewport.clientWidth, height: viewport.clientHeight });
+    const left = clamp(viewport.scrollLeft + delta.x, 0, Math.max(0, viewport.scrollWidth - viewport.clientWidth));
+    const top = clamp(viewport.scrollTop + delta.y, 0, Math.max(0, viewport.scrollHeight - viewport.clientHeight));
+    // Check the clamped correction too: a page boundary may prevent centering.
+    const horizontal = Math.abs(left - viewport.scrollLeft) > 4, vertical = Math.abs(top - viewport.scrollTop) > 4;
+    if (horizontal) { viewport.scrollLeft = left; }
+    if (vertical) { viewport.scrollTop = top; }
+    if (horizontal || vertical) { programmaticTop = viewport.scrollTop; }
+  }
+  function target(target) {
+    closeLens(); currentPage = clamp(target.page, 0, complete && count ? count - 1 : 100000);
+    configure(); mountWindow(); revealTarget(target); mountWindow();
+    views.get(target.page)?.highlight(target); describe(); save(); requestViewport(false);
+  }
 
   function createPage(page) {
     const sheet = template.cloneNode(true); sheet.hidden = false; sheet.className = 'page-sheet waiting'; sheet.dataset.page = String(page);
@@ -208,7 +229,8 @@
       const mark = element('highlight'); mark.style.left = `${100*(target.x-bounds[0])/(bounds[2]-bounds[0])}%`; mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
       clearTimeout(highlightTimer); mark.hidden = true; void mark.offsetWidth; mark.hidden = false;
       highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
-      requestAnimationFrame(() => { if (sheet.isConnected) { mark.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); programmaticTop = viewport.scrollTop; } });
+      const token = generation;
+      requestAnimationFrame(() => { if (sheet.isConnected && !stale && generation === token) { revealTarget(target); } });
     }
   let detailImage = element('detail'), detailUrl, detailTimer, detailFailed = false, autoRefining = false;
   const detailCache = new DetailCache();
@@ -561,7 +583,7 @@
         if (complete) { currentPage = count === 0 ? 0 : Math.min(currentPage,count-1); }
         layoutDocument(true, false, anchor); describe(); break;
       }
-      case 'jump': navigate(m.page, false); if (m.target) { target(m.target); } requestViewport(false); break;
+      case 'jump': if (m.target) { target(m.target); } else { navigate(m.page, false); requestViewport(false); } break;
       case 'invalidate': problem = ''; for (const view of views.values()) { view.invalidate(); } describe(); requestViewport(false); break;
       case 'error': problem = m.text; if (Number.isInteger(m.page)) { views.get(m.page)?.invalidate(); } else { for (const view of views.values()) { view.invalidate(); } } describe(); break;
       case 'link-error': problem = m.text; describe(); break;

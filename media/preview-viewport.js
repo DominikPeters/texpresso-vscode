@@ -20,6 +20,17 @@
       y: after.top + point.y * after.height - origin.y,
     };
   }
+  // Keep source following still while the target remains comfortably visible.
+  // A small hysteresis band absorbs SyncTeX/rounding noise near the margin.
+  function syncScrollCorrection(point, viewport) {
+    const axis = (value, start, size) => {
+      const margin = Math.min(48, size * .1), tolerance = 4;
+      if (value >= start + margin - tolerance && value <= start + size - margin + tolerance) { return 0; }
+      const delta = value - start - size / 2;
+      return Math.abs(delta) > tolerance ? delta : 0;
+    };
+    return { x: axis(point.x, viewport.left, viewport.width), y: axis(point.y, viewport.top, viewport.height) };
+  }
   function rasterWidth(bounds, cssWidth, dpr) {
     const w = bounds[2] - bounds[0], h = bounds[3] - bounds[1];
     // Match the engine's bounded raster allocation instead of repeatedly
@@ -102,5 +113,5 @@
       return { first, last, center, start, end };
     }
   }
-  return { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache, PageLayout };
+  return { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache, PageLayout };
 });

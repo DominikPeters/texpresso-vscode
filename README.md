@@ -95,7 +95,7 @@ Launch errors offer **Check Setup**, **Open Settings**, and **Show Engine Log**.
 
 ### Synchronization and refresh
 
-With automatic SyncTeX enabled, the preview synchronizes to the active cursor after compilation, including the first compilation and recovery from a temporary syntax error. Source line numbers are translated between VS Code and SyncTeX conventions.
+With automatic SyncTeX enabled, the preview synchronizes to the active cursor after compilation, including the first compilation and recovery from a temporary syntax error. Source following keeps comfortably visible targets in place and ignores tiny scroll corrections; targets approaching the viewport edge are revealed automatically. Source line numbers are translated between VS Code and SyncTeX conventions.
 
 Renaming a tracked source file or its containing folder through VS Code restarts the preview with the current main-document path. Included files found through configured `-I` directories are matched to their editor buffers, including paths containing spaces and buffers opened through directory symlinks.
 
