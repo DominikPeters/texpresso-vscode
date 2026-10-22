@@ -41,6 +41,8 @@ window.acquireVsCodeApi = () => ({
       body: JSON.stringify(m)
     });
     if (m.type === 'decoded') {
+      const trace = document.getElementById('manual-frames');
+      if (trace) trace.textContent = 'Received: ' + profileFrames.map(f => (f.mime === 'image/svg+xml' ? 'SVG' : 'PNG') + (f.type === 'image' ? '' : '(' + f.type + ')')).join(' → ');
       const entry = profileFrames.find(f => f.request === m.id);
       if (entry) entry.inlineSvg = !!m.svg;
       const frame = profileFrames.find(f => f.request === m.id);
@@ -72,7 +74,7 @@ events.onmessage = async event => {
   const data = JSON.parse(event.data);
   if (profileJob.cacheDisabled) data.contentId = undefined;
   if (data.type === 'image' || data.frame) {
-    if (data.type === 'image' && data.header.mime !== (profileJob.codec === 'svg' ? 'image/svg+xml' : 'image/png')) {
+    if (profileJob.codec !== 'auto' && data.type === 'image' && data.header.mime !== (profileJob.codec === 'svg' ? 'image/svg+xml' : 'image/png')) {
       document.getElementById('status').textContent = 'PROFILE ERROR: unexpected codec ' + data.header.mime;
       throw new Error('Unexpected codec');
     }
@@ -82,7 +84,7 @@ events.onmessage = async event => {
       data.bytes = await response.arrayBuffer(); transferMs = performance.now() - start;
     }
     profileFrames.push({
-      request: data.header.requestId, mime: data.header.mime,
+      type: data.type, request: data.header.requestId, mime: data.header.mime,
       bytes: data.bytes?.byteLength || 0, cacheReference: !data.frame && !data.svgPatch,
       svgPatch: !!data.svgPatch, patchBytes: data.svgPatch ? new TextEncoder().encode(JSON.stringify(data.svgPatch)).length : 0,
       width: data.header.width, height: data.header.height,
@@ -96,6 +98,18 @@ events.onmessage = async event => {
 };
 
 (async () => {
+  if (profileJob.manual) {
+    const controls = document.createElement('aside');
+    const trace = document.createElement('span'); trace.id = 'manual-frames'; trace.textContent = 'Waiting for frames';
+    for (const [label, mode] of [['Type letter on page 1', 'letter'], ['Backspace on page 1', 'backspace']]) {
+      const button = document.createElement('button'); button.textContent = label;
+      button.onclick = () => fetch('/edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, page: 0, letter: 'c' }) });
+      controls.appendChild(button);
+    }
+    controls.appendChild(trace); document.body.insertBefore(controls, document.getElementById('viewport'));
+    return;
+  }
   const nextFrame = () => new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Browser frame timeout')), 6e4);
     decodedResolve = () => {

@@ -18,7 +18,7 @@ window.onmessage=event=>{
  const result=event.data.summary;measurements.push(result);
  element('results').textContent+=result.fixture+' '+result.codec+' #'+(result.repeat+1)+' completed\n';
  const rows=[];
- for(const fixture of [...new Set(measurements.map(r=>r.fixture))])for(const codec of ['png','svg']){
+ for(const fixture of [...new Set(measurements.map(r=>r.fixture))])for(const codec of ['png','svg','auto']){
   const selected=measurements.filter(r=>r.fixture===fixture&&r.codec===codec);if(!selected.length)continue;
   const row=document.createElement('tr');
   for(const value of [fixture.replace('-10',''),codec.toUpperCase(),...['initial','page','cache','typing','edit','coordinate','decode'].map(key=>median(selected.flatMap(r=>r.metrics[key])))]){

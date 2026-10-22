@@ -28,7 +28,7 @@ const jobs = [];
 
 const repeats = Number(process.env.TEXPRESSO_PROFILE_REPEATS || 5);
 
-for (let repeat = 0; repeat < repeats; repeat++) for (const fixture of cases) for (const codec of (repeat % 2 ? [ 'svg', 'png' ] : [ 'png', 'svg' ]).filter(codec => (process.env.TEXPRESSO_PROFILE_CODECS || 'png,svg').split(',').includes(codec))) jobs.push({
+for (let repeat = 0; repeat < repeats; repeat++) for (const fixture of cases) for (const codec of (repeat % 2 ? [ 'svg', 'png', 'auto' ] : [ 'png', 'svg', 'auto' ]).filter(codec => (process.env.TEXPRESSO_PROFILE_CODECS || 'png,svg').split(',').includes(codec))) jobs.push({
   fixture: fixture.id,
   codec,
   repeat
@@ -112,6 +112,7 @@ async function prepare(index) {
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)[1];
   const bridge = fs.readFileSync(path.join(__dirname, 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
     ...job,
+    manual: process.env.TEXPRESSO_PROFILE_MANUAL === '1',
     index,
     pages: fixture.pages,
     svgDomDisabled: process.env.TEXPRESSO_PROFILE_DISABLE_SVG_DOM === '1',

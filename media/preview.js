@@ -9,13 +9,13 @@
   const saved = vscode.getState() || {};
   let page = Number.isInteger(saved.page) && saved.page >= 0 ? saved.page : 0;
   let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= 0.25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
-  let format = saved.format === 'svg' ? 'svg' : 'png';
+  let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let bounds = [0, 0, 595.28, 841.89];
   const images = new TexpressoImageCache(entry => { if (entry.url) { URL.revokeObjectURL(entry.url); } if (entry.vector) { (entry.vector.layer || entry.vector.root).remove(); } });
   const vector = element('vector'), lensVector = element('lensVector');
   let svgPage;
   const surface = () => svgPage ? vector : image;
-  const acknowledge = id => post({ type: 'decoded', id, cached: images.keys(), svg: svgPage?.contentId });
+  const acknowledge = (id, renderMs) => post({ type: 'decoded', id, cached: images.keys(), svg: svgPage?.contentId, renderMs });
   let imageId;
   let header, objectUrl, stale = true, generation = 0, count = 0, complete = false, paused = false;
   let highlightTimer;
@@ -42,6 +42,7 @@
       header?.fallback ? `PNG fallback: ${header.fallback}. Control or Command click to open source` :
       'Control or Command click to open source';
     formatSelect.value = format;
+    formatSelect.querySelector('[value=auto]').textContent = header && !stale ? `Auto · ${header.mime === 'image/svg+xml' ? 'SVG' : 'PNG'}` : 'Auto';
   }
 
   function layout(request = true, immediate = false) {
@@ -134,7 +135,7 @@
     requestAnimationFrame(() => mark.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
   }
 
-  let detailImage = element('detail'), detailUrl, detailTimer, detailFailed = false;
+  let detailImage = element('detail'), detailUrl, detailTimer, detailFailed = false, autoRefining = false;
   const detailCache = new DetailCache();
   function clearDetail() {
     clearTimeout(detailTimer); detailCache.reset(); detailFailed = false;
@@ -146,7 +147,7 @@
     detailTimer = setTimeout(requestDetail, 120);
   }
   function requestDetail() {
-    if (stale || !header || header.mime === 'image/svg+xml' || !regions || detailFailed) { return; }
+    if (stale || !header || header.mime === 'image/svg+xml' || autoRefining || !regions || detailFailed) { return; }
     const view = viewport.getBoundingClientRect();
     const request = detailCache.request(bounds, surface().getBoundingClientRect(),
       { left: view.left + viewport.clientLeft, top: view.top + viewport.clientTop,
@@ -274,6 +275,7 @@
       case 'region-error':
         if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
         break;
+      case 'refinement-end': autoRefining = false; scheduleDetail(); break;
       case 'detail': await receiveDetail(m); break;
       case 'region': {
         const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
@@ -297,6 +299,8 @@
         requestLens(); break;
       }
       case 'image': {
+        const renderStart = performance.now();
+        autoRefining = m.refining === true;
         closeLens(); clearDetail();
         const token = ++generation;
         const cached = images.get(m.contentId);
@@ -354,7 +358,7 @@
             }
           }
           vector.setAttribute('aria-label', image.alt);
-          acknowledge(header.requestId);
+          acknowledge(header.requestId, performance.now() - renderStart);
         } catch (error) {
           console.warn('TeXpresso preview image update failed', error);
           if (m.svgPatch) { images.forget(m.svgPatch.base); stale = true; describe(); post({ type: 'cache-miss', id: m.header.requestId }); }
@@ -426,6 +430,18 @@
     });
   }
   sheet.addEventListener('click', event => { if ((event.ctrlKey || event.metaKey) && !event.target.closest('.page-link')) { inverseAt(event); } });
+  let lastInteraction = -Infinity;
+  const interaction = () => {
+    const now = performance.now();
+    if (now - lastInteraction >= 100) { lastInteraction = now; post({ type: 'interaction' }); }
+  };
+  viewport.addEventListener('pointerdown', () => post({ type: 'interaction', active: true }), { passive: true });
+  for (const name of ['pointerup', 'pointercancel', 'blur']) {
+    window.addEventListener(name, () => post({ type: 'interaction', active: false }), { passive: true });
+  }
+  for (const name of ['pointermove', 'wheel', 'scroll', 'keydown']) {
+    viewport.addEventListener(name, interaction, { passive: true });
+  }
   const resize = () => { closeLens(); layout(); };
   window.addEventListener('resize', resize);
   let resizeFrame;

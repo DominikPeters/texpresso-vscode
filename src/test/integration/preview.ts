@@ -18,7 +18,7 @@ async function until(check: () => Promise<boolean>, description: string, timeout
   }
 }
 async function renders(): Promise<{ id: number; page: number }[]> {
-  return [...(await logs()).matchAll(/\["preview-render",(\d+),(\d+),/g)]
+  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto)",(\d+),(\d+),/g)]
     .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
 }
 

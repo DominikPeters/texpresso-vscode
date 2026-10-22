@@ -65,11 +65,12 @@ test('real SVG preview: outlined glyphs, wrapped hyperlinks, lazy destinations a
         await new Promise(resolve => setTimeout(resolve, 15));
       }
     };
-    const render = async (page: number, svg: boolean, width = 1200) => {
+    const render = async (page: number, svg: boolean | 'auto', width = 1200, limit = 16000) => {
       for (let attempt = 0; attempt < 20; attempt++) {
         await until(() => !!state && state[2] === session.previewSequence);
         const request = ++id;
-        session.send([svg ? 'preview-svg' : 'preview-render', request, page, width, state![1], state![2]]);
+        if (svg === 'auto') { session.send(['preview-auto', request, page, width, state![1], state![2], limit]); }
+        else { session.send([svg ? 'preview-svg' : 'preview-render', request, page, width, state![1], state![2]]); }
         await until(() => frames.has(request) || retries.has(request));
         if (frames.has(request)) { return frames.get(request)!; }
       }
@@ -80,6 +81,15 @@ test('real SVG preview: outlined glyphs, wrapped hyperlinks, lazy destinations a
       const png = await render(0, false), svg = await render(0, true);
       assert.equal(png.header.mime, 'image/png'); assert.equal(svg.header.mime, 'image/svg+xml');
       assert.equal(svg.header.fallback, undefined);
+      assert.equal(session.previewAuto, true);
+      const autoPng = await render(0, 'auto', 1200, 0), autoSvg = await render(0, 'auto', 1200, 200000);
+      assert.equal(autoPng.header.mime, 'image/png'); assert.equal(autoPng.header.svgEligible, true);
+      assert.ok(autoPng.header.vectorCost! > 0); assert.equal(autoPng.header.fallback, undefined);
+      assert.deepEqual(autoPng.bytes, png.bytes, 'Auto PNG keeps exact reference pixels');
+      assert.equal(autoSvg.header.mime, 'image/svg+xml'); assert.equal(autoSvg.header.vectorCost, autoPng.header.vectorCost);
+      assert.deepEqual(autoSvg.bytes, svg.bytes, 'Auto SVG keeps exact reference paths');
+      const automatic = await render(0, 'auto');
+      assert.equal(automatic.header.mime, automatic.header.vectorCost! <= 16000 ? 'image/svg+xml' : 'image/png');
       const xml = svg.bytes.toString('utf8'); assert.match(xml, /<svg/); assert.match(xml, /<path/); assert.match(xml, /<use/);
       assert.doesNotMatch(xml, /<text\b|<script\b|https?:\/\/example/);
       const enlarged = await render(0, true, 2400);
@@ -108,6 +118,10 @@ test('real SVG preview: outlined glyphs, wrapped hyperlinks, lazy destinations a
       assert.ok(!destinations.some(d => d[3] === 'stale-target'));
       const fallback = await render(2, true), reference = await render(2, false);
       assert.equal(fallback.header.mime, 'image/png'); assert.match(fallback.header.fallback!, /transparency|blending/);
+      const autoFallback = await render(2, 'auto', 1200, 200000);
+      assert.equal(autoFallback.header.mime, 'image/png'); assert.equal(autoFallback.header.svgEligible, false);
+      assert.equal(autoFallback.header.fallback, undefined);
+      assert.deepEqual(autoFallback.bytes, reference.bytes);
       assert.deepEqual(fallback.bytes, reference.bytes, 'fallback preserves the PNG reference exactly');
       assert.doesNotMatch(debug, /LaTeX Error|Package .*Error:/);
     } catch (error) { await diagnostics(root, '', debug); throw error; }

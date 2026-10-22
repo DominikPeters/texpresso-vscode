@@ -402,3 +402,103 @@ test('a page rendered during navigation stays cached even if its display was sup
     assert.equal(f.messages.filter(m => m.type === 'image').at(-1)!.header.page, 0);
   } finally { f.controller.dispose(); }
 });
+
+function autoFixture() {
+  const f = fixture(); Object.assign(f.session, { previewAuto: true, previewSvg: true, previewRegions: true });
+  f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+  f.send({ type: 'ready', page: 0, width: 1200, format: 'auto', svgDom: true });
+  return f;
+}
+function autoFrame(id: number, svg = false, cost = 40000, sequence = 0, revision = 1) {
+  const bytes = svg ? Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800">' +
+    Array.from({ length: 80 }, (_, i) => `<path d="M${i === 20 ? 100 + sequence : i} 1L2 2"/>`).join('') + '</svg>') : Buffer.alloc(4);
+  return { header: { requestId: id, revision, sequence, page: 0, bounds: [0, 0, 600, 800] as [number, number, number, number],
+    width: 600, height: 800, mime: svg ? 'image/svg+xml' as const : 'image/png' as const,
+    byteLength: bytes.length, svgEligible: true, vectorCost: cost }, bytes };
+}
+
+test('Auto starts with native complexity selection, upgrades after idle and learns to keep SVG across edits', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] }); const f = autoFixture();
+  try {
+    assert.deepEqual(f.commands[0], ['preview-auto', 1, 0, 1200, 1, 0, 16000]);
+    f.controller.handle(autoFrame(1));
+    t.mock.timers.tick(500); assert.equal(f.commands.length, 1, 'wait for the first PNG acknowledgment');
+    f.send({ type: 'decoded', id: 1 });
+    t.mock.timers.tick(349); assert.equal(f.commands.length, 1);
+    t.mock.timers.tick(1); assert.equal(f.commands[1][0], 'preview-svg');
+    f.controller.handle(autoFrame(2, true));
+    const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.equal(image.inlineSvg, true);
+    f.send({ type: 'decoded', id: 2, svg: image.contentId, renderMs: 50 });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    assert.deepEqual(f.commands.at(-1), ['preview-auto', 3, 0, 1200, 2, 1, 52000], 'learned limit allows direct SVG without a PNG interlude');
+    f.controller.handle(autoFrame(3, true, 40000, 1, 2));
+    const patch = f.messages.filter(m => m.type === 'image').at(-1)!;
+    assert.ok(patch.svgPatch, 'next edit reuses the retained SVG DOM');
+    f.send({ type: 'decoded', id: 3, svg: patch.contentId, renderMs: 30 });
+    f.session.previewSequence = 2; f.controller.handle({ sourceSequence: 2 });
+    f.controller.handle(['preview-state', 3, 2, 3, true, 0]);
+    assert.equal(f.commands.at(-1)![6], 0, 'a slow incremental patch uses the tighter 24 ms budget');
+  } finally { f.controller.dispose(); }
+});
+
+test('Auto defers during held gestures, gives magnification priority and drops superseded upgrades', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] }); const f = autoFixture();
+  try {
+    f.controller.handle(autoFrame(1)); f.send({ type: 'decoded', id: 1 });
+    f.send({ type: 'interaction', active: true }); t.mock.timers.tick(1000);
+    assert.equal(f.commands.length, 1, 'no upgrade while the pointer is held');
+    f.send({ type: 'interaction', active: false }); t.mock.timers.tick(350);
+    assert.equal(f.commands.at(-1)![0], 'preview-svg');
+    f.send({ type: 'region', revision: 1, sequence: 0, page: 0, token: 1, bounds: [0, 0, 100, 100], width: 300 });
+    assert.equal(f.commands.at(-1)![0], 'preview-region', 'interactive request does not wait for background credit');
+    const count = f.messages.filter(m => m.type === 'image').length;
+    f.controller.handle(autoFrame(2, true));
+    assert.equal(f.messages.filter(m => m.type === 'image').length, count, 'late upgrade cannot replace the visible page');
+    f.send({ type: 'viewport', format: 'auto', page: 1, width: 1200 });
+    f.controller.handle({ ...autoFrame(3), header: { ...autoFrame(3).header, bounds: [0, 0, 100, 100] } });
+    assert.equal(f.commands.at(-1)![2], 1, 'navigation wins over the old region');
+  } finally { f.controller.dispose(); }
+});
+
+test('Auto keeps PNG after slow or unsupported SVG and does not repeat upgrades at the same complexity', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] }); const f = autoFixture();
+  try {
+    f.controller.handle(autoFrame(1)); f.send({ type: 'decoded', id: 1 }); t.mock.timers.tick(350);
+    f.controller.handle(autoFrame(2, true));
+    const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: 2, svg: image.contentId, renderMs: 100 });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    assert.equal(f.commands.at(-1)![6], 0, 'slow page starts as PNG on its next edit');
+    f.controller.handle(autoFrame(3, false, 40000, 1, 2)); f.send({ type: 'decoded', id: 3 });
+    t.mock.timers.tick(1000); assert.equal(f.commands.length, 3, 'same-cost page is not exported twice on each edit');
+    f.send({ type: 'viewport', format: 'png', page: 0, width: 1200 });
+    t.mock.timers.tick(1000); assert.equal(f.commands.length, 3, 'explicit PNG uses its cache and never upgrades');
+  } finally { f.controller.dispose(); }
+});
+
+test('Auto rejects unsupported idle SVG without replacing PNG, and cancels upgrades across source barriers', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] });
+  const f = autoFixture();
+  try {
+    f.controller.handle(autoFrame(1)); f.send({ type: 'decoded', id: 1 }); t.mock.timers.tick(350);
+    const bytes = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/png;base64,AA=="/></svg>');
+    f.controller.handle({ ...autoFrame(2, true), bytes, header: { ...autoFrame(2, true).header, byteLength: bytes.length } });
+    assert.equal(f.messages.filter(m => m.type === 'image').length, 1, 'unsupported refinement leaves the acknowledged PNG intact');
+    assert.ok(f.messages.some(m => m.type === 'refinement-end'), 'PNG detail rendering can resume');
+    f.send({ type: 'interaction' }); t.mock.timers.tick(1000); assert.equal(f.commands.length, 2);
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    f.controller.handle(autoFrame(3, false, 10000, 1, 2)); f.send({ type: 'decoded', id: 3 });
+    t.mock.timers.tick(350); assert.equal(f.commands.at(-1)![0], 'preview-svg', 'substantially simpler content can be reconsidered');
+    f.session.previewSequence = 2; f.controller.handle({ sourceSequence: 2 });
+    f.controller.handle(['preview-state', 3, 2, 3, true, 0]);
+    const before = f.messages.filter(m => m.type === 'image').length;
+    f.controller.handle(autoFrame(4, true, 10000, 1, 2));
+    f.send({ type: 'decoded', id: 4, svg: 'stale' });
+    assert.equal(f.messages.filter(m => m.type === 'image').length, before, 'late SVG and its ACK cannot cross a source barrier');
+    assert.equal(f.commands.at(-1)![1], 5);
+  } finally { f.controller.dispose(); }
+});

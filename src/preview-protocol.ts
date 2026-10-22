@@ -10,6 +10,7 @@ export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
   bounds: [number, number, number, number]; width: number; height: number;
   mime: 'image/png' | 'image/svg+xml'; byteLength: number;
+  svgEligible?: boolean; vectorCost?: number;
   fallback?: string; annotations?: PreviewAnnotations;
 }
 export interface PreviewImage { header: PreviewImageHeader; bytes: Buffer }
@@ -44,6 +45,8 @@ export function isImageHeader(value: unknown): value is PreviewImageHeader {
     h.width * h.height <= 4000000 && h.byteLength > 0 && h.byteLength <= MAX_IMAGE_BYTES &&
     (h.mime === 'image/png' || h.mime === 'image/svg+xml') && rectangle(h.bounds) &&
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
+    (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
+    (h.vectorCost === undefined || count(h.vectorCost)) &&
     (h.annotations === undefined || annotations(h.annotations));
 }
 

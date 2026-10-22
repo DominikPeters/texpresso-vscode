@@ -24,11 +24,14 @@ monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable
 engines render the visible area separately for sharp text without rasterizing
 the entire enlarged page.
 
-The **PNG / SVG** selector in the preview toolbar switches image formats. PNG
-remains the default. SVG outlines fonts and stays sharp while zooming or using
-the magnifier. Pages with PDF features the SVG exporter cannot preserve fall
-back to PNG, with the reason shown in the status line. This requires an engine
-advertising SVG support; the option is disabled with older engines.
+The **Auto / PNG / SVG** selector chooses the rendering strategy. **Auto** is
+selected for new previews: small pages start as SVG; larger pages appear as PNG
+and can upgrade to SVG after a short pause. Auto learns which pages handle SVG
+updates quickly and retains their DOM for small edits. The selector shows the
+current format as **Auto · PNG** or **Auto · SVG**. Explicit PNG and SVG choices
+remain available. SVG stays sharp while zooming or using the magnifier; PDF
+features that cannot be preserved in SVG use PNG. Older engines use PNG in Auto.
+
 
 Hyperref web and email links open through VS Code on a plain click. Internal
 links jump to their named destination, compiling later pages on demand.
@@ -53,11 +56,9 @@ releases the browser view and restores its page/zoom/scroll state when reopened.
 The last successful image remains visible while updating or after an engine
 failure.
 
-This first implementation uses native MuPDF PNG output with a four-megapixel
-budget per image. At high zoom the browser scales the bounded image; sharper
-full-viewport clipped rendering, SVG, continuous scrolling, text selection, and
-clickable hyperref links are follow-ups. See the
-[embedded preview design](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/embedded-preview.md).
+Rendering and caching details are documented in the
+[embedded preview design](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/embedded-preview.md) and
+[Auto rendering policy](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/auto-rendering.md).
 
 For a local demo, build the pinned engine into
 `native/.bundles/<platform>-<architecture>-preview` (or set `TEXPRESSO_BINARY`),
