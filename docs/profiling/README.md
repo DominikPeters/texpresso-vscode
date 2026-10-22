@@ -138,3 +138,7 @@ preparation, using actual VS Code and the production renderers.
 [Sustained editing and natural reflow](2026-10-22-sustained-editing.md) uses shared
 30-page and opt-in 100-page varied documents with long prose/math/theorem typing,
 page navigation, incomplete paste/repair and undo.
+
+[Reference retention while typing](2026-10-22-reference-retention.md) reproduces
+resolved labels reverting to `??` and verifies retaining auxiliary input across
+source rollbacks without freezing real reference changes.

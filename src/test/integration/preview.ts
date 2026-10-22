@@ -128,10 +128,11 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     await until(async () => (await renders()).some(r => r.page === 1) && (await logs()).includes('PREVIEW-SECOND'),
       'decoded first frame grants credit for the next page');
     await until(async () => (await decoded()).at(-1)?.page === 1, 'second page decoded');
-    const before = (await renders()).length, lastDecoded = (await decoded()).at(-1)!.id;
+    const before = (await renders()).filter(r => r.page === 0).length, lastDecoded = (await decoded()).at(-1)!.id;
     await command('previousPage');
     await until(async () => (await decoded()).at(-1)!.id > lastDecoded && (await decoded()).at(-1)!.page === 0, 'cached first page decoded');
-    assert.equal((await renders()).length, before, 'cached navigation skips native export');
+    assert.equal((await renders()).filter(r => r.page === 0).length, before,
+      'cached navigation skips native export of the retained page while neighboring prefetch may continue');
 
     const offset = document.getText().indexOf('PREVIEW-BEFORE');
     const source = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false, preserveFocus: false });

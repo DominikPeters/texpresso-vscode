@@ -154,3 +154,69 @@ First page.\newpage
       assert.ok(!debug.includes('[fatal]'));
     } finally { await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
   });
+
+
+test('source edits retain resolved in-memory references and real label changes still converge',
+  { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 60000 }, async () => {
+    const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'txp-reference-retention-')));
+    let text = String.raw`\documentclass{article}
+\newcommand{\Unused}{A}
+\begin{document}
+See Section~\ref{target}.\par
+\newpage
+\section{Target}\label{target}
+Some editable text.
+\end{document}
+`;
+    const main = document(path.join(root, 'main.tex'), text); main.getText = () => text;
+    await fs.writeFile(main.fileName, text);
+    let state: Extract<PreviewMessage, ['preview-state', ...unknown[]]> | undefined, failure: Error | undefined;
+    let debug = '', pending = '', stable = 0, id = 0;
+    const frames = new Map<number, PreviewImage>(), retries = new Set<number>();
+    const session = new TexpressoSession(main, { ...config, command: binary!, packageProvider: 'texlive', previewLocation: 'editor', autoRerun: true },
+      new SessionPaths(main.fileName, false), () => [main], {
+        state() {}, output() {}, synctex() {}, error: e => { failure = e; },
+        debug: value => { debug = (debug + value).slice(-16000); pending += value;
+          const lines = pending.split('\n'); pending = lines.pop()!;
+          for (const line of lines) { if (line.includes('aux byte-stable, convergence reached')) { stable++; } }
+        }, preview: event => {
+          if ('header' in event) { frames.set(event.header.requestId, event); }
+          else if (Array.isArray(event)) {
+            if (event[0] === 'preview-state') { state = event; }
+            if (event[0] === 'preview-retry') { retries.add(event[1]); }
+          }
+        }
+      });
+    const until = async (condition: () => boolean) => { const end = Date.now() + 15000;
+      while (!condition()) { if (failure || Date.now() > end) { throw failure || new Error(debug); } await new Promise(resolve => setTimeout(resolve, 10)); } };
+    const render = async (page = 0) => {
+      for (;;) { await until(() => !!state && state[2] === session.previewSequence); const request = ++id;
+        session.send(['preview-render', request, page, 1000, state![1], state![2]]);
+        await until(() => frames.has(request) || retries.has(request)); if (frames.has(request)) { return frames.get(request)!.bytes; }
+      }
+    };
+    const replace = (old: string, replacement: string) => {
+      const offset = text.indexOf(old); assert.notEqual(offset, -1);
+      const positionAt = (at: number) => { const prefix = text.slice(0, at); return { line: prefix.split('\n').length - 1, character: at - prefix.lastIndexOf('\n') - 1 }; };
+      const position = positionAt(offset), end = positionAt(offset + old.length);
+      text = text.slice(0, offset) + replacement + text.slice(offset + old.length);
+      session.sync.change(main, [{ rangeOffset: offset, rangeLength: old.length, text: replacement,
+        range: { start: position, end } as import('vscode').Range }]);
+    };
+    const converge = async () => { const before = stable; session.setAutoRerun(true); await until(() => stable > before); session.setAutoRerun(false); return render(); };
+    try {
+      await session.start(); const unresolved = await render(); await until(() => stable > 0);
+      session.setAutoRerun(false); const resolved = await render();
+      assert.notDeepEqual(unresolved, resolved, 'cold unresolved reference genuinely changes after convergence');
+      for (const [before, after] of [['{A}', '{B}'], ['{B}', '{C}'], ['{C}', '{D}']]) {
+        replace(before, after);
+        assert.deepEqual(await render(), resolved, 'root replay retains resolved references even with automatic reruns disabled');
+      }
+      replace('\\section{Target}', '\\section{Before}\\section{Target}'); await render(1);
+      const renumbered = await converge();
+      assert.notDeepEqual(renumbered, resolved, 'a real section-number change updates the reference');
+      replace('{D}', '{E}'); assert.deepEqual(await render(), renumbered, 'new auxiliary result also survives the next edit');
+      replace('\\label{target}', ''); await render(1);
+      assert.deepEqual(await converge(), unresolved, 'deleting the label genuinely returns the reference to ??');
+    } finally { await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+  });
