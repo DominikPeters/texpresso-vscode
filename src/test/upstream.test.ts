@@ -175,7 +175,8 @@ test('atomic file replacement rescans; creating a missing dependency or deleting
     assert.equal(restarts(), 1);
     deps.lookup('read', 'failed', 'new.tex');
     await fs.writeFile(path.join(root, 'new.tex'), 'new source');
-    changed(path.join(root, 'new.tex'), 'create'); await deps.flush();
+    // macOS may report the write as a change immediately after creation.
+    changed(path.join(root, 'new.tex'), 'create'); changed(path.join(root, 'new.tex'), 'change'); await deps.flush();
     assert.equal(restarts(), 2);
   });
 });

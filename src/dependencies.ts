@@ -106,7 +106,8 @@ export class Dependencies {
       return;
     }
     const previous = this.pending.get(logical);
-    this.pending.set(logical, previous === 'delete' || kind === 'delete' ? 'delete' : kind);
+    this.pending.set(logical, previous === 'delete' || kind === 'delete' ? 'delete' :
+      previous === 'create' || kind === 'create' ? 'create' : kind);
     clearTimeout(this.timer);
     this.timer = setTimeout(() => { void this.flush(); }, this.options.delay ?? 200);
   }
