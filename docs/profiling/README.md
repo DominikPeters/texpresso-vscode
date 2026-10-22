@@ -134,3 +134,7 @@ and the [richer demo and dashed-stroke fix](2026-10-22-demo.md).
 [Cursor checkpoint prewarming](2026-10-22-prewarm.md) measures nineteen characters
 of ordinary 100 ms typing with a cold cursor, a prepared cursor and interrupted
 preparation, using actual VS Code and the production renderers.
+
+[Sustained editing and natural reflow](2026-10-22-sustained-editing.md) uses shared
+30-page and opt-in 100-page varied documents with long prose/math/theorem typing,
+page navigation, incomplete paste/repair and undo.

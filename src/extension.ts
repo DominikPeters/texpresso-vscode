@@ -9,6 +9,7 @@ import { TexpressoSession } from './session';
 import { ExternalCompiler } from './external-compile';
 import { PreviewControls } from './controls';
 import { PreviewController } from './preview-controller';
+import { SourceFollow } from './source-follow';
 import { describeFailure } from './failures';
 import { setupReport } from './setup';
 import { renamedPath } from './renames';
@@ -39,6 +40,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const setup = vscode.window.createOutputChannel('TeXpresso Setup');
   const controls = new PreviewControls();
   const compiler = new ExternalCompiler(text => build.append(text));
+  const sourceFollow = new SourceFollow();
   context.subscriptions.push(output, log, debug, build, setup, controls, compiler);
   const running = () => activeSession?.state === 'running' ? activeSession : undefined;
   const settings = (document: vscode.TextDocument) => vscode.workspace.getConfiguration('texpresso', document.uri);
@@ -102,7 +104,7 @@ export function activate(context: vscode.ExtensionContext): void {
           if (action === 'restart') { void startDocument(session.document, false); }
           else if (action === 'pause') { session.setPaused(!session.paused); }
           else { output.show(true); }
-        });
+        }, () => sourceFollow.suspend(session));
     }
     preview?.update();
     updatePrewarm();
@@ -191,7 +193,7 @@ export function activate(context: vscode.ExtensionContext): void {
           preview: event => { if (activeSession === session) { preview?.handle(event); } },
           rendered: () => {
             if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
-              syncForward();
+              syncForward(undefined, false);
             }
           },
           restart: () => {
@@ -268,11 +270,15 @@ export function activate(context: vscode.ExtensionContext): void {
     preview?.prepareEdit(editor?.document, editor?.document.offsetAt(editor.selection.start));
   }
 
-  function syncForward(editor = vscode.window.activeTextEditor): void {
-    if (editor) {
-      preview?.interruptPreparation();
-      running()?.sync.syncForward(editor.document, editor.selection.active.line);
-    }
+  function syncForward(editor = vscode.window.activeTextEditor, explicit = true): void {
+    const session = running();
+    if (!editor || !session || !session.sync.contains(editor.document)) { return; }
+    const state = session.previewState;
+    const revision = state?.[2] === session.previewSequence ? state[1] : 0;
+    if (!sourceFollow.request({ session, document: editor.document.uri.toString(), version: editor.document.version,
+      line: editor.selection.active.line, column: editor.selection.active.character, sequence: session.previewSequence, revision }, explicit)) { return; }
+    preview?.beginSourceFollow();
+    session.sync.syncForward(editor.document, editor.selection.active.line);
   }
 
   function register(name: string, callback: (...args: never[]) => unknown): void {
@@ -293,7 +299,7 @@ export function activate(context: vscode.ExtensionContext): void {
   register('showEngineLog', () => debug.show(true));
   register('showCompilerOutput', () => output.show(true));
   register('openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso'));
-  register('rerunOnce', () => running()?.rerunOnce());
+  register('rerunOnce', () => { const session = running(); if (session) { sourceFollow.invalidate(session); session.rerunOnce(); } });
   register('pause', () => running()?.setPaused(true));
   register('resume', () => running()?.setPaused(false));
   for (const [name, enabled] of [['enableAutoRerun', true], ['disableAutoRerun', false]] as const) {
@@ -338,6 +344,10 @@ export function activate(context: vscode.ExtensionContext): void {
         } else {
           session.send(['theme', [1, 1, 1], [0, 0, 0]]);
         }
+      }
+      if (event.affectsConfiguration('texpresso.syncTeXForwardOnSelection', session.document.uri)) {
+        sourceFollow.invalidate(session);
+        if (settings(session.document).get('syncTeXForwardOnSelection', true)) { syncForward(); }
       }
       if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
@@ -401,8 +411,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeActiveTextEditor(updateContexts),
     vscode.window.onDidChangeTextEditorSelection(event => {
       const session = running();
-      if (session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
-        syncForward(event.textEditor);
+      if (session && event.textEditor === vscode.window.activeTextEditor && settings(session.document).get('syncTeXForwardOnSelection', true)) {
+        syncForward(event.textEditor, false);
       }
       updatePrewarm();
     }),

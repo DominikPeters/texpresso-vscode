@@ -876,3 +876,62 @@ test('cursor preparation cannot get ahead of a pending page decode', t=>{
     t.mock.timers.tick(1);assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,1);
   } finally {f.controller.dispose();}
 });
+
+
+test('old source state cannot shrink a new edit viewport or invalidate its current images', () => {
+  const f=fixture();
+  try {
+    f.controller.handle(['preview-state',5,0,30,true,24]);
+    f.send({type:'ready',page:24,width:1000,continuous:true,visible:[{page:24,width:1000}],nearby:[],resident:[24],epoch:0});
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    const messages=f.messages.length;
+    f.controller.handle(['preview-state',5,0,2,true,1]);
+    f.controller.handle(['preview-invalidated',5,0]);
+    assert.equal(f.messages.length,messages,'obsolete source metadata has no UI effect');
+    f.controller.handle(['preview-state',6,1,30,true,24]);
+    assert.equal(f.messages.filter(m=>m.type==='state').at(-1)?.page,24,'new source keeps the selected distant page');
+    const count=f.messages.length;f.controller.handle(['preview-state',4,1,1,true,0]);
+    assert.equal(f.messages.length,count,'older compiler pass cannot replace current metadata');
+  } finally {f.controller.dispose();}
+});
+
+test('manual preview navigation cancels source search and rejects late forward results until a new source intent', () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  try {
+    f.controller.handle(['preview-state',1,0,30,true,0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:0});
+    f.send({type:'viewport',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:1,jump:true});
+    assert.ok(f.commands.some(c=>c[0]==='preview-cancel'&&c[1]===0),'even a cached same-page jump cancels pending source search');
+    const jumps=f.messages.filter(m=>m.type==='jump').length;
+    f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'a queued old source result cannot undo navigation');
+    f.controller.beginSourceFollow();f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,24,'new explicit source intent can follow again');
+  } finally {f.controller.dispose();}
+});
+
+
+test('manual continuous scrolling suspends late source targets even within the same page', () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  try {
+    f.controller.handle(['preview-state',1,0,30,true,0]);
+    const viewport={page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:0};
+    f.send({type:'ready',...viewport});
+    f.send({type:'viewport',...viewport,epoch:1,scroll:false});
+    f.controller.handle(['preview-forward',1,0,0,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,1,'programmatic layout corrections preserve source following');
+    const oldRequest=f.commands.filter(c=>c[0]==='preview-render').at(-1)?.[1];
+    f.send({type:'viewport',...viewport,epoch:2,scroll:true});
+    assert.notEqual(f.commands.filter(c=>c[0]==='preview-render').at(-1)?.[1],oldRequest,
+      'cancel-all releases foreground credit and immediately replaces the canceled render');
+    assert.ok(f.commands.some(c=>c[0]==='preview-cancel'&&c[1]===0),'same-page manual scrolling cancels pending source search');
+    const jumps=f.messages.filter(m=>m.type==='jump').length;
+    f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'late source result cannot steal the manual scroll position');
+    f.controller.handle(['preview-state',2,0,30,true,0]);
+    f.controller.handle(['preview-forward',2,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'a new compiler pass cannot release the manual scroll hold');
+    f.controller.beginSourceFollow();f.controller.handle(['preview-forward',2,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,24,'a new source intent resumes following');
+  } finally {f.controller.dispose();}
+});

@@ -1,0 +1,1193 @@
+{
+  "endpoint": "Actual VS Code editor.edit source updates to matching visible native target page/revision plus two animation frames; no keyboard/compositor latency",
+  "runs": [
+    {
+      "metadata": {
+        "created": "2026-10-22T15:15:59.691Z",
+        "vscode": "1.143.0",
+        "binary": "/Users/dominik/GitHub/texpresso-vscode/native/.bundles/darwin-arm64-preview/bin/texpresso",
+        "legacyFollow": false,
+        "engine": "3fbbd757d508039778f12c1cd201b28333768c43",
+        "binarySha256": "66d1d444670026181ecb05e1f310e6402e73081396202ceeb77d5aa4a936db17",
+        "extension": "b19023ce3fd174cd934e7006defdd2bd60e866ec",
+        "endpoint": "Accepted production webview frame followed by two animation frames; not compositor presentation",
+        "input": "Real VS Code TextDocument editor.edit operations at a scheduled 100 ms cadence; no keyboard or compositor latency"
+      },
+      "fixture": {
+        "id": "varied-30-svg",
+        "root": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-varied-30-svg/varied-30-svg",
+        "file": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-varied-30-svg/varied-30-svg/varied.tex",
+        "pages": 30,
+        "targetPages": 30,
+        "units": 44,
+        "kind": "varied",
+        "anchors": {
+          "early": {
+            "unit": 1,
+            "offset": 2300,
+            "utf16Offset": 2300,
+            "byteOffset": 2307,
+            "line": 41,
+            "column": 0,
+            "line1": 42,
+            "visibleLine": 40,
+            "visibleLine1": 41,
+            "destination": "varied:early"
+          },
+          "middle": {
+            "unit": 22,
+            "offset": 32181,
+            "utf16Offset": 32181,
+            "byteOffset": 32188,
+            "line": 526,
+            "column": 0,
+            "line1": 527,
+            "visibleLine": 525,
+            "visibleLine1": 526,
+            "destination": "varied:middle"
+          },
+          "late": {
+            "unit": 42,
+            "offset": 60364,
+            "utf16Offset": 60364,
+            "byteOffset": 60371,
+            "line": 980,
+            "column": 0,
+            "line1": 981,
+            "visibleLine": 979,
+            "visibleLine1": 980,
+            "destination": "varied:late"
+          }
+        }
+      },
+      "preflightOnly": false,
+      "incompleteInputPhases": [],
+      "lastInputSequence": 733,
+      "completeCurrentSource": false,
+      "error": null,
+      "warnings": [],
+      "nodeMemory": {
+        "rss": 163938304,
+        "heapTotal": 145866752,
+        "heapUsed": 73396932,
+        "external": 21112852,
+        "arrayBuffers": 0
+      },
+      "probes": [
+        {
+          "phrase": "every new term has a source location",
+          "line1": 43,
+          "column": 93,
+          "nativePage": 1,
+          "revision": 1435,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 1,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              1,
+              0
+            ],
+            "shellCount": 2,
+            "latestSequence": 733
+          }
+        },
+        {
+          "phrase": "sum the bounds",
+          "line1": 538,
+          "column": 63,
+          "nativePage": 15,
+          "revision": 1435,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 15,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              15
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        },
+        {
+          "phrase": "The final argument must also update",
+          "line1": 995,
+          "column": 35,
+          "nativePage": 29,
+          "revision": 1435,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 29,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              29,
+              28
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        }
+      ],
+      "phases": [
+        {
+          "name": "early-prose-math",
+          "anchor": "early",
+          "inputCount": 212,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 21100,
+          "actualInputSpanMs": 21099.619334,
+          "maxInputLatenessMs": 36.26783299999988,
+          "validCadence": false,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 2429.448292,
+          "lastKeyToVisibleSourceMs": 98.79008299999987,
+          "finalExpectedPage": 1,
+          "finalExpectedRevision": 408,
+          "visiblePaintsWithoutKnownTarget": 1,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 2430.8948329999994,
+          "harnessFinalPaintMs": 98.79008299999987,
+          "exactInputPaints": 101,
+          "caughtUpMedianMs": 206.06562500000018,
+          "caughtUpP95Ms": 1630.6515829999998,
+          "nativeStageTimingsAvailable": false,
+          "rootRollbacks": null,
+          "checkpointRollbacks": null,
+          "sourceTargetNativePages": [
+            1
+          ],
+          "caughtUpMaxMs": 2429.448292,
+          "worstInputs": [
+            {
+              "index": 0,
+              "sequence": 2,
+              "latenessMs": 1.4465409999993426,
+              "commandMs": 16.890625,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 2429.448292
+            },
+            {
+              "index": 1,
+              "sequence": 3,
+              "latenessMs": 0.3118749999994179,
+              "commandMs": 2.3067080000000715,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 2330.582958
+            }
+          ],
+          "frameCounts": {
+            "svg": 260,
+            "png": 182,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 130
+            }
+          },
+          "staleVisiblePaints": 74,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 1,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              0,
+              1
+            ],
+            "shellCount": 2,
+            "latestSequence": 213
+          }
+        },
+        {
+          "name": "middle-section-theorem",
+          "anchor": "middle",
+          "inputCount": 287,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 28600,
+          "actualInputSpanMs": 28599.029500000004,
+          "maxInputLatenessMs": 141.8836250000022,
+          "validCadence": false,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 50.82233400000041,
+          "lastKeyToVisibleSourceMs": 51.97924999999668,
+          "finalExpectedPage": 15,
+          "finalExpectedRevision": 970,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 52.22299999999814,
+          "harnessFinalPaintMs": 51.97924999999668,
+          "exactInputPaints": 235,
+          "caughtUpMedianMs": 67.73258300000089,
+          "caughtUpP95Ms": 3102.4297079999997,
+          "nativeStageTimingsAvailable": false,
+          "rootRollbacks": null,
+          "checkpointRollbacks": null,
+          "sourceTargetNativePages": [
+            15
+          ],
+          "caughtUpMaxMs": 4499.917125,
+          "worstInputs": [
+            {
+              "index": 12,
+              "sequence": 226,
+              "latenessMs": 1.5437910000000556,
+              "commandMs": 2.032666999999492,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 4499.917125
+            },
+            {
+              "index": 13,
+              "sequence": 227,
+              "latenessMs": 1.4378749999996217,
+              "commandMs": 3.0152080000007118,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 4400.023041
+            }
+          ],
+          "frameCounts": {
+            "svg": 241,
+            "png": 2,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 2
+            }
+          },
+          "staleVisiblePaints": 19,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 15,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              15
+            ],
+            "shellCount": 3,
+            "latestSequence": 500
+          }
+        },
+        {
+          "name": "late-proof-prose",
+          "anchor": "late",
+          "inputCount": 230,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 22900,
+          "actualInputSpanMs": 22899.555499999995,
+          "maxInputLatenessMs": 8.648084000000381,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 82.1151250000039,
+          "lastKeyToVisibleSourceMs": 98.98037500001374,
+          "finalExpectedPage": 29,
+          "finalExpectedRevision": 1429,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 83.44579199999862,
+          "harnessFinalPaintMs": 98.98037500001374,
+          "exactInputPaints": 196,
+          "caughtUpMedianMs": 99.40420900000026,
+          "caughtUpP95Ms": 428.7552080000023,
+          "nativeStageTimingsAvailable": false,
+          "rootRollbacks": null,
+          "checkpointRollbacks": null,
+          "sourceTargetNativePages": [
+            29
+          ],
+          "caughtUpMaxMs": 1023.5626670000056,
+          "worstInputs": [
+            {
+              "index": 205,
+              "sequence": 706,
+              "latenessMs": 0.9686249999940628,
+              "commandMs": 2.777874999999767,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 1023.5626670000056
+            },
+            {
+              "index": 206,
+              "sequence": 707,
+              "latenessMs": 0.2317499999917345,
+              "commandMs": 5.830333999998402,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 924.2995420000079
+            }
+          ],
+          "frameCounts": {
+            "svg": 412,
+            "png": 325,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 256
+            }
+          },
+          "staleVisiblePaints": 74,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 29,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              29,
+              28
+            ],
+            "shellCount": 3,
+            "latestSequence": 730
+          }
+        },
+        {
+          "name": "paste-incomplete-repair",
+          "anchor": "middle",
+          "inputCount": 2,
+          "scheduledIntervalMs": 350,
+          "expectedInputSpanMs": 350,
+          "actualInputSpanMs": 349.55558299999393,
+          "maxInputLatenessMs": 1.8835419999959413,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 103.40216699999291,
+          "lastKeyToVisibleSourceMs": 103.85154200000397,
+          "finalExpectedPage": 15,
+          "finalExpectedRevision": 1432,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 105.28570899998886,
+          "harnessFinalPaintMs": 103.85154200000397,
+          "exactInputPaints": 2,
+          "caughtUpMedianMs": 103.40216699999291,
+          "caughtUpP95Ms": 103.85154200000397,
+          "nativeStageTimingsAvailable": false,
+          "rootRollbacks": null,
+          "checkpointRollbacks": null,
+          "sourceTargetNativePages": [
+            15
+          ],
+          "caughtUpMaxMs": 103.85154200000397,
+          "worstInputs": [
+            {
+              "index": 1,
+              "sequence": 732,
+              "latenessMs": 1.4391249999898719,
+              "commandMs": 1.7637499999982538,
+              "exactPaintMs": 103.85154200000397,
+              "caughtUpPaintMs": 103.85154200000397
+            },
+            {
+              "index": 0,
+              "sequence": 731,
+              "latenessMs": 1.8835419999959413,
+              "commandMs": 3.9048749999928987,
+              "exactPaintMs": 103.40216699999291,
+              "caughtUpPaintMs": 103.40216699999291
+            }
+          ],
+          "frameCounts": {
+            "svg": 3,
+            "png": 1,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 1
+            }
+          },
+          "staleVisiblePaints": 0,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 15,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              15
+            ],
+            "shellCount": 3,
+            "latestSequence": 732
+          }
+        },
+        {
+          "name": "undo-pasted-block",
+          "anchor": "middle",
+          "inputCount": 1,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 0,
+          "actualInputSpanMs": 0,
+          "maxInputLatenessMs": 1.5513750000100117,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 354.67104099999415,
+          "lastKeyToVisibleSourceMs": 354.67104099999415,
+          "finalExpectedPage": 15,
+          "finalExpectedRevision": 1435,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 356.22241600000416,
+          "harnessFinalPaintMs": 354.67104099999415,
+          "exactInputPaints": 1,
+          "caughtUpMedianMs": 354.67104099999415,
+          "caughtUpP95Ms": 354.67104099999415,
+          "nativeStageTimingsAvailable": false,
+          "rootRollbacks": null,
+          "checkpointRollbacks": null,
+          "sourceTargetNativePages": [
+            15
+          ],
+          "caughtUpMaxMs": 354.67104099999415,
+          "worstInputs": [
+            {
+              "index": 0,
+              "sequence": 733,
+              "latenessMs": 1.5513750000100117,
+              "commandMs": 12.731207999997423,
+              "exactPaintMs": 354.67104099999415,
+              "caughtUpPaintMs": 354.67104099999415
+            }
+          ],
+          "frameCounts": {
+            "svg": 2,
+            "png": 1,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 1
+            }
+          },
+          "staleVisiblePaints": 0,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 15,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              15
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        },
+        {
+          "name": "idle",
+          "commandCount": 8,
+          "commandsByVerb": {
+            "preview-region": 1,
+            "preview-prepare": 1,
+            "preview-background": 3,
+            "preview-svg": 1,
+            "preview-png": 1,
+            "preview-cancel": 1
+          },
+          "snapshot": {
+            "toolbar": 29,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              29,
+              28
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "created": "2026-10-22T15:19:36.840Z",
+        "vscode": "1.143.0",
+        "binary": "/Users/dominik/GitHub/texpresso-vscode/native/.bundles/darwin-arm64-preview/bin/texpresso",
+        "legacyFollow": false,
+        "engine": "3fbbd757d508039778f12c1cd201b28333768c43",
+        "binarySha256": "66d1d444670026181ecb05e1f310e6402e73081396202ceeb77d5aa4a936db17",
+        "extension": "b19023ce3fd174cd934e7006defdd2bd60e866ec",
+        "endpoint": "Accepted production webview frame followed by two animation frames; not compositor presentation",
+        "input": "Real VS Code TextDocument editor.edit operations at a scheduled 100 ms cadence; no keyboard or compositor latency"
+      },
+      "fixture": {
+        "id": "varied-100-auto",
+        "root": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-varied-100-auto/varied-100-auto",
+        "file": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-varied-100-auto/varied-100-auto/varied.tex",
+        "pages": 100,
+        "targetPages": 100,
+        "units": 145,
+        "kind": "varied",
+        "anchors": {
+          "early": {
+            "unit": 1,
+            "offset": 2301,
+            "utf16Offset": 2301,
+            "byteOffset": 2308,
+            "line": 41,
+            "column": 0,
+            "line1": 42,
+            "visibleLine": 40,
+            "visibleLine1": 41,
+            "destination": "varied:early"
+          },
+          "middle": {
+            "unit": 72,
+            "offset": 102285,
+            "utf16Offset": 102285,
+            "byteOffset": 102292,
+            "line": 1656,
+            "column": 0,
+            "line1": 1657,
+            "visibleLine": 1655,
+            "visibleLine1": 1656,
+            "destination": "varied:middle"
+          },
+          "late": {
+            "unit": 143,
+            "offset": 202546,
+            "utf16Offset": 202546,
+            "byteOffset": 202553,
+            "line": 3271,
+            "column": 0,
+            "line1": 3272,
+            "visibleLine": 3270,
+            "visibleLine1": 3271,
+            "destination": "varied:late"
+          }
+        }
+      },
+      "preflightOnly": false,
+      "incompleteInputPhases": [],
+      "lastInputSequence": 733,
+      "completeCurrentSource": false,
+      "error": null,
+      "warnings": [],
+      "nodeMemory": {
+        "rss": 191381504,
+        "heapTotal": 117784576,
+        "heapUsed": 87638780,
+        "external": 9616988,
+        "arrayBuffers": 0
+      },
+      "probes": [
+        {
+          "phrase": "every new term has a source location",
+          "line1": 43,
+          "column": 93,
+          "nativePage": 1,
+          "revision": 1462,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 1,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              1,
+              0
+            ],
+            "shellCount": 2,
+            "latestSequence": 733
+          }
+        },
+        {
+          "phrase": "sum the bounds",
+          "line1": 1668,
+          "column": 63,
+          "nativePage": 49,
+          "revision": 1462,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 49,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              49,
+              50
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        },
+        {
+          "phrase": "The final argument must also update",
+          "line1": 3286,
+          "column": 35,
+          "nativePage": 98,
+          "revision": 1462,
+          "sequence": 733,
+          "snapshot": {
+            "toolbar": 98,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              98,
+              97
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        }
+      ],
+      "phases": [
+        {
+          "name": "early-prose-math",
+          "anchor": "early",
+          "inputCount": 212,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 21100,
+          "actualInputSpanMs": 21098.998541,
+          "maxInputLatenessMs": 6.471958999999515,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 153.21120799999971,
+          "lastKeyToVisibleSourceMs": 36.99187499999971,
+          "finalExpectedPage": 1,
+          "finalExpectedRevision": 424,
+          "visiblePaintsWithoutKnownTarget": 1,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 154.54954199999975,
+          "harnessFinalPaintMs": 36.99187499999971,
+          "exactInputPaints": 203,
+          "caughtUpMedianMs": 53.86762499999895,
+          "caughtUpP95Ms": 120.08745799999997,
+          "nativeStageTimingsAvailable": true,
+          "rootRollbacks": 0,
+          "checkpointRollbacks": 210,
+          "sourceTargetNativePages": [
+            0,
+            1
+          ],
+          "caughtUpMaxMs": 470.1467080000002,
+          "worstInputs": [
+            {
+              "index": 176,
+              "sequence": 178,
+              "latenessMs": 0.4679169999981241,
+              "commandMs": 1.2942080000029819,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 470.1467080000002
+            },
+            {
+              "index": 181,
+              "sequence": 183,
+              "latenessMs": -0.05962500000168802,
+              "commandMs": 1.374167000001762,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 454.12279200000194
+            }
+          ],
+          "frameCounts": {
+            "svg": 0,
+            "png": 460,
+            "hostAnnotatedFallbacks": {}
+          },
+          "staleVisiblePaints": 54,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 1,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              0,
+              1
+            ],
+            "shellCount": 2,
+            "latestSequence": 213
+          }
+        },
+        {
+          "name": "middle-section-theorem",
+          "anchor": "middle",
+          "inputCount": 287,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 28600,
+          "actualInputSpanMs": 28599.611707999997,
+          "maxInputLatenessMs": 6.466042000000016,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 189.79858299999978,
+          "lastKeyToVisibleSourceMs": 41.44050000000425,
+          "finalExpectedPage": 49,
+          "finalExpectedRevision": 997,
+          "visiblePaintsWithoutKnownTarget": 1,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 90.77299999999741,
+          "harnessFinalPaintMs": 41.44050000000425,
+          "exactInputPaints": 245,
+          "caughtUpMedianMs": 56.596667000005255,
+          "caughtUpP95Ms": 2796.7778749999998,
+          "nativeStageTimingsAvailable": true,
+          "rootRollbacks": 0,
+          "checkpointRollbacks": 286,
+          "sourceTargetNativePages": [
+            49
+          ],
+          "caughtUpMaxMs": 4197.2250829999975,
+          "worstInputs": [
+            {
+              "index": 12,
+              "sequence": 226,
+              "latenessMs": 0.34445899999991525,
+              "commandMs": 1.4314999999987776,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 4197.2250829999975
+            },
+            {
+              "index": 13,
+              "sequence": 227,
+              "latenessMs": 1.003999999997177,
+              "commandMs": 1.228625000003376,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 4096.565542
+            }
+          ],
+          "frameCounts": {
+            "svg": 0,
+            "png": 248,
+            "hostAnnotatedFallbacks": {}
+          },
+          "staleVisiblePaints": 1,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 49,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              49
+            ],
+            "shellCount": 3,
+            "latestSequence": 500
+          }
+        },
+        {
+          "name": "late-proof-prose",
+          "anchor": "late",
+          "inputCount": 230,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 22900,
+          "actualInputSpanMs": 22898.573915999994,
+          "maxInputLatenessMs": 2.0288330000039423,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 190.1159159999952,
+          "lastKeyToVisibleSourceMs": 41.96383400000923,
+          "finalExpectedPage": 98,
+          "finalExpectedRevision": 1455,
+          "visiblePaintsWithoutKnownTarget": 1,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 58.56512500000099,
+          "harnessFinalPaintMs": 41.96383400000923,
+          "exactInputPaints": 229,
+          "caughtUpMedianMs": 41.29966699999932,
+          "caughtUpP95Ms": 59.085166999997455,
+          "nativeStageTimingsAvailable": true,
+          "rootRollbacks": 0,
+          "checkpointRollbacks": 228,
+          "sourceTargetNativePages": [
+            98
+          ],
+          "caughtUpMaxMs": 190.1159159999952,
+          "worstInputs": [
+            {
+              "index": 0,
+              "sequence": 501,
+              "latenessMs": 1.6127500000002328,
+              "commandMs": 2.1673329999975977,
+              "exactPaintMs": null,
+              "caughtUpPaintMs": 190.1159159999952
+            },
+            {
+              "index": 1,
+              "sequence": 502,
+              "latenessMs": 0.6485829999946873,
+              "commandMs": 1.1770830000023125,
+              "exactPaintMs": 91.08008300000074,
+              "caughtUpPaintMs": 91.08008300000074
+            }
+          ],
+          "frameCounts": {
+            "svg": 2,
+            "png": 458,
+            "hostAnnotatedFallbacks": {}
+          },
+          "staleVisiblePaints": 0,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 98,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              98,
+              97
+            ],
+            "shellCount": 3,
+            "latestSequence": 730
+          }
+        },
+        {
+          "name": "paste-incomplete-repair",
+          "anchor": "middle",
+          "inputCount": 2,
+          "scheduledIntervalMs": 350,
+          "expectedInputSpanMs": 350,
+          "actualInputSpanMs": 348.1534169999941,
+          "maxInputLatenessMs": 1.602167000004556,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 108.62470800000301,
+          "lastKeyToVisibleSourceMs": 92.67066600000544,
+          "finalExpectedPage": 49,
+          "finalExpectedRevision": 1459,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 110.22687500000757,
+          "harnessFinalPaintMs": 92.67066600000544,
+          "exactInputPaints": 2,
+          "caughtUpMedianMs": 92.67066600000544,
+          "caughtUpP95Ms": 108.62470800000301,
+          "nativeStageTimingsAvailable": true,
+          "rootRollbacks": 0,
+          "checkpointRollbacks": 2,
+          "sourceTargetNativePages": [
+            49
+          ],
+          "caughtUpMaxMs": 108.62470800000301,
+          "worstInputs": [
+            {
+              "index": 0,
+              "sequence": 731,
+              "latenessMs": 1.602167000004556,
+              "commandMs": 2.466832999998587,
+              "exactPaintMs": 108.62470800000301,
+              "caughtUpPaintMs": 108.62470800000301
+            },
+            {
+              "index": 1,
+              "sequence": 732,
+              "latenessMs": -0.24441600000136532,
+              "commandMs": 1.715916000001016,
+              "exactPaintMs": 92.67066600000544,
+              "caughtUpPaintMs": 92.67066600000544
+            }
+          ],
+          "frameCounts": {
+            "svg": 2,
+            "png": 7,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 2
+            }
+          },
+          "staleVisiblePaints": 0,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 49,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              49,
+              50
+            ],
+            "shellCount": 3,
+            "latestSequence": 732
+          }
+        },
+        {
+          "name": "undo-pasted-block",
+          "anchor": "middle",
+          "inputCount": 1,
+          "scheduledIntervalMs": 100,
+          "expectedInputSpanMs": 0,
+          "actualInputSpanMs": 0,
+          "maxInputLatenessMs": 1.4177090000011958,
+          "validCadence": true,
+          "observedVisible": true,
+          "firstVisibleChangedSourceMs": 638.010374999998,
+          "lastKeyToVisibleSourceMs": 638.010374999998,
+          "finalExpectedPage": 49,
+          "finalExpectedRevision": 1462,
+          "visiblePaintsWithoutKnownTarget": 0,
+          "perInputEndpoint": "Visible frame with matching native source-follow sequence/revision/page known by paint receipt; missing matches are not proof of source coalescing",
+          "harnessFirstPaintMs": 639.4280839999992,
+          "harnessFinalPaintMs": 638.010374999998,
+          "exactInputPaints": 1,
+          "caughtUpMedianMs": 638.010374999998,
+          "caughtUpP95Ms": 638.010374999998,
+          "nativeStageTimingsAvailable": true,
+          "rootRollbacks": 0,
+          "checkpointRollbacks": 1,
+          "sourceTargetNativePages": [
+            49
+          ],
+          "caughtUpMaxMs": 638.010374999998,
+          "worstInputs": [
+            {
+              "index": 0,
+              "sequence": 733,
+              "latenessMs": 1.4177090000011958,
+              "commandMs": 3.6560409999947296,
+              "exactPaintMs": 638.010374999998,
+              "caughtUpPaintMs": 638.010374999998
+            }
+          ],
+          "frameCounts": {
+            "svg": 1,
+            "png": 4,
+            "hostAnnotatedFallbacks": {
+              "SVG exceeded the preview budget or could not be decoded": 1
+            }
+          },
+          "staleVisiblePaints": 0,
+          "browserErrors": [],
+          "snapshot": {
+            "toolbar": 49,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              49,
+              50
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        },
+        {
+          "name": "idle",
+          "commandCount": 6,
+          "commandsByVerb": {
+            "preview-prepare": 1,
+            "preview-background": 2,
+            "preview-svg": 1,
+            "preview-region": 1,
+            "preview-auto": 1
+          },
+          "snapshot": {
+            "toolbar": 98,
+            "visibility": "visible",
+            "count": "/ …",
+            "visiblePages": [
+              98,
+              97
+            ],
+            "shellCount": 3,
+            "latestSequence": 733
+          }
+        }
+      ]
+    }
+  ],
+  "oracles": [
+    {
+      "nominalPages": 30,
+      "method": "Two clean local XeLaTeX passes; standalone SyncTeX query and independent Poppler PDF text pagination. All page fields except page1 are zero-based.",
+      "passed": true,
+      "source": {
+        "bytes": 63954,
+        "sha256": "33b1d23274c5396552f34b0ad6c2e047296d518bf95e5afe97d21ae79d860376"
+      },
+      "pdf": {
+        "pages": 31,
+        "sha256": "6dcbda3efcf87fc954244ef80cc9011ca930bc21dd27f459da6948d38aee0b7d"
+      },
+      "profileSha256": "d2871f60a0c1a9827ab1e7033b39d004cabed61d1e0721b914a07a40893ea228",
+      "passes": [
+        {
+          "status": 0,
+          "elapsedMs": 1054.2082910000001
+        },
+        {
+          "status": 0,
+          "elapsedMs": 1082.6394159999998
+        }
+      ],
+      "tools": {
+        "xelatex": {
+          "sha256": "593df4b2c196aa1cdeabcb6b4fafd20af3b182e05a3cee030418f14707597f0e",
+          "version": "XeTeX 3.141592653-2.6-0.999998 (TeX Live 2026)"
+        },
+        "synctex": {
+          "sha256": "15fa9be1d68755ef754d6f471168fcf85d82f4b4f6a49a34c038e83eb12f2e7d",
+          "version": "This is SyncTeX command line utility, version 1.5"
+        },
+        "pdftotext": {
+          "sha256": "8181e009749e3f0e028ad8a26ca69cd853dfd783a07697454ba74d37d0bad21f",
+          "version": "pdftotext version 26.10.0"
+        }
+      },
+      "probes": [
+        {
+          "phrase": "every new term has a source location",
+          "line1": 43,
+          "column": 93,
+          "nativePage": 1,
+          "textPages": [
+            1
+          ],
+          "queryPages": [
+            1
+          ],
+          "visiblePages": [
+            1,
+            0
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        },
+        {
+          "phrase": "sum the bounds",
+          "line1": 538,
+          "column": 63,
+          "nativePage": 15,
+          "textPages": [
+            15
+          ],
+          "queryPages": [
+            15
+          ],
+          "visiblePages": [
+            15
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        },
+        {
+          "phrase": "The final argument must also update",
+          "line1": 995,
+          "column": 35,
+          "nativePage": 29,
+          "textPages": [
+            29
+          ],
+          "queryPages": [
+            29
+          ],
+          "visiblePages": [
+            29,
+            28
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "nominalPages": 100,
+      "method": "Two clean local XeLaTeX passes; standalone SyncTeX query and independent Poppler PDF text pagination. All page fields except page1 are zero-based.",
+      "passed": true,
+      "source": {
+        "bytes": 206149,
+        "sha256": "beb61a04188f60c0cca87f84f81f8284a991e1ac8de3fe8809807bc729300b81"
+      },
+      "pdf": {
+        "pages": 100,
+        "sha256": "264552de0165f71ec3823b39d6c7c224d207b8934e7fb2218472b8dfc760f59d"
+      },
+      "profileSha256": "d387532b11ddd453084196fd105e6bb59c06a919b404032586ca1ecab5afb1aa",
+      "passes": [
+        {
+          "status": 0,
+          "elapsedMs": 2096.707166
+        },
+        {
+          "status": 0,
+          "elapsedMs": 2238.1656249999996
+        }
+      ],
+      "tools": {
+        "xelatex": {
+          "sha256": "593df4b2c196aa1cdeabcb6b4fafd20af3b182e05a3cee030418f14707597f0e",
+          "version": "XeTeX 3.141592653-2.6-0.999998 (TeX Live 2026)"
+        },
+        "synctex": {
+          "sha256": "15fa9be1d68755ef754d6f471168fcf85d82f4b4f6a49a34c038e83eb12f2e7d",
+          "version": "This is SyncTeX command line utility, version 1.5"
+        },
+        "pdftotext": {
+          "sha256": "8181e009749e3f0e028ad8a26ca69cd853dfd783a07697454ba74d37d0bad21f",
+          "version": "pdftotext version 26.10.0"
+        }
+      },
+      "probes": [
+        {
+          "phrase": "every new term has a source location",
+          "line1": 43,
+          "column": 93,
+          "nativePage": 1,
+          "textPages": [
+            1
+          ],
+          "queryPages": [
+            1
+          ],
+          "visiblePages": [
+            1,
+            0
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        },
+        {
+          "phrase": "sum the bounds",
+          "line1": 1668,
+          "column": 63,
+          "nativePage": 49,
+          "textPages": [
+            49
+          ],
+          "queryPages": [
+            49
+          ],
+          "visiblePages": [
+            49,
+            50
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        },
+        {
+          "phrase": "The final argument must also update",
+          "line1": 3286,
+          "column": 35,
+          "nativePage": 98,
+          "textPages": [
+            98
+          ],
+          "queryPages": [
+            98
+          ],
+          "visiblePages": [
+            98,
+            97
+          ],
+          "checks": {
+            "uniquePhrase": true,
+            "nativeMatchesText": true,
+            "synctexHasResults": true,
+            "nativeMatchesSynctex": true,
+            "textMatchesSynctex": true,
+            "textPageVisible": true
+          },
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

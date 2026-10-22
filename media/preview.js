@@ -196,7 +196,7 @@
   }
   function target(target) {
     closeLens(); currentPage = clamp(target.page, 0, complete && count ? count - 1 : 100000);
-    configure(); mountWindow(); revealTarget(target); mountWindow();
+    configure(); mountWindow(); revealTarget(target); mountWindow(); observeActive();
     views.get(target.page)?.highlight(target); describe(); save(); requestViewport(false);
   }
 

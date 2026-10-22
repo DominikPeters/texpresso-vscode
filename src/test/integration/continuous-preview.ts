@@ -95,6 +95,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       f.controller.handle(['preview-forward',1,0,page,300,y]);
       const followed=await f.action('snapshot');
       assert.equal(followed.scrollTop,beforeFollow.scrollTop,'visible SVG SyncTeX target cannot reset to page top or recenter');
+      assert.equal(followed.toolbar,beforeFollow.toolbar,'visible source target cannot steal the center-derived active page');
       assert.equal(followed.epoch,beforeFollow.epoch,'source following cannot create a user-scroll epoch');
     }
     await f.drain();
@@ -113,7 +114,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     assert.equal(f.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0])).length,rendersBeforeEmpty,'terminal empty document cannot enqueue vanished pages');
     f.state(3,true,0);await f.action('jump',{page:0});await f.drain();const recovered=await f.action('snapshot');
     assert.equal(recovered.toolbarDisabled,false);assert.ok(recovered.shells.some((s:any)=>s.page===0&&s.rendered),'nonempty output recovers after an empty document');
-    f.controller.handle(['preview-forward',2,1,2,300,150]);await f.drain();
+    f.controller.beginSourceFollow();f.controller.handle(['preview-forward',2,1,2,300,150]);await f.drain();
     const revealed=await f.action('snapshot');
     assert.ok(revealed.shells.some((s:any)=>s.page===2&&s.visible&&s.rendered),'offscreen SVG SyncTeX target still reveals and renders its page');
     console.log('PASS: continuous real webview shows adjacent pages, preserves anchors, isolates surfaces/metadata and bounds distant-page resources');

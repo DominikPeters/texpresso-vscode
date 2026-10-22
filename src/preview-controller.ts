@@ -28,6 +28,7 @@ export class PreviewController {
   private prewarm: EditPrewarm;
   private readonly instance = randomBytes(16).toString('hex');
   private disposed = false;
+  private sourceFollowing = true;
   private ready = false;
   private dirty = true;
   private page = 0;
@@ -80,7 +81,7 @@ export class PreviewController {
   private target?: { revision: number; sequence: number; page: number; x: number; y: number };
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, readonly session: TexpressoSession,
-    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void) {
+    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void) {
     this.prewarm = new EditPrewarm(() => ({
       available: !!this.session.previewPrepareEdit && !this.disposed && this.panel?.visible && !this.session.paused && this.session.state === 'running',
       idle: this.ready && !this.dirty && !this.inFlight && !this.region && !this.detail && !this.inverse && !this.destination && !this.gesture &&
@@ -157,6 +158,7 @@ export class PreviewController {
       switch (event[0]) {
         case 'preview-prepared': this.prewarm.handle(event); break;
         case 'preview-state':
+          if (event[2] !== this.session.previewSequence || (this.state && event[1] < this.state[1])) { break; }
           if (this.state && (this.state[1] !== event[1] || this.state[2] !== event[2])) { this.interactive(); this.clearPages(); this.enginePage = undefined; }
           if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
           this.state = event;
@@ -168,6 +170,7 @@ export class PreviewController {
           this.status(); this.flush(); this.prewarm.refresh();
           break;
         case 'preview-invalidated':
+          if (event[2] !== this.session.previewSequence || (this.state && event[1] < this.state[1])) { break; }
           this.interactive(); this.clearPages(); this.enginePage = undefined; this.inverse = undefined;
           this.dirty = true; this.shown = undefined; this.target = undefined; this.region = undefined; this.detail = undefined; this.destination = undefined; this.destinationPage = undefined; this.svgDecodeFailed = false;
           void this.post({ type: 'invalidate' });
@@ -200,6 +203,7 @@ export class PreviewController {
           else { if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
           break;
         case 'preview-forward':
+          if (!this.sourceFollowing) { break; }
           this.interactive();
           this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
@@ -224,13 +228,25 @@ export class PreviewController {
     this.prewarm.select(document ? `${document.uri.toString()}:${version ?? this.session.previewSequence}:${utf16Offset}` : undefined,
       document ? () => document.version === version ? this.session.sync.sourcePosition(document, utf16Offset) : undefined : undefined);
   }
+  beginSourceFollow(): void { this.sourceFollowing = true; this.prewarm.interrupt(); }
   interruptPreparation(): void { this.prewarm.interrupt(); }
+  private manualNavigation(): void {
+    if (!this.sourceFollowing) { return; }
+    this.sourceFollowing = false; this.target = undefined; this.navigated?.();
+    if (this.session.previewBackground) {
+      this.session.send(['preview-cancel', 0, this.page]); this.enginePage = undefined;
+      // Cancel-all also retires a foreground native render, without a retry
+      // acknowledgment. Release its credit so navigation can request pixels.
+      if (this.inFlight) { this.release(); this.svgPending = undefined; this.dirty = true; }
+    }
+  }
   update(): void { if (this.session.paused) { this.interactive(); } this.status(); this.prewarm.refresh(); }
   navigate(delta: number): void {
     this.interactive(); this.destination = undefined; this.destinationPage = undefined;
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
     this.page = Math.max(0, this.page + delta);
     if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
+    this.manualNavigation();
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
   }
 
@@ -253,7 +269,7 @@ export class PreviewController {
         if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
         if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.interactive(); }
         this.format = format;
-        if (this.page !== m.page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; this.target = undefined; this.svgDecodeFailed = false; }
+        if (this.page !== m.page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; if (m.scroll === true || m.jump === true) { this.target = undefined; } this.svgDecodeFailed = false; }
         this.page = m.page as number; this.width = Math.round(m.width as number);
         if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
         if (this.continuous) {
@@ -263,7 +279,8 @@ export class PreviewController {
           this.resident = new Set(Array.isArray(m.resident) ? m.resident.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 100000).slice(0, 12) : this.visible.map(d => d.page));
           if (m.scroll === true && Number.isSafeInteger(m.epoch) && m.epoch !== this.viewportEpoch) { this.frontierBudget = 1; this.prefetched.clear(); }
           if (Number.isSafeInteger(m.epoch)) { this.viewportEpoch = m.epoch as number; }
-          if (m.jump === true) { this.failed.clear(); this.prefetched.clear(); this.destination = undefined; this.destinationPage = undefined; }
+          if (m.jump === true || m.scroll === true) { this.manualNavigation(); this.destination = undefined; this.destinationPage = undefined; }
+          if (m.jump === true) { this.failed.clear(); this.prefetched.clear(); }
           this.shown = this.presented.get(this.page)?.header;
           const pending = this.inFlight;
           const pendingActive = pending && !pending.region && pending.page === this.page && pending.width === this.width &&

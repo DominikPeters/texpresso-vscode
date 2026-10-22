@@ -5,7 +5,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 (async () => {
-  const profileAuto = process.argv.includes('--profile-auto');
+  const profileVaried = process.argv.includes('--profile-varied');
+  const profileAuto = process.argv.includes('--profile-auto') || profileVaried;
   const preview = process.argv.includes('--preview') || profileAuto;
   const realEngine = process.argv.includes('--real-engine') || preview;
   const useWSL = realEngine && process.platform === 'win32';
@@ -70,8 +71,9 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileVaried ? 'varied-profile.js' : profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
+        TEXPRESSO_PROFILE: profileVaried ? '1' : process.env.TEXPRESSO_PROFILE,
         TEXPRESSO_TEST_WEBVIEW_ONLY: process.env.TEXPRESSO_TEST_WEBVIEW_ONLY,
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
@@ -80,6 +82,9 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_BINARY: binary,
         TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR,
+        TEXPRESSO_PROFILE_INPUT_LIMIT: process.env.TEXPRESSO_PROFILE_INPUT_LIMIT,
+        TEXPRESSO_PROFILE_PHASES: process.env.TEXPRESSO_PROFILE_PHASES,
+        TEXPRESSO_PROFILE_LEGACY_FOLLOW: process.env.TEXPRESSO_PROFILE_LEGACY_FOLLOW,
         TEXPRESSO_PROFILE_RICH: process.env.TEXPRESSO_PROFILE_RICH,
         TEXPRESSO_PROFILE_PREWARM_MODES: process.env.TEXPRESSO_PROFILE_PREWARM_MODES,
         TEXPRESSO_PROFILE_AUTORERUN: process.env.TEXPRESSO_PROFILE_AUTORERUN,
@@ -92,11 +97,11 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_PROFILE_REPEATS: process.env.TEXPRESSO_PROFILE_REPEATS,
         TEXPRESSO_PROFILE_CODECS: process.env.TEXPRESSO_PROFILE_CODECS
       },
-      // Profilers generate browser-timed input; background/occlusion throttling
-      // must not silently turn 100 ms typing into 1000 ms typing.
+      // Preview checks use animation frames; background/occlusion throttling
+      // must not suspend their assertions or distort scheduled typing.
       // https://www.electronjs.org/docs/latest/api/command-line-switches
       // https://github.com/GoogleChrome/chrome-launcher/blob/main/docs/chrome-flags-for-tools.md
-      launchArgs: [workspaceFile, ...(profileAuto ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
+      launchArgs: [workspaceFile, ...(preview ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,
         ...(process.env.TEXPRESSO_DEBUG_PORT ? ['--remote-debugging-port=' + process.env.TEXPRESSO_DEBUG_PORT] : [])]
     });
