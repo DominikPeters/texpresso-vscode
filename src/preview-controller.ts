@@ -35,7 +35,10 @@ export class PreviewController {
   private recoveryPagination?: { count: number; complete: boolean };
   private ready = false;
   private dirty = true;
+  // Foreground render priority can differ from the browser's centered page.
   private page = 0;
+  private viewportPage = 0;
+  private sourcePage?: number;
   private width = 1200;
   private continuous = false;
   private visible: PageDemand[] = [];
@@ -116,7 +119,7 @@ export class PreviewController {
     webview.onDidReceiveMessage(value => this.receive(value));
     this.panel.onDidChangeViewState(() => {
       if (visible === this.panel.visible) { return; }
-      visible = this.panel.visible; this.renderIntent++;
+      visible = this.panel.visible; this.renderIntent++; this.sourcePage = undefined;
       this.interactive(); this.gesture = false; this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
       this.shown = undefined; this.presented.clear(); this.resident.clear(); this.visible = []; this.nearby = []; this.cancelPrefetch(); this.destination = undefined; this.destinationPage = undefined; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
       // A restored webview announces ready; a retained live one answers ping.
@@ -168,7 +171,7 @@ export class PreviewController {
     this.recoveryCapabilities = capabilities;
     this.clearPages(); this.fallback.clear(); this.fallbackFacts.clear(); this.enginePage = undefined;
     this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear();
-    this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.sourceFollowing = false;
+    this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.sourceFollowing = false; this.sourcePage = undefined;
     this.target = undefined; this.inverse = undefined; this.region = undefined; this.detail = undefined;
     this.destination = undefined; this.destinationPage = undefined; this.shown = undefined;
     this.ready = false; this.dirty = true; this.svgDecodeFailed = false;
@@ -182,7 +185,7 @@ export class PreviewController {
       void this.post({ type: 'error', text: 'The preview stopped responding after two recovery attempts. Restart the preview to try again.' });
       return;
     }
-    this.renderIntent++;
+    this.renderIntent++; this.sourcePage = undefined;
     this.interactive(); this.release(); this.ready = false; this.dirty = true;
     this.presented.clear(); this.decodedImages.clear(); this.decodedPages.clear(); this.resident.clear();
     this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined;
@@ -210,6 +213,8 @@ export class PreviewController {
           if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
           this.state = event; this.recoveryPagination = undefined;
           if (event[4]) {
+            this.viewportPage = Math.min(this.viewportPage, Math.max(0, event[3] - 1));
+            if (this.sourcePage !== undefined && this.sourcePage >= event[3]) { this.sourcePage = undefined; }
             if (event[3] === 0) { if (this.page !== 0) { this.renderIntent++; } this.selectPage(0); this.dirty = false; }
             if (event[3] > 0 && this.page >= event[3]) { this.renderIntent++; this.selectPage(event[3] - 1); this.dirty = true; }
             this.visible = this.visible.filter(d => d.page < event[3]); this.nearby = this.nearby.filter(d => d.page < event[3]);
@@ -248,13 +253,14 @@ export class PreviewController {
         case 'preview-destination':
           if (event[1] !== this.state?.[1] || event[2] !== this.session.previewSequence || event[3] !== this.destination) { break; }
           if (event[4] < 0) { this.destination = undefined; this.destinationPage = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
-          else { this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.selectPage(event[4]); this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
+          else { this.sourcePage = undefined; this.viewportPage = event[4]; this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.selectPage(event[4]); this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
           break;
         case 'preview-forward':
           if (!this.sourceFollowing) { break; }
           this.interactive();
           this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
+          this.sourcePage = event[3];
           this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5] };
           if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
@@ -279,6 +285,7 @@ export class PreviewController {
   beginSourceFollow(): void { this.sourceFollowing = true; this.prewarm.interrupt(); }
   interruptPreparation(): void { this.prewarm.interrupt(); }
   private manualNavigation(): void {
+    this.sourcePage = undefined;
     this.renderIntent++;
     if (!this.sourceFollowing) { return; }
     this.sourceFollowing = false; this.target = undefined; this.navigated?.();
@@ -293,9 +300,9 @@ export class PreviewController {
   navigate(delta: number): void {
     this.interactive(); this.destination = undefined; this.destinationPage = undefined;
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
-    let page = Math.max(0, this.page + delta);
+    let page = Math.max(0, (this.continuous ? this.viewportPage : this.page) + delta);
     if (this.state?.[4]) { page = Math.min(page, Math.max(0, this.state[3] - 1)); }
-    this.selectPage(page);
+    this.selectPage(page); this.viewportPage = page;
     this.manualNavigation();
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
   }
@@ -344,22 +351,31 @@ export class PreviewController {
       case 'viewport':
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > 4096) { return; }
+        const previousAllocation = this.visible.find(d => d.page === this.page)?.allocation ||
+          this.nearby.find(d => d.page === this.page)?.allocation || this.allocation;
         if (m.continuous === true) { this.continuous = true; }
-        if (typeof m.allocation === 'string' && m.allocation.length <= 256) { this.allocation = m.allocation; }
-        if (m.type === 'ready') { this.presented.clear(); this.failed.clear(); this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; this.pngCanvas = m.pngCanvas === true; }
-        const format = m.format === 'svg' && this.uiCapabilities().svg ? 'svg' : m.format === 'png' ? 'png' : 'auto';
-        if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.renderIntent++; }
-        if (format !== this.format) { this.svgDecodeFailed = false; this.fallback.clear(); }
-        if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.dirty = true; }
-        if (this.page !== m.page || this.width !== m.width || this.format !== format || m.type === 'ready') { this.interactive(); }
-        this.format = format;
-        if (this.page !== m.page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; if (m.scroll === true || m.jump === true) { this.target = undefined; } this.svgDecodeFailed = false; }
-        this.page = m.page as number; this.width = Math.round(m.width as number);
-        if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
+        if (m.type === 'ready' || m.jump === true || m.scroll === true) { this.sourcePage = undefined; }
+        this.viewportPage = m.page as number;
+        if (this.state?.[4]) { this.viewportPage = Math.min(this.viewportPage, Math.max(0, this.state[3] - 1)); }
+        let page = this.viewportPage, width = Math.round(m.width as number);
         if (this.continuous) {
           this.visible = this.demands(m.visible, 12);
-          if (!this.visible.some(d => d.page === this.page)) { this.visible.unshift({ page: this.page, width: this.width }); this.visible = this.visible.slice(0, 12); }
+          if (!this.visible.some(d => d.page === this.viewportPage)) { this.visible.unshift({ page: this.viewportPage, width }); this.visible = this.visible.slice(0, 12); }
           this.nearby = this.demands(m.nearby, 2).filter(d => !this.visible.some(v => v.page === d.page));
+          const source = this.sourcePage === undefined ? undefined : this.visible.find(d => d.page === this.sourcePage);
+          if (source) { page = source.page; width = source.width; }
+          else { this.sourcePage = undefined; }
+        }
+        const allocation = this.visible.find(d => d.page === page)?.allocation ||
+          (typeof m.allocation === 'string' && m.allocation.length <= 256 ? m.allocation : undefined);
+        const format = m.format === 'svg' && this.uiCapabilities().svg ? 'svg' : m.format === 'png' ? 'png' : 'auto';
+        const changed = this.page !== page || this.width !== width || this.format !== format || previousAllocation !== allocation || m.type === 'ready';
+        if (changed) { this.renderIntent++; this.dirty = true; this.interactive(); }
+        if (format !== this.format) { this.svgDecodeFailed = false; this.fallback.clear(); }
+        if (this.page !== page) { this.inverse = undefined; this.forceNative = false; this.shown = undefined; if (m.scroll === true || m.jump === true) { this.target = undefined; } this.svgDecodeFailed = false; }
+        this.format = format; this.page = page; this.width = width; this.allocation = allocation;
+        if (m.type === 'ready') { this.presented.clear(); this.failed.clear(); this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.svgDom = m.svgDom === true; this.pngCanvas = m.pngCanvas === true; }
+        if (this.continuous) {
           for (const demand of [...this.visible, ...this.nearby]) {
             if (this.fallback.has(demand.page) && !this.fallback.usePng(demand.page, this.fallbackContext(demand.page, demand.width))) {
               // Allocation alone can change while the capped PNG width remains
@@ -868,7 +884,7 @@ export class PreviewController {
     return { regions: !!this.session.previewRegions, svg: !!this.session.previewSvg, links: !!this.session.previewLinks };
   }
   private status(): void {
-    void this.post({ type: 'state', page: this.page, count: this.state?.[3] ?? this.recoveryPagination?.count ?? 0,
+    void this.post({ type: 'state', page: this.continuous ? this.viewportPage : this.page, count: this.state?.[3] ?? this.recoveryPagination?.count ?? 0,
       complete: this.state?.[4] ?? this.recoveryPagination?.complete ?? false,
       ...this.uiCapabilities(), sequence: this.session.previewSequence, revision: this.state?.[2] === this.session.previewSequence ? this.state[1] : undefined, paused: this.session.paused, phase: this.session.state });
   }

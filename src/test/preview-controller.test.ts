@@ -677,6 +677,105 @@ test('source following renders a visible neighbor at its own width before the vi
   } finally { f.controller.dispose(); }
 });
 
+function sourcePriorityFixture() {
+  const f = fixture();
+  const viewport = { page: 0, width: 1078, format: 'png', continuous: true,
+    visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 970, allocation: 'page-one' }],
+    nearby: [], resident: [0, 1], epoch: 0 };
+  f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+  f.send({ type: 'ready', ...viewport });
+  const first = f.commands.at(-1)!;
+  f.controller.beginSourceFollow(); f.controller.handle(['preview-forward', 1, 0, 1, 100, 100]);
+  f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+  f.send({ type: 'decoded', id: first[1], page: 0 });
+  const request = f.commands.at(-1)!;
+  assert.equal(request[2], 1); assert.equal(request[3], 970);
+  return { ...f, viewport, request };
+}
+
+test('passive viewport center reports preserve source-page priority across edits and stale visual progress', () => {
+  const f = sourcePriorityFixture(); Object.assign(f.session, { previewLinks: true, previewRegions: true, previewBackground: true });
+  try {
+    f.send({ type: 'viewport', ...f.viewport });
+    assert.equal(f.messages.filter(m => m.type === 'state').at(-1)?.page, 0, 'toolbar reports browser center, independently of render priority');
+    f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: f.request[1], page: 1 });
+    assert.equal(f.commands.length, 2, 'passive reports do not ask for the center page again');
+    for (const sequence of [1, 3]) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 3, true, 0]);
+      const request = f.commands.at(-1)!;
+      assert.equal(request[2], 1, 'new source starts with the last edited visible page before SyncTeX replies');
+      assert.equal(request[3], 970);
+      f.send({ type: 'viewport', ...f.viewport });
+      f.controller.handle(['preview-forward', sequence + 1, sequence, 1, 100, 100]);
+      f.session.previewSequence = sequence + 1; f.controller.handle({ sourceSequence: sequence + 1 });
+      f.controller.handle(['preview-state', sequence + 2, sequence + 1, 3, true, 0]);
+      f.send({ type: 'viewport', ...f.viewport, width: 1200,
+        visible: [{ page: 0, width: 1200, allocation: 'resized-center-only' }, f.viewport.visible[1]] });
+      f.controller.handle(continuousFrame(request, 1, { width: 970,
+        annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] } }));
+      const progress = f.messages.filter(m => m.type === 'image').at(-1)!;
+      assert.equal(progress.header.sequence, sequence); assert.equal(progress.visualOnly, true);
+      assert.equal(progress.target, undefined, 'stale progress cannot reveal a target');
+      const commands: number = f.commands.length;
+      f.send({ type: 'link', page: 1, revision: sequence + 1, sequence, index: 0 });
+      f.send({ type: 'inverse', page: 1, revision: sequence + 1, sequence, x: 5, y: 5 });
+      f.send({ type: 'region', page: 1, revision: sequence + 1, sequence, token: 1, bounds: [0, 0, 10, 10], width: 100 });
+      assert.equal(f.opened.length, 0); assert.equal(f.commands.length, commands);
+      f.send({ type: 'decoded', id: request[1], displayed: true, stale: true });
+      assert.equal(f.commands.at(-1)?.[2], 1); assert.equal(f.commands.at(-1)?.[5], sequence + 1);
+      assert.equal((f.controller as any).visualSnapshots.get(1).sequence, sequence);
+      // Complete the newest frame before beginning another independent edit pair.
+      const current = f.commands.at(-1)!;
+      f.controller.handle(continuousFrame(current, 1, { width: 970 }));
+      f.send({ type: 'decoded', id: current[1], page: 1 });
+    }
+    assert.equal(f.commands.filter(command => command[0] === 'preview-render' && command[2] === 0).length, 1, 'only the initial center page was foreground-rendered');
+  } finally { f.controller.dispose(); }
+});
+
+test('manual navigation and real source-page demand changes retire older foreground progress', () => {
+  const changes = [
+    { name: 'scroll', update: { scroll: true, epoch: 1 }, page: 0, width: 1078 },
+    { name: 'jump', update: { jump: true, epoch: 1 }, page: 0, width: 1078 },
+    { name: 'resize', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 900, allocation: 'page-one' }] }, page: 1, width: 900 },
+    { name: 'allocation', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 970, allocation: 'new-page-one' }] }, page: 1, width: 970 },
+    { name: 'codec', update: { format: 'auto' }, page: 1, width: 970 },
+    { name: 'no longer visible', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }], resident: [0] }, page: 0, width: 1078 }
+  ];
+  for (const change of changes) {
+    const f = sourcePriorityFixture();
+    try {
+      const images = f.messages.filter(m => m.type === 'image').length;
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+      f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+      f.send({ type: 'viewport', ...f.viewport, ...change.update });
+      f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+      assert.equal(f.messages.filter(m => m.type === 'image').length, images, `${change.name} retires the old view intent`);
+      assert.equal(f.commands.at(-1)?.[2], change.page, change.name);
+      assert.equal(f.commands.at(-1)?.[3], change.width, change.name);
+    } finally { f.controller.dispose(); }
+  }
+});
+
+test('page commands use the browser center and override source priority', () => {
+  const f = sourcePriorityFixture();
+  try {
+    f.send({ type: 'viewport', ...f.viewport });
+    f.controller.navigate(1);
+    assert.equal(f.messages.filter(m => m.type === 'jump').at(-1)?.page, 1, 'Next from centered page zero means page one, even when source priority already is one');
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    const jumps = f.messages.filter(m => m.type === 'jump').length;
+    f.controller.handle(['preview-forward', 2, 1, 2, 100, 100]);
+    assert.equal(f.messages.filter(m => m.type === 'jump').length, jumps, 'manual page commands suspend later source targets');
+    f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+    f.send({ type: 'viewport', ...f.viewport });
+    assert.equal(f.commands.at(-1)?.[2], 1, 'decode credit is not released by a viewport report');
+  } finally { f.controller.dispose(); }
+});
+
 test('manual page navigation uses a nearby page demand and retains the width when none is known', () => {
   const f = fixture();
   try {

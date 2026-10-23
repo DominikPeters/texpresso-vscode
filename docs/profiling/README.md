@@ -149,3 +149,5 @@ accounting. It retains failed diagnostics and separates the same-binary SVG
 allocation fix from unresolved compiler starvation and source-target validation.
 
 [Latency attribution and scheduling](2026-10-23-latency.md) separates browser commits from delayed paint observations, measures duplicate-resolution rendering, and validates a tighter native compiler work budget.
+
+[Source-follow page priority (23 October)](2026-10-23-source-priority.md) compares the same 202-input PNG workload and native bundle before and after keeping the edited visible page ahead of the viewport center. It records request routing, PNG keyframes/patches, visible commit latency and the remaining compiler-side tail. [Compact results](2026-10-23-source-priority.json).
