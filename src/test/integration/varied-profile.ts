@@ -23,6 +23,7 @@ export async function run(): Promise<void> {
   if (process.platform === 'darwin') { cp.execFileSync('xcrun', ['clang', '-O2', path.join(repo, 'scripts/profiling/memory.c'), '-o', samplerPath]); }
   const binary = process.env.TEXPRESSO_BINARY!, legacyFollow = process.env.TEXPRESSO_PROFILE_LEGACY_FOLLOW === '1';
   const metadata = { created: new Date().toISOString(), hostTimeOrigin: performance.timeOrigin, vscode: vscode.version, binary, legacyFollow, scenario,
+    profileEnabled: process.env.TEXPRESSO_PROFILE === '1', profileActivity: process.env.TEXPRESSO_PROFILE_ACTIVITY === '1',
     controllerVariant: process.env.TEXPRESSO_PROFILE_CONTROLLER_VARIANT || 'working-tree',
     controllerRuntimeSha256: createHash('sha256').update(fs.readFileSync(require.resolve('../../preview-controller'))).digest('hex'),
     memoryAccounting: 'Owned native process-group task RSS/footprint sums; not deduplicated RAM/PSS. Node heap includes retained profiling logs. Browser counters describe mounted resources, not GPU memory.',
