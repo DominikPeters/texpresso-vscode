@@ -652,6 +652,51 @@ test('continuous viewport serves visible neighbors without turning native page o
   } finally {f.controller.dispose();}
 });
 
+test('source following renders a visible neighbor at its own width before the viewport catches up', () => {
+  const f = fixture();
+  const visible = [{ page: 0, width: 1078 }, { page: 1, width: 970 }];
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1078, format: 'png', continuous: true,
+      visible, nearby: [], resident: [0, 1], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.beginSourceFollow();
+    f.controller.handle(['preview-forward', 1, 0, 1, 100, 100]);
+    assert.equal(f.commands.length, 1, 'source following preserves the shared decode credit');
+    f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+    f.send({ type: 'decoded', id: first[1], page: 0 });
+    const neighbor = f.commands.at(-1)!;
+    assert.equal(neighbor[2], 1);
+    assert.equal(neighbor[3], 970, 'the target page must not inherit the old toolbar page width');
+    f.send({ type: 'viewport', page: 1, width: 970, format: 'png', continuous: true,
+      visible, nearby: [], resident: [0, 1], epoch: 0 });
+    f.controller.handle(continuousFrame(neighbor, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: neighbor[1], page: 1 });
+    assert.equal(f.commands.length, 2, 'the confirming viewport needs no replacement resize keyframe');
+    assert.equal(f.messages.filter(m => m.type === 'image' && m.header.page === 1).length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('manual page navigation uses a nearby page demand and retains the width when none is known', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1078, format: 'png', continuous: true,
+      visible: [{ page: 0, width: 1078 }], nearby: [{ page: 1, width: 970 }], resident: [0], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+    f.send({ type: 'decoded', id: first[1], page: 0 });
+    f.controller.navigate(1);
+    const neighbor = f.commands.at(-1)!;
+    assert.equal(neighbor[2], 1); assert.equal(neighbor[3], 970);
+    f.controller.handle(continuousFrame(neighbor, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: neighbor[1], page: 1 });
+    f.controller.navigate(1);
+    const unknown = f.commands.at(-1)!;
+    assert.equal(unknown[2], 2); assert.equal(unknown[3], 970, 'an unmeasured page keeps the latest active width');
+  } finally { f.controller.dispose(); }
+});
+
 test('continuous page metadata routes links and cached-page inverse search by owning page', () => {
   const f=fixture();Object.assign(f.session,{previewLinks:true});
   try {

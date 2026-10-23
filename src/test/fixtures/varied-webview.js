@@ -1,7 +1,37 @@
 /* Injected observer. Production owns decoding, rendering, scheduling and recovery. */
 (() => {
-  const api = acquireVsCodeApi(), frames = new Map();
-  const paint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const api = acquireVsCodeApi(), frames = new Map(), receiving = new Map();
+  const paint = () => new Promise(resolve => requestAnimationFrame(() => {
+    const firstRafAt = performance.now();
+    requestAnimationFrame(() => resolve({ firstRafAt, paintAt: performance.now() }));
+  }));
+  window.variedReceiving = (header, at) => {
+    receiving.set(header.requestId, { receivedAt: at, timeOrigin: performance.timeOrigin });
+    while (receiving.size > 64) { receiving.delete(receiving.keys().next().value); }
+  };
+  const longTasks = [];
+  let observer;
+  if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes?.includes('longtask')) {
+    observer = new PerformanceObserver(list => {
+      for (const entry of list.getEntries()) {
+        longTasks.push({ startTime: entry.startTime, duration: entry.duration, name: entry.name });
+        if (longTasks.length > 128) { longTasks.shift(); }
+      }
+    });
+    observer.observe({ type: 'longtask', buffered: true });
+  }
+  let lastTick = performance.now(), lastReport = lastTick;
+  const scheduler = setInterval(() => {
+    const at = performance.now(), lag = Math.max(0, at - lastTick - 100); lastTick = at;
+    if (lag > 25 || longTasks.length || at - lastReport >= 1000) {
+      api.postMessage({ varied: 'scheduler', at, timeOrigin: performance.timeOrigin, lag,
+        visibility: document.visibilityState, focused: document.hasFocus(), longTasks: longTasks.splice(0) });
+      lastReport = at;
+    }
+  }, 100);
+  document.addEventListener('visibilitychange', () => api.postMessage({ varied: 'visibility',
+    at: performance.now(), timeOrigin: performance.timeOrigin, visibility: document.visibilityState, focused: document.hasFocus() }));
+  window.addEventListener('pagehide', () => { clearInterval(scheduler); observer?.disconnect(); });
   const snapshot = (withResources = false) => {
     const viewport = document.getElementById('viewport'), clip = viewport.getBoundingClientRect();
     const canvases = withResources ? [...document.querySelectorAll('canvas')] : [];
@@ -20,10 +50,27 @@
         sequence: frames.get(Number(sheet.dataset.page))?.sequence
       }; }) };
   };
-  window.variedApi = () => ({ getState: () => api.getState() || ({ page: 0, format: __CODEC__, zoom: 'width' }), setState: value => api.setState(value), postMessage: m => api.postMessage(m) });
-  window.variedAccepted = (header, contentId) => {
+  window.variedApi = () => ({ getState: () => api.getState() || ({ page: 0, format: __CODEC__, zoom: 'width' }), setState: value => api.setState(value), postMessage: m => {
+    if (m.type === 'decoded') {
+      const timing = receiving.get(m.id);
+      if (timing) { timing.ackAt = performance.now(); m = { ...m, profileTiming: { ...timing } }; receiving.delete(m.id); }
+    }
+    api.postMessage(m);
+  } });
+  window.variedAccepted = (header, contentId, detail) => {
+    const timing = receiving.get(header.requestId) || { timeOrigin: performance.timeOrigin };
+    const committedAt = performance.now();
+    const sheet = document.querySelector(`.page-sheet[data-page="${header.page}"]`);
+    const clip = document.getElementById('viewport').getBoundingClientRect(), rect = sheet?.getBoundingClientRect();
+    Object.assign(timing, detail, { committedAt, visible: !!rect && rect.bottom > clip.top && rect.top < clip.bottom,
+      visibility: document.visibilityState, focused: document.hasFocus(), visibilityProbeMs: performance.now() - committedAt });
     frames.set(header.page, header);
-    paint().then(() => api.postMessage({ varied: 'paint', header, contentId, superseded: frames.get(header.page)?.requestId !== header.requestId, ...snapshot() }));
+    paint().then(frameTiming => {
+      const beforeSnapshot = performance.now(), view = snapshot();
+      api.postMessage({ varied: 'paint', header, contentId,
+        timing: { ...timing, ...frameTiming, snapshotMs: performance.now() - beforeSnapshot },
+        superseded: frames.get(header.page)?.requestId !== header.requestId, ...view });
+    });
   };
   window.addEventListener('message', async event => {
     const m = event.data;

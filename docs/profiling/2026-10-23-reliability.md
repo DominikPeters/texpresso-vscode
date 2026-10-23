@@ -6,6 +6,8 @@ The test exposed and verified a native fix for extensionless includes bypassing
 unsaved editor buffers; after it, included-source edits changed the rendered
 surfaces and the previous one-page source-target mismatch disappeared.
 
+Follow-up [latency attribution](2026-10-23-latency.md) distinguishes the source-epoch observations reported here from fully current image commits. Some historical large gaps include hidden-preview sampling or deliberate post-typing waits; they are not evidence of equally long visible decoding stalls.
+
 ## Implementation
 
 - Retain the prewarming fence through a real trace-zero rollback.

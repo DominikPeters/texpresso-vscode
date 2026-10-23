@@ -37,8 +37,10 @@ matched their reference bytes. The candidate was built in
 `native/.bundles/darwin-arm64-preview-reliability-final`, with compact static
 ICU data, relocated dependencies, a matched C02/S02 worker handshake, and an
 ad-hoc signature. The baseline bundle is preserved at
-`native/.bundles/darwin-arm64-preview-before-reliability`. The canonical `demo:preview` bundle now contains this same frontend plus the
-later extensionless-input worker fix in native commit `91f7d92`. That fix was
+`native/.bundles/darwin-arm64-preview-before-reliability`. At the end of this pass, the canonical `demo:preview` bundle contained this same
+frontend plus the extensionless-input worker fix in native commit `91f7d92`.
+Subsequent [latency work](2026-10-23-latency.md) updates the canonical frontend
+while preserving the exact cache benchmark pair. That fix was
 validated by all 49 engine tests; it does not change the native rendering caches.
 The exact pair measured here remains preserved in `reliability-final`.
 

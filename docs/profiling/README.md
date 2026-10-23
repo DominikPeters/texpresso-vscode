@@ -147,3 +147,5 @@ source rollbacks without freezing real reference changes.
 adds unsaved includes, redo, bounded engine/webview recovery and process-status
 accounting. It retains failed diagnostics and separates the same-binary SVG
 allocation fix from unresolved compiler starvation and source-target validation.
+
+[Latency attribution and scheduling](2026-10-23-latency.md) separates browser commits from delayed paint observations, measures duplicate-resolution rendering, and validates a tighter native compiler work budget.

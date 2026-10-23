@@ -210,8 +210,8 @@ export class PreviewController {
           if (this.enginePage?.page !== event[5]) { this.enginePage = undefined; }
           this.state = event; this.recoveryPagination = undefined;
           if (event[4]) {
-            if (event[3] === 0) { if (this.page !== 0) { this.renderIntent++; } this.page = 0; this.dirty = false; }
-            if (event[3] > 0 && this.page >= event[3]) { this.renderIntent++; this.page = event[3] - 1; this.dirty = true; }
+            if (event[3] === 0) { if (this.page !== 0) { this.renderIntent++; } this.selectPage(0); this.dirty = false; }
+            if (event[3] > 0 && this.page >= event[3]) { this.renderIntent++; this.selectPage(event[3] - 1); this.dirty = true; }
             this.visible = this.visible.filter(d => d.page < event[3]); this.nearby = this.nearby.filter(d => d.page < event[3]);
           }
           this.status(); this.flush(); this.prewarm.refresh();
@@ -248,7 +248,7 @@ export class PreviewController {
         case 'preview-destination':
           if (event[1] !== this.state?.[1] || event[2] !== this.session.previewSequence || event[3] !== this.destination) { break; }
           if (event[4] < 0) { this.destination = undefined; this.destinationPage = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
-          else { this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.page = event[4]; this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
+          else { this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.selectPage(event[4]); this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
           break;
         case 'preview-forward':
           if (!this.sourceFollowing) { break; }
@@ -259,7 +259,7 @@ export class PreviewController {
           if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
             if (this.page !== event[3]) { this.renderIntent++; this.svgDecodeFailed = false; }
-            this.page = event[3];
+            this.selectPage(event[3]);
             if (!this.inFlight || this.inFlight.page !== this.page || this.inFlight.revision !== event[1] || this.inFlight.region) {
               this.dirty = true;
             }
@@ -293,10 +293,20 @@ export class PreviewController {
   navigate(delta: number): void {
     this.interactive(); this.destination = undefined; this.destinationPage = undefined;
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
-    this.page = Math.max(0, this.page + delta);
-    if (this.state?.[4]) { this.page = Math.min(this.page, Math.max(0, this.state[3] - 1)); }
+    let page = Math.max(0, this.page + delta);
+    if (this.state?.[4]) { page = Math.min(page, Math.max(0, this.state[3] - 1)); }
+    this.selectPage(page);
     this.manualNavigation();
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
+  }
+
+  private selectPage(page: number): void {
+    // A source target can select a visible neighbor before its viewport update.
+    // Keep the page paired with its own raster demand instead of rendering it at
+    // the previous active page's width and immediately replacing that keyframe.
+    const demand = this.continuous ? this.visible.find(d => d.page === page) || this.nearby.find(d => d.page === page) : undefined;
+    this.page = page;
+    if (demand) { this.width = demand.width; }
   }
 
   private receive(value: unknown): void {

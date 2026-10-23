@@ -22,7 +22,9 @@ export async function run(): Promise<void> {
   const samplerPath = path.join(output, 'memory-sampler');
   if (process.platform === 'darwin') { cp.execFileSync('xcrun', ['clang', '-O2', path.join(repo, 'scripts/profiling/memory.c'), '-o', samplerPath]); }
   const binary = process.env.TEXPRESSO_BINARY!, legacyFollow = process.env.TEXPRESSO_PROFILE_LEGACY_FOLLOW === '1';
-  const metadata = { created: new Date().toISOString(), vscode: vscode.version, binary, legacyFollow, scenario,
+  const metadata = { created: new Date().toISOString(), hostTimeOrigin: performance.timeOrigin, vscode: vscode.version, binary, legacyFollow, scenario,
+    controllerVariant: process.env.TEXPRESSO_PROFILE_CONTROLLER_VARIANT || 'working-tree',
+    controllerRuntimeSha256: createHash('sha256').update(fs.readFileSync(require.resolve('../../preview-controller'))).digest('hex'),
     memoryAccounting: 'Owned native process-group task RSS/footprint sums; not deduplicated RAM/PSS. Node heap includes retained profiling logs. Browser counters describe mounted resources, not GPU memory.',
     engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(),
     engineDirty: !!cp.execFileSync('git', ['-C', 'native/texpresso', 'status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim(),
@@ -38,9 +40,10 @@ export async function run(): Promise<void> {
   fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify(metadata, null, 2));
   const bootstrap = fs.readFileSync(path.join(repo, 'src/test/fixtures/varied-webview.js'), 'utf8');
   const source = fs.readFileSync(path.join(repo, 'media/preview.js'), 'utf8').replaceAll('acquireVsCodeApi', 'variedApi')
+    .replace("case 'image': {", "case 'image': { window.variedReceiving(m.header, performance.now());")
     .replace('acknowledge(header.requestId, performance.now() - renderStart);',
-      'window.variedAccepted(header, imageId); acknowledge(header.requestId, performance.now() - renderStart);');
-  if (!source.includes('window.variedAccepted(header, imageId);')) { throw Error('Production image acceptance hook changed; update the observer before profiling'); }
+      'window.variedAccepted(header, imageId, {stale, latestSequence: latestSourceSequence, latestRevision: latestSourceRevision, renderMs: performance.now() - renderStart}); acknowledge(header.requestId, performance.now() - renderStart);');
+  if (!source.includes('window.variedAccepted(header, imageId,') || !source.includes('window.variedReceiving(m.header,')) { throw Error('Production image acceptance hook changed; update the observer before profiling'); }
   for (const pages of (process.env.TEXPRESSO_PROFILE_PAGES || (scenario === 'default' ? '30,100' : '30')).split(',').map(Number)) {
     for (const codec of (process.env.TEXPRESSO_PROFILE_CODECS || (scenario === 'long' ? 'auto' : scenario === 'compare' ? 'png,svg,auto' : 'svg,auto')).split(',')) {
       const fixture = createVariedFixture(output, { targetPages: pages, id: `varied-${pages}-${codec}`, included: scenario === 'long' });
@@ -63,6 +66,16 @@ export async function run(): Promise<void> {
         const closed = new Promise<void>(resolve => old.once('close', () => resolve())); old.kill('SIGTERM'); await closed;
       };
       const native: any[] = [], messages: any[] = [], browser: any[] = [], inputs: any[] = [], phases: any[] = [], probes: any[] = [], warnings: string[] = [];
+      const timeline: any[] = []; let timelineOverflow = 0;
+      const stage = (name: string, details: object = {}) => {
+        if (timeline.length < 200000) { timeline.push({ stage: name, at: performance.now(), phase, generation, ...details }); }
+        else { timelineOverflow++; }
+      };
+      let hostTick = performance.now();
+      const hostScheduler = setInterval(() => {
+        const now = performance.now(), lag = Math.max(0, now - hostTick - 100); hostTick = now;
+        if (lag > 10) { stage('host-lag', { lag }); }
+      }, 100);
       const follow = new SourceFollow();
       const newSession = (recovering = false): TexpressoSession => {
         const ownGeneration = generation;
@@ -138,14 +151,28 @@ export async function run(): Promise<void> {
         return { get visible() { return real.visible; }, onDidChangeViewState: real.onDidChangeViewState.bind(real), onDidDispose: real.onDidDispose.bind(real), dispose: () => real.dispose(), webview: {
           cspSource: real.webview.cspSource, asWebviewUri: real.webview.asWebviewUri.bind(real.webview),
           onDidReceiveMessage: (callback: (m: any) => void) => real.webview.onDidReceiveMessage(m => {
-            if (m.varied) { browser.push({ ...m, hostAt: performance.now(), phase, latestSequence: sequence, generation }); } else if (m.type === 'decoded' && dropNextAck) {
+            if (m.varied) { browser.push({ ...m, hostAt: performance.now(), phase, latestSequence: sequence, latestRevision: session.previewState?.[1], generation }); } else if (m.type === 'decoded' && dropNextAck) {
               dropNextAck = false; recoveries.push({ type: 'dropped-ack', at: performance.now(), generation, requestId: m.id, page: m.page });
             } else {
+              if (m.type === 'decoded') {
+                stage('decoded', { id: m.id, page: m.page, latestSequence: sequence, latestRevision: session.previewState?.[1], displayed: m.displayed,
+                  stale: m.stale, renderMs: m.renderMs, profileTiming: m.profileTiming });
+              }
               if (['rasterize', 'cache-miss', 'decode-error', 'evicted', 'ready'].includes(m.type)) { messages.push({ at: performance.now(), phase, generation, browserSent: m }); }
               callback(m);
             }
           }),
-          postMessage: (m: any) => real.webview.postMessage({ ...m, variedSourceSequence: session.previewSequence, ...(m.header ? { header: { ...m.header, profileGeneration: generation } } : {}) }),
+          postMessage: (m: any) => {
+            if (m.header) { stage('post', { id: m.header.requestId, kind: m.type, page: m.header.page,
+              sequence: m.header.sequence, revision: m.header.revision, latestSequence: sequence,
+              mime: m.header.mime, width: m.header.width, height: m.header.height, bounds: m.header.bounds,
+              bytes: m.bytes?.byteLength || 0, nativeBytes: m.header.byteLength, svgOperations: m.svgPatch?.operations?.length,
+              rasterPatch: m.rasterPatch?.rect, background: m.background, visualOnly: m.visualOnly }); }
+            const posted = real.webview.postMessage({ ...m, variedSourceSequence: session.previewSequence,
+              ...(m.header ? { header: { ...m.header, profileGeneration: generation } } : {}) });
+            if (m.header) { void posted.then(delivered => stage('post-result', { id: m.header.requestId, delivered })); }
+            return posted;
+          },
           set html(value: string) {
             webviewLoads++; recoveries.push({ type: 'webview-load', at: performance.now(), generation, load: webviewLoads });
             const nonce = value.match(/data-instance="([^"]+)"/)![1];
@@ -327,10 +354,11 @@ export async function run(): Promise<void> {
         phase = 'idle'; const beforeIdle = messages.length; await delay(2000); await action('snapshot');
         phases.push({ name: 'idle', commands: messages.slice(beforeIdle).filter(m => m.sent), snapshot: browser.at(-1) });
       } catch (error) { runError = error instanceof Error ? error : Error(String(error)); throw error; } finally {
+        clearInterval(hostScheduler);
         await stopSampler();
         const editedFiles = documents.map(doc => { const relative = path.basename(doc.fileName), saved = relative === 'varied.tex' ? 'edited.tex' : 'edited-' + relative;
           fs.writeFileSync(path.join(fixture.root, saved), doc.getText()); return { relative, saved, dirty: doc.isDirty, sha256: createHash('sha256').update(doc.getText()).digest('hex') }; });
-        const result = { metadata, convergenceChecks, sourceReplays, sourceReplayOverflow, fallbackDecisions, finalSource: { sequence, generation }, editedFiles, checkpoints, recoveries, memory, fixture: { ...fixture, text: undefined }, phases, probes, inputs, browser, messages, native, warnings, error: (runError || failure)?.message, nodeMemory: process.memoryUsage() };
+        const result = { metadata, timeline, timelineOverflow, convergenceChecks, sourceReplays, sourceReplayOverflow, fallbackDecisions, finalSource: { sequence, generation }, editedFiles, checkpoints, recoveries, memory, fixture: { ...fixture, text: undefined }, phases, probes, inputs, browser, messages, native, warnings, error: (runError || failure)?.message, nodeMemory: process.memoryUsage() };
         fs.writeFileSync(path.join(output, fixture.id + '.json'), JSON.stringify(result, null, 2));
         fs.writeFileSync(path.join(output, fixture.id + '-native.log'), debug);
         fs.writeFileSync(path.join(fixture.root, 'edited.tex'), document.getText());
