@@ -93,7 +93,7 @@ function main(argv) {
   };
   try {
     const profileBytes = fs.readFileSync(profileFile), profile = JSON.parse(profileBytes);
-    report.profileSha256 = sha256(profileBytes); report.profileMetadata = profile.metadata;
+    report.profileSha256 = sha256(profileBytes); report.profileMetadata = profile.metadata; report.convergenceChecks = profile.convergenceChecks;
     if (profile.error) { throw Error('The benchmark profile failed: ' + profile.error); }
     if (!Array.isArray(profile.probes) || profile.probes.length === 0) { throw Error('Profile has no probes[]; rerun the updated varied-profile harness'); }
     const root = profile.fixture?.root;
@@ -103,6 +103,17 @@ function main(argv) {
     const work = path.join(output, 'clean'); fs.mkdirSync(work);
     const sourceFile = path.join(work, 'edited.tex'); fs.writeFileSync(sourceFile, source);
     report.source = { original: editedFile, copied: sourceFile, bytes: source.length, sha256: sha256(source) };
+    const sources = new Map([['varied.tex', { source, file: sourceFile }]]);
+    report.includedSources = [];
+    for (const item of profile.editedFiles || []) {
+      if (item.relative === 'varied.tex') { continue; }
+      // The profile owns only flat local source files, never arbitrary copy paths.
+      if (!/^[A-Za-z0-9_-]+\.tex$/.test(item.relative) || !/^[A-Za-z0-9_-]+\.tex$/.test(item.saved)) { throw Error('Invalid included source path'); }
+      const original = path.join(fixtureRoot, item.saved), bytes = fs.readFileSync(original), copied = path.join(work, item.relative);
+      if (item.sha256 && sha256(bytes) !== item.sha256) { throw Error('Included source hash changed: ' + item.relative); }
+      fs.writeFileSync(copied, bytes); sources.set(item.relative, { source: bytes, file: copied });
+      report.includedSources.push({ relative: item.relative, original, copied, bytes: bytes.length, sha256: sha256(bytes) });
+    }
     const tools = Object.fromEntries(['xelatex', 'synctex', 'pdftotext'].map(name => [name, findTool(name)]));
     report.tools = {};
     for (const [name, executable] of Object.entries(tools)) {
@@ -120,9 +131,11 @@ function main(argv) {
       try {
         if (!Number.isInteger(probe.line1) || probe.line1 <= 0 || !Number.isInteger(probe.column) || probe.column < 0 ||
             !Number.isInteger(probe.nativePage) || probe.nativePage < 0) { throw Error('Probe requires line1>0, column>=0 and nativePage>=0 integers'); }
-        const sourceLine = source.toString('utf8').split(/\r?\n/)[probe.line1 - 1];
-        if (sourceLine === undefined || probe.column > sourceLine.length) { throw Error('Probe source location is outside final edited.tex'); }
-        const query = `${probe.line1}:${probe.column + 1}:${sourceFile}`;
+        const owner = sources.get(probe.document || 'varied.tex');
+        if (!owner) { throw Error('Probe source file was not preserved: ' + probe.document); }
+        const sourceLine = owner.source.toString('utf8').split(/\r?\n/)[probe.line1 - 1];
+        if (sourceLine === undefined || probe.column > sourceLine.length) { throw Error('Probe source location is outside final source file'); }
+        const query = `${probe.line1}:${probe.column + 1}:${owner.file}`;
         const result = run(tools.synctex, ['view', '-i', query, '-o', pdf], 'synctex-probe-' + index, work);
         const assessed = assessProbe(probe, pages, parseSynctex(result));
         report.probes.push({ ...assessed, sourceLine, synctexInput: query });
@@ -131,12 +144,16 @@ function main(argv) {
         report.probes.push({ ...probe, passed: false, error: error.message }); report.errors.push('Probe ' + index + ': ' + error.message);
       }
     }
+    const rounds = [...new Set(report.probes.map(probe => probe.round || 'initial'))];
+    report.rounds = rounds.map(round => ({ round, passed: report.probes.filter(probe => (probe.round || 'initial') === round).every(probe => probe.passed),
+      count: report.probes.filter(probe => (probe.round || 'initial') === round).length }));
+    report.finalRoundPassed = report.rounds.at(-1)?.passed;
     report.passed = report.probes.length === profile.probes.length && report.errors.length === 0;
   } catch (error) { report.errors.push(error.stack || error.message); }
   finally {
     report.finished = new Date().toISOString();
     fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(report, null, 2) + '\n');
-    console.log(JSON.stringify({ passed: report.passed, probes: report.probes.length, errors: report.errors, result: path.join(output, 'result.json') }, null, 2));
+    console.log(JSON.stringify({ passed: report.passed, finalRoundPassed: report.finalRoundPassed, rounds: report.rounds, probes: report.probes.length, errors: report.errors, result: path.join(output, 'result.json') }, null, 2));
   }
   if (!report.passed) { process.exitCode = 1; }
   return report;

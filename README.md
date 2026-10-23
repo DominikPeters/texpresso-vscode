@@ -22,7 +22,9 @@ The preview scrolls continuously across pages. The page field follows the
 viewport; the arrows and page field jump to a page, while Page Up/Down scroll
 by a viewport. Nearby pages are prepared after scrolling settles, with bounded
 render caches and page surfaces. Longer documents compile further pages on
-demand rather than rendering the whole document on startup.
+demand rather than rendering the whole document on startup. The pinned engine
+also reuses unchanged pages across edits and return navigation when their
+rendering dependencies match.
 
 With a compatible engine, resting the source cursor prepares a nearby compiler
 checkpoint during idle time to reduce the wait for the first edit. Typing and
@@ -41,7 +43,10 @@ and can upgrade to SVG after a short pause. Auto learns which pages handle SVG
 updates quickly and retains their DOM for small edits. The selector shows the
 choice with a stable **Auto** label. Explicit PNG and SVG choices
 remain available. SVG stays sharp while zooming or using the magnifier; PDF
-features that cannot be preserved in SVG use PNG. Older engines use PNG in Auto.
+features that cannot be preserved in SVG use PNG. Pages exceeding the shared
+browser surface budget keep using PNG across edits; changing zoom, available
+space, or substantially simplifying the page permits another SVG attempt.
+Older engines use PNG in Auto.
 
 
 With a compatible engine, PNG updates transfer only the changed pixel rectangle
@@ -92,6 +97,13 @@ Refresh**. Set `TEXPRESSO_DEMO_SAMPLE=original` for the earlier minimal example.
 Run **TeXpresso: Check Setup** from the Command Palette or preview controls. The **TeXpresso Setup** Output channel shows the extension host, main document, execution mode, package provider, executable lookup, and exact launch arguments. It also checks for `kpsewhich` and `tectonic` on the host (or inside WSL).
 
 Launch errors offer **Check Setup**, **Open Settings**, and **Show Engine Log**. The **TeXpresso Engine** channel contains process diagnostics, while **TeXpresso** and **TeXpresso Log** contain compiler output. Logs remain available after the preview exits. An engine crash or unsupported option is reported separately from an executable that cannot be found.
+
+With a compatible engine, unexpected runtime exits trigger at most two automatic
+restarts per minute. Recovery supplies current editor buffers before compilation
+resumes and preserves the preview viewport and pause state. Compiler and setup
+errors require correction. A preview that stops acknowledging images can reload
+its webview within the same retry limit. **Stop** cancels recovery; **Restart**
+starts a fresh attempt.
 
 ### Synchronization and refresh
 

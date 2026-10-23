@@ -93,10 +93,14 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     const startup = await renderFor(0);
     frame(startup, png);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 1, 'first delayed decode');
-    advance(); await release();
-    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === startup[1]) && commands.some(command => command[0] === 'preview-render' && command[5] === 1), 'obsolete startup decode released');
+    advance();
+    // Explicit retirement covers cancellation; ordinary source barriers may now
+    // display monotonic older pixels and are exercised by continuous-preview.
+    await (controller as any).post({ type: 'invalidate', retire: true });
+    await release();
+    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === startup[1]) && commands.some(command => command[0] === 'preview-render' && command[5] === 1), 'retired startup decode released');
     const obsolete = reports.find(r => r.startupCheck === 'decoded' && r.id === startup[1]);
-    assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'stale decode cannot reveal an empty image');
+    assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'retired decode cannot reveal an empty image');
     assert.equal(obsolete.sheetHeight, reports.find(r => r.startupCheck === 'pending').sheetHeight,
       'canceling a decode preserves geometry established by the frame metadata');
     const current = await renderFor(1);

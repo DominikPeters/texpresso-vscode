@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { runRecoveryChecks } from './recovery';
 
 interface Trace { type: string; pid?: number; root?: string; args?: string[]; command?: unknown[] }
 // VS Code normalizes Windows drive letters; the native engine resolves them
@@ -124,6 +125,7 @@ export async function run(): Promise<void> {
     await until(async () => (await trace()).some(item => item.command?.[0] === 'change-range' &&
       samePath(item.command[1], childPath) && item.command[5] === 3 && item.command.at(-1) === ''), 'undo uses UTF-16 positions');
     console.log('PASS: imported-file edits and undo');
+    await runRecoveryChecks(main, child);
 
     const beforeRestart = (await starts()).length;
     await command('restart');

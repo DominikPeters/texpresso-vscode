@@ -63,11 +63,13 @@ introduces a different font, comparing results with a fresh engine.
 This helps when a cursor rests at an already rendered source location long
 enough to finish preparation. Typing before completion cancels speculation and
 continues through the normal edit path. Rapid source changes can still trigger
-an ordinary root rollback before a useful READ trace exists. That path supersedes
-the retained cancelled fence and can require a second cold preamble replay; the
-rich-demo stress test observed it both without preparation and when typing began
-before preparation finished. Completing preparation avoided that cold path in
-the measured sentence. See [the measurements](profiling/2026-10-22-prewarm.md).
+an ordinary root rollback before a useful READ trace exists. A canceled pending
+fence now survives that restart when the edit is in the same source at or after
+the fence, allowing foreground compilation to create the planned checkpoint.
+Earlier edits, changes to another file, shortened input, and termination discard
+it. This closes the extra cold replay observed in
+[the original measurements](profiling/2026-10-22-prewarm.md); a deterministic
+trace-zero regression checks the interrupted preparation case.
 
 A Backspace at an exact 64-byte boundary
 can require an earlier checkpoint than insertion at that caret. Preparation

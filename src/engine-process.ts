@@ -79,7 +79,7 @@ export class EngineProcess {
         };
         this.reader = preview ? readPreviewProtocol(child.stdout, message,
           image => { if (!this.stopping) { this.events.image?.(image); } },
-          error => { if (!this.stopping) { this.events.error(error); } }) : readProtocol(child.stdout, message, (line, error) => {
+          error => { if (!this.stopping) { this.events.error(processFailure(error, 'connection')); } }) : readProtocol(child.stdout, message, (line, error) => {
           if (this.stopping) { return; }
           this.events.debug('Invalid protocol message: ' + line.slice(0, 250) + ' (' + String(error) + ')');
         });

@@ -23,12 +23,12 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
   const repo=path.resolve(__dirname,'../../..');
   const bootstrap=await fs.readFile(path.join(repo,'src/test/fixtures/continuous-webview.js'),'utf8');
   const main=(await fs.readFile(vscode.Uri.joinPath(extensionUri,'media/preview.js').fsPath,'utf8')).replaceAll('acquireVsCodeApi','continuousApi');
-  const make=async(unknown=false,png=false)=>{
+  const make=async(unknown=false,png=false,regions=png)=>{
     const reports:any[]=[],commands:Command[]=[],pending:Command[]=[],opened:string[]=[];
     const regionPending:{command:Command;purpose:string}[]=[];
     let panel:vscode.WebviewPanel|undefined,controller:PreviewController;
     let count=unknown?1:png?2:6,complete=!unknown,revision=1,sequence=0,actionId=0;
-    const session={embedded:true,state:'running',paused:false,previewSequence:0,previewSvg:true,previewBackground:true,previewLinks:true,previewRegions:png,
+    const session={embedded:true,state:'running',paused:false,previewSequence:0,previewSvg:true,previewBackground:true,previewLinks:true,previewRegions:regions,
       document:{fileName:'/fixture/continuous.tex'},send:(command:Command)=>{
         commands.push(command);
         if(command[0]==='preview-region'){regionPending.push({command,purpose:(controller as any).inFlight?.region?.purpose});}
@@ -54,11 +54,11 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       await new Promise(resolve=>setTimeout(resolve,10));}};
     const action=async(name:string,extra:object={})=>{const id=++actionId;await panel!.webview.postMessage({continuousAction:{id,name,...extra}});await until(()=>reports.some(r=>r.action===id),'browser action '+name);return reports.find(r=>r.action===id)!;};
     const state=(newCount=count,newComplete=complete,nativePage=0)=>{count=newCount;complete=newComplete;controller.handle(['preview-state',revision,sequence,count,complete,nativePage]);};
-    const respond=(command:Command,height=unknown?900:300)=>{
+    const respond=(command:Command,height=unknown?900:300,color:[number,number,number]=[255,255,255])=>{
       const page=command[2] as number;if(unknown&&page>=count){count=page+1;}
       state(count,complete,page);
       // Identical encoded content deliberately has page-specific metadata/bounds.
-      const bytes=png?solidPng(600,300,[255,255,255]):Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300"><path fill="#fff" d="M0 0H600V300H0Z"/><path fill="#246" d="M20 20H200V60H20Z"/></svg>');
+      const bytes=png?solidPng(600,300,color):Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300"><path fill="#fff" d="M0 0H600V300H0Z"/><path fill="#246" d="M20 20H200V60H20Z"/></svg>');
       controller.handle({header:{requestId:command[1] as number,page,revision:command[4] as number,sequence:command[5] as number,bounds:[0,0,600,height],width:600,height:300,mime:png?'image/png':'image/svg+xml',byteLength:bytes.length,
         annotations:{links:[{bounds:[20,20,200,60],uri:`https://example.com/page-${page}`}],destinations:[]}},bytes});
     };
@@ -71,6 +71,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     const drain=async(limit=30)=>{for(let i=0;i<limit;i++){if(!pending.length){await new Promise(resolve=>setTimeout(resolve,30));if(!pending.length){return;}}const command=pending.shift()!;respond(command);await until(()=>reports.some(r=>r.continuousCheck==='decoded'&&r.request===command[1])||(controller as any).inFlight?.id!==command[1],'page decode '+command[2]);}throw Error('unbounded render queue');};
     state();await until(()=>reports.some(r=>r.continuousCheck==='ready')&&pending.length>0,'continuous startup ready');
     return {controller,panel:()=>panel!,session,reports,commands,pending,regionPending,opened,until,action,state,respond,respondRegion,drain,
+      forward:(page:number,x:number,y:number)=>controller.handle(['preview-forward',revision,sequence,page,x,y]),
       invalidate:()=>{session.previewSequence=++sequence;revision++;controller.handle({sourceSequence:sequence});controller.handle(['preview-invalidated',revision,sequence]);state();}};
   };
   const f=await make();
@@ -128,6 +129,58 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     assert.equal(unknown.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0])).length,settled,'response arrival does not create another scroll epoch');
     console.log('PASS: unknown frontier settles without runaway compilation or export');
   } finally {unknown.controller.dispose();}
+  const progress=await make(false,true,false);
+  try {
+    await progress.drain();await progress.action('remember-link',{page:0});
+    const take=async(page:number)=>{await progress.until(()=>progress.pending.some(c=>c[2]===page),'foreground request '+page);return progress.pending.splice(progress.pending.findIndex(c=>c[2]===page),1)[0];};
+    const delayed=async(page:number,color:[number,number,number])=>{
+      await progress.action('arm-decode');const before=progress.reports.length;progress.invalidate();
+      const command=await take(page);progress.respond(command,300,color);
+      await progress.until(()=>progress.reports.slice(before).some(r=>r.continuousCheck==='decode-held'),'PNG decoder is held');return command;
+    };
+    const old=await delayed(0,[240,230,220]);
+    progress.invalidate();const before=await progress.action('snapshot');
+    await progress.action('release-decode');
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===old[1]),'older decoded frame acknowledged');
+    const stale=progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===old[1]);
+    assert.equal(stale.displayed,true,'ordinary source invalidation permits monotonic older visual progress');
+    assert.equal(stale.stale,true,'displayed older content is explicitly stale');
+    const stalePage=stale.shells.find((s:any)=>s.page===0);
+    assert.deepEqual(stalePage.pixel,[240,230,220,255],'the delayed PNG actually replaces visible pixels');
+    assert.equal(stalePage.highlightHidden,true,'older source content cannot apply a source highlight');
+    assert.equal(stale.scrollTop,before.scrollTop,'older source content cannot move the viewport');
+    const commands=progress.commands.length,opened=progress.opened.length;
+    await progress.action('click-remembered');await progress.action('inverse',{page:0});await progress.action('lens',{page:0});
+    const inert=await progress.action('snapshot');
+    assert.equal(progress.opened.length,opened,'stale links remain disabled');assert.equal(inert.lensHidden,true,'stale content cannot activate the magnifier');
+    assert.ok(!progress.commands.slice(commands).some(c=>c[0]==='preview-inverse'||c[0]==='preview-region'||c[0]==='preview-destination'),'stale content cannot issue inverse/link/detail requests');
+    const current=await take(0);progress.respond(current,300,[220,240,230]);
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===current[1]&&r.displayed===true&&!r.stale),'current source restores interaction');
+    await progress.action('link',{page:0});assert.equal(progress.opened.length,opened+1,'current frame restores hyperlink interaction');
+    const navOld=await delayed(0,[210,220,240]);await progress.action('jump',{page:1});await progress.action('release-decode');
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===navOld[1]),'navigated decode retired');
+    assert.equal(progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===navOld[1]).displayed,false,'manual navigation retires the pending decoder');
+    await progress.drain();
+    const zoomOld=await delayed(1,[200,220,240]);await progress.action('zoom',{value:'0.5'});await progress.action('release-decode');
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===zoomOld[1]),'zoomed decode retired');
+    assert.equal(progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===zoomOld[1]).displayed,false,'zoom retires the pending decoder');
+    await progress.drain();
+    const hiddenOld=await delayed(1,[190,210,230]);
+    await (progress.controller as any).post({type:'invalidate',retire:true});await progress.action('release-decode');
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===hiddenOld[1]),'hidden decode retired');
+    assert.equal(progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===hiddenOld[1]).displayed,false,'panel-hide retirement rejects an already awaiting decoder');
+    await progress.drain();
+    await progress.action('arm-decode');progress.invalidate();progress.forward(1,60,60);
+    const targetOld=await take(1),heldAt=progress.reports.length;progress.respond(targetOld,300,[180,210,240]);
+    await progress.until(()=>progress.reports.slice(heldAt).some(r=>r.continuousCheck==='decode-held'),'target frame decode held');
+    progress.forward(1,450,240);const newerTarget=await progress.action('snapshot');await progress.action('release-decode');
+    await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===targetOld[1]),'newer source target preserved');
+    const targetPaint=progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===targetOld[1]);
+    const mark=targetPaint.shells.find((s:any)=>s.page===1);
+    assert.ok(mark.highlightHidden||(mark.highlightLeft==='75%'&&mark.highlightTop==='80%'),'an older delayed frame cannot replace the newer same-page target');
+    assert.equal(targetPaint.scrollTop,newerTarget.scrollTop,'delayed old target cannot scroll away from the newer source intent');
+    console.log('PASS: source invalidation permits monotonic stale PNG pixels with inert interactions; current frames restore links, navigation/zoom retire pending decoders');
+  }finally{progress.controller.dispose();}
   const resources=await make(false,true);
   const region=async(purpose:string,page:number,color:[number,number,number])=>{
     await resources.until(()=>resources.regionPending.some(r=>r.purpose===purpose&&r.command[2]===page),'native '+purpose+' request for page '+page);

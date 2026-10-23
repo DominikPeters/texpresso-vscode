@@ -3,7 +3,7 @@
  * one-page sections. All scheduler plans are finite and independent of paints. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
-const ANCHORS=['early','middle','late'];
+const ANCHORS=['early','middle','late','included'];
 const marker=name=>`%<VARIED-CURSOR:${name}>`;
 const prose=[
   'A local change should remain attached to its source even when surrounding material moves. We compare the displayed argument with the current source version, rather than treating the last compiled page number as a permanent identity.',
@@ -89,8 +89,25 @@ moves the statement to the next page.
   }
   text+='\n\\section*{The end of the experiment}\n\\hyperref[anchor:early]{Return to the early anchor}; '+
     '\\hyperref[anchor:middle]{return to the middle anchor}; \\hyperref[anchor:late]{return to the late anchor}.\n\\end{document}\n';
+  const files=[];
+  if(options.included){
+    const child=String.raw`% Unsaved UTF-8 overlay sentinel: café 😀 章节
+\section{An included unsaved argument}\label{unit:included}
+\hypertarget{varied:included}{}\label{anchor:included}
+\noindent \texttt{INCLUDED-0001}: An included source must retain its own edits when the engine or preview is replaced.
+%<VARIED-CURSOR:included>
+
+\begin{theorem}A local included argument has the same source identity after a restart.\end{theorem}
+\begin{proof}Compare the current unsaved buffer with the source replayed to the new process.\end{proof}
+\lipsum[4-5]
+`;
+    text=text.replace(`\\section{A changing estimate: case ${String(anchorUnits.middle+1).padStart(3,'0')}}`,
+      `\\input{chapter}\n\\section{A changing estimate: case ${String(anchorUnits.middle+1).padStart(3,'0')}}`);
+    const childFile=path.join(root,'chapter.tex');fs.writeFileSync(childFile,child);
+    files.push({relative:'chapter.tex',file:childFile,text:child,anchor:'included'});
+  }
   const file=path.join(root,'varied.tex');fs.writeFileSync(file,text);
-  const fixture={id,root,file,text,pages:targetPages,targetPages,units,kind:'varied',anchors:Object.fromEntries(ANCHORS.map(name=>[name,{unit:anchorUnits[name],...sourceLocation(text,name)}]))};
+  const fixture={id,root,file,text,pages:targetPages,targetPages,units,kind:'varied',files,anchors:Object.fromEntries(Object.keys(anchorUnits).map(name=>[name,{unit:anchorUnits[name],...sourceLocation(text,name)}]))};
   fs.writeFileSync(path.join(root,'fixture.json'),JSON.stringify({...fixture,text:undefined},null,2)+'\n');
   return fixture;
 }
@@ -131,7 +148,41 @@ The final argument must also update while earlier sections are visible elsewhere
       inputs:[{anchor:'middle',deleteBefore:broken+repair,text:'',undo:true}],navigation:[]}
   ];
 }
-module.exports={ANCHORS,createVariedFixture,sourceLocation,resolveInput,applyInput,sustainedPlans};
+function scenarioPlans(scenario){
+  if(!scenario||scenario==='default')return sustainedPlans();
+  const typed=(id,anchor,text,extra={})=>({id,anchor,document:anchor==='included'?'chapter.tex':'varied.tex',intervalMs:100,finalValid:true,
+    expectedText:text,inputs:[...text].map(character=>({anchor,text:character,sourceValid:true})),navigation:[],...extra});
+  if(scenario==='compare')return [
+    typed('controlled-prose','early','\nA controlled comparison uses the same flowing document and the same source edits for every renderer. Every new term has a source location, and the final visible page must contain the current argument.\n',{zoom:'page'}),
+    typed('repeated-budget-fallback','early',' A bounded repeated test.',{sourceFollow:false,budgetBoundary:true})
+  ];
+  if(scenario!=='long')throw Error('Unknown varied scenario '+scenario);
+  const plans=[
+    typed('long-early','early','\nEvery new term has a source location. The first sustained argument follows the displayed paragraph through line wrapping, then revisits another page while edits continue. A finite input stream must leave a current frame after the last letter. We compare settled checkpoints.\n',
+      {navigation:[{afterInput:80,action:'away'},{afterInput:150,action:'scroll',delta:350},{afterInput:200,action:'back'}]}),
+    typed('long-middle','middle','\nThe middle argument compares the estimate with an earlier theorem. We sum the bounds and preserve each dependency as the paragraph grows. This text has balanced source syntax throughout, so a long gap here cannot be explained by an unfinished heading or mathematical environment.\n'),
+    typed('long-included','included','\nThe included unsaved argument is independent of its bytes on disk. We keep this paragraph dirty, move its cursor across several source lines, and later replay it to a replacement process. The displayed words must survive that recovery without discarding the root edits or selecting another source file.\n'),
+    typed('long-late','late','\nThe final argument must also update while a different page is visible. Natural pagination permits this text to move a theorem across its old page boundary. The source position determines the eventual destination, while manual scrolling remains usable during active compilation and paragraph breaking.\n',
+      {navigation:[{afterInput:90,action:'scroll',delta:500},{afterInput:180,action:'back'}]}),
+    typed('long-included-return','included','\nA second visit checks that the same unsaved include still receives text changes after navigation. This is the last sustained paragraph before failure injection. Its unique concluding phrase is included recovery remains current. The final comparison uses the exact buffers from both source files.\n')
+  ];
+  const broken=String.raw`
+\subsection{A repaired local claim}
+\begin{theorem}For $0<x<1$, the finite sum is bounded.\end{theorem}
+\begin{proof}Sum the bounds using a geometric series.\end{proof}
+\begin{align*}
+ R_n(x) &= \sum_{j=1}^{n}x^j
+`;
+  const repair=String.raw` &= \frac{x(1-x^n)}{1-x}.
+\end{align*}
+`;
+  plans.push({id:'long-incomplete-repair',anchor:'included',document:'chapter.tex',intervalMs:1500,finalValid:true,expectedText:broken+repair,
+    inputs:[{anchor:'included',text:broken,sourceValid:false,temporarilyIncomplete:true},{anchor:'included',text:repair,sourceValid:true,repair:true}],navigation:[]},
+    {id:'long-undo',anchor:'included',document:'chapter.tex',intervalMs:100,finalValid:true,inputs:[{anchor:'included',deleteBefore:broken+repair,text:'',undo:true,sourceValid:true}],navigation:[]},
+    {id:'long-redo',anchor:'included',document:'chapter.tex',intervalMs:100,finalValid:true,inputs:[{anchor:'included',text:broken+repair,redo:true,sourceValid:true}],navigation:[]});
+  return plans;
+}
+module.exports={ANCHORS,createVariedFixture,sourceLocation,resolveInput,applyInput,sustainedPlans,scenarioPlans};
 if(require.main===module){
   const output=path.resolve(process.argv[2]||'artifacts/profile-varied-fixtures');
   const pages=Number(process.argv[3]||30);

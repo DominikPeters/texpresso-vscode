@@ -17,6 +17,7 @@ export type Command =
   | ['preview-destination', number, number, string]
   | ['preview-background', number, number, number, number, number, 0 | 1 | 2, number]
   | ['preview-cancel', number, number]
+  | ['preview-search', number, string, number, number]
   | ['preview-prepare', number, string, number, number, number]
   | ['preview-prepare-cancel', number]
   | ['preview-auto', number, number, number, number, number, number, number?]

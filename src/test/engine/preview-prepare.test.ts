@@ -21,10 +21,10 @@ class Preview {
   state?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
   failure?: Error; debug = ''; id = 0; replays = 0;
   readonly inverse: { file: string; line: number; word?: string }[] = [];
-  readonly checkpointOffsets: number[] = []; readonly rollbackTokens: number[] = []; readonly compilerEvents: string[] = []; private debugPending = '';
-  constructor(readonly root: string, public text: string, readonly others: ReturnType<typeof document>[] = []) {
+  readonly checkpointOffsets: number[] = []; readonly rollbackTokens: number[] = []; readonly rollbackTraces: number[] = []; readonly compilerEvents: string[] = []; private debugPending = '';
+  constructor(readonly root: string, public text: string, readonly others: ReturnType<typeof document>[] = [], command = binary!) {
     this.main = document(path.join(root, 'main.tex'), text); this.main.getText = () => this.text;
-    this.session = new TexpressoSession(this.main, { ...config, command: binary!, packageProvider: 'texlive', previewLocation: 'editor', autoRerun: false },
+    this.session = new TexpressoSession(this.main, { ...config, command, packageProvider: 'texlive', previewLocation: 'editor', autoRerun: false },
       new SessionPaths(this.main.fileName, false), () => [this.main, ...others], {
         state() {}, output() {}, synctex: (file, line, _column, word) => { this.inverse.push({ file, line, word }); }, debug: value => {
           this.debug = (this.debug + value).slice(-30000); if (value.includes('[prepare-edit] replay')) { this.replays++; }
@@ -33,7 +33,7 @@ class Preview {
             if (/\[prepare-edit\]|\[fence\]|\[kill\]|\[change\]|compiler-rollback|compiler-checkpoint/.test(line)) { this.compilerEvents.push(line); }
             const at = line.indexOf('[profile] '); if (at < 0) { continue; } const record = JSON.parse(line.slice(at + 10));
             if (record.stage === 'compiler-checkpoint' && record.fence) { this.checkpointOffsets.push(record.offset); }
-            if (record.stage === 'compiler-rollback') { this.rollbackTokens.push(record.resumeTokens); }
+            if (record.stage === 'compiler-rollback') { this.rollbackTokens.push(record.resumeTokens); this.rollbackTraces.push(record.resumeTrace); }
           }
         },
         error: error => { this.failure = error; }, preview: event => {
@@ -202,5 +202,169 @@ test('cancelled preparation survives source shortening, pause and retargeting wi
     const freshRoot = await temp(), fresh = new Preview(freshRoot, shorter);
     try { await fresh.start(); assert.deepEqual((await fresh.render()).bytes, frame.bytes); }
     finally { await fresh.session.dispose(); await fs.rm(freshRoot, { recursive: true, force: true }); }
+  } finally { await p.session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+});
+
+
+test('cancelled warm fence survives edits while the replay source is still unopened',
+  { ...options, skip: options.skip || process.platform === 'win32' }, async () => {
+    const root = await temp(), bin = path.join(root, 'bin'); await fs.mkdir(bin);
+    const frontend = path.join(bin, 'texpresso'); await fs.copyFile(binary!, frontend); await fs.chmod(frontend, 0o755);
+    const engine = path.resolve(path.dirname(binary!), 'texpresso-xetex');
+    try { await fs.symlink(path.resolve(path.dirname(binary!), '../lib'), path.join(root, 'lib'), 'dir'); } catch { /* direct build uses absolute libraries */ }
+    const marker = path.join(root, 'launches'), release = path.join(root, 'release');
+    // The second root is a healthy delayed warm replay. Its protocol proxy
+    // handshakes now and forwards the real worker only after the unread edit.
+    await fs.writeFile(path.join(bin, 'texpresso-xetex'), `#!/usr/bin/env python3
+import array, os, select, signal, socket, subprocess, sys, time
+try:
+    with open(${JSON.stringify(marker)}) as f: count = int(f.read()) + 1
+except FileNotFoundError: count = 1
+with open(${JSON.stringify(marker)}, 'w') as f: f.write(str(count))
+if count != 2:
+    os.execv(${JSON.stringify(engine)}, [${JSON.stringify(engine)}] + sys.argv[1:])
+s = socket.socket(fileno=int(os.environ['TEXPRESSO_FD']))
+s.sendall(b'TEXPRESSOC02')
+data = b''
+while len(data) < 12: data += s.recv(12 - len(data))
+assert data == b'TEXPRESSOS02'
+print('TXP-WARM-ROOT-STALL', file=sys.stderr, flush=True)
+def exact(sock, n):
+    data = b''
+    while len(data) < n:
+        part = sock.recv(n-len(data))
+        if not part: raise EOFError()
+        data += part
+    return data
+deadline = time.monotonic() + 10
+while not os.path.exists(${JSON.stringify(release)}):
+    if time.monotonic() > deadline: raise TimeoutError('test did not release worker')
+    time.sleep(0.005)
+a, b = socket.socketpair()
+env = dict(os.environ, TEXPRESSO_FD=str(b.fileno()))
+child = subprocess.Popen([${JSON.stringify(engine)}] + sys.argv[1:], env=env, pass_fds=(b.fileno(),))
+b.close()
+def stop(_sig, _frame): raise SystemExit()
+signal.signal(signal.SIGTERM, stop)
+try:
+    assert exact(a, 12) == b'TEXPRESSOC02'
+    a.sendall(b'TEXPRESSOS02')
+    while True:
+        ready, _, _ = select.select([s, a], [], [], 5)
+        for source in ready:
+            data, ancillary, _flags, _address = source.recvmsg(65536, socket.CMSG_SPACE(64))
+            if not data: raise EOFError()
+            target = a if source is s else s
+            sent = target.sendmsg([data], ancillary)
+            if sent < len(data): target.sendall(data[sent:])
+            for level, kind, payload in ancillary:
+                if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
+                    ids = array.array('i'); ids.frombytes(payload[:len(payload)//ids.itemsize*ids.itemsize])
+                    for fd in ids: os.close(fd)
+except EOFError: pass
+finally:
+    a.close()
+    if child.poll() is None: child.terminate()
+    child.wait(timeout=2)
+`, { mode: 0o755 });
+    const source = '%' + 'x'.repeat(250) + '\n' + body;
+    const p = new Preview(root, source, [], frontend);
+    try {
+      await p.start(); await p.render();
+      const at = 100, target = at & ~63, request = p.prepare(at);
+      await p.until(() => p.debug.includes('TXP-WARM-ROOT-STALL'));
+      p.session.send(['preview-prepare-cancel', request]); assert.equal((await p.prepared(request))[4], 'cancelled');
+      const tokens = p.rollbackTokens.length;
+      p.replace(at, 0, 'first');
+      await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(p.rollbackTokens.length, tokens, 'editing an unopened replay source keeps its healthy worker');
+      await fs.writeFile(release, 'continue'); const edited = await p.render();
+      await p.until(() => p.checkpointOffsets.includes(target));
+      const nextTokens = p.rollbackTokens.length;
+      p.replace(at + 5, 0, 'second'); const final = await p.render();
+      await p.until(() => p.rollbackTokens.length > nextTokens);
+      assert.ok(p.rollbackTraces.slice(nextTokens).some(n => n > 0), 'the following edit reuses the retained checkpoint even before the first source token');
+      assert.deepEqual(final.bytes, edited.bytes, 'editing only a source comment preserves the page');
+    } finally { await p.session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+  });
+
+
+test('native request lifecycle preserves adjacent high IDs and source sequences through INT_MAX', options, async () => {
+  const root = await temp(), source = body.replace('Second page.', 'Second page.\n'), p = new Preview(root, source);
+  const raw: unknown[][] = [];
+  try {
+    await p.start(); await p.render();
+    let pending = '';
+    p.child!.stdout!.on('data', chunk => {
+      pending += chunk.toString(); const lines = pending.split('\n'); pending = lines.pop()!;
+      for (const line of lines) { try { const value = JSON.parse(line); if (Array.isArray(value)) { raw.push(value); } } catch { /* no binary exports in this phase */ } }
+    });
+    p.session.send(['pause']);
+    const sequence = 2147483646, first = 1073741825, second = first + 1;
+    p.session.previewSequence = sequence; p.session.send(['preview-barrier', sequence]);
+    await p.until(() => p.state?.[2] === sequence);
+    const late = source.split('\n').findIndex(line => line.includes('Second page.')) + 1;
+    p.child!.stdin!.write([['preview-search', first, p.main.fileName, late, sequence],
+      ['preview-search', second, p.main.fileName, late, sequence]].map(command => JSON.stringify(command)).join('\n') + '\n');
+    await p.until(() => raw.some(m => m[0] === 'preview-cancelled' && m[1] === first));
+    p.session.send(['resume']);
+    await p.until(() => raw.some(m => m[0] === 'preview-source' && m[1] === second && m[3] === sequence));
+    const stale = 2147483645;
+    p.session.send(['preview-search', stale, p.main.fileName, late, sequence - 1]);
+    await p.until(() => raw.some(m => m[0] === 'preview-cancelled' && m[1] === stale));
+    p.session.previewSequence = sequence + 1; p.session.send(['preview-barrier', sequence + 1]);
+    await p.until(() => p.state?.[2] === sequence + 1);
+    const render = 2147483647;
+    p.session.send(['pause']);
+    p.child!.stdin!.write([['preview-render', render, 500, 1000, p.state![1], sequence + 1],
+      ['preview-cancel', render, 0]].map(command => JSON.stringify(command)).join('\n') + '\n');
+    await p.until(() => raw.some(m => m[0] === 'preview-cancelled' && m[1] === render));
+    assert.ok(!raw.some(m => m[0] === 'preview-source' && m[1] === first), 'superseded high-ID search never resolves');
+    assert.ok(!raw.some(m => m[0] === 'preview-source' && m[1] === stale), 'stale epoch search never resolves');
+  } finally { await p.session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+});
+
+
+function rawPreviewMessages(p: Preview): unknown[][] {
+  const messages: unknown[][] = []; let pending = '';
+  p.child!.stdout!.on('data', chunk => {
+    pending += chunk.toString(); const lines = pending.split('\n'); pending = lines.pop()!;
+    for (const line of lines) { try { const value = JSON.parse(line); if (Array.isArray(value)) { messages.push(value); } } catch { /* binary exports also share stdout */ } }
+  });
+  return messages;
+}
+
+test('successful EOF rejects missing requested pages and settles unknown-file source searches', options, async () => {
+  const root = await temp(), p = new Preview(root, body);
+  try {
+    await p.start(); await p.render(); const raw = rawPreviewMessages(p);
+    const search = 7001;
+    p.session.send(['preview-search', search, path.join(root, 'never-input.tex'), 1, p.session.previewSequence]);
+    await p.until(() => raw.some(m => m[0] === 'preview-cancelled' && m[1] === search) && p.state?.[4] === true);
+    assert.equal(p.state![3], 2, 'the source search drove the real successful pass to EOF');
+    const request = 7002;
+    p.session.send(['preview-render', request, 500, 800, p.state![1], p.state![2]]);
+    await p.until(() => p.images.has(request) || raw.some(m => m[0] === 'preview-error' && m[1] === request));
+    assert.ok(!p.images.has(request), 'a missing page never exports the last page under the original request ID');
+    assert.ok(raw.some(m => m[0] === 'preview-error' && m[1] === request), 'missing page request receives a terminal error');
+  } finally { await p.session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('a passive image request cannot silently destroy a pending identified source search', options, async () => {
+  const root = await temp();
+  const text = '\\documentclass{article}\n\\begin{document}\n' +
+    Array.from({ length: 20 }, (_, i) => `Rendered page ${i + 1}.\n${i < 19 ? '\\newpage\n' : ''}`).join('') + '\\end{document}\n';
+  const p = new Preview(root, text);
+  try {
+    await p.start(); await p.render(); const raw = rawPreviewMessages(p);
+    p.session.send(['pause']);
+    const search = 7101, image = 7102, line = text.split('\n').findIndex(s => s.includes('Rendered page 20.')) + 1;
+    p.child!.stdin!.write([['preview-search', search, p.main.fileName, line, p.session.previewSequence],
+      ['preview-render', image, 1, 800, p.state![1], p.state![2]]].map(command => JSON.stringify(command)).join('\n') + '\n');
+    p.session.send(['resume']);
+    await p.until(() => raw.some(m => (m[0] === 'preview-source' || m[0] === 'preview-cancelled') && m[1] === search));
+    const resolved = raw.find(m => m[0] === 'preview-source' && m[1] === search);
+    if (resolved) { assert.equal(resolved[4], 19, 'the identified source result still belongs to its requested late page'); }
+    else { assert.ok(raw.some(m => m[0] === 'preview-cancelled' && m[1] === search), 'preemption has an explicit terminal reply'); }
   } finally { await p.session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
 });

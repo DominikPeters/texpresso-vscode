@@ -20,9 +20,9 @@ function fixture() {
     document: { fileName: '/work/main.tex' }, send: (command: Command) => commands.push(command) };
   const controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri,
     session as unknown as TexpressoSession, () => { stops++; }, () => {});
-  const instance = panel.webview.html.match(/data-instance="([^"]+)"/)![1];
+  const instance = () => panel.webview.html.match(/data-instance="([^"]+)"/)![1];
   return { controller, panel, session, messages, commands, opened, stops: () => stops,
-    send: (m: object) => receive({ instance, ...m }), view: () => view() };
+    send: (m: object) => receive({ instance: instance(), ...m }), view: () => view() };
 }
 
 test('preview admits one frame until decode acknowledgment and ignores messages from another webview', () => {
@@ -51,7 +51,7 @@ test('preview admits one frame until decode acknowledgment and ignores messages 
   assert.equal(f.stops(), 0, 'programmatic disposal does not stop a replacement session');
 });
 
-test('preview rejects stale source images and coordinates, and restores a hidden panel with a fresh request', () => {
+test('preview shows completed foreground progress as stale, rejects its interactions and restores a hidden panel', () => {
   const f = fixture();
   try {
     f.controller.handle(['preview-state', 1, 0, 1, false, 0]);
@@ -60,9 +60,13 @@ test('preview rejects stale source images and coordinates, and restores a hidden
     f.controller.handle({ sourceSequence: 1 });
     f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
       bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
-    assert.equal(f.messages.filter(m => m.type === 'image').length, 0);
-    assert.equal(f.commands.length, 1, 'wait for the engine to acknowledge new source');
+    const progress = f.messages.filter(m => m.type === 'image');
+    assert.equal(progress.length, 1); assert.equal(progress[0].visualOnly, true);
+    assert.equal(progress[0].target, undefined); assert.equal(progress[0].destination, undefined);
+    assert.equal(f.commands.length, 1, 'wait for current source and return the old frame decode credit');
     f.controller.handle(['preview-state', 3, 1, 1, false, 0]);
+    assert.equal(f.commands.length, 1, 'completed old frame keeps the one browser decode credit');
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: true });
     assert.equal(f.commands.length, 2); assert.equal(f.commands[1][4], 3); assert.equal(f.commands[1][5], 1);
     f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 10, y: 20 });
     assert.equal(f.commands.length, 2);
@@ -934,4 +938,384 @@ test('manual continuous scrolling suspends late source targets even within the s
     f.controller.beginSourceFollow();f.controller.handle(['preview-forward',2,0,24,100,100]);
     assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,24,'a new source intent resumes following');
   } finally {f.controller.dispose();}
+});
+
+test('unacknowledged webview recovery reloads a fresh document and rejects retired messages within a bounded budget', () => {
+  const f = fixture(); let reloads = 0, html = f.panel.webview.html;
+  Object.defineProperty(f.panel.webview, 'html', { get: () => html, set: value => { if (value !== html) { html = value; reloads++; } } });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const old = f.commands.at(-1)!, oldHtml = html, oldInstance = html.match(/data-instance="([^"]+)"/)![1];
+    (f.controller as any).recoverWebview(); assert.equal(reloads, 1);
+    const instance = html.match(/data-instance="([^"]+)"/)![1];
+    assert.notEqual(instance, oldInstance); assert.notEqual(html, oldHtml, 'VS Code sees changed HTML instead of ignoring the assignment');
+    assert.ok(!html.includes(oldInstance));
+    assert.ok(html.includes(`script-src 'nonce-${instance}'`), 'CSP and new document identity agree');
+    assert.equal((html.match(new RegExp(`nonce="${instance}"`, 'g')) || []).length, 6, 'all script nonces rotate together');
+    const before = f.commands.length;
+    f.send({ instance: oldInstance, type: 'ready', page: 0, width: 1000 });
+    assert.equal(f.commands.length, before, 'queued ready from retired document cannot acquire fresh credit');
+    f.send({ type: 'ready', page: 0, width: 1000 }); const fresh = f.commands.at(-1)!;
+    assert.notEqual(old[1], fresh[1]);
+    f.send({ instance: oldInstance, type: 'decoded', id: fresh[1] });
+    assert.equal((f.controller as any).inFlight.id, fresh[1], 'old document cannot acknowledge a new request');
+    f.send({ type: 'decoded', id: old[1] });
+    assert.equal((f.controller as any).inFlight.id, fresh[1], 'stale decode cannot release new engine request');
+    (f.controller as any).recoverWebview(); assert.equal(reloads, 2);
+    assert.notEqual(html.match(/data-instance="([^"]+)"/)![1], instance, 'each permitted recovery gets a new identity');
+    f.send({ type: 'ready', page: 0, width: 1000 }); (f.controller as any).recoverWebview();
+    assert.equal(reloads, 2, 'third failure cannot create an endless reload loop');
+    assert.match(f.messages.at(-1)?.text, /two recovery attempts/);
+  } finally { f.controller.dispose(); }
+});
+
+test('replacing a failed engine preserves the webview while isolating source epochs and request identities', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 40, 0, 20, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const retired = f.commands.at(-1)!; const html = f.panel.webview.html;
+    const commands: Command[] = [], replacement = { ...f.session, send: (command: Command) => commands.push(command) };
+    f.controller.replaceSession(replacement as unknown as TexpressoSession);
+    assert.equal(f.panel.webview.html, html, 'engine recovery retains the existing DOM');
+    f.controller.handle(['preview-state', 1, 0, 20, false, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const current = commands.at(-1)!; assert.notEqual(current[1], retired[1]);
+    f.controller.handle(['preview-cancelled', Number(retired[1])]);
+    assert.equal((f.controller as any).inFlight.id, current[1], 'retired cancellation cannot settle replacement');
+    const before = f.messages.filter(m => m.type === 'jump').length;
+    f.controller.handle(['preview-forward', 1, 0, 15, 1, 1]);
+    assert.equal(f.messages.filter(m => m.type === 'jump').length, before, 'recovery does not steal the retained viewport');
+  } finally { f.controller.dispose(); }
+});
+
+test('SVG memory rejection persists across source edits without preventing allocation-driven retry', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const emit = (id: number, revision: number, sequence: number, mime: 'image/png' | 'image/svg+xml') => f.controller.handle({
+    header: { requestId: id, revision, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: 4, vectorCost: 10000 }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'old-page-size' }], nearby: [], resident: [0] });
+    const first = f.commands.at(-1)!; assert.equal(first[0], 'preview-svg'); emit(Number(first[1]), 1, 0, 'image/svg+xml');
+    f.send({ type: 'rasterize', page: 0, id: first[1], reason: 'budget', allocation: 'actual-page-size',
+      budget: { available: 100, required: 200, pixels: 150 } });
+    let fallback = f.commands.at(-1)!; assert.equal(fallback[0], 'preview-auto'); assert.equal(fallback[6], 0);
+    emit(Number(fallback[1]), 1, 0, 'image/png'); f.send({ type: 'decoded', id: fallback[1] });
+    for (let sequence = 1; sequence <= 3; sequence++) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 2, true, 0]);
+      fallback = f.commands.at(-1)!;
+      assert.equal(fallback[0], 'preview-auto', 'minor edits refresh vector metadata through cheap PNG selection');
+      assert.equal(fallback[6], 0, 'the same rejected SVG is not exported again');
+      emit(Number(fallback[1]), sequence + 1, sequence, 'image/png'); f.send({ type: 'decoded', id: fallback[1] });
+    }
+    f.send({ type: 'viewport', page: 0, width: 900, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 900, allocation: 'smaller-page-size' }], nearby: [], resident: [0] });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-svg', 'changed geometry can retry SVG');
+  } finally { f.controller.dispose(); }
+});
+
+test('engine replacement preserves SVG controls while probing then adopts the new capabilities', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewRegions: true, previewLinks: true });
+  try {
+    f.controller.handle(['preview-state', 8, 0, 20, true, 0]);
+    f.send({ type: 'ready', page: 5, width: 1000, format: 'svg' });
+    const html = f.panel.webview.html;
+    const replacement = { ...f.session, state: 'starting', previewSvg: false, previewRegions: false, previewLinks: false };
+    f.controller.replaceSession(replacement as unknown as TexpressoSession);
+    f.controller.update();
+    let state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.svg, true); assert.equal(state.links, true); assert.equal(state.regions, true);
+    assert.equal(state.count, 20); assert.equal(state.complete, true, 'pagination does not collapse while probing');
+    f.send({ type: 'ready', page: 5, width: 1000, format: 'svg' });
+    assert.equal((f.controller as any).format, 'svg', 'ready during probing does not downgrade the saved mode');
+    assert.equal(f.panel.webview.html, html, 'same DOM and viewport survive capability negotiation');
+    replacement.state = 'running'; Object.assign(replacement, { previewSvg: true });
+    f.controller.update(); state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.svg, true); assert.equal(state.links, false); assert.equal(state.regions, false);
+    assert.equal(state.count, 20); assert.equal(state.complete, true, 'retained pagination outlives the capability probe');
+    f.controller.handle(['preview-state', 1, 1, 1, false, 0]); f.controller.update();
+    assert.equal(f.messages.filter(message => message.type === 'state').at(-1)?.count, 20, 'stale source metadata cannot clear the retained count');
+    f.controller.handle(['preview-state', 1, 0, 8, false, 0]);
+    state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.count, 8); assert.equal(state.complete, false, 'first valid replacement state adopts its own pagination');
+    replacement.previewSvg = false; f.controller.update();
+    assert.equal(f.messages.filter(message => message.type === 'state').at(-1)?.svg, false, 'real capability changes are published after startup');
+  } finally { f.controller.dispose(); }
+});
+
+test('learned cached SVG cannot replay after rejection, but a same-width allocation change can retry it', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const svg = Buffer.from('<svg><path d="M0 0L1 1"/></svg>');
+  const emit = (id: number, mime: 'image/png' | 'image/svg+xml') => f.controller.handle({
+    header: { requestId: id, revision: 1, sequence: 0, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: mime === 'image/png' ? 4 : svg.length, vectorCost: 10000 }, bytes: mime === 'image/png' ? Buffer.alloc(4) : svg
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', svgDom: true, continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'small' }], nearby: [], resident: [0] });
+    const first = f.commands.at(-1)!; emit(Number(first[1]), 'image/svg+xml');
+    let image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: first[1], svg: image.contentId, cached: [image.contentId], renderMs: 1 });
+    const imagesBefore = f.messages.filter(message => message.type === 'image').length;
+    f.send({ type: 'rasterize', page: 0, id: first[1], reason: 'budget', allocation: 'small',
+      budget: { available: 100, required: 200, pixels: 150 } });
+    const fallback = f.commands.at(-1)!;
+    assert.notEqual(fallback[1], first[1]); assert.equal(fallback[0], 'preview-auto'); assert.equal(fallback[6], 0);
+    assert.equal(f.messages.filter(message => message.type === 'image').length, imagesBefore, 'rejected cached SVG does not consume a second decode credit');
+    emit(Number(fallback[1]), 'image/png'); image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: fallback[1], cached: [image.contentId] });
+    f.send({ type: 'viewport', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'large' }], nearby: [], resident: [0] });
+    image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    assert.equal(image.header.mime, 'image/svg+xml', 'allocation-only change retries the reusable SVG within the same source revision');
+    assert.notEqual(image.header.requestId, fallback[1]);
+  } finally { f.controller.dispose(); }
+});
+
+test('manual SVG retries once after a newly simplified PNG is acknowledged, without retrying minor edits', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const emit = (id: number, revision: number, sequence: number, mime: 'image/png' | 'image/svg+xml', vectorCost: number) => f.controller.handle({
+    header: { requestId: id, revision, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: 4, vectorCost }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'fixed' }], nearby: [], resident: [0] });
+    const initial = f.commands.at(-1)!; emit(Number(initial[1]), 1, 0, 'image/svg+xml', 10000);
+    f.send({ type: 'rasterize', page: 0, id: initial[1], reason: 'budget', allocation: 'fixed',
+      budget: { available: 16000, required: 20000, pixels: 8000 } });
+    let request = f.commands.at(-1)!; emit(Number(request[1]), 1, 0, 'image/png', 10000);
+    f.send({ type: 'decoded', id: request[1] });
+    for (const [sequence, cost] of [[1, 9900], [2, 9800], [3, 5000]]) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 1, true, 0]);
+      request = f.commands.at(-1)!;
+      assert.equal(request[0], 'preview-auto'); assert.equal(request[6], 0);
+      const before = f.commands.length;
+      emit(Number(request[1]), sequence + 1, sequence, 'image/png', cost);
+      assert.equal(f.commands.length, before, 'no second image request before the PNG decode credit is returned');
+      f.send({ type: 'decoded', id: request[1] });
+      if (cost > 5000) { assert.equal(f.commands.length, before, 'minor edits keep the budget decision without duplicate SVG exports'); }
+      else {
+        assert.equal(f.commands.length, before + 1);
+        const retry = f.commands.at(-1)!; assert.equal(retry[0], 'preview-svg');
+        assert.equal(retry[4], sequence + 1); assert.equal(retry[5], sequence, 'retry belongs to the acknowledged source generation');
+        emit(Number(retry[1]), sequence + 1, sequence, 'image/svg+xml', cost); f.send({ type: 'decoded', id: retry[1] });
+        assert.equal(f.commands.length, before + 1, 'successful retry cannot create a render loop');
+      }
+    }
+  } finally { f.controller.dispose(); }
+});
+
+test('capped PNG base width changes cannot create an idle SVG budget retry loop', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const bounds: [number, number, number, number] = [0, 0, 595.275574, 841.889709];
+  const allocation = '1770:2504:16777216';
+  const emit = (id: number, mime: 'image/png' | 'image/svg+xml', width: number) => f.controller.handle({
+    header: { requestId: id, revision: 1, sequence: 0, page: 0, bounds, width, height: Math.ceil(width * bounds[3] / bounds[2]),
+      mime, byteLength: 4, vectorCost: 79582 }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1372, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1372, allocation }], nearby: [], resident: [0] });
+    let request = f.commands.at(-1)!; emit(Number(request[1]), 'image/svg+xml', 596);
+    f.send({ type: 'rasterize', page: 0, id: request[1], reason: 'budget', allocation,
+      budget: { available: 16777216, required: 18995526, pixels: 17728320 } });
+    request = f.commands.at(-1)!; emit(Number(request[1]), 'image/png', 1372); f.send({ type: 'decoded', id: request[1] });
+    f.send({ type: 'viewport', page: 0, width: 970, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 970, allocation }], nearby: [], resident: [0] });
+    request = f.commands.at(-1)!;
+    assert.equal(request[0], 'preview-auto'); assert.equal(request[6], 0, 'new PNG cap preserves the rejected SVG allocation');
+    emit(Number(request[1]), 'image/png', 970); f.send({ type: 'decoded', id: request[1] });
+    const settled = f.commands.length;
+    for (let i = 0; i < 8; i++) {
+      f.send({ type: 'viewport', page: 0, width: 970, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 970, allocation }], nearby: [], resident: [0] });
+    }
+    assert.equal(f.commands.length, settled, 'unchanged idle viewport cannot trigger another render or cancellation');
+    assert.equal(f.commands.filter(command => command[0] === 'preview-svg').length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('sustained edits admit monotonic foreground snapshots while keeping links, caches and preparation source-current', () => {
+  const f = fixture(); let currentDecodes = 0; Object.assign(f.session, { previewLinks: true, previewDecoded: () => currentDecodes++ });
+  const emit = (request: Command, sequence: number) => f.controller.handle({ header: {
+    requestId: Number(request[1]), revision: sequence + 1, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+    mime: 'image/png', byteLength: 4, annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] }
+  }, bytes: Buffer.from([sequence, 0, 0, 0]) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true, visible: [{ page: 0, width: 1000 }], nearby: [] });
+    for (let sequence = 0; sequence < 4; sequence++) {
+      const request = f.commands.at(-1)!;
+      f.session.previewSequence = sequence + 1; f.controller.handle({ sourceSequence: sequence + 1 });
+      f.controller.handle(['preview-state', sequence + 2, sequence + 1, 1, true, 0]);
+      emit(request, sequence);
+      const image = f.messages.filter(message => message.type === 'image').at(-1)!;
+      assert.equal(image.header.sequence, sequence); assert.equal(image.visualOnly, true);
+      assert.equal(image.target, undefined); assert.equal(image.destination, undefined);
+      const count = f.commands.length;
+      f.send({ type: 'link', page: 0, revision: sequence + 1, sequence, index: 0 });
+      f.send({ type: 'inverse', page: 0, revision: sequence + 1, sequence, x: 5, y: 5 });
+      f.send({ type: 'detail', page: 0, revision: sequence + 1, sequence, token: 1, bounds: [0, 0, 10, 10], width: 100 });
+      assert.equal(f.commands.length, count); assert.equal(f.opened.length, 0);
+      f.send({ type: 'decoded', id: request[1], displayed: true, stale: true });
+      assert.equal(f.commands.length, count + 1, 'newest source starts immediately after visual progress acknowledgment');
+      assert.equal((f.controller as any).pages.size, 0); assert.equal((f.controller as any).rasterPages.size, 0);
+      assert.equal((f.controller as any).visualSnapshots.get(0).sequence, sequence);
+    }
+    assert.equal(currentDecodes, 0, 'visual progress never acknowledges current-source readiness');
+    const current = f.commands.at(-1)!; emit(current, 4);
+    f.send({ type: 'decoded', id: current[1], displayed: true, stale: false });
+    assert.equal(currentDecodes, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('older-source progress is rejected after away-and-back page, width or rendering intent changes', () => {
+  for (const change of [
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 1, width: 1000 }); f.send({ type: 'viewport', page: 0, width: 1000 }); },
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 0, width: 1200 }); f.send({ type: 'viewport', page: 0, width: 1000 }); },
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 0, width: 1000, format: 'png' }); f.send({ type: 'viewport', page: 0, width: 1000 }); }
+  ]) {
+    const f = fixture();
+    try {
+      f.controller.handle(['preview-state', 1, 0, 2, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+      const old = f.commands.at(-1)!;
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); change(f);
+      f.controller.handle(['preview-state', 2, 1, 2, true, 0]);
+      f.controller.handle({ header: { requestId: Number(old[1]), revision: 1, sequence: 0, page: 0,
+        bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+      assert.equal(f.messages.filter(message => message.type === 'image').length, 0, 'returning to equal dimensions does not revive retired work');
+      assert.equal(f.commands.at(-1)?.[5], 1, 'retired frame yields credit to the latest source');
+    } finally { f.controller.dispose(); }
+  }
+});
+
+test('an image invalidated during browser decode cannot report current-source readiness', () => {
+  const f = fixture(); let ready = 0; Object.assign(f.session, { previewDecoded: () => ready++ });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: true });
+    assert.equal(ready, 0); assert.equal(f.commands.at(-1)?.[5], 1);
+    const current = f.commands.at(-1)![1];
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: false });
+    assert.equal((f.controller as any).inFlight.id, current, 'very late ACK cannot consume newer frame credit');
+  } finally { f.controller.dispose(); }
+});
+
+
+test('hiding retires an already decoding browser frame without letting its ACK release restored credit', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const old = f.commands.at(-1)!;
+    f.controller.handle({ header: { requestId: Number(old[1]), revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    f.panel.visible = false; f.view();
+    const invalidation = f.messages.at(-1)!;
+    assert.equal(invalidation.type, 'invalidate'); assert.equal(invalidation.retire, true);
+    assert.equal(invalidation.sequence, 0); assert.equal(invalidation.revision, 1);
+    f.panel.visible = true; f.view(); f.send({ type: 'ready', page: 0, width: 1000 });
+    const restored = (f.controller as any).inFlight.id; assert.notEqual(restored, old[1]);
+    f.send({ type: 'decoded', id: old[1], displayed: false, stale: true });
+    assert.equal((f.controller as any).inFlight.id, restored);
+  } finally { f.controller.dispose(); }
+});
+
+test('older-revision visual progress cannot enable queued interactions in the same source sequence', () => {
+  const f = fixture(); Object.assign(f.session, { previewLinks: true, previewRegions: true });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true, visible: [{ page: 0, width: 1000 }], nearby: [] });
+    const request = f.commands.at(-1)!;
+    f.controller.handle(['preview-state', 2, 0, 1, true, 0]);
+    f.controller.handle({ header: { requestId: Number(request[1]), revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4,
+      annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] } }, bytes: Buffer.alloc(4) });
+    assert.equal(f.messages.filter(message => message.type === 'image').at(-1)!.visualOnly, true);
+    const count = f.commands.length;
+    f.send({ type: 'link', page: 0, revision: 1, sequence: 0, index: 0 });
+    f.send({ type: 'inverse', page: 0, revision: 1, sequence: 0, x: 5, y: 5 });
+    for (const type of ['region', 'detail']) { f.send({ type, page: 0, revision: 1, sequence: 0, token: 1, bounds: [0, 0, 10, 10], width: 100 }); }
+    assert.equal(f.opened.length, 0); assert.equal(f.commands.length, count);
+    assert.equal((f.controller as any).inverse, undefined); assert.equal((f.controller as any).region, undefined);
+    assert.equal((f.controller as any).detail, undefined);
+  } finally { f.controller.dispose(); }
+});
+
+
+test('obsolete browser failures release credit without poisoning new source or codec decisions', () => {
+  for (const mime of ['image/png', 'image/svg+xml'] as const) {
+    for (const type of ['decode-error', 'rasterize', 'cache-miss']) {
+      for (const sequenceChange of [true, false]) {
+        const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+        try {
+          f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+          f.send({ type: 'ready', page: 0, width: 1000, format: mime === 'image/png' ? 'png' : 'svg', continuous: true,
+            visible: [{ page: 0, width: 1000, allocation: 'same' }], nearby: [] });
+          const obsolete = f.commands.at(-1)!;
+          f.controller.handle({ header: { requestId: Number(obsolete[1]), revision: 1, sequence: 0, page: 0,
+            bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime, byteLength: 4 }, bytes: Buffer.alloc(4) });
+          if (sequenceChange) { f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); }
+          f.controller.handle(['preview-state', 2, sequenceChange ? 1 : 0, 1, true, 0]);
+          const before = f.commands.length;
+          f.send({ type, page: 0, id: obsolete[1], reason: 'decode', allocation: 'same', pngUnsupported: true,
+            budget: { available: 100, required: 200, pixels: 150 } });
+          assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+          assert.equal((f.controller as any).failed.size, 0); assert.equal((f.controller as any).svgFailures.size, 0);
+          assert.equal((f.controller as any).svgDecodeFailed, false); assert.equal((f.controller as any).fallback.has(0), false);
+          assert.equal((f.controller as any).autoPages.size, 0);
+          assert.equal(f.commands.length, before + 1, 'latest source gets the returned decode credit');
+          assert.equal(f.commands.at(-1)![4], 2); assert.equal(f.commands.at(-1)![5], sequenceChange ? 1 : 0);
+          assert.equal(f.commands.at(-1)![0], mime === 'image/png' ? 'preview-render' : 'preview-svg');
+        } finally { f.controller.dispose(); }
+      }
+    }
+  }
+});
+
+test('obsolete viewport decode failures cannot fail the newly navigated page', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(cachedFrame(1)); f.send({ type: 'viewport', page: 1, width: 1000 });
+    f.send({ type: 'decode-error', id: 1 });
+    assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+    assert.equal((f.controller as any).failed.size, 0); assert.equal(f.commands.at(-1)![2], 1);
+  } finally { f.controller.dispose(); }
+});
+
+
+test('late SVG budget evidence survives source edits only for unchanged physical view intent', () => {
+  for (const changeView of [false, true]) {
+    const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+    try {
+      f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+      f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 1000, allocation: 'same' }], nearby: [] });
+      const obsolete = f.commands.at(-1)!;
+      f.controller.handle({ header: { requestId: Number(obsolete[1]), revision: 1, sequence: 0, page: 0,
+        bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/svg+xml', byteLength: 4 }, bytes: Buffer.alloc(4) });
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+      f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+      if (changeView) { f.send({ type: 'viewport', page: 0, width: 900, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 900, allocation: 'different' }], nearby: [] }); }
+      f.send({ type: 'rasterize', page: 0, id: obsolete[1], reason: 'budget', allocation: 'same',
+        budget: { available: 100, required: 200, pixels: 150 } });
+      assert.equal((f.controller as any).fallback.has(0), !changeView);
+      assert.equal((f.controller as any).autoPages.size, 0); assert.equal((f.controller as any).failed.size, 0);
+      assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+      assert.equal(f.commands.at(-1)![5], 1, 'new source resumes after old decode credit is returned');
+      assert.equal(f.commands.at(-1)![0], changeView ? 'preview-svg' : 'preview-auto');
+      if (!changeView) { assert.equal(f.commands.at(-1)![6], 0); }
+    } finally { f.controller.dispose(); }
+  }
 });

@@ -1,6 +1,12 @@
 /* Acceptance driver injected before the production preview. */
 (() => {
-  const api=acquireVsCodeApi(), identities=new WeakMap();let next=0,lastDemand;
+  const api=acquireVsCodeApi(), identities=new WeakMap(), receivedFrames=new Map(), displayedFrames=new Map();let next=0,lastDemand;
+  let holdNextDecode=false,decodeGate=0;const heldDecodes=[];
+  const nativeDecode=HTMLImageElement.prototype.decode;
+  HTMLImageElement.prototype.decode=async function(){
+    await nativeDecode.call(this);
+    if(holdNextDecode){holdNextDecode=false;await new Promise(resolve=>{heldDecodes.push(resolve);report('decode-held',{decodeGate:++decodeGate});});}
+  };
   const initialFormat=__FORMAT__, initialZoom=__ZOOM__;
   Element.prototype.setPointerCapture=()=>{}; // Synthetic test pointers have no native capture ID.
   const identity=node=>{if(!node)return undefined;if(!identities.has(node))identities.set(node,++next);return identities.get(node);};
@@ -11,7 +17,7 @@
       const rect=sheet.getBoundingClientRect(),vector=sheet.querySelector('.page-vector svg'),raster=sheet.querySelector('.page-raster canvas'),image=sheet.querySelector('.page-image');
       return {page:Number(sheet.dataset.page),top:rect.top-view.top,bottom:rect.bottom-view.top,height:rect.height,
         visible:rect.bottom>view.top&&rect.top<view.bottom,rendered:!!vector||!!raster&&raster.width>0||!!image&&!image.hidden&&image.naturalWidth>0,
-        root:identity(vector||raster||image),detailSrc:sheet.querySelector('.page-detail')?.getAttribute('src'),detailHidden:sheet.querySelector('.page-detail')?.hidden,links:sheet.querySelectorAll('.page-link').length};
+        root:identity(vector||raster||image),sourceSequence:displayedFrames.get(Number(sheet.dataset.page))?.sequence,highlightHidden:sheet.querySelector('.page-highlight')?.hidden,highlightLeft:sheet.querySelector('.page-highlight')?.style.left,highlightTop:sheet.querySelector('.page-highlight')?.style.top,pixel:raster&&raster.width>1?[...raster.getContext('2d').getImageData(1,1,1,1).data]:undefined,detailSrc:sheet.querySelector('.page-detail')?.getAttribute('src'),detailHidden:sheet.querySelector('.page-detail')?.hidden,links:sheet.querySelectorAll('.page-link').length};
     });
     return {stackHeight:document.querySelector('.page-stack').getBoundingClientRect().height,epoch:lastDemand?.epoch,scrollTop:viewport.scrollTop,toolbar:Number(document.getElementById('page').value)-1,toolbarValue:document.getElementById('page').value,toolbarDisabled:document.getElementById('page').disabled,height:viewport.clientHeight,
       lensSrc:document.getElementById('lensImage').getAttribute('src'),lensIdentity:identity(document.getElementById('lensImage')),lensWidth:document.getElementById('lensImage').naturalWidth,lensHidden:document.getElementById('lens').hidden,lensConnected:document.getElementById('lensImage').isConnected,rememberedDetailSrc:rememberedDetail?.getAttribute('src'),rememberedDetailConnected:rememberedDetail?.isConnected,
@@ -20,15 +26,20 @@
   const report=(continuousCheck,extra={})=>api.postMessage({continuousCheck,...snapshot(),...extra});
   window.continuousApi=()=>({getState:()=>({format:initialFormat,zoom:initialZoom,page:0}),setState:()=>{},postMessage:message=>{
     if(message.type==='ready'||message.type==='viewport')lastDemand=message;
+    if(message.type==='decoded'&&message.displayed!==false&&receivedFrames.has(message.id)){displayedFrames.set(message.page,receivedFrames.get(message.id));}
     api.postMessage(message);
-    if(message.type==='ready'||message.type==='decoded')paint().then(()=>report(message.type,{request:message.id,page:message.page}));
+    if(message.type==='ready'||message.type==='decoded')paint().then(()=>report(message.type,{request:message.id,page:message.page,displayed:message.displayed,stale:message.stale}));
   }});
   let rememberedLink, rememberedDetail, gestureSheet;
   window.addEventListener('message',async event=>{
+    if(event.data.type==='image'&&event.data.header){receivedFrames.set(event.data.header.requestId,event.data.header);}
     const action=event.data.continuousAction;if(!action)return;
     try {
       const viewport=document.getElementById('viewport');
       const sheet=()=>document.querySelector(`.page-sheet[data-page="${action.page}"]`);
+      if(action.name==='arm-decode'){holdNextDecode=true;}
+      if(action.name==='release-decode'){heldDecodes.shift()?.();}
+      if(action.name==='zoom'){const zoom=document.getElementById('zoom');zoom.value=String(action.value);zoom.dispatchEvent(new Event('change'));}
       if(action.name==='scroll'){viewport.scrollTop=action.top;viewport.dispatchEvent(new Event('scroll'));}
       if(action.name==='jump'){const page=document.getElementById('page');page.value=String(action.page+1);page.dispatchEvent(new Event('change'));}
       if(action.name==='link'){const link=sheet()?.querySelector('.page-link');if(!link)throw Error('No page link '+action.page);link.click();}
