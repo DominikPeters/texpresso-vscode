@@ -141,7 +141,7 @@ export class PreviewController {
       <label>Page <input id="page" type="number" min="1" value="1" aria-label="Page number"></label><span id="total">/ …</span>
       <button id="next" title="Next page" aria-label="Next page">${icon('chevron-right')}</button>
       <button id="zoomOut" title="Zoom out" aria-label="Zoom out">${icon('zoom-out')}</button>
-      <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="page">Fit page</option>
+      <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="text">Fit to text width</option><option value="page">Fit page</option>
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
       <option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select>
       <select id="format" aria-label="Rendering format" title="Rendering format"><option value="auto">Auto</option><option value="png">PNG</option><option value="svg">SVG</option></select>

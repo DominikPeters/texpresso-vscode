@@ -25,11 +25,12 @@
     (latestSourceRevision === undefined || header.revision === latestSourceRevision);
   const retireDecodes = () => { revealIntent++; pendingReveal = undefined; for (const view of views.values()) { view.retire(); } };
   let currentPage = Number.isInteger(saved.page) ? clamp(saved.page, 0, 100000) : 0;
-  let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
+  let zoom = ['width', 'text', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
+  let textAlign = saved.textAlign !== false;
   let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
   let lensImage = globalElement('lensImage');
-  let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, direction = 1, programmaticTop, customZoomOption;
+  let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, lastLeft = 0, direction = 1, programmaticTop, programmaticLeft, customZoomOption;
   let pinchAnchor, pinchOrigin, lastPinchTime = 0, restoring = true, disposing = false;
   const post = message => vscode.postMessage({ instance, ...message });
   const decoded = new TexpressoImageCache(value => {
@@ -53,7 +54,7 @@
   function diagnostics() { viewport.dataset.shellCount = String(views.size); viewport.dataset.residentBytes = String(decoded.bytes); }
   function save() {
     const rect = geometry.rects[currentPage];
-    vscode.setState({ page: currentPage, zoom, format, left: viewport.scrollLeft, top: viewport.scrollTop,
+    vscode.setState({ page: currentPage, zoom, format, textAlign, left: viewport.scrollLeft, top: viewport.scrollTop,
       point: rect ? Math.max(0, (viewport.scrollTop - rect.top) / rect.height) : 0 });
   }
   function describe() {
@@ -76,7 +77,7 @@
   function anchorAt(origin) {
     const view = viewport.getBoundingClientRect(), y = viewport.scrollTop + origin.y - view.top;
     const index = geometry.pageAt(y), rect = geometry.rects[index], sheet = views.get(index)?.sheet;
-    const left = sheet ? sheet.getBoundingClientRect().left : view.left + Math.max(0, (viewport.clientWidth - rect.width) / 2) - viewport.scrollLeft;
+    const left = sheet ? sheet.getBoundingClientRect().left : view.left + (geometry.maxWidth - rect.width) / 2 - viewport.scrollLeft;
     return { page: index, x: (origin.x - left) / rect.width, y: (y - rect.top) / rect.height, origin };
   }
   function topAnchor() {
@@ -96,7 +97,12 @@
       if (Math.abs(viewport.scrollLeft-left) > 1) { anchor.x = (anchor.origin.x-sheet.getBoundingClientRect().left)/rect.width; }
     }
     if (Math.abs(viewport.scrollTop-top) > 1) { anchor.y = (viewport.scrollTop+anchor.origin.y-view.top-rect.top)/rect.height; }
-    programmaticTop = viewport.scrollTop;
+    programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
+  }
+  function alignText() {
+    if (zoom === 'text' && textAlign) {
+      viewport.scrollLeft = geometry.textScroll(); programmaticLeft = viewport.scrollLeft;
+    }
   }
 
   function configure() {
@@ -137,11 +143,8 @@
     // sharpen the active page independently of these bounded whole-page bases.
     return visible ? 4000000 * (index === currentPage ? 2 : 1) / (visibleCount()+1) : 750000;
   }
-  function pageDimensions(bounds) {
-    const width=bounds[2]-bounds[0], height=bounds[3]-bounds[1];
-    let scale=Number(zoom)*96/72;
-    if(zoom==='width'||zoom==='page') { scale=Math.max(.05,viewport.clientWidth/width); if(zoom==='page'){scale=Math.min(scale,Math.max(.05,viewport.clientHeight/height));} }
-    return {width:width*scale,height:height*scale};
+  function pageDimensions(bounds, textBounds) {
+    return geometry.dimensions(bounds, textBounds);
   }
   function allocation(index, bounds = geometry.rects[index]?.bounds) {
     if (!bounds) { return ''; }
@@ -164,8 +167,9 @@
   }
   function layoutDocument(request = true, immediate = false, anchor) {
     anchor ||= topAnchor();
-    for (const [index, view] of views) { const header = view.header(); if (header) { geometry.setBounds(index, header.bounds); } }
-    configure(); mountWindow(); restoreAnchor(anchor); mountWindow(); observeActive();
+    // Only current frame commits teach geometry; retained visual-only headers
+    // must not overwrite it during a later resize or state update.
+    configure(); mountWindow(); restoreAnchor(anchor); alignText(); mountWindow(); observeActive();
     for (const view of views.values()) { view.recost(); }
     let option = [...zoomSelect.options].find(option => option.value === String(zoom));
     if (!option) { if (!customZoomOption) { customZoomOption = document.createElement('option'); zoomSelect.appendChild(customZoomOption); } customZoomOption.value = String(zoom); customZoomOption.textContent = `${Math.round(Number(zoom)*100)}%`; }
@@ -187,15 +191,19 @@
     if (ready || jump || scroll || key !== lastSnapshot) { lastSnapshot = key; post({ type: ready ? 'ready' : 'viewport', ...snapshot, ...(scroll ? { scroll: true } : {}), ...(jump ? { jump: true } : {}), ...(ready ? { svgDom: true, pngCanvas: true } : {}) }); }
   }
   function navigate(value, notify = true) {
+    const previousLeft = viewport.scrollLeft;
     retireDecodes(); closeLens(); currentPage = clamp(value, 0, complete && count ? count - 1 : 100000); epoch++;
-    configure(); viewport.scrollTop = geometry.rects[currentPage].top; viewport.scrollLeft = 0; programmaticTop = viewport.scrollTop;
-    mountWindow(); describe(); save(); if (notify) { requestViewport(false, true); }
+    configure(); viewport.scrollTop = geometry.rects[currentPage].top; viewport.scrollLeft = zoom === 'text' && !textAlign ? previousLeft : 0;
+    programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
+    mountWindow(); alignText(); describe(); save(); if (notify) { requestViewport(false, true); }
   }
   function closeLens() { lensOwner?.closeLens(); }
   function setMagnify(value) { magnify = value; closeLens(); viewport.classList.toggle('magnify', magnify); globalElement('magnify').setAttribute('aria-pressed', String(magnify)); }
   function changeZoom(value, origin, anchor) {
     retireDecodes(); closeLens(); const rect = viewport.getBoundingClientRect(); origin ||= { x: rect.left + viewport.clientWidth / 2, y: rect.top + viewport.clientHeight / 2 };
-    anchor ||= anchorAt(origin); zoom = value; layoutDocument(true, false, anchor); save();
+    anchor ||= anchorAt(origin);
+    if (value === 'text' && zoom !== 'text') { geometry.refitText(); textAlign = true; }
+    zoom = value; layoutDocument(true, false, anchor); save();
   }
   function stepZoom(factor, origin, anchor) {
     if (factor === 1) { return; }
@@ -210,14 +218,14 @@
       x: rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
       y: rect.top + (target.y - b[1]) / (b[3] - b[1]) * rect.height
     }, { left: clip.left + viewport.clientLeft, top: clip.top + viewport.clientTop,
-      width: viewport.clientWidth, height: viewport.clientHeight });
+      width: viewport.clientWidth, height: viewport.clientHeight }, zoom === 'text');
     const left = clamp(viewport.scrollLeft + delta.x, 0, Math.max(0, viewport.scrollWidth - viewport.clientWidth));
     const top = clamp(viewport.scrollTop + delta.y, 0, Math.max(0, viewport.scrollHeight - viewport.clientHeight));
     // Check the clamped correction too: a page boundary may prevent centering.
     const horizontal = Math.abs(left - viewport.scrollLeft) > 4, vertical = Math.abs(top - viewport.scrollTop) > 4;
     if (horizontal) { viewport.scrollLeft = left; }
     if (vertical) { viewport.scrollTop = top; }
-    if (horizontal || vertical) { programmaticTop = viewport.scrollTop; }
+    if (horizontal || vertical) { programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft; }
   }
   function target(target) {
     pendingReveal = { target, intent: ++revealIntent }; closeLens(); currentPage = clamp(target.page, 0, complete && count ? count - 1 : 100000);
@@ -466,7 +474,7 @@
         }
         // Check a patch before mutating its acknowledged root. Full SVG roots
         // are detached until actual node/pixel accounting admits them below.
-        const proposedRect = pageDimensions(m.header.bounds);
+        const proposedRect = pageDimensions(m.header.bounds, m.visualOnly === true || !currentSnapshot(m.header) ? undefined : m.header.textBounds);
         const proposedHeight = proposedRect.height;
         const proposedPixelBytes = Math.ceil(proposedRect.width*devicePixelRatio)*Math.ceil(proposedHeight*devicePixelRatio)*4;
         const proposedCost = m.header.byteLength + proposedPixelBytes + Math.min(20000,(svgPage?.count||0)+256)*160;
@@ -562,7 +570,10 @@
           problem = ''; stale = m.visualOnly === true || sourceToken !== sourceGeneration || !currentSnapshot(header);
           sheet.dataset.stale = String(stale); sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
-          if (!stale) { layout(); } describe(); renderLinks();
+          if (!stale) {
+            geometry.setBounds(page, header.bounds); geometry.setTextBounds(page, header.bounds, header.textBounds);
+            layout();
+          } describe(); renderLinks();
           if (previous && previous !== url && !images.has(previousId)) { URL.revokeObjectURL(previous); }
           if (!stale && pendingReveal?.intent === revealIntent && pendingReveal.target.page === page &&
               pendingReveal.target.sequence === header.sequence && pendingReveal.target.revision === header.revision) {
@@ -574,7 +585,7 @@
               const rect = surface().getBoundingClientRect();
               viewport.scrollLeft += rect.left + (dest.x - bounds[0]) / (bounds[2] - bounds[0]) * rect.width - viewport.getBoundingClientRect().left - 12;
               viewport.scrollTop += rect.top + (dest.y - bounds[1]) / (bounds[3] - bounds[1]) * rect.height - viewport.getBoundingClientRect().top - 12;
-              programmaticTop = viewport.scrollTop;
+              programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
             }
           }
           vector.setAttribute('aria-label', image.alt);
@@ -652,8 +663,11 @@
   viewport.addEventListener('scroll', () => {
     closeLens(); cancelAnimationFrame(scrollFrame);
     scrollFrame = requestAnimationFrame(() => {
-      const top = viewport.scrollTop, user = programmaticTop === undefined || Math.abs(top - programmaticTop) > 1;
-      programmaticTop = undefined; direction = top >= lastTop ? 1 : -1; lastTop = top;
+      const top = viewport.scrollTop, left = viewport.scrollLeft;
+      const horizontalUser = Math.abs(left - lastLeft) > .01 && (programmaticLeft === undefined || Math.abs(left - programmaticLeft) > 1);
+      const user = horizontalUser || programmaticTop === undefined || Math.abs(top - programmaticTop) > 1;
+      if (zoom === 'text' && horizontalUser) { textAlign = false; }
+      programmaticTop = programmaticLeft = undefined; direction = top >= lastTop ? 1 : -1; lastTop = top; lastLeft = left;
       mountWindow(); observeActive();
       if (user) { retireDecodes(); epoch++; } for(const view of views.values()){view.recost();} describe(); save(); views.get(currentPage)?.scheduleDetail(); requestViewport(user);
     });
@@ -685,6 +699,6 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { retireDecodes(); } });
   window.addEventListener('pagehide',()=>{disposing=true;closeLens();observer.disconnect();cancelAnimationFrame(resizeFrame);cancelAnimationFrame(scrollFrame);resolution?.removeEventListener('change',densityChanged);clearTimeout(timer);for(const view of views.values()){view.dispose();}decoded.clear();});
   configure(); mountWindow();
-  if (restoring) { viewport.scrollTop = geometry.rects[currentPage].top + (Number(saved.point)||0)*geometry.rects[currentPage].height; viewport.scrollLeft=Number(saved.left)||0; programmaticTop=viewport.scrollTop;restoring=false; }
+  if (restoring) { viewport.scrollTop = geometry.rects[currentPage].top + (Number(saved.point)||0)*geometry.rects[currentPage].height; viewport.scrollLeft=Number(saved.left)||0; programmaticTop=viewport.scrollTop;programmaticLeft=viewport.scrollLeft;lastLeft=viewport.scrollLeft;restoring=false; }
   describe();requestViewport(false,false,true);
 })();

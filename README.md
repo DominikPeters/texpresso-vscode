@@ -60,8 +60,14 @@ Control/Command click still performs inverse SyncTeX, including on links.
 For TeX Live, TeXpresso excludes documentation/source examples from runtime
 package lookup so example `hyperref.cfg` files cannot override the driver.
 
-The preview toolbar provides page navigation, fit width/page, zoom,
+The preview toolbar provides page navigation, fit page width, fit text width, fit page, zoom,
 pause/resume, restart, and compiler output, using VS Code product icons.
+**Fit to text width** fills the viewport with the text area while keeping the
+full paper available by horizontal scrolling. It learns a shared text extent
+from pages as they render, without compiling the whole document, and retains
+that geometry while scrolling and editing. Figures do not widen the fit unless
+they contain text. Switching away and back refits the latest learned geometry.
+Engines without text geometry use the page-width fit.
 Toggle the magnifier (or press **M** while the preview has focus), then hold the
 left mouse button on the page for a sharp 2.5× loupe; release to dismiss it, or
 press Escape to leave magnifier mode. The loupe requires an engine advertising

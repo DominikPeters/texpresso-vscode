@@ -10,6 +10,8 @@ export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
   bounds: [number, number, number, number]; width: number; height: number;
   mime: 'image/png' | 'image/svg+xml'; byteLength: number;
+  /** Full-page text extent in page coordinates, including on raster patches. */
+  textBounds?: [number, number, number, number];
   rasterId?: number; patch?: { base: number; rect: [number, number, number, number] };
   svgEligible?: boolean; vectorCost?: number;
   /** Native export wall time, excluding compilation and pipe transfer. */
@@ -59,6 +61,7 @@ export function isImageHeader(value: unknown): value is PreviewImageHeader {
     h.width > 0 && h.height > 0 && h.width <= 8192 && h.height <= 8192 &&
     h.width * h.height <= 4000000 && rasterPatch(h) && h.byteLength <= MAX_IMAGE_BYTES &&
     (h.mime === 'image/png' || h.mime === 'image/svg+xml') && rectangle(h.bounds) &&
+    (h.textBounds === undefined || rectangle(h.textBounds)) &&
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
     (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
     (h.vectorCost === undefined || count(h.vectorCost)) &&

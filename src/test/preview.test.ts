@@ -257,3 +257,29 @@ test('recovering a paused preview restores overlays without a transient resume o
     assert.deepEqual(child.commands.at(-1), ['resume'], 'only an explicit Resume starts compilation');
   } finally { await session.dispose(); }
 });
+
+
+test('optional full-page text geometry survives PNG, SVG and no-op patch framing', () => {
+  const textBounds: [number, number, number, number] = [72, 85, 540, 710];
+  const variants: PreviewImageHeader[] = [
+    { ...header, textBounds },
+    { ...header, textBounds, mime: 'image/svg+xml' },
+    { ...header, textBounds, byteLength: 0, rasterId: 2, patch: { base: 1, rect: [0, 0, 0, 0] } }
+  ];
+  for (const value of variants) {
+    const input = new PassThrough(), frames: PreviewImage[] = [];
+    const reader = readPreviewProtocol(input, () => {}, image => frames.push(image), error => { throw error; });
+    const bytes = value.byteLength ? body : Buffer.alloc(0);
+    const payload = Buffer.concat([Buffer.from(JSON.stringify(['preview-image', value]) + '\n'), bytes]);
+    for (const byte of payload) { input.write(Buffer.from([byte])); }
+    assert.equal(frames.length, 1);
+    assert.deepEqual(frames[0].header.textBounds, textBounds);
+    assert.deepEqual(frames[0].bytes, bytes);
+    reader.close();
+  }
+  assert.ok(isImageHeader(header), 'older engines can omit text geometry');
+  assert.ok(isImageHeader({ ...header, textBounds: [-10, -20, 620, 800] }), 'overhanging text stays in page coordinates');
+  for (const invalid of [null, [], [1, 2, 3], [0, 0, 0, 10], [0, 0, 10, 0], [0, 0, Infinity, 10], [0, NaN, 10, 10], ['0', 0, 10, 10]]) {
+    assert.equal(isImageHeader({ ...header, textBounds: invalid }), false);
+  }
+});
