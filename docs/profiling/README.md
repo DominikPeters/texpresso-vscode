@@ -155,3 +155,7 @@ allocation fix from unresolved compiler starvation and source-target validation.
 [Native edit anchors and responsive startup (23 October)](2026-10-23-native-followup.md) records bounded retention for repair/undo, incremental worker greetings, six controlled-worker checks and a complete 1,464-input PNG regression with ten passing reference checks. It retains the middle-phase cadence miss, a remaining 452 ms compiler tail and the distinction between responsive startup and faster bootstrap. [Compact results](2026-10-23-native-followup.json).
 
 [Worker CPU, protocol waits and interrupted page publication (23 October)](2026-10-23-worker-waits.md) diagnoses a visible multi-keystroke gap with opt-in per-operation CPU/wall timing, preserves hidden and incomplete accounting cases, and identifies an untested page-publication scheduling opportunity. [Compact evidence](2026-10-23-worker-waits.json).
+
+## Retex compiler comparison
+
+[The 29 October compiler benchmark](2026-10-29-retex-xetex.md) compares retex with its own checkpoints disabled against XeTeX XDV and PDF output, including body timing, native-macro/cache ablations, memory and LuaLaTeX output checks. It measures complete compiler passes rather than integrated preview latency.
