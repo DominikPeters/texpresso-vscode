@@ -26,10 +26,10 @@ Third page is not needed yet.
     const frames = new Map<number, PreviewImage>(), retries = new Set<number>();
     const states: Extract<PreviewMessage, ['preview-state', ...unknown[]]>[] = [];
     const targets: Extract<PreviewMessage, ['preview-forward', ...unknown[]]>[] = [];
-    const words: string[] = [];
+    const sources: { file: string; line: number; word?: string }[] = [];
     const session = new TexpressoSession(main, { ...config, command: binary!, packageProvider: 'texlive', previewLocation: 'editor' },
       new SessionPaths(main.fileName, false), () => [main], {
-        state() {}, output() {}, synctex: (_file, _line, _column, word) => { if (word) { words.push(word); } }, debug: s => { debug = (debug + s).slice(-15000); }, error: e => { failure = e; },
+        state() {}, output() {}, synctex: (file, line, _column, word) => { sources.push({file,line,word}); }, debug: s => { debug = (debug + s).slice(-15000); }, error: e => { failure = e; },
         preview: event => { if ('header' in event) { frames.set(event.header.requestId, event); }
           else if (Array.isArray(event)) {
             if (event[0] === 'preview-state') { state = event; states.push(event); }
@@ -71,8 +71,10 @@ Third page is not needed yet.
       const interrupted = ++id;
       session.send(['preview-background', interrupted, 50, 1000, state![1], state![2], 0, 0]);
       session.send(['preview-inverse', target[1], target[2], 0, target[4], target[5]]);
-      await until(() => words.length > 0 && retries.has(interrupted));
-      assert.match(words[0], /First|page|foreground/, 'inverse search retains the foreground display list');
+      await until(() => sources.length > 0);
+      assert.equal(sources[0].file, main.fileName); assert.equal(sources[0].line, 3);
+      assert.equal(sources[0].word, undefined, 'published SyncTeX resolves without guessing text from an invalidated renderer');
+      session.send(['preview-cancel', interrupted, 0]);
       assert.ok(!frames.has(interrupted));
       const canceled = ++id;
       session.send(['preview-background', canceled, 50, 1000, state![1], state![2], 0, 0]);

@@ -2,7 +2,7 @@
  * bridge, and separate first-visible/idle-refined paint opportunities. */
 const profileJob = __JOB__;
 const profileHost = profileJob.vscode ? acquireVsCodeApi() : undefined;
-const profileRows = [], profileFrames = [], errors = [], pendingMain = new Set();
+const profileRows = [], profileFrames = [], errors = [], pendingMain = new Set(), profileRequests = [], pendingRegions = new Map();
 let current, latestSequence = 0, latestRequest = 0;
 const displayedMainRequest = new Map();
 const profileInputs = [], rapidPhases = [], visibilityEvents = [], prewarmEvents = [];
@@ -17,16 +17,45 @@ const until = async (check, description) => {
     await wait(10);
   }
 };
-const originalDecode = HTMLImageElement.prototype.decode;
-HTMLImageElement.prototype.decode = async function() {
-  const start = performance.now();
-  await originalDecode.call(this);
-  const frame = profileFrames.at(-1);
-  if (frame) frame.decodeMs = performance.now() - start;
+// Native IMG decode calls can overlap page prefetch/detail/lens work. Record the
+// production request's decoded ACK rather than assigning a global last-frame decode.
+const sheetFor = page => document.querySelector(`.page-sheet[data-page="${page}"]`);
+const surfaceFor = page => {
+  const sheet = sheetFor(page);
+  return sheet?.querySelector('[data-part="raster"]:not([hidden]) > canvas') ||
+    sheet?.querySelector('[data-part="vector"]:not([hidden]) .texpresso-svg-layer.active > svg') ||
+    sheet?.querySelector('[data-part="image"]:not([hidden])');
 };
+const surfaceMetrics = page => {
+  const sheet = sheetFor(page), surface = surfaceFor(page), rect = sheet?.getBoundingClientRect();
+  return { page, mounted: !!sheet, rendered: !!surface, stale: sheet?.dataset.stale,
+    cssWidth: rect?.width, cssHeight: rect?.height,
+    surface: surface?.tagName?.toLowerCase(),
+    pixelWidth: surface instanceof HTMLCanvasElement ? surface.width : surface instanceof HTMLImageElement ? surface.naturalWidth : undefined,
+    pixelHeight: surface instanceof HTMLCanvasElement ? surface.height : surface instanceof HTMLImageElement ? surface.naturalHeight : undefined,
+    svgViewBox: surface?.tagName?.toLowerCase() === 'svg' ? surface.getAttribute('viewBox') : undefined };
+};
+const memorySnapshot = () => {
+  const viewport = document.getElementById('viewport');
+  return { heapBytes:performance.memory?.usedJSHeapSize, domNodes:document.querySelectorAll('*').length,
+    canvasPixels:[...document.querySelectorAll('canvas')].reduce((n,c)=>n+c.width*c.height,0),
+    residentBytes:Number(viewport.dataset.residentBytes || 0), shellCount:document.querySelectorAll('.page-sheet').length,
+    viewportCss:[viewport.clientWidth,viewport.clientHeight], dpr:devicePixelRatio,
+    physicalPageCount:document.getElementById('total').textContent,
+    surfaces:[...document.querySelectorAll('.page-sheet')].map(sheet=>surfaceMetrics(Number(sheet.dataset.page))) };
+};
+const regionKey = (type,page,token) => `${type}:${page}:${token}`;
 const profileApi = () => ({
   getState: () => ({ page:0, zoom:'width', format:profileJob.codec }), setState: () => {},
   postMessage: m => {
+    if (m.type === 'region' || m.type === 'detail') {
+      const request = {...m, at:performance.now()}; profileRequests.push(request);
+      pendingRegions.set(regionKey(m.type,m.page,m.token),request);
+    }
+    if (m.type === 'cancel-region' || m.type === 'cancel-detail') {
+      const type=m.type==='cancel-region'?'region':'detail';
+      for (const [key,request] of pendingRegions) if (request.type===type && request.page===m.page) pendingRegions.delete(key);
+    }
     if (m.type === 'ready') current = {name:'initial',page:0,start:performance.now(),minSequence:0,afterRequest:0,frames:[]};
     if (profileHost) profileHost.postMessage(m);
     else fetch('/message', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(m)}).catch(e => errors.push(e.message));
@@ -37,7 +66,7 @@ const profileApi = () => ({
     if (frame.type === 'image' && m.renderMs === undefined) {
       frame.cancelledBeforeMount = true; pendingMain.delete(m.id); return;
     }
-    frame.inlineSvg = !!m.svg; frame.canvasPng = !!m.png;
+    frame.inlineSvg = !!m.svg; frame.canvasPng = !!m.png; frame.renderMs = m.renderMs; frame.displayed = m.displayed; frame.stale = m.stale;
     frame.dispatchToDecoded = performance.now() - frame.dispatched;
     if (frame.type === 'image') displayedMainRequest.set(frame.page,m.id);
     frame.decodedAt = performance.now();
@@ -50,6 +79,8 @@ const profileApi = () => ({
         frame.supersededBeforePaint = true; pendingMain.delete(m.id); return;
       }
       frame.paintedAt = performance.now();
+      frame.surface = surfaceMetrics(frame.page);
+      pendingRegions.delete(regionKey(frame.type,frame.page,frame.token));
       frame.paintVisibility = visibility();
       frame.statusHidden = document.getElementById('status').hidden;
       frame.autoLabel = document.querySelector('#format [value=auto]').textContent;
@@ -74,7 +105,11 @@ const receiveProfileFrame = async data => {
     return;
   }
   if (data.type === 'error' || data.type === 'decode-error') errors.push(data.text || data.type);
-  if (data.type === 'image' || data.frame) {
+  if (data.type === 'region-error') {
+    for (const [key,request] of pendingRegions) if (request.page===data.page && request.type===(data.purpose==='detail'?'detail':'region')) pendingRegions.delete(key);
+    errors.push('region-error ' + (data.text || data.purpose || 'unknown'));
+  }
+  if (['image','region','detail'].includes(data.type) || data.frame) {
     const dispatched = performance.now();
     if (data.type === 'image') pendingMain.add(data.header.requestId);
     let transferMs = 0;
@@ -84,7 +119,7 @@ const receiveProfileFrame = async data => {
       data.bytes = await response.arrayBuffer(); transferMs = performance.now() - start;
     }
     profileFrames.push({type:data.type,request:data.header.requestId,page:data.header.page,sequence:data.header.sequence,
-      mime:data.header.mime, bytes:data.bytes?.byteLength || 0,
+      mime:data.header.mime, token:data.token, purpose:data.purpose, bounds:data.header.bounds, revision:data.header.revision, bytes:data.bytes?.byteLength || 0,
       rasterPatch:!!data.rasterPatch, svgPatch:!!data.svgPatch,
       dispatchVisibility:visibility(),
       cacheReference:!data.frame && !data.bytes && !data.svgPatch && !data.rasterPatch,
@@ -107,9 +142,7 @@ else {
       performance.now() - op.frames.at(-1).paintedAt >= Math.min(idle,80), 'Idle refinement');
     op.firstMime = op.frames[0].mime; op.finalMime = op.frames.at(-1).mime;
     op.frame = op.frames[0];
-    op.heapBytes = performance.memory?.usedJSHeapSize;
-    op.domNodes = document.querySelectorAll('*').length;
-    op.canvasPixels = [...document.querySelectorAll('canvas')].reduce((n,c)=>n+c.width*c.height,0);
+    Object.assign(op,memorySnapshot());
     profileRows.push(op); current = undefined;
   };
   await finish(profileJob.richDemo ? 1600 : profileJob.earlyInput ? 80 : 650);
@@ -248,8 +281,83 @@ else {
   if (profileJob.fixture.startsWith('tikz')) for (let i=0;i<3;i++) await operation('edit-coordinate',0,true,()=>edit({coordinate:true}),i===2?650:80);
   await operation('edit-font',0,true,()=>edit({mode:'font'}),650);
   }
-  const svg=document.getElementById('vector'), raster=document.getElementById('raster');
-  const source=!raster.hidden?raster.querySelector('canvas'):svg.hidden?document.getElementById('image'):undefined;
+  if (profileJob.extras) {
+    const viewport=document.getElementById('viewport');
+    const afterSource=latestSequence;
+    const settledFrames = (at, firstFrame) => profileFrames.slice(firstFrame).filter(frame=>frame.page===0 && frame.sequence>=afterSource && frame.paintedAt>=at);
+    const extraRow = (name,start,firstFrame,firstMs,extra={}) => {
+      const frames=settledFrames(start,firstFrame);
+      profileRows.push({name,page:0,start,ms:firstMs,settledMs:Math.max(firstMs,...frames.map(frame=>frame.paintedAt-start)),frames,
+        firstMime:frames[0]?.mime || profileFrames.filter(f=>f.type==='image'&&f.page===0&&f.paintedAt).at(-1)?.mime,
+        finalMime:profileFrames.filter(f=>f.type==='image'&&f.page===0&&f.paintedAt).at(-1)?.mime,
+        ...memorySnapshot(),...extra});
+    };
+    const settleExtra = async (start,firstFrame,idle=650) => {
+      await until(()=>performance.now()>=start+idle && !pendingMain.size && !pendingRegions.size &&
+        profileFrames.slice(firstFrame).every(frame=>frame.paintedAt || frame.cancelledBeforeMount || frame.supersededBeforePaint),'Extra-operation render completion');
+    };
+    const zoomTo = async (name,value) => {
+      const control=document.getElementById('zoom'), start=performance.now(), firstFrame=profileFrames.length;
+      const before=surfaceMetrics(0); control.value=value; control.dispatchEvent(new Event('change'));
+      await painted(); const firstMs=performance.now()-start;
+      // Both formats can immediately scale an existing surface; the later matching
+      // full-page/detail ACK records sharper PNG replacement separately.
+      const scaled=surfaceMetrics(0); await settleExtra(start,firstFrame);
+      extraRow(name,start,firstFrame,firstMs,{before,scaled,zoom:value,firstVisual:'existing surface after zoom layout'});
+    };
+    await zoomTo('zoom-200','2');
+    await zoomTo('zoom-fit-width','width');
+    const sheet=sheetFor(0), surface=surfaceFor(0), toggle=document.getElementById('magnify');
+    if (!sheet || !surface || toggle.disabled) throw Error('Magnifier fixture has no current interactive surface');
+    if (toggle.getAttribute('aria-pressed')!=='true') toggle.click();
+    const rect=surface.getBoundingClientRect(), clip=viewport.getBoundingClientRect();
+    const point={x:Math.max(clip.left+30,Math.min(clip.right-30,rect.left+rect.width*.45)),
+      y:Math.max(clip.top+30,Math.min(clip.bottom-30,rect.top+rect.height*.32))};
+    const pointer=(type,x,y)=>sheet.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,button:0,buttons:type==='pointerup'?0:1,pointerId:17,clientX:x,clientY:y}));
+    const lensSnapshot=()=>({hidden:document.getElementById('lens').hidden,
+      vector:!document.getElementById('lensVector').hidden && !!document.getElementById('lensVector').firstChild,
+      canvasPixels:document.getElementById('lensCanvas').width*document.getElementById('lensCanvas').height,
+      nativeImage:!document.getElementById('lensImage').hidden && !!document.getElementById('lensImage').getAttribute('src'),
+      nativeWidth:document.getElementById('lensImage').naturalWidth});
+    const start=performance.now(), firstFrame=profileFrames.length, requestsAt=profileRequests.length;
+    // Synthetic profiling pointers do not have a browser-native capture ID. Only
+    // capture registration is stubbed; the production lens handlers/renderers run.
+    const capture=sheet.setPointerCapture; sheet.setPointerCapture=()=>{};
+    try { pointer('pointerdown',point.x,point.y); } finally { sheet.setPointerCapture=capture; }
+    await painted(); const firstMs=performance.now()-start, firstLens=lensSnapshot();
+    if (firstLens.hidden) throw Error('Production magnifier did not open');
+    if (!firstLens.vector) {
+      await until(()=>profileRequests.slice(requestsAt).some(request=>request.type==='region'&&request.page===0),'PNG magnifier request');
+      const request=profileRequests.slice(requestsAt).find(request=>request.type==='region'&&request.page===0);
+      await until(()=>profileFrames.some(frame=>frame.type==='region'&&frame.page===0&&frame.token===request.token&&frame.paintedAt),'PNG magnifier matching region paint');
+      if(!lensSnapshot().nativeImage) throw Error('Magnifier region ACK did not mount its sharp image');
+    }
+    extraRow('magnifier-open',start,firstFrame,firstMs,{firstLens,finalLens:lensSnapshot(),
+      nativeRegionRequests:profileRequests.slice(requestsAt).filter(request=>request.type==='region').length,
+      syntheticPointerCapture:true});
+    const moveStart=performance.now(), moveFrame=profileFrames.length, moveRequests=profileRequests.length, movePaintMs=[];
+    for(const offset of [2,4,6]) { const moved=performance.now();pointer('pointermove',point.x+offset,point.y+offset);await painted();movePaintMs.push(performance.now()-moved); }
+    await wait(100);
+    extraRow('magnifier-small-moves',moveStart,moveFrame,movePaintMs[0],{finalLens:lensSnapshot(),
+      moves:3,movePaintMs,elapsedMs:performance.now()-moveStart,nativeRegionRequests:profileRequests.slice(moveRequests).filter(request=>request.type==='region').length});
+    const far={x:Math.min(clip.right-20,rect.right-20,point.x+160),y:point.y};
+    const farStart=performance.now(), farFrame=profileFrames.length, farRequests=profileRequests.length;
+    pointer('pointermove',far.x,far.y);await painted();const farFirstMs=performance.now()-farStart;
+    if(!firstLens.vector) {
+      await until(()=>profileRequests.slice(farRequests).some(request=>request.type==='region'&&request.page===0),'Moved PNG magnifier request');
+      const request=profileRequests.slice(farRequests).find(request=>request.type==='region'&&request.page===0);
+      await until(()=>profileFrames.some(frame=>frame.type==='region'&&frame.page===0&&frame.token===request.token&&frame.paintedAt),'Moved PNG matching region paint');
+    }
+    extraRow('magnifier-large-move',farStart,farFrame,farFirstMs,{finalLens:lensSnapshot(),
+      distanceCss:Math.hypot(far.x-point.x,far.y-point.y),nativeRegionRequests:profileRequests.slice(farRequests).filter(request=>request.type==='region').length});
+    pointer('pointerup',far.x,far.y);
+    if(toggle.getAttribute('aria-pressed')==='true')toggle.click();
+    await painted();
+    if(!lensSnapshot().hidden || document.getElementById('lensImage').getAttribute('src')) throw Error('Magnifier did not release its visible native tile');
+  }
+  const activePage=Number(document.getElementById('page').value)-1;
+  const activeSurface=surfaceFor(activePage);
+  const source=activeSurface instanceof HTMLCanvasElement || activeSurface instanceof HTMLImageElement ? activeSurface : undefined;
   const readback=[];
   if(source) for(let i=0;i<3;i++) {
     const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),rect=source.getBoundingClientRect();
@@ -261,11 +369,11 @@ else {
   const uiChecks = {normalStatusHidden:mainFrames.every(f=>f.statusHidden), autoLabelStable:mainFrames.every(f=>f.autoLabel==='Auto')};
   if(profileJob.earlyInput && (!uiChecks.normalStatusHidden || !uiChecks.autoLabelStable)) throw Error('Normal preview UI assertions failed: '+JSON.stringify(uiChecks));
   const result={...profileJob,uiChecks,ua:navigator.userAgent,dpr:devicePixelRatio,viewport:[innerWidth,innerHeight],
-    rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,visibilityEvents,prewarmEvents,rasterReadbackMs:readback,errors};
+    rows:profileRows,frames:profileFrames,regionRequests:profileRequests,inputs:profileInputs,rapidPhases,visibilityEvents,prewarmEvents,rasterReadbackMs:readback,errors};
   if (profileHost) { profileHost.postMessage({type:'profile-result',result});return; }
   await fetch('/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
   const select=name=>profileRows.filter(r=>r.name===name).map(r=>r.ms);
   parent.postMessage({profileDone:true,summary:{...profileJob,dpr:devicePixelRatio,metrics:{initial:select('initial'),page:select('page-first-compiled'),
     cache:[...select('page-previous-cached'),...select('page-next-cached')],typing:profileJob.rapid?select('typing-overlap'):select('edit-letter'),edit:profileJob.rapid?select('backspace-overlap'):select('edit-text'),coordinate:profileJob.rapid?select('coordinate-overlap'):select('edit-coordinate'),
-    decode:profileFrames.filter(f=>f.decodeMs!==undefined).map(f=>f.decodeMs)}}},location.origin);
+    decode:profileFrames.filter(f=>f.dispatchToDecoded!==undefined).map(f=>f.dispatchToDecoded)}}},location.origin);
 })().catch(error=>{document.getElementById('status').hidden=false;document.getElementById('status').textContent='PROFILE ERROR: '+error.message;console.error(error);profileHost?.postMessage({type:'profile-error',error:error.message,partial:{...profileJob,rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,errors}});});

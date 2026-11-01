@@ -95,6 +95,8 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_PROFILE_PAGES: process.env.TEXPRESSO_PROFILE_PAGES,
         TEXPRESSO_PROFILE_KINDS: process.env.TEXPRESSO_PROFILE_KINDS,
         TEXPRESSO_PROFILE_REPEATS: process.env.TEXPRESSO_PROFILE_REPEATS,
+        TEXPRESSO_PROFILE_VARIANTS: process.env.TEXPRESSO_PROFILE_VARIANTS,
+        TEXPRESSO_PROFILE_EXTRAS: process.env.TEXPRESSO_PROFILE_EXTRAS,
         TEXPRESSO_PROFILE_CODECS: process.env.TEXPRESSO_PROFILE_CODECS
       },
       // Preview checks use animation frames; background/occlusion throttling

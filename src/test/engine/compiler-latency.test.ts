@@ -36,8 +36,8 @@ def tag():
     while value == b'FLSH': value = exact(4)
     return value
 time.sleep(0.08)
-s.sendall(b'TEXPRESSOC02')
-assert exact(12) == b'TEXPRESSOS02'
+s.sendall(b'TEXPRESSOC03')
+assert exact(12) == b'TEXPRESSOS03'
 s.sendall(b'OPRD' + struct.pack('<II', 0, 0) + b'main.tex\\0' + b'TEX\\0')
 assert tag() == b'OPEN'
 exact(struct.unpack('<I', exact(4))[0])

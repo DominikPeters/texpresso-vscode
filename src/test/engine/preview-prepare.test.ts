@@ -97,7 +97,7 @@ test('edit preparation preserves visible state and PNG base, reuses a bucket, an
     p.session.send(['preview-inverse', target[1], target[2], target[3], target[4], target[5]]);
     await p.until(() => p.inverse.length > 0);
     assert.equal(p.inverse[0].file, p.main.fileName); assert.equal(p.inverse[0].line, 4);
-    assert.match(p.inverse[0].word || '', /Prepare|here/);
+    assert.equal(p.inverse[0].word, undefined, 'a cached SyncTeX hit after rollback does not guess a word from another renderer');
     const unchanged = await p.render(0, base.header.rasterId); assert.equal(unchanged.bytes.length, 0);
     assert.equal(unchanged.header.patch?.base, base.header.rasterId);
     p.replace(offset, 0, 'warm '); const edited = await p.render(0); assert.notDeepEqual(edited.bytes, initial.bytes);
@@ -224,10 +224,10 @@ with open(${JSON.stringify(marker)}, 'w') as f: f.write(str(count))
 if count != 2:
     os.execv(${JSON.stringify(engine)}, [${JSON.stringify(engine)}] + sys.argv[1:])
 s = socket.socket(fileno=int(os.environ['TEXPRESSO_FD']))
-s.sendall(b'TEXPRESSOC02')
+s.sendall(b'TEXPRESSOC03')
 data = b''
 while len(data) < 12: data += s.recv(12 - len(data))
-assert data == b'TEXPRESSOS02'
+assert data == b'TEXPRESSOS03'
 print('TXP-WARM-ROOT-STALL', file=sys.stderr, flush=True)
 def exact(sock, n):
     data = b''
@@ -247,8 +247,8 @@ b.close()
 def stop(_sig, _frame): raise SystemExit()
 signal.signal(signal.SIGTERM, stop)
 try:
-    assert exact(a, 12) == b'TEXPRESSOC02'
-    a.sendall(b'TEXPRESSOS02')
+    assert exact(a, 12) == b'TEXPRESSOC03'
+    a.sendall(b'TEXPRESSOS03')
     while True:
         ready, _, _ = select.select([s, a], [], [], 5)
         for source in ready:

@@ -39,7 +39,7 @@ def tag():
     value = exact(4)
     while value == b'FLSH': value = exact(4)
     return value
-assert exact(12) == b'TEXPRESSOS02'
+assert exact(12) == b'TEXPRESSOS03'
 if mode in ('fragmented', 'timeout', 'eof'):
     s.sendall(b'TEXP')
 print('TXP-STARTUP-WAIT', file=sys.stderr, flush=True)
@@ -59,7 +59,7 @@ if mode != 'recovery':
         time.sleep(0.002)
 # Coalesce the end of the greeting and first query. Neither fragmented nor
 # immediately available protocol bytes may be mistaken for ordinary queries.
-hello = b'RESSOC02' if mode == 'fragmented' else b'TEXPRESSOC02'
+hello = b'RESSOC03' if mode == 'fragmented' else b'TEXPRESSOC03'
 s.sendall(hello + b'OPRD' + struct.pack('<II', 0, 0) + b'main.tex\\0' + b'TEX\\0')
 print('TXP-HELLO-SENT', file=sys.stderr, flush=True)
 assert tag() == b'OPEN'

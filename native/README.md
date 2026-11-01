@@ -42,7 +42,7 @@ git add native/texpresso
 git commit -m "Update bundled TeXpresso engine"
 ```
 
-CI builds the committed pointer, never a moving branch tip. MuPDF and ICU
+CI builds the committed pointer, never a moving branch tip. MuPDF, ICU, and zlib-ng
 versions live in `dependencies.lock.json`; their build profiles live here.
 Large dependency trees and compiled artifacts are not committed to Git.
 
@@ -57,16 +57,21 @@ dependencies; it records their actual versions in the build manifest.
 Supply a local MuPDF checkout at the locked revision with its locked
 `thirdparty/lcms2` submodule initialized, and an ICU 78.3 installation containing
 the headers, static `libicuuc.a`, shared data library, `icupkg`, and `genccode`.
-No build command automatically downloads sources or packages.
+Supply a clean zlib-ng checkout at the locked revision as well. Its native API is
+statically linked at level 2 for live PNG encoding, independently of system zlib
+used by other libraries. The builder verifies the reported backend/version/level
+and includes its license. No build command automatically downloads sources or packages.
 
 ```sh
 python3 native/scripts/build.py --check \
-  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu
+  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu \
+  --zlib-ng-source /path/to/zlib-ng
 python3 native/scripts/build.py \
-  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu
+  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu \
+  --zlib-ng-source /path/to/zlib-ng
 ```
 
-Homebrew prerequisites for a fresh build host are `pkgconf`, `freetype`,
+Homebrew prerequisites for a fresh build host are `cmake`, `pkgconf`, `freetype`,
 `jpeg-turbo`, `openjpeg`, `brotli`, `sdl2`, `harfbuzz`, `graphite2`, `fontconfig`,
 `libpng`, `jbig2dec`, and `icu4c@78`. Installation is a separate, explicit step.
 There is no Tectonic requirement.

@@ -45,8 +45,8 @@ def tag(sock):
     value = exact(sock, 4)
     while value == b'FLSH': value = exact(sock, 4)
     return value
-s.sendall(b'TEXPRESSOC02')
-assert exact(s, 12) == b'TEXPRESSOS02'
+s.sendall(b'TEXPRESSOC03')
+assert exact(s, 12) == b'TEXPRESSOS03'
 if mode in ('dead', 'reaped'):
     print('TXP-TEST-CLOSED', file=sys.stderr, flush=True)
     s.close()
@@ -72,8 +72,8 @@ else:
     def stop(_sig, _frame): raise SystemExit()
     signal.signal(signal.SIGTERM, stop)
     try:
-        assert exact(a, 12) == b'TEXPRESSOC02'
-        a.sendall(b'TEXPRESSOS02')
+        assert exact(a, 12) == b'TEXPRESSOC03'
+        a.sendall(b'TEXPRESSOS03')
         while True:
             ready, _, _ = select.select([s, a], [], [], 5)
             for source in ready:

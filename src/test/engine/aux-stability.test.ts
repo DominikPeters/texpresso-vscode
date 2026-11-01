@@ -133,7 +133,8 @@ First page.\newpage
       await session.start(); await render(0);
       const oldStable = stable; session.send(['rerun-once']); await until(() => stable > oldStable);
       assert.equal(launches, 1, 'stable finishing keeps an existing live snapshot');
-      await until(() => !!state && state[3] === 1);
+      await until(() => !!state && state[4] && state[3] === 2);
+      assert.equal(state![3], 2, 'completed page count survives restoring the earlier live snapshot');
       let previousPng: Buffer | undefined;
       for (const replacement of ['changed', 'updated']) {
         session.sync.openDocument(late);

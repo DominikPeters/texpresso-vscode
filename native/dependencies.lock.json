@@ -17,5 +17,10 @@
     "version": "78.3",
     "sourceUrl": "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz",
     "sourceSha256": "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0"
+  },
+  "zlibNg": {
+    "version": "2.3.3",
+    "repository": "https://github.com/zlib-ng/zlib-ng.git",
+    "revision": "12731092979c6d07f42da27da673a9f6c7b13586"
   }
 }

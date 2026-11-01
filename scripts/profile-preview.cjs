@@ -9,7 +9,7 @@ const os = require('node:os'), cp = require('node:child_process');
 
 const {performance} = require('node:perf_hooks');
 
-const {gzipSync} = require('node:zlib');
+const {gzipSync, deflateSync, crc32} = require('node:zlib');
 
 const repo = path.resolve(__dirname, '..');
 
@@ -28,22 +28,39 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const percentile = (values, fraction) => [ ...values ].sort((a, b) => a - b)[Math.max(0, Math.ceil(values.length * fraction) - 1)];
 
+// Deterministic mixed-content input; generated locally, no external assets.
+function mixedRaster(file) {
+  const width=640,height=420,raw=Buffer.alloc((width*3+1)*height);let seed=42;
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++) {
+    seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+    const i=y*(width*3+1)+1+x*3,noise=(seed>>>27)-16;
+    raw[i]=Math.max(0,Math.min(255,40+x*150/width+noise));
+    raw[i+1]=Math.max(0,Math.min(255,80+y*140/height+noise));
+    raw[i+2]=Math.max(0,Math.min(255,120+60*Math.sin(x/50)*Math.cos(y/60)+noise));
+  }
+  const chunk=(type,data)=>{const t=Buffer.from(type),size=Buffer.alloc(4),crc=Buffer.alloc(4);size.writeUInt32BE(data.length);crc.writeUInt32BE(crc32(Buffer.concat([t,data])));return Buffer.concat([size,t,data,crc]);};
+  const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=2;
+  fs.writeFileSync(file,Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]));
+}
+
 function fixtures(output, pages, kinds) {
   return pages.flatMap(length => kinds.map(kind => {
     const id = `${kind}-${length}`, root = path.join(output, 'fixtures', id);
     fs.mkdirSync(root, {
       recursive: true
     });
+    if(kind==='mixed') mixedRaster(path.join(root,'raster.png'));
     let text = String.raw`\documentclass[a4paper,10pt]{article}
 \usepackage[margin=22mm]{geometry}
 \usepackage{lipsum}
-` + (kind === 'tikz' ? '\\usepackage{tikz}\n' : '') + '\\pagestyle{empty}\n\\begin{document}\n';
+` + (['tikz','mixed'].includes(kind) ? '\\usepackage{tikz}\n' : '') + (kind === 'mixed' ? '\\usepackage{graphicx}\n' : '') + '\\pagestyle{empty}\n\\begin{document}\n';
     for (let page = 0; page < length; page++) {
       const marker = String(page).padStart(4, '0');
       const markerLine = `\\noindent Profiling marker ${marker} aaaa.\\par\n`;
       const afterFigure = kind === 'tikz' && arg('edit-location') === 'after-figure';
       if (!afterFigure) text += markerLine;
-      if (kind === 'tikz' && [ 0, Math.floor((length - 1) / 2), length - 1 ].includes(page)) text += String.raw`\begin{tikzpicture}[x=0.22cm,y=0.22cm]
+      if(kind==='mixed') text += '\\includegraphics[width=0.78\\linewidth]{raster.png}\\par\n\\[ \\sum_{k=1}^{n} k^2=\\frac{n(n+1)(2n+1)}{6} \\]\n\\lipsum[1-2]\n';
+      else if (kind === 'tikz' && [ 0, Math.floor((length - 1) / 2), length - 1 ].includes(page)) text += String.raw`\begin{tikzpicture}[x=0.22cm,y=0.22cm]
 \foreach \x in {0,...,24} {\foreach \y in {0,...,24} {
 \draw[blue!60!black,line width=0.2pt] (\x,\y) circle[radius=0.36];
 \draw[red!70!black,line width=0.15pt] (\x,\y) -- +(0.45,0.55);

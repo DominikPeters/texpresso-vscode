@@ -34,6 +34,7 @@ jobs:
           lock = json.load(open('native/dependencies.lock.json'))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('mupdf=' + lock['mupdf']['revision'] + '\n')
+              out.write('zlib-ng=' + lock['zlibNg']['revision'] + '\n')
           PY
       - name: Restore local dependency source cache
         uses: actions/cache@v4
@@ -46,6 +47,12 @@ jobs:
           ref: ${{ steps.inputs.outputs.mupdf }}
           path: .native-sources/mupdf
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: zlib-ng/zlib-ng
+          ref: ${{ steps.inputs.outputs.zlib-ng }}
+          path: .native-sources/zlib-ng
+          persist-credentials: false
       - name: Initialize only the required MuPDF submodule
         run: git -C .native-sources/mupdf submodule update --init --depth 1 thirdparty/lcms2
       - name: Cache Homebrew downloads
@@ -54,9 +61,9 @@ jobs:
           path: ~/Library/Caches/Homebrew
           key: native-brew-${{ runner.arch }}-${{ hashFiles('native/dependencies.lock.json', 'native/profiles/*', '.github/workflows/native-build.yml') }}
       - name: Install development build libraries on the runner
-        run: brew install pkgconf freetype jpeg-turbo openjpeg brotli sdl2 harfbuzz graphite2 fontconfig libpng jbig2dec icu4c@78
+        run: brew install cmake pkgconf freetype jpeg-turbo openjpeg brotli sdl2 harfbuzz graphite2 fontconfig libpng jbig2dec icu4c@78
       - name: Build and relocate the native bundle
-        run: python3 native/scripts/build.py --mupdf-source .native-sources/mupdf --icu-prefix "$(brew --prefix icu4c@78)" --output native/.bundles/macos
+        run: python3 native/scripts/build.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix "$(brew --prefix icu4c@78)" --output native/.bundles/macos
       - name: Compare filtered ICU with stock ICU
         run: python3 native/scripts/verify_icu.py --icu-prefix "$(brew --prefix icu4c@78)"
       - uses: actions/setup-node@v4
