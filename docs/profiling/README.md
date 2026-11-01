@@ -159,3 +159,5 @@ allocation fix from unresolved compiler starvation and source-target validation.
 ## Retex compiler comparison
 
 [The 29 October compiler benchmark](2026-10-29-retex-xetex.md) compares retex with its own checkpoints disabled against XeTeX XDV and PDF output, including body timing, native-macro/cache ablations, memory and LuaLaTeX output checks. It measures complete compiler passes rather than integrated preview latency.
+
+[Updated PNG/SVG/Auto comparison (1 November)](2026-11-01-codecs.md) compares matched system-zlib and zlib-ng builds through actual VS Code, including continuous navigation, zoom/lens, rapid input, and a cursor-prewarming control. It records 188 sessions and 252 lossless-validated native PNG exports. [Compact evidence](2026-11-01-codecs.json).
