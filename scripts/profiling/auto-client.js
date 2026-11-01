@@ -286,7 +286,19 @@ else {
     } else {
       await burst('typing-overlap',12,100,i=>({mode:'letter',letter:'abcdefghijkl'[i]}));
       await burst('backspace-overlap',12,100,()=>({mode:'backspace'}));
-      if(profileJob.fixture.startsWith('tikz')) await burst('coordinate-overlap',8,125,()=>({coordinate:true}));
+      if(profileJob.fixture.startsWith('tikz')) {
+        if(profileJob.coordinatePrewarm) {
+          const start=performance.now(),before=prewarmEvents.length;
+          profileHost.postMessage({type:'profile-prewarm',coordinate:true});
+          await until(()=>prewarmEvents.slice(before).some(e=>e.phase==='sent'),'Coordinate cursor prewarm sent');
+          const sent=prewarmEvents.slice(before).find(e=>e.phase==='sent');
+          await until(()=>prewarmEvents.slice(before).some(e=>e.phase==='complete'&&e.request===sent.request),'Coordinate cursor prewarm completion');
+          const completed=prewarmEvents.slice(before).find(e=>e.phase==='complete'&&e.request===sent.request);
+          if(!['ready','cached'].includes(completed.result)) throw Error('Coordinate prewarm failed: '+JSON.stringify(completed));
+          prewarmEvents.push({phase:'coordinate-complete',ms:performance.now()-start,result:completed.result,request:sent.request});
+        }
+        await burst('coordinate-overlap',8,125,()=>({coordinate:true}));
+      }
     }
   }
   if (!profileJob.richDemo && !profileJob.rapid && !profileJob.navOnly) {

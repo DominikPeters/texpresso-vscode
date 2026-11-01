@@ -11,6 +11,7 @@ export async function run(): Promise<void> {
   const repo = path.resolve(__dirname, '../../..');
   const output = path.resolve(process.env.TEXPRESSO_PROFILE_OUTPUT || 'artifacts/profile-auto-vscode');
   const rapid = process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e';
+  const coordinatePrewarm = process.env.TEXPRESSO_PROFILE_COORDINATE_PREWARM === '1';
   const prewarmScenario = process.env.TEXPRESSO_PROFILE_SCENARIO === 'prewarm-e2e';
   const richDemo = prewarmScenario || process.env.TEXPRESSO_PROFILE_RICH === '1';
   const earlyInput = process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1';
@@ -66,7 +67,7 @@ export async function run(): Promise<void> {
   if(richDemo) { await require('./continuous-preview').checkContinuousPreview(vscode.Uri.file(repo)); }
   const bridgeSource = fs.readFileSync(path.join(repo, 'scripts/profiling/auto-client.js'), 'utf8');
   const mainSource = fs.readFileSync(path.join(repo, 'media/preview.js'), 'utf8').replaceAll('acquireVsCodeApi', 'profileAcquireVsCodeApi');
-  const metadata = { richDemo, prewarmScenario, earlyInput, extras, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: prewarmScenario ? 'prewarm-e2e' : rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
+  const metadata = { coordinatePrewarm, richDemo, prewarmScenario, earlyInput, extras, backgroundThrottlingDisabled: true, cadenceLatenessBudgetMs: 20, scenario: prewarmScenario ? 'prewarm-e2e' : rapid ? 'rapid-e2e' : 'auto-e2e', created: new Date().toISOString(), vscode: vscode.version, binary, pages: cases.map((f: any) => f.id), repeats,
     engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd:repo,encoding:'utf8'}).trim(),
     binarySha256, workerSha256, capabilities, capabilityProbe, buildManifest, variants, power,
     sources: { extension: sourceState(repo), engine: sourceState(path.join(repo, 'native/texpresso')) },
@@ -95,7 +96,7 @@ export async function run(): Promise<void> {
         fs.writeFileSync(fixture.file, fixture.text);
         const active = new Run(fixture, binary, codec, 1600, output, repeat);
         if(richDemo) { active.session.autoRerun=fixture.autoRerun; active.session.configuration.autoRerun=fixture.autoRerun; }
-        if(prewarmScenario) { Object.defineProperty(active.session.document,'version',{get:()=>active.session.previewSequence}); }
+        if(prewarmScenario || coordinatePrewarm) { Object.defineProperty(active.session.document,'version',{get:()=>active.session.previewSequence}); }
         const sentence='Edit this sentence and watch the preview change.';
         if(richDemo && !active.text.includes(sentence)) {throw Error('The rich demo edit sentence changed; update its benchmark anchor.');}
         const richAnchor=richDemo ? active.text.indexOf(sentence)+sentence.length : 0;
@@ -138,7 +139,10 @@ export async function run(): Promise<void> {
                   reject(Error(m.error)); return;
                 }
                 if (m.type === 'profile-prewarm') {
-                  controller!.prepareEdit(active.session.document,richAnchor);
+                  const marker = 'controls (12,';
+                  const offset = m.coordinate ? active.text.indexOf(marker) + marker.length : richAnchor;
+                  if (m.coordinate && offset < marker.length) { reject(Error('Missing curve prewarm anchor')); return; }
+                  controller!.prepareEdit(active.session.document,offset);
                   return;
                 }
                 if (m.type === 'profile-edit') {
@@ -162,7 +166,7 @@ export async function run(): Promise<void> {
                 profileProcessingMs: message.type === 'image' ? performance.now() - active.controllerImageStart : undefined }),
               set html(value: string) {
                 const instance = value.match(/data-instance="([^"]+)"/)![1];
-                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, variant: variant.name, pages: fixture.pages, vscode: true, rapid, earlyInput, richDemo, extras, prewarmScenario, prewarmMode:fixture.prewarmMode, autoRerun:fixture.autoRerun }));
+                const bootstrap = bridgeSource.replace('__JOB__', JSON.stringify({ fixture: fixture.id, codec, repeat, variant: variant.name, pages: fixture.pages, vscode: true, rapid, earlyInput, richDemo, extras, coordinatePrewarm, prewarmScenario, prewarmMode:fixture.prewarmMode, autoRerun:fixture.autoRerun }));
                 value = value.replace(/style-src ([^;]+);/, `style-src $1 'nonce-${instance}';`);
                 value = value.replace('</head>', `<style nonce="${instance}">html,body{width:800px;height:700px;overflow:hidden}</style></head>`);
                 value = value.replace(/<script nonce=/, `<script nonce="${instance}">${bootstrap}</script><script nonce=`);
