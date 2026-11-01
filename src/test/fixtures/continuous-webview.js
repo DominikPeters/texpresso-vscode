@@ -1,11 +1,18 @@
 /* Acceptance driver injected before the production preview. */
 (() => {
   const api=acquireVsCodeApi(), identities=new WeakMap(), receivedFrames=new Map(), displayedFrames=new Map();let next=0,lastDemand;
-  let holdNextDecode=false,decodeGate=0;const heldDecodes=[];
+  let holdNextDecode=false,holdColor,decodeGate=0;const heldDecodes=[];
   const nativeDecode=HTMLImageElement.prototype.decode;
   HTMLImageElement.prototype.decode=async function(){
     await nativeDecode.call(this);
-    if(holdNextDecode){holdNextDecode=false;await new Promise(resolve=>{heldDecodes.push(resolve);report('decode-held',{decodeGate:++decodeGate});});}
+    if(holdNextDecode){
+      // A neighboring decode can already be queued when the action is armed.
+      // Match the controlled fixture pixel before consuming its one-shot gate.
+      let matches=true;
+      if(holdColor){const probe=document.createElement('canvas');probe.width=probe.height=1;const ctx=probe.getContext('2d');
+        ctx.drawImage(this,0,0,1,1,0,0,1,1);const pixel=ctx.getImageData(0,0,1,1).data;matches=holdColor.every((value,index)=>pixel[index]===value);}
+      if(matches){holdNextDecode=false;await new Promise(resolve=>{heldDecodes.push(resolve);report('decode-held',{decodeGate:++decodeGate,color:holdColor});});}
+    }
   };
   const initialFormat=__FORMAT__, initialZoom=__ZOOM__;
   Element.prototype.setPointerCapture=()=>{}; // Synthetic test pointers have no native capture ID.
@@ -50,7 +57,7 @@
     try {
       const viewport=document.getElementById('viewport');
       const sheet=()=>document.querySelector(`.page-sheet[data-page="${action.page}"]`);
-      if(action.name==='arm-decode'){holdNextDecode=true;}
+      if(action.name==='arm-decode'){holdColor=action.color;holdNextDecode=true;}
       if(action.name==='release-decode'){heldDecodes.shift()?.();}
       if(action.name==='zoom'){const zoom=document.getElementById('zoom');zoom.value=String(action.value);zoom.dispatchEvent(new Event('change'));}
       if(action.name==='scroll'){if(action.top!==undefined)viewport.scrollTop=action.top;if(action.left!==undefined)viewport.scrollLeft=action.left;viewport.dispatchEvent(new Event('scroll'));}

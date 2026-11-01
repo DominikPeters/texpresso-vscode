@@ -245,7 +245,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     await progress.drain();await progress.action('remember-link',{page:0});
     const take=async(page:number)=>{const owns=(command:Command)=>command[2]===page&&command[1]===(progress.controller as any).inFlight?.id;await progress.until(()=>progress.pending.some(owns),'foreground request '+page);return progress.pending.splice(progress.pending.findIndex(owns),1)[0];};
     const delayed=async(page:number,color:[number,number,number],height=300)=>{
-      await progress.action('arm-decode');const before=progress.reports.length;progress.invalidate();
+      await progress.action('arm-decode',{color});const before=progress.reports.length;progress.invalidate();
       const command=await take(page);progress.respond(command,height,color);
       await progress.until(()=>progress.reports.slice(before).some(r=>r.continuousCheck==='decode-held'),'PNG decoder is held');return command;
     };
@@ -289,7 +289,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===hiddenOld[1]),'hidden decode retired');
     assert.equal(progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===hiddenOld[1]).displayed,false,'panel-hide retirement rejects an already awaiting decoder');
     await progress.drain();
-    await progress.action('arm-decode');progress.invalidate();progress.forward(1,60,60);
+    await progress.action('arm-decode',{color:[180,210,240]});progress.invalidate();progress.forward(1,60,60);
     const targetOld=await take(1),heldAt=progress.reports.length;progress.respond(targetOld,300,[180,210,240]);
     await progress.until(()=>progress.reports.slice(heldAt).some(r=>r.continuousCheck==='decode-held'),'target frame decode held');
     progress.forward(1,450,240);const newerTarget=await progress.action('snapshot');await progress.action('release-decode');
