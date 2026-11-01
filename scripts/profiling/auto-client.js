@@ -319,6 +319,7 @@ else {
       canvasPixels:document.getElementById('lensCanvas').width*document.getElementById('lensCanvas').height,
       nativeImage:!document.getElementById('lensImage').hidden && !!document.getElementById('lensImage').getAttribute('src'),
       nativeWidth:document.getElementById('lensImage').naturalWidth});
+    const nativeLens=profileFrames.filter(f=>f.type==='image'&&f.page===0&&f.paintedAt).at(-1)?.mime==='image/png';
     const start=performance.now(), firstFrame=profileFrames.length, requestsAt=profileRequests.length;
     // Synthetic profiling pointers do not have a browser-native capture ID. Only
     // capture registration is stubbed; the production lens handlers/renderers run.
@@ -326,7 +327,7 @@ else {
     try { pointer('pointerdown',point.x,point.y); } finally { sheet.setPointerCapture=capture; }
     await painted(); const firstMs=performance.now()-start, firstLens=lensSnapshot();
     if (firstLens.hidden) throw Error('Production magnifier did not open');
-    if (!firstLens.vector) {
+    if (nativeLens) {
       await until(()=>profileRequests.slice(requestsAt).some(request=>request.type==='region'&&request.page===0),'PNG magnifier request');
       const request=profileRequests.slice(requestsAt).find(request=>request.type==='region'&&request.page===0);
       await until(()=>profileFrames.some(frame=>frame.type==='region'&&frame.page===0&&frame.token===request.token&&frame.paintedAt),'PNG magnifier matching region paint');
@@ -334,7 +335,7 @@ else {
     }
     extraRow('magnifier-open',start,firstFrame,firstMs,{firstLens,finalLens:lensSnapshot(),
       nativeRegionRequests:profileRequests.slice(requestsAt).filter(request=>request.type==='region').length,
-      syntheticPointerCapture:true});
+      syntheticPointerCapture:true,nativeLens});
     const moveStart=performance.now(), moveFrame=profileFrames.length, moveRequests=profileRequests.length, movePaintMs=[];
     for(const offset of [2,4,6]) { const moved=performance.now();pointer('pointermove',point.x+offset,point.y+offset);await painted();movePaintMs.push(performance.now()-moved); }
     await wait(100);
@@ -343,7 +344,7 @@ else {
     const far={x:Math.min(clip.right-20,rect.right-20,point.x+160),y:point.y};
     const farStart=performance.now(), farFrame=profileFrames.length, farRequests=profileRequests.length;
     pointer('pointermove',far.x,far.y);await painted();const farFirstMs=performance.now()-farStart;
-    if(!firstLens.vector) {
+    if(nativeLens) {
       await until(()=>profileRequests.slice(farRequests).some(request=>request.type==='region'&&request.page===0),'Moved PNG magnifier request');
       const request=profileRequests.slice(farRequests).find(request=>request.type==='region'&&request.page===0);
       await until(()=>profileFrames.some(frame=>frame.type==='region'&&frame.page===0&&frame.token===request.token&&frame.paintedAt),'Moved PNG matching region paint');

@@ -75,7 +75,14 @@ export async function run(): Promise<void> {
     memoryAccounting: 'Native process-group per-task footprints include shared/copy-on-write pages; browser DOM/canvas/cache counters exclude unmounted decoded resources and GPU memory.',
     resolutionPolicy: 'Production viewport at 800x700 CSS pixels; actual DPR, requested widths, returned raster dimensions and mounted CSS surfaces recorded per frame. Native pixel cap unchanged.',
     extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(), transport: 'actual VS Code webview postMessage' };
-  if (!resume) { fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify(metadata, null, 2)); }
+  const metadataFile = path.join(output, 'metadata.json');
+  if (resume && fs.existsSync(metadataFile)) {
+    const previous = JSON.parse(fs.readFileSync(metadataFile, 'utf8'));
+    if (JSON.stringify(previous.variants.map((v: any) => [v.name,v.binarySha256])) !== JSON.stringify(variants.map(v => [v.name,v.binarySha256])) ||
+        JSON.stringify(previous.fixtures) !== JSON.stringify(metadata.fixtures)) { throw Error('Resume requires the same binaries and fixture sources'); }
+    previous.resumptions = [...(previous.resumptions || []), metadata];
+    fs.writeFileSync(metadataFile, JSON.stringify(previous, null, 2));
+  } else { fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2)); }
   for (let repeat = 0; repeat < repeats; repeat++) {
     for (const fixture of cases) {
       const variantOrder = [...variants.slice(repeat % variants.length), ...variants.slice(0, repeat % variants.length)];
@@ -172,7 +179,7 @@ export async function run(): Promise<void> {
           const internals = controller as any, image = internals.image;
           internals.image = (frame: any) => { active.controllerImageStart = performance.now(); return image.call(controller, frame); };
           const row = await result;
-          const saved = { ...row, variant: variant.name, binarySha256: variant.binarySha256, transport: metadata.transport, backend: capabilities, power: process.platform === 'darwin' ? commandOutput('pmset', ['-g', 'batt']) : null, sourceSha256: require('node:crypto').createHash('sha256').update(active.text).digest('hex'), nativeProfile: active.profile, memory: active.memory, viewerPid: active.pid };
+          const saved = { ...row, provenance: {extension:metadata.extension,engine:metadata.engine,runtimeHashes:metadata.runtimeHashes}, variant: variant.name, binarySha256: variant.binarySha256, transport: metadata.transport, backend: capabilities, power: process.platform === 'darwin' ? commandOutput('pmset', ['-g', 'batt']) : null, sourceSha256: require('node:crypto').createHash('sha256').update(active.text).digest('hex'), nativeProfile: active.profile, memory: active.memory, viewerPid: active.pid };
           fs.appendFileSync(path.join(output, 'browser.jsonl'), JSON.stringify(saved) + '\n');
           console.log(`PROFILE ${variant.name} ${fixture.id} ${codec} #${repeat + 1}: initial ${row.rows[0].ms.toFixed(1)} ms, settled ${row.rows[0].settledMs.toFixed(1)} ms`);
         } finally {
