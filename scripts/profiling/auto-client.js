@@ -137,10 +137,10 @@ else {
   const finish = async idle => {
     await until(() => current?.ms !== undefined, 'First visible frame');
     const op = current;
-    const first = op.frames[0].paintedAt;
+    const first = Math.min(op.residentPaintedAt ?? Infinity, op.frames[0]?.paintedAt ?? Infinity);
     await until(() => performance.now() >= first + idle && !pendingMain.size &&
-      performance.now() - op.frames.at(-1).paintedAt >= Math.min(idle,80), 'Idle refinement');
-    op.firstMime = op.frames[0].mime; op.finalMime = op.frames.at(-1).mime;
+      performance.now() - (op.frames.at(-1)?.paintedAt ?? op.residentPaintedAt) >= Math.min(idle,80), 'Idle refinement');
+    op.firstMime = op.residentMime || op.frames[0]?.mime; op.finalMime = op.frames.at(-1)?.mime || op.residentMime;
     op.frame = op.frames[0];
     Object.assign(op,memorySnapshot());
     profileRows.push(op); current = undefined;
@@ -148,7 +148,22 @@ else {
   await finish(profileJob.richDemo ? 1600 : profileJob.earlyInput ? 80 : 650);
   const operation = async (name,page,edit,action,idle=80) => {
     current = {name,page,start:performance.now(),minSequence:latestSequence+(edit?1:0),afterRequest:latestRequest,frames:[]};
-    await action(); await finish(idle);
+    await action();
+    if(!edit && name.startsWith('page-')) {
+      // Continuous scrolling can already have the destination decoded and
+      // mounted. A cache-only navigation need not produce another image ACK.
+      await painted();
+      const op=current,sheet=sheetFor(page),surface=surfaceFor(page);
+      const prior=profileFrames.filter(f=>f.type==='image'&&f.page===page&&f.sequence>=op.minSequence&&f.paintedAt&&f.displayed!==false&&!f.stale).at(-1);
+      const rect=surface?.getBoundingClientRect(),clip=document.getElementById('viewport').getBoundingClientRect();
+      if(prior && sheet?.dataset.stale==='false' && Number(document.getElementById('page').value)===page+1 &&
+          rect?.width>0 && rect.bottom>clip.top && rect.top<clip.bottom && rect.right>clip.left && rect.left<clip.right) {
+        op.residentPaintedAt=performance.now();op.residentMime=prior.mime;
+        op.residentNavigation=!op.frames.length;op.residentRequest=prior.request;
+        op.ms??=op.residentPaintedAt-op.start;op.settledMs??=op.ms;
+      }
+    }
+    await finish(idle);
   };
   const navigate = page => { const input=document.getElementById('page');input.value=String(page+1);input.dispatchEvent(new Event('change')); };
   const edit = body => profileHost ? profileHost.postMessage({type:'profile-edit',page:0,...body}) :
