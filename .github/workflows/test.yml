@@ -179,23 +179,15 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/texpresso-wsl.tar
-          key: wsl2-windows2022-ubuntu2404-v1-${{ hashFiles('.github/workflows/test.yml', 'scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
+          key: wsl2-windows2022-ubuntu2404-v2-${{ hashFiles('scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
       - name: Import cached WSL distribution
         if: steps.wsl-cache.outputs.cache-hit == 'true'
         run: node scripts/ci/wsl-environment.cjs import
         timeout-minutes: 8
       - name: Install Ubuntu, native build dependencies, and TeX Live in WSL
         if: steps.wsl-cache.outputs.cache-hit != 'true'
-        uses: Vampire/setup-wsl@3b46b44374d5d0ae94654c45d114a3ed7a0e07a8 # v5.0.1
+        run: node scripts/ci/wsl-environment.cjs install
         timeout-minutes: 20
-        with:
-          distribution: Ubuntu-24.04
-          wsl-version: 2
-          set-as-default: 'true'
-          wsl-conf: |
-            [boot]
-            systemd=false
-          additional-packages: ${{ steps.wsl-config.outputs.packages }}
       - name: Export prepared distribution before adding source checkouts
         if: steps.wsl-cache.outputs.cache-hit != 'true'
         run: node scripts/ci/wsl-environment.cjs export

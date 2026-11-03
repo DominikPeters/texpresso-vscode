@@ -12,6 +12,7 @@ if (!temporary) { throw new Error('RUNNER_TEMP is required'); }
 const archive = path.join(temporary, 'texpresso-wsl.tar');
 const timer = path.join(temporary, 'texpresso-wsl-start.json');
 const wsl = args => execFileSync('wsl', args, { stdio: 'inherit', timeout: 600000 });
+const prepareHost = () => { wsl(['--update', '--web-download']); wsl(['--set-default-version', '2']); };
 const check = () => wsl(['-e', 'sh', '-ec', 'command -v gcc; command -v kpsewhich; kpsewhich article.cls; command -v ps']);
 const summary = (source, started) => {
   const elapsed = ((Date.now() - JSON.parse(fs.readFileSync(timer, 'utf8')).started) / 1000).toFixed(1);
@@ -32,13 +33,27 @@ switch (process.argv[2]) {
   }
   case 'import': {
     const started = Date.now();
-    // setup-wsl updates the Windows WSL runtime on cold runs. The filesystem
-    // archive cannot include that host component, so prepare it on cache hits.
-    wsl(['--update', '--web-download']);
+    // The filesystem archive cannot include the Windows host runtime.
+    // Prepare it on cache hits as well as cold installations.
+    prepareHost();
     wsl(['--import', 'TeXpresso-CI', path.join(temporary, 'texpresso-wsl-distro'), archive, '--version', '2']);
     wsl(['--set-default', 'TeXpresso-CI']);
     check();
     summary('Cache hit', started);
+    break;
+  }
+  case 'install': {
+    prepareHost();
+    // Use the modern WSL service instead of the legacy Ubuntu AppX launcher,
+    // which requires the optional WSL 1 component even for a WSL 2 distro.
+    wsl(['--install', '--distribution', 'Ubuntu-24.04', '--web-download', '--no-launch']);
+    wsl(['--set-default', 'Ubuntu-24.04']);
+    const packages = fs.readFileSync(path.join(__dirname, 'wsl-packages.txt'), 'utf8').trim().split(/\s+/);
+    if (!packages.every(name => /^[a-z0-9][a-z0-9+.-]*$/.test(name))) { throw new Error('Invalid WSL package name'); }
+    wsl(['-d', 'Ubuntu-24.04', '-u', 'root', '-e', 'sh', '-ec',
+      'printf "[boot]\\nsystemd=false\\n[user]\\ndefault=root\\n" > /etc/wsl.conf; ' +
+      'export DEBIAN_FRONTEND=noninteractive; apt-get update; apt-get install -y --no-install-recommends "$@"',
+      'texpresso-prepare', ...packages]);
     break;
   }
   case 'export': {
@@ -58,5 +73,5 @@ switch (process.argv[2]) {
     wsl(['-e', 'sh', '-ec', 'mkdir -p /opt/texpresso; cp -a "$1/." /opt/texpresso/; make -C /opt/texpresso -j2 all', 'texpresso-build', source]);
     break;
   }
-  default: throw new Error('Expected configure, import, export, or build');
+  default: throw new Error('Expected configure, install, import, export, or build');
 }

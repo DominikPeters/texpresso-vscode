@@ -26,7 +26,12 @@ function planCleanup(root, days = 7, now = Date.now()) {
   if (!Number.isFinite(days) || days < 0) { throw new Error('--days must be a nonnegative number'); }
   root = fs.realpathSync(root);
   const top = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8' }).trim();
-  if (fs.realpathSync(top) !== root) { throw new Error('Cleanup must run at the repository root'); }
+  // Windows can report a short-name or differently cased spelling of the
+  // same directory. Compare filesystem identities rather than path strings.
+  const rootStat = fs.statSync(root, { bigint: true }), topStat = fs.statSync(top, { bigint: true });
+  if (rootStat.dev !== topStat.dev || rootStat.ino !== topStat.ino) {
+    throw new Error('Cleanup must run at the repository root: requested ' + root + ', Git root ' + top);
+  }
   const tracked = execFileSync('git', ['ls-files', '-z', '--', ...scopes], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
   const candidates = [], retained = [];
   for (const scope of scopes) {

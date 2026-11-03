@@ -139,6 +139,11 @@ def brew_sources(package, host, notices, tap):
     formula = 'texpresso/release-sources/' + recipes[0].stem
     env = {**os.environ, 'HOMEBREW_NO_AUTO_UPDATE': '1', 'HOMEBREW_NO_ANALYTICS': '1',
            'HOMEBREW_CACHE': str(directory / 'cache')}
+    # New Homebrew versions require trust even for an exact copy of an
+    # installed core recipe. Approve this recipe only, never the whole tap.
+    if subprocess.run(['brew', 'help', 'trust'], env=env, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.DEVNULL).returncode == 0:
+        subprocess.run(['brew', 'trust', '--formula', formula], env=env, check=True)
     info = json.loads(subprocess.check_output(['brew', 'info', '--json=v2', formula], env=env))['formulae'][0]
     source_version = info['versions']['stable'] + (f'_{info["revision"]}' if info['revision'] else '')
     if source_version != version:

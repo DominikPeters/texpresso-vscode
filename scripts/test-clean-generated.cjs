@@ -75,6 +75,7 @@ test('cleanup rechecks newly pinned or modified outputs before deleting any entr
 test('cleanup honors a scope pin and refuses unignored roots or invalid retention', () => fixture((root, write) => {
   write('artifacts/run/file.log'); write('artifacts/.keep');
   assert.equal(planCleanup(root).candidates.length, 0);
+  assert.throws(() => planCleanup(path.join(root, 'artifacts/run')), /repository root/);
   assert.throws(() => planCleanup(root, -1), /nonnegative/);
   fs.writeFileSync(path.join(root, '.gitignore'), '');
   assert.throws(() => planCleanup(root));
