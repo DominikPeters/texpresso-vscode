@@ -143,7 +143,16 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     // A small viewport can display both pages: decoding a neighboring page may
     // follow the requested page before the next log poll.
     await until(async () => (await decoded()).some(d => d.id > beforeNext && d.page === 1), 'second page decoded');
-    const before = (await renders()).filter(r => r.page === 0).length, lastDecoded = (await decoded()).at(-1)!.id;
+    let lastDecoded = (await decoded()).at(-1)!.id;
+    await command('previousPage');
+    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 0), 'first page restored');
+    // Discovering more pages can introduce a scrollbar and change the render
+    // width. Warm the resulting geometry before asserting cache reuse.
+    lastDecoded = (await decoded()).at(-1)!.id;
+    await command('nextPage');
+    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 1), 'second page restored');
+    const before = (await renders()).filter(r => r.page === 0).length;
+    lastDecoded = (await decoded()).at(-1)!.id;
     await command('previousPage');
     await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 0), 'cached first page decoded');
     assert.equal((await renders()).filter(r => r.page === 0).length, before,
