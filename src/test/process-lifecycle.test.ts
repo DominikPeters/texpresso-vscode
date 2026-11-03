@@ -3,8 +3,48 @@ import * as assert from 'node:assert/strict';
 import * as path from 'node:path';
 import { EngineProcess } from '../engine-process';
 import { FakeProcess } from './helpers';
+import { EngineFailure } from '../failures';
+import { isRecoverableEngineFailure } from '../recovery';
 
 const events = () => ({ message() {}, debug() {}, error(error: Error) { throw error; }, exit() {} });
+
+test('pipe errors wait for final compiler diagnostics and cannot turn compiler failures into recovery', async () => {
+  for (const earlyPipeFailure of [false, true]) {
+    const child = new FakeProcess(), errors: Error[] = [];
+    const engine = new EngineProcess({ ...events(), error: error => errors.push(error) }, () => child.asChild());
+    const starting = engine.start({ command: 'fixture', args: [], cwd: process.cwd() });
+    child.emit('spawn'); await starting;
+    const pipeError = () => child.stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+    if (earlyPipeFailure) { pipeError(); }
+    child.stderr.write('x'.repeat(9000) + '\n! Undefined control sequence.\n');
+    if (!earlyPipeFailure) { pipeError(); }
+    assert.equal(errors.length, 0, 'classification waits for stderr to drain');
+    child.emit('close', 1, null);
+    assert.equal(errors.length, 1);
+    assert.ok(errors[0] instanceof EngineFailure);
+    assert.equal(errors[0].code, 'EPIPE');
+    assert.ok(errors[0].details.endsWith('! Undefined control sequence.\n'));
+    assert.ok(errors[0].details.length <= 8000);
+    assert.equal(isRecoverableEngineFailure(errors[0], true), false);
+    await engine.dispose();
+  }
+});
+
+test('a broken pipe reports failure even if an exited wrapper leaves its streams open', { timeout: 5000 }, async () => {
+  const child = new FakeProcess();
+  let report!: (error: Error) => void;
+  const reported = new Promise<Error>(resolve => { report = resolve; });
+  const engine = new EngineProcess({ ...events(), error: error => report(error) }, () => child.asChild());
+  const starting = engine.start({ command: 'fixture', args: [], cwd: process.cwd() });
+  child.emit('spawn'); await starting;
+  child.stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+  const error = await reported;
+  assert.ok(child.killed);
+  assert.ok(error instanceof EngineFailure);
+  assert.equal(error.code, 'EPIPE');
+  assert.equal(isRecoverableEngineFailure(error, true), true);
+  await engine.dispose();
+});
 
 test('cancelling startup settles start and idempotently stops a late spawn', async () => {
   const child = new FakeProcess();

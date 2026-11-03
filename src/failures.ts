@@ -8,8 +8,8 @@ export class EngineFailure extends Error {
   }
 }
 
-export function processFailure(error: Error, phase: 'launch' | 'connection'): EngineFailure {
-  return new EngineFailure(phase, error.message, (error as NodeJS.ErrnoException).code);
+export function processFailure(error: Error, phase: 'launch' | 'connection', details = ''): EngineFailure {
+  return new EngineFailure(phase, error.message, (error as NodeJS.ErrnoException).code, details.slice(-8000));
 }
 
 export function describeFailure(error: unknown, configuration?: SessionConfiguration): {

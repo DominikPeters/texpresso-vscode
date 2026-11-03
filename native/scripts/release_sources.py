@@ -40,17 +40,38 @@ def download(url, destination, expected=None):
 def copy_notices(source, destination, required=True):
     """Read actual source notices, including British spelling and FTL/OFL files."""
     count = 0
+    headers = {}
     for file in sorted(source.rglob('*')):
         relative = file.relative_to(source)
         if '.git' in relative.parts or file.is_symlink() or not file.is_file():
             continue
         legal_directory = any(part.lower() in ('license', 'licenses', 'licence', 'licences') for part in relative.parts[:-1])
         font_readme = any('font' in part.lower() for part in relative.parts[:-1]) and file.name.lower().startswith('readme')
-        if LEGAL.match(file.name) or legal_directory or font_readme:
+        legal_readme = False
+        if file.name.lower().startswith('readme'):
+            with file.open(errors='replace') as content:
+                legal_readme = any(re.search(r'copyright|licen[cs]e|permission|redistribut|public domain', line, re.I) for line in content)
+        if LEGAL.match(file.name) or legal_directory or font_readme or legal_readme:
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(file, target)
             count += 1
+        if file.suffix.lower() in ('.c', '.h', '.cpp', '.cc', '.cxx', '.hpp', '.mm', '.m', '.s', '.rs'):
+            with file.open('rb') as content:
+                raw = content.read(20000)
+            try:
+                text = raw.decode('utf8')
+            except UnicodeDecodeError:
+                text = raw.decode('latin1')
+            blocks = re.findall(r'/\*.*?\*/', text, re.S) + re.findall(r'(?:^[ \t]*//[^\n]*(?:\n|$))+', text, re.M)
+            for block in blocks:
+                if re.search(r'copyright|licen[cs]e|public domain', block, re.I):
+                    headers.setdefault(block.strip(), []).append(relative.as_posix())
+    if headers:
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / 'SOURCE-HEADERS.txt').write_text('\n\n'.join(
+            'Files:\n' + '\n'.join(names) + '\n\n' + block for block, names in headers.items()) + '\n')
+        count += 1
     if not count and required:
         raise ValueError(f'No source license texts found for {source.name}')
 

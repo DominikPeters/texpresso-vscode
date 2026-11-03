@@ -51,9 +51,13 @@ class CorrespondingSource(unittest.TestCase):
             (source / 'docs').mkdir(parents=True)
             (source / 'LICENCE').write_text('PCRE2 actual license text')
             (source / 'docs/FTL.TXT').write_text('FreeType actual license text')
+            (source / 'README.ijg').write_text('Copyright and permission terms in an IJG-style README')
+            (source / 'credit.c').write_bytes(b'/* Copyright \xa9 contributor; licensed under MIT. */\nint example;\n')
             copy_notices(source, output)
             self.assertEqual((output / 'LICENCE').read_text(), 'PCRE2 actual license text')
             self.assertEqual((output / 'docs/FTL.TXT').read_text(), 'FreeType actual license text')
+            self.assertIn('permission terms', (output / 'README.ijg').read_text())
+            self.assertIn('© contributor', (output / 'SOURCE-HEADERS.txt').read_text())
 
     def test_source_archive_inventory_detects_omissions_and_different_release_identities(self):
         with tempfile.TemporaryDirectory() as temporary:
