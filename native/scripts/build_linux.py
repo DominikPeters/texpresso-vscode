@@ -42,6 +42,7 @@ def main():
     jobs = min(os.cpu_count() or 2, 8)
     txp, mupdf = work / 'texpresso', work / 'mupdf'
     export_source(engine, txp)
+    run(['make', 'test-profile'], cwd=txp)
     export_source(args.mupdf_source, mupdf)
     for path in lock['mupdf']['submodules']:
         (mupdf / path).rmdir()

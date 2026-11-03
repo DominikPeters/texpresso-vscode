@@ -67,6 +67,7 @@ def main():
     mupdf = work / 'mupdf'
     zng_include, zng_library, zng_notice, zng_metadata = zlib_ng.build(args.zlib_ng_source, work / 'zlib-ng', args.jobs)
     export_source(engine, txp)
+    run(['make', 'test-profile'], cwd=txp)
     export_source(args.mupdf_source, mupdf)
     for path in lock['mupdf']['submodules']:
         (mupdf / path).rmdir()  # git archive leaves an empty gitlink directory.

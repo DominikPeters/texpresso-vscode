@@ -67,7 +67,10 @@ time.sleep(60)
       for (const line of lines) {
         if (line.startsWith('TXP-LATENCY-QUERY ')) { queries = Number(line.slice('TXP-LATENCY-QUERY '.length)); }
         if (line.includes('[command] pause:')) { paused = true; atPause = queries; }
-        if (line.startsWith('[profile] ')) { profiles.push(JSON.parse(line.slice(10))); }
+        if (line.startsWith('[profile] ')) {
+          try { profiles.push(JSON.parse(line.slice(10))); }
+          catch (cause) { failure = new Error('Invalid native profiling record: ' + line, { cause }); }
+        }
       }
     });
     try {
@@ -76,6 +79,7 @@ time.sleep(60)
         if (failure || closed || Date.now() > deadline) { throw failure || new Error(debug); }
         await new Promise(resolve => setTimeout(resolve, 5));
       }
+      assert.ifError(failure);
       assert.ok(atPause >= 2 && atPause <= 4, `pause must be serviced after at most two additional queries, saw ${atPause}\n${debug}`);
       const spawnEvent = profiles.find(event => event.stage === 'compiler-spawn');
       const handshake = profiles.find(event => event.stage === 'compiler-handshake');
