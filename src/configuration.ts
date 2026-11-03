@@ -1,12 +1,16 @@
 import type * as vscode from 'vscode';
 import * as path from 'path';
 import { SessionPaths } from './paths';
+import { wslArguments } from './wsl';
 
 export type PackageProvider = 'auto' | 'texlive' | 'tectonic';
 
 export interface SessionConfiguration {
   command: string;
+  engineSource?: 'bundled' | 'custom' | 'path';
+  engineRevision?: string;
   useWSL: boolean;
+  wslDistribution?: string;
   useChangeRangeMode: boolean;
   packageProvider: PackageProvider;
   includeDirectories: string[];
@@ -26,8 +30,9 @@ export interface LaunchCommand {
 // Read settings for the root document on every start, including multi-root workspaces.
 export function readConfiguration(configuration: vscode.WorkspaceConfiguration): SessionConfiguration {
   return {
-    command: configuration.get<string>('command', 'texpresso'),
+    command: configuration.get<string>('command', ''),
     useWSL: configuration.get<boolean>('useWSL', false),
+    wslDistribution: configuration.get<string>('wslDistribution', '').trim(),
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
     packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
@@ -82,6 +87,6 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
   }
   args.push(paths.rootEnginePath);
   return config.useWSL
-    ? { command: 'wsl', args: ['-e', config.command, ...args] }
+    ? { command: 'wsl', args: wslArguments(config.command, args, config.wslDistribution) }
     : { command: config.command, args, cwd: path.dirname(paths.rootEditorPath) };
 }

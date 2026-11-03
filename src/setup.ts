@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { buildLaunchCommand, SessionConfiguration } from './configuration';
 import { SessionPaths } from './paths';
+import { wslArguments } from './wsl';
 
 // Resolve on the extension host, whose PATH can differ from an interactive shell.
 export async function findExecutable(command: string, cwd: string): Promise<string | undefined> {
@@ -23,9 +24,9 @@ export async function findExecutable(command: string, cwd: string): Promise<stri
   return undefined;
 }
 
-function inWsl(directory: string, command: string): Promise<string> {
+function inWsl(directory: string, command: string, distribution?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile('wsl', ['-e', 'sh', '-c', 'cd "$1" && command -v "$2"', 'texpresso-check', directory, command],
+    execFile('wsl', wslArguments('sh', ['-c', 'cd "$1" && command -v "$2"', 'texpresso-check', directory, command], distribution),
       { timeout: 10000, windowsHide: true }, (error, stdout, stderr) => {
         if (error) {
           reject(new Error(stderr.trim() || error.message));
@@ -39,8 +40,11 @@ function inWsl(directory: string, command: string): Promise<string> {
 export async function setupReport(configuration: SessionConfiguration, paths: SessionPaths,
   host: string): Promise<string> {
   const lines = ['TeXpresso Setup', '', 'Extension host: ' + host,
+    'Engine selection: ' + (configuration.engineSource || 'custom') +
+      (configuration.engineRevision ? ' (' + configuration.engineRevision + ')' : ''),
     'Main document: ' + paths.rootEditorPath,
     'Execution: ' + (configuration.useWSL ? 'Windows → WSL' : 'Directly on the extension host'),
+    ...(configuration.useWSL ? ['WSL distribution: ' + (configuration.wslDistribution || 'default')] : []),
     'Package provider: ' + configuration.packageProvider,
     'Automatic reruns: ' + (configuration.autoRerun ? 'on' : 'off'),
     'Watch dependencies: ' + (configuration.watchDependencies ? 'on' : 'off'),
@@ -51,18 +55,20 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
     lines.push('Working directory: ' + (launch.cwd || paths.engineDirectory),
       'Launch command (JSON array; each item is one argument):', JSON.stringify([launch.command, ...launch.args], null, 2), '');
     const resolved = configuration.useWSL
-      ? await inWsl(paths.engineDirectory, configuration.command)
+      ? await inWsl(paths.engineDirectory, configuration.command, configuration.wslDistribution)
       : await findExecutable(configuration.command, paths.engineDirectory);
     lines.push(resolved ? 'Executable found: ' + resolved : 'Executable NOT FOUND: ' + configuration.command);
     for (const command of ['kpsewhich', 'tectonic']) {
       let found: string | undefined;
       try {
-        found = configuration.useWSL ? await inWsl(paths.engineDirectory, command)
+        found = configuration.useWSL ? await inWsl(paths.engineDirectory, command, configuration.wslDistribution)
           : await findExecutable(command, paths.engineDirectory);
       } catch { /* An absent package provider is useful information, not a failed report. */ }
       lines.push(command + ': ' + (found || 'not found on PATH'));
     }
-    lines.push('', 'For Remote WSL windows, leave texpresso.useWSL disabled.');
+    lines.push('', 'Remote WSL runs the extension and Linux engine together; Windows bridge settings are ignored there.',
+      'On Windows, use TeXpresso: Reopen Folder in WSL for the recommended setup.',
+      'Install TeX Live or Tectonic in the same environment as the engine.');
   } catch (error) {
     lines.push('Setup check failed: ' + (error instanceof Error ? error.message : String(error)));
   }

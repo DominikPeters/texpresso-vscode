@@ -108,14 +108,17 @@ Engine tests use local TeX Live by default. Leave `TEXPRESSO_TEST_TECTONIC`
 unset. The ICU comparison checks 12 line-breaking locales, bidirectional text,
 legacy encodings, normalization, and script properties against stock ICU.
 
-`native-build.yml` is an explicitly dispatched macOS development build. Source
+`native-build.yml` is an explicitly dispatched macOS build matrix for Apple
+Silicon (`macos-15`) and Intel (`macos-15-intel`). Source
 and package downloads occur on the GitHub runner, with the large source/build
-inputs cached. It does not publish a release or modify the extension's default
-engine selection.
+inputs cached. It does not publish a release. It packages the tested bundle into
+a platform VSIX and installs it into an isolated VS Code profile to test the
+bundled engine with no executable-path override. Accepted VSIXs and checksums
+are uploaded separately from native archives and diagnostics.
 
 ## Developer ID signing and notarization
 
-The manual **Native development bundle** workflow signs and notarizes by default.
+The manual **Native macOS bundles and VSIX** workflow signs and notarizes by default.
 It tests the ad-hoc bundle first, then signs a separate copy of both executables
 and every bundled dylib using Developer ID Application, hardened runtime, and
 secure timestamps. All signatures must have the same Team ID. It refreshes the
@@ -156,13 +159,69 @@ python3 native/scripts/notarize.py --bundle /path/to/adhoc-bundle \
   --output /path/to/new-signed-bundle --reports /path/to/notarization-reports
 ```
 
-Signing does not publish a release or add native files to the VSIX.
+Signing does not publish a release. The workflow packages the signed bundle into
+the VSIX without modifying its native files, then runs installed-VSIX acceptance.
 
-## Before distributing bundled builds
+## Platform VSIX packaging
+
+After building a bundle whose engine revision matches the recorded submodule pin:
+
+```sh
+npm run package:vsix -- --target darwin-arm64 --bundle native/.bundles/darwin-arm64
+VSCODE_EXECUTABLE='/path/to/Code' npm run test:package:preview -- \
+  --vsix artifacts/texpresso-1.9.0-darwin-arm64.vsix
+```
+
+Use the current `package.json` version in the VSIX filename, or pass `--out` to
+choose a stable artifact name. The package script builds JavaScript, stages only
+production files, checks bundle hashes and architecture, and preserves executable
+permissions. It checks the finished archive and writes a SHA-256 sidecar. Both
+executables, libraries, notices, and the native build manifest live under
+`runtime/<target>/`. Packaging never changes the input bundle or its signatures.
+Run Unix-target packaging on Linux or macOS. Explicit `texpresso.command` settings
+override the bundle; an incomplete bundle produces a setup error rather than
+silently selecting another engine.
+
+Without `--target` and `--bundle`, `package:vsix` still creates the universal,
+external-engine VSIX at `artifacts/texpresso.vsix`.
+
+## Linux builds on GitHub
+
+`linux-build.yml` builds x64 and ARM64 on GitHub runners inside Ubuntu 22.04
+containers (glibc 2.35 baseline). Local Docker is not required. The runner
+downloads the locked ICU archive, checks its SHA-256, and builds its static core
+with the same filtered data profile as macOS. MuPDF and zlib-ng use the locked
+source revisions. ELF dependencies are recursively collected with notices and
+source-package versions, then relocated using `$ORIGIN` paths. glibc and its
+loader remain supplied by the runtime OS, as do graphics drivers and fonts.
+
+The job tests a moved bundle, packages its platform VSIX, and exercises that
+installed VSIX through a real VS Code webview. Only accepted VSIXs and checksums
+are uploaded as `vsix-linux-x64` and `vsix-linux-arm64`. Downloads and build
+caches stay on GitHub; developer machines only need the source checkout.
+
+## Release and Marketplace publishing
+
+Dispatch **Release candidate artifacts** (`release-build.yml`) for a candidate
+commit. It builds and tests both signed/notarized macOS targets, both Linux
+targets, and the universal fallback. Inspect that run and its artifacts first.
+
+Then dispatch **Publish reviewed release artifacts** (`publish.yml`) with that
+successful build run's numeric ID. It downloads the exact artifacts without
+rebuilding and checks their complete target set, checksums, extension identity,
+stable v2 version, pinned engine, executable permissions, and Mac signing
+metadata. The originating build must have passed notarization and installed-VSIX
+acceptance. It publishes through GitHub OIDC trusted publishing, with no PAT.
+The Marketplace trusted-publishing policy must name `publish.yml` and this
+repository; no GitHub environment is used. Both jobs install the latest stable
+`vsce` and log its version. Publishing is manual and never runs on PRs.
+
+## Remaining release checks
 
 The initial host build records system dependency versions but is not yet a
 fully pinned toolchain. Release work includes pinning the remaining codec/font
 dependencies and build SDKs, completing notice/source-distribution review,
 building Linux and other supported targets, and testing on clean machines.
-Native archives stay outside the ordinary VSIX until runtime selection and
-platform-specific packaging have been implemented and tested together.
+The universal VSIX excludes native archives. Platform VSIXs include only the
+selected bundle. Local ad-hoc signed candidates are for development; distribution
+requires the signed/notarized CI artifacts and platform acceptance results.

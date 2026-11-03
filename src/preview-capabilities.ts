@@ -1,10 +1,11 @@
 import { execFile } from 'child_process';
 import type { SessionConfiguration, LaunchCommand } from './configuration';
 import { EngineFailure, processFailure } from './failures';
+import { wslArguments } from './wsl';
 
 export function probePreview(config: SessionConfiguration, cwd?: string, features?: (value: { regions: boolean; svg: boolean; links: boolean; auto: boolean; pngPatches: boolean; background: boolean; prepareEdit: boolean; requestLifecycle?: boolean }) => void): Promise<boolean> {
   const launch: LaunchCommand = config.useWSL
-    ? { command: 'wsl', args: ['-e', config.command, '-capabilities'] }
+    ? { command: 'wsl', args: wslArguments(config.command, ['-capabilities'], config.wslDistribution) }
     : { command: config.command, args: ['-capabilities'], cwd };
   return new Promise((resolve, reject) => {
     // A freshly installed binary can spend several seconds in cold OS loading.

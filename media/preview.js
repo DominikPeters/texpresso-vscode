@@ -593,6 +593,14 @@
           acknowledge(header.requestId, performance.now() - renderStart);
           requestViewport(false);
         } catch (error) {
+          // Browsers may reject decode() when an in-flight image is retired.
+          // Release its render credit without reporting a codec failure for
+          // pixels that no longer belong to the current view.
+          if (token !== generation) {
+            if (url && !cached) { URL.revokeObjectURL(url); }
+            if (nextRaster && nextRaster !== pngPage && !cached) { nextRaster.canvas.width = 0; }
+            acknowledge(m.header.requestId, undefined, false); break;
+          }
           console.warn('TeXpresso preview image update failed', error);
           if (m.rasterPatch || m.inlinePng) { stale = true; describe(); post({ type: 'cache-miss', page, id: m.header.requestId, pngUnsupported: !m.rasterPatch }); }
           else if (m.svgPatch) { images.forget(m.svgPatch.base); stale = true; describe(); post({ type: 'cache-miss', page, id: m.header.requestId }); }

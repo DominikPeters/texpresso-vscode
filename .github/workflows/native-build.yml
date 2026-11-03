@@ -1,5 +1,10 @@
-name: Native development bundle
+name: Native macOS bundles and VSIX
 on:
+  workflow_call:
+    inputs:
+      notarize:
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       notarize:
@@ -10,7 +15,16 @@ permissions:
   contents: read
 jobs:
   macos:
-    runs-on: macos-latest
+    name: Native bundle / ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 65
     env:
       SDL_VIDEODRIVER: dummy
@@ -71,6 +85,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
       - name: Install local test provider on the runner
         run: |
           brew install --cask basictex
@@ -106,6 +124,27 @@ jobs:
           export TEXPRESSO_BINARY="$PWD/native/.bundles/macos-signed/bin/texpresso"
           npm run test:engine
         timeout-minutes: 8
+      - name: Package the tested native bundle into its platform VSIX
+        env:
+          NOTARIZED: ${{ inputs.notarize }}
+        run: |
+          bundle=native/.bundles/macos
+          if [ "$NOTARIZED" = true ]; then bundle=native/.bundles/macos-signed; fi
+          npm run package:vsix -- --target '${{ matrix.target }}' --bundle "$bundle" --out 'artifacts/texpresso-${{ matrix.target }}.vsix'
+      - name: Install the VSIX and test its bundled engine in a real webview
+        run: |
+          export PATH="/Library/TeX/texbin:$PATH"
+          npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
+        timeout-minutes: 8
+      - name: Save the accepted platform VSIX and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: |
+            artifacts/texpresso-${{ matrix.target }}.vsix
+            artifacts/texpresso-${{ matrix.target }}.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: Save accepted signed bundle
         if: success() && inputs.notarize
         uses: actions/upload-artifact@v4

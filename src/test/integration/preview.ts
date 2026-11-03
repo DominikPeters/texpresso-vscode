@@ -79,9 +79,16 @@ async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('DominikPeters.texpresso-basic');
   assert.ok(extension); await extension.activate();
-  await checkPreviewStartup(extension.extensionUri);
+  if (process.env.TEXPRESSO_TEST_BUNDLED === '1') {
+    assert.match(extension.extensionPath, /extensions/);
+    assert.equal(vscode.workspace.getConfiguration('texpresso').get('command'), '');
+  }
+  // These fixtures instantiate the source controller through the development
+  // extension's VS Code API. Installed-VSIX acceptance exercises the shipped
+  // controller below, through commands and real engine frames instead.
+  if (process.env.TEXPRESSO_TEST_BUNDLED !== '1') { await checkPreviewStartup(extension.extensionUri); }
   await checkSvgWebview(extension.extensionUri);
-  await checkContinuousPreview(extension.extensionUri);
+  if (process.env.TEXPRESSO_TEST_BUNDLED !== '1') { await checkContinuousPreview(extension.extensionUri); }
   if(process.env.TEXPRESSO_TEST_WEBVIEW_ONLY==='1') {return;}
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
   const file = path.join(root, 'embedded-preview.tex');
@@ -123,6 +130,11 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     await command('startDocument');
     await until(async () => (await renders()).some(r => r.page === 0), 'first webview render request', 90000);
     await until(async () => (await decoded()).at(-1)?.page === 0, 'first page decoded');
+    if (process.env.TEXPRESSO_TEST_BUNDLED === '1') {
+      const executable = path.join(extension.extensionPath, 'runtime', process.platform + '-' + process.arch, 'bin', 'texpresso');
+      assert.ok((await logs()).includes(JSON.stringify(executable)), 'installed VSIX selects its bundled engine without a command override');
+      console.log('PASS: installed platform VSIX starts its bundled engine and decodes the first page');
+    }
     assert.ok(vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)));
     await command('nextPage');
     await until(async () => (await renders()).some(r => r.page === 1) && (await logs()).includes('PREVIEW-SECOND'),

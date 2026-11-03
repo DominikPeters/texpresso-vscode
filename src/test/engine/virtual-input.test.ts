@@ -37,7 +37,6 @@ async function setup(streamFiles: boolean, disk: boolean, text = initial) {
         else if (Array.isArray(event)) {
           messages.push(event); if (event[0] === 'preview-state') { state = event; }
           if (event[0] === 'preview-forward') { targets.push(event); }
-          if (event[0] === 'preview-error') { failure = new Error(event[2]); }
         }
       }
     });
@@ -46,17 +45,28 @@ async function setup(streamFiles: boolean, disk: boolean, text = initial) {
   const until = async (check: () => boolean) => {
     const deadline = Date.now() + 20000;
     while (!check()) {
-      if (failure || Date.now() > deadline) { throw failure || new Error('Virtual input timeout\n' + output + '\n' + debug); }
+      if (failure || Date.now() > deadline) {
+        throw new Error((failure?.message || 'Virtual input timeout') + '\n' + JSON.stringify(messages) + '\n' + output + '\n' + debug,
+          { cause: failure });
+      }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   };
   const render = async () => {
     for (let attempt = 0; attempt < 20; attempt++) {
       await until(() => !!state && state[2] === session.previewSequence);
-      const request = ++id;
-      session.send(['preview-render', request, 1, 800, state![1], state![2]]);
-      await until(() => frames.has(request) || messages.some(m => m[0] === 'preview-retry' && m[1] === request));
-      if (frames.has(request)) { return frames.get(request)!; }
+      const request = ++id, revision = state![1], sequence = state![2];
+      session.send(['preview-render', request, 1, 800, revision, sequence]);
+      await until(() => frames.has(request) || messages.some(m =>
+        (m[0] === 'preview-retry' || m[0] === 'preview-error') && m[1] === request));
+      // A failed missing-file lookup can finish before the editor's overlay
+      // reaches the engine. Match the controller: discard replies superseded
+      // by that overlay's source barrier and request the recovered document.
+      if (sequence !== session.previewSequence || revision !== state![1]) { continue; }
+      const error = messages.find(m => m[0] === 'preview-error' && m[1] === request);
+      if (error?.[0] === 'preview-error') { throw new Error(error[2] + '\n' + output + '\n' + debug); }
+      const frame = frames.get(request);
+      if (frame && frame.header.revision === revision && frame.header.sequence === sequence) { return frame; }
     }
     throw Error('Virtual input render repeatedly superseded');
   };

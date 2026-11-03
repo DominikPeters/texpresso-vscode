@@ -29,9 +29,15 @@
     "onLanguage:tex"
   ],
   "main": "./dist/extension.js",
+  "extensionKind": ["workspace"],
   "license": "MIT",
   "contributes": {
     "commands": [
+      {
+        "command": "texpresso.openInWSL",
+        "title": "TeXpresso: Reopen Folder in WSL",
+        "enablement": "isWindows && !remoteName"
+      },
       {
         "command": "texpresso.startDocument",
         "title": "TeXpresso: Start Document",
@@ -163,8 +169,8 @@
       "properties": {
         "texpresso.command": {
           "type": "string",
-          "default": "texpresso",
-          "description": "Path to the texpresso binary",
+          "default": "",
+          "markdownDescription": "Optional external TeXpresso executable path or command. Leave empty to use the bundled engine when available, otherwise `texpresso` on PATH. In Windows-to-WSL mode, use a Linux executable path.",
           "scope": "machine-overridable",
           "order": 1
         },
@@ -178,6 +184,12 @@
           "type": "boolean",
           "default": false,
           "description": "Specifies whether texpresso should be run in WSL (Windows Subsystem for Linux)",
+          "scope": "machine-overridable"
+        },
+        "texpresso.wslDistribution": {
+          "type": "string",
+          "default": "",
+          "description": "WSL distribution for the Windows bridge, for example Ubuntu-24.04. Empty uses the default distribution. Ignored when the extension runs directly inside Remote WSL.",
           "scope": "machine-overridable"
         },
         "texpresso.syncTeXForwardOnSelection": {
@@ -343,6 +355,7 @@
     "test:engine": "npm run compile-tests && node scripts/test-node.cjs engine",
     "package:vsix": "node scripts/package.cjs",
     "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged",
+    "test:package:preview": "npm run compile-tests && node scripts/test-integration.cjs --bundled",
     "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview",
     "demo:preview": "npm run package:vsix && node scripts/open-preview-demo.cjs",
     "profile:preview": "npm run compile-tests && node scripts/profile-preview.cjs",

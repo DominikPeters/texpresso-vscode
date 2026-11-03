@@ -62,8 +62,10 @@ jobs:
           cache: npm
       - run: npm ci
         timeout-minutes: 4
-      - name: Install pinned packaging tool
-        run: npm install --global @vscode/vsce@3.7.1
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
         timeout-minutes: 3
       - name: Package, inspect, install, and test the VSIX
         run: xvfb-run -a npm run test:package

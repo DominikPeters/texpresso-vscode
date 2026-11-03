@@ -1,9 +1,9 @@
 # TeXpresso VS Code Extension
-Visual Studio Code extension for interacting with [TeXpresso](https://github.com/let-def/texpresso/), which provides a "live rendering" experience when editing LaTeX documents. TeXpresso needs to be installed separately to use this extension, following its [install guide](https://github.com/let-def/texpresso/blob/main/INSTALL.md) which contains instructions for macOS, Fedora, Arch Linux, Debian, and Ubuntu. The extension can be used simultaneously with other LaTeX extensions such as [LaTeX Workshop](https://github.com/James-Yu/LaTeX-Workshop).
+Visual Studio Code extension for interacting with [TeXpresso](https://github.com/let-def/texpresso/), which provides a "live rendering" experience when editing LaTeX documents. Platform-specific VSIX builds can include the native engine; the universal VSIX uses a separately installed engine, following its [install guide](https://github.com/let-def/texpresso/blob/main/INSTALL.md). A package provider such as TeX Live is still required. The extension can be used simultaneously with other LaTeX extensions such as [LaTeX Workshop](https://github.com/James-Yu/LaTeX-Workshop).
 
 ![ezgif-6-3b2ad402f4](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/0ff5cf57-5a2e-48cd-9e5f-633a5ed44411)
 
-After installing the extension, you need to configure the path to the TeXpresso binary in the settings.
+Leave `texpresso.command` empty to use the bundled engine when available, otherwise `texpresso` on PATH. Set it explicitly to use an external engine, including an older upstream build. Check Setup reports the selected engine and bundled revision.
 
 To use this extension, open the `.tex` document you wish to edit, then open the command palette (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>), and select `TeXpresso: Start Document`. With a capable engine, the preview opens in an editor tab beside the source; older builds open their native window. The preview immediately updates when you edit the file in VS Code. SyncTeX can automatically reveal the current source location in the preview. Compiler messages are available in the Output panel.
 
@@ -15,8 +15,9 @@ The TeXpresso status-bar entry opens preview controls: Rerun Once, Automatic Rer
 checks the installed engine's capabilities and uses the editor preview when
 supported. Editor requires the new headless backend in the pinned engine fork;
 an ordinary older/upstream installation may still require Window. Point
-`texpresso.command` at the new build's `bin/texpresso` to try it. The extension
-does not yet install or bundle the engine automatically.
+`texpresso.command` at the new build's `bin/texpresso` to try it, or install a
+platform-specific VSIX containing that build. The extension does not download
+native binaries at runtime.
 
 The preview scrolls continuously across pages. The page field follows the
 viewport; the arrows and page field jump to a page, while Page Up/Down scroll
@@ -147,7 +148,7 @@ Use theme colors in preview (if the `useEditorTheme` setting is activated):
 
 ## Requirements
 
-TeXpresso must be installed, and must be callable at the path provided in the `texpresso.command` setting.
+Use a platform-specific VSIX with a bundled engine, or install TeXpresso separately. Install TeX Live or Tectonic on the extension host for LaTeX packages and fonts. In Remote WSL, these requirements apply inside the Linux distribution.
 
 ## Using UTF-16 version of TeXpresso for more robust performance
 
@@ -157,7 +158,7 @@ If you use TeXpresso version v0.1 or newer, you can use its new `change-range` f
 
 This extension contributes the following settings:
 
-* `texpresso.command`: The path to the texpresso binary, or a command available on PATH.
+* `texpresso.command`: Optional external executable path or command. Empty selects the bundled engine when available, otherwise `texpresso` on PATH.
 * `texpresso.previewLocation`: Auto, Editor, or Window; determines where the preview appears. Editor requires a headless-capable engine.
 * `texpresso.packageProvider`: Select Automatic, TeX Live, or Tectonic as the package provider (TeXpresso v0.2 or newer).
 * `texpresso.includeDirectories`: Additional include directories, relative to the main document or absolute.
@@ -166,6 +167,7 @@ This extension contributes the following settings:
 * `texpresso.watchDependencies`: Refresh when project dependencies change on disk. Defaults to on.
 * `texpresso.streamFiles`: Supply project files through the editor protocol, including binary resources. Defaults to off.
 * `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
+* `texpresso.wslDistribution`: Optional distribution name for the Windows bridge. Empty uses the default distribution; Remote WSL ignores bridge settings.
 * `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
 * `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
 * `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
@@ -200,7 +202,11 @@ Stop and extension deactivation wait for shutdown. On Linux and macOS, the exten
 
 ### Windows and WSL
 
-When VS Code runs on Windows and launches TeXpresso inside WSL, enable `texpresso.useWSL` and use the Linux executable path. When the extension itself runs inside a Remote WSL window, leave `texpresso.useWSL` disabled and configure it like a Linux installation.
+Remote WSL is the recommended Windows setup: open the project in a WSL window and install TeXpresso in that window. The extension runs on Linux and uses its Linux engine while the preview remains in the Windows editor. The Windows bridge setting is ignored on non-Windows extension hosts.
+
+Use **TeXpresso: Reopen Folder in WSL** in a local Windows window to open the project through the WSL extension. If that extension is missing, the command opens its installation page. Install TeXpresso in the WSL window and install TeX Live or Tectonic in that distribution.
+
+When VS Code runs locally on Windows and launches TeXpresso inside WSL, enable `texpresso.useWSL` and use the Linux executable path, or leave the command empty to find `texpresso` on the distribution's PATH. `texpresso.wslDistribution` selects a distribution by name; leave it empty to use the default. Launches, path conversions, capability checks, and external compilation use the same distribution. This bridge requires a separately installed engine there.
 
 ## Architecture
 
@@ -225,7 +231,7 @@ Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `
 
 Run `npm run test:integration` for tests inside a real VS Code Extension Development Host, with an isolated workspace and profile. The suite launches a deterministic protocol fixture as a real child process and exercises magic-root chains, multi-root settings, imported-file Unicode edits and undo, initial SyncTeX, stop/restart, file/folder renames, external compilation, and failed-startup recovery. It requires no TeXpresso installation. CI runs the suite on Linux, macOS, and Windows, plus VS Code 1.88 on Linux.
 
-Run `npm run test:package` to build and inspect a VSIX, install it into an isolated extension directory, and run the same host suite against the installed extension. This needs the `vsce` CLI; CI pins `@vscode/vsce` to 3.7.1. The production bundle includes its JavaScript dependencies, so the VSIX contains only the manifest, runtime bundle, icon, README, and license. The resulting VSIX is saved under `artifacts/`.
+Run `npm run test:package` to build and inspect a VSIX, install it into an isolated extension directory, and run the same host suite against the installed extension. This needs the `vsce` CLI; CI installs the latest stable `@vscode/vsce` and records its version in the build log. The production bundle includes its JavaScript dependencies, so the universal VSIX contains only the manifest, runtime bundle, webview assets, icon, README, and licenses. The resulting VSIX is saved under `artifacts/`.
 
 Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`. Failed host runs retain logs, the engine trace, and their synthetic workspace under `artifacts/`; `TEXPRESSO_TEST_ARTIFACTS` overrides that location. CI uploads diagnostics on failure and cancels superseded runs.
 
@@ -259,6 +265,8 @@ Developer performance measurements and the repeatable offline suite are in
 
 ### Unreleased
 
+- Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
+- Run as a workspace extension, including directly inside Remote WSL.
 - Add an editor preview with capability detection, bounded PNG rendering, page/zoom controls, and both SyncTeX directions.
 - Preserve the external viewer for older engines and explicit Window selection.
 - Accept upstream's unknown SyncTeX column marker instead of dropping the navigation notification.

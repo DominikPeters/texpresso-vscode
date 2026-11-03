@@ -1,0 +1,66 @@
+name: Publish reviewed release artifacts
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful Release candidate artifacts run to publish, without rebuilding
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marketplace-publish
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    outputs:
+      sha: ${{ steps.run.outputs.sha }}
+    steps:
+      - uses: actions/github-script@v7
+        id: run
+        env:
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+        with:
+          script: |
+            const id = Number(process.env.BUILD_RUN_ID);
+            if (!Number.isSafeInteger(id) || id <= 0) throw new Error('A numeric build run ID is required');
+            const {data: run} = await github.rest.actions.getWorkflowRun({...context.repo, run_id: id});
+            if (run.path !== '.github/workflows/release-build.yml' || run.event !== 'workflow_dispatch' ||
+                run.status !== 'completed' || run.conclusion !== 'success' ||
+                run.head_repository.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              throw new Error('Only a successful release-candidate build in this repository can be published');
+            }
+            core.setOutput('sha', run.head_sha);
+            await core.summary.addHeading('Candidate selected').addLink(run.head_sha, run.html_url).write();
+  publish:
+    needs: candidate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+          pattern: vsix-*
+          merge-multiple: true
+          path: artifacts
+      - name: Verify complete target set, checksums, identity, native pins and notarization metadata
+        run: node scripts/verify-release.cjs artifacts
+      - name: Install latest stable publishing tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
+      - name: Publish the exact reviewed VSIXs with GitHub trusted publishing
+        run: vsce publish --oidc --packagePath artifacts/*.vsix

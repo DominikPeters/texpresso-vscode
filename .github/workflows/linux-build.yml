@@ -1,0 +1,119 @@
+name: Native Linux bundles and VSIX
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'src/engine-selection.ts'
+      - 'scripts/*vsix*'
+      - '.github/workflows/linux-build.yml'
+permissions:
+  contents: read
+jobs:
+  linux:
+    name: Native bundle / ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+    runs-on: ${{ matrix.runner }}
+    # Build both architectures against glibc 2.35, rather than the runner's
+    # newer libc. Containers exist only on GitHub, not on developer machines.
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      SDL_VIDEODRIVER: dummy
+      TEXPRESSO_TEST_PREVIEW: '1'
+    steps:
+      - name: Install runner build and test dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git curl build-essential cmake pkg-config patchelf unzip \
+            libfreetype-dev libjpeg-dev libopenjp2-7-dev libbrotli-dev libsdl2-dev libharfbuzz-dev libgraphite2-dev \
+            libfontconfig-dev libpng-dev libjbig2dec0-dev texlive-xetex xvfb xauth libgtk-3-0 libnss3 libgbm1 libasound2
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Read locked dependency revisions
+        id: inputs
+        run: |
+          python3 - <<'PY'
+          import json, os
+          lock = json.load(open('native/dependencies.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('mupdf=' + lock['mupdf']['revision'] + '\n')
+              output.write('zlib-ng=' + lock['zlibNg']['revision'] + '\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: ArtifexSoftware/mupdf
+          ref: ${{ steps.inputs.outputs.mupdf }}
+          path: .native-sources/mupdf
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: zlib-ng/zlib-ng
+          ref: ${{ steps.inputs.outputs.zlib-ng }}
+          path: .native-sources/zlib-ng
+          persist-credentials: false
+      - name: Prepare locked source inputs
+        run: |
+          git -C .native-sources/mupdf submodule update --init --depth 1 thirdparty/lcms2
+          python3 - <<'PY'
+          import json, urllib.request
+          lock = json.load(open('native/dependencies.lock.json'))
+          urllib.request.urlretrieve(lock['icu']['sourceUrl'], '.native-sources/icu.tgz')
+          PY
+      - name: Build checksum-verified ICU and native bundle
+        run: |
+          python3 native/scripts/build_icu.py --archive .native-sources/icu.tgz --output native/.icu
+          python3 -m unittest discover -s native/tests
+          python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/linux
+      - run: npm ci
+      - name: Test the relocated engine with TeX Live
+        run: |
+          mv native/.bundles/linux 'native/.bundles/relocated Linux bundle'
+          export TEXPRESSO_BINARY="$PWD/native/.bundles/relocated Linux bundle/bin/texpresso"
+          npm run test:engine
+        timeout-minutes: 8
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
+      - name: Package and test the installed platform VSIX
+        run: |
+          npm run package:vsix -- --target '${{ matrix.target }}' --bundle 'native/.bundles/relocated Linux bundle' --out 'artifacts/texpresso-${{ matrix.target }}.vsix'
+          xvfb-run -a npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
+        timeout-minutes: 8
+      - name: Save the accepted platform VSIX and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: |
+            artifacts/texpresso-${{ matrix.target }}.vsix
+            artifacts/texpresso-${{ matrix.target }}.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ matrix.target }}
+          path: |
+            artifacts/
+            native/.bundles/relocated Linux bundle/build-manifest.json
+          if-no-files-found: ignore

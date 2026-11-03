@@ -34,7 +34,7 @@ switch (process.argv[2]) {
     const started = Date.now();
     // setup-wsl updates the Windows WSL runtime on cold runs. The filesystem
     // archive cannot include that host component, so prepare it on cache hits.
-    wsl(['--update']);
+    wsl(['--update', '--web-download']);
     wsl(['--import', 'TeXpresso-CI', path.join(temporary, 'texpresso-wsl-distro'), archive, '--version', '2']);
     wsl(['--set-default', 'TeXpresso-CI']);
     check();

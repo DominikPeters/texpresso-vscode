@@ -1,0 +1,41 @@
+name: Release candidate artifacts
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    uses: ./.github/workflows/native-build.yml
+    with:
+      notarize: true
+    secrets: inherit
+  linux:
+    uses: ./.github/workflows/linux-build.yml
+  universal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
+      - name: Package and test the universal fallback
+        run: |
+          xvfb-run -a npm run test:package
+          mv artifacts/texpresso.vsix artifacts/texpresso-universal.vsix
+          sha256sum artifacts/texpresso-universal.vsix > artifacts/texpresso-universal.vsix.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix-universal
+          path: |
+            artifacts/texpresso-universal.vsix
+            artifacts/texpresso-universal.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14

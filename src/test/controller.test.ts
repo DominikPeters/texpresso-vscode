@@ -93,7 +93,7 @@ test('controller isolates old process exits, reloads root settings, and retains 
   }
   const extensionPath = path.join(__dirname, '../extension.js');
   const localRequire = createRequire(extensionPath);
-  const exported: { activate?: (context: { subscriptions: unknown[] }) => void; deactivate?: () => void } = {};
+  const exported: { activate?: (context: { subscriptions: unknown[]; extensionUri: { fsPath: string } }) => void; deactivate?: () => void } = {};
   vm.runInNewContext(readFileSync(extensionPath, 'utf8'), {
     exports: exported, module: { exports: exported }, process,
     require(name: string) {
@@ -119,7 +119,7 @@ test('controller isolates old process exits, reloads root settings, and retains 
       return localRequire(name);
     }
   });
-  exported.activate!({ subscriptions: [] });
+  exported.activate!({ subscriptions: [], extensionUri: { fsPath: path.resolve(__dirname, '../..') } });
   try {
     await Promise.all([commands.get('texpresso.startDocument')!(), commands.get('texpresso.startDocument')!()]);
     assert.equal(children.length, 1, 'only the latest concurrent start launches an engine');

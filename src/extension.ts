@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
 import { readConfiguration } from './configuration';
+import { resolveEngine } from './engine-selection';
 import { SessionPaths } from './paths';
 import { TexpressoSession } from './session';
 import { ExternalCompiler } from './external-compile';
@@ -50,6 +51,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(output, log, debug, build, setup, controls, compiler);
   const running = () => activeSession?.state === 'running' ? activeSession : undefined;
   const settings = (document: vscode.TextDocument) => vscode.workspace.getConfiguration('texpresso', document.uri);
+  const configurationFor = (document: vscode.TextDocument) =>
+    resolveEngine(readConfiguration(settings(document)), context.extensionUri.fsPath);
   const watchGroups = new Map<string, { files: Map<string, Set<Parameters<WatchFile>[1]>>; dispose(): void }>();
   const watchKey = (file: string) => process.platform === 'win32' ? path.resolve(file).toLowerCase() : path.resolve(file);
   const watchFile: WatchFile = (file, changed) => {
@@ -138,13 +141,16 @@ export function activate(context: vscode.ExtensionContext): void {
     lastError = (recoveryExhausted ? 'Automatic recovery exhausted: ' : '') + (error instanceof Error ? error.message : String(error));
     debug.appendLine(lastError);
     const action = await vscode.window.showErrorMessage(
-      failure.message, 'Check Setup', 'Open Settings', 'Show Engine Log');
+      failure.message, ...(process.platform === 'win32' && !configuration?.useWSL ? ['Reopen in WSL'] : []),
+      'Check Setup', 'Open Settings', 'Show Engine Log');
     if (action === 'Open Settings') {
       void vscode.commands.executeCommand('workbench.action.openSettings', failure.setting);
     } else if (action === 'Show Engine Log') {
       debug.show(true);
     } else if (action === 'Check Setup') {
       void checkSetup();
+    } else if (action === 'Reopen in WSL') {
+      void vscode.commands.executeCommand('texpresso.openInWSL');
     }
   }
 
@@ -195,7 +201,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     let temporaryDirectory: tmp.DirResult | undefined;
     try {
-      const configuration = readConfiguration(settings(document));
+      const configuration = configurationFor(document);
       let rootPath = document.fileName;
       if (document.isUntitled) {
         temporaryDirectory = tmp.dirSync({ unsafeCleanup: true });
@@ -208,7 +214,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
       const session = new TexpressoSession(document, configuration,
-        new SessionPaths(rootPath, configuration.useWSL), () => vscode.workspace.textDocuments, {
+        new SessionPaths(rootPath, configuration.useWSL, undefined, configuration.wslDistribution), () => vscode.workspace.textDocuments, {
           state: () => {
             if (activeSession === session) {
               if (session.state === 'running') { launched.add(session); }
@@ -337,6 +343,19 @@ export function activate(context: vscode.ExtensionContext): void {
   register('stop', stop);
   register('showControls', () => controls.show(activeSession?.state === 'stopped' ? undefined : activeSession));
   register('checkSetup', checkSetup);
+  register('openInWSL', async () => {
+    if (process.platform !== 'win32' || vscode.env.remoteName) {
+      void vscode.window.showInformationMessage('Use this command in a local Windows VS Code window.');
+      return;
+    }
+    const commands = await vscode.commands.getCommands(true);
+    if (commands.includes('remote-wsl.reopenInWSL')) {
+      await vscode.commands.executeCommand('remote-wsl.reopenInWSL');
+    } else {
+      await vscode.commands.executeCommand('extension.open', 'ms-vscode-remote.remote-wsl');
+      void vscode.window.showInformationMessage('Install the WSL extension, then run TeXpresso: Reopen Folder in WSL.');
+    }
+  });
   register('showEngineLog', () => debug.show(true));
   register('showCompilerOutput', () => output.show(true));
   register('openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso'));
@@ -393,10 +412,10 @@ export function activate(context: vscode.ExtensionContext): void {
       if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
       }
-      const launchKeys = ['command', 'useWSL', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
+      const launchKeys = ['command', 'useWSL', 'wslDistribution', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
         'streamFiles', 'watchDependencies', 'previewLocation'];
       if (launchKeys.some(key => event.affectsConfiguration('texpresso.' + key, session.document.uri)) &&
-          JSON.stringify(readConfiguration(settings(session.document))) !== JSON.stringify(session.configuration)) {
+          JSON.stringify(configurationFor(session.document)) !== JSON.stringify(session.configuration)) {
         void vscode.window.showInformationMessage('TeXpresso settings changed. Restart the preview to apply them.', 'Restart')
           .then(action => {
             if (action === 'Restart' && running() === session) {
@@ -476,8 +495,8 @@ export function activate(context: vscode.ExtensionContext): void {
     setup.appendLine('Checking TeXpresso setup…');
     setup.show(true);
     try {
-      const configuration = readConfiguration(settings(document));
-      const paths = new SessionPaths(session?.paths.rootEditorPath || document.fileName, configuration.useWSL);
+      const configuration = configurationFor(document);
+      const paths = new SessionPaths(session?.paths.rootEditorPath || document.fileName, configuration.useWSL, undefined, configuration.wslDistribution);
       const host = process.platform + ' ' + process.arch + (vscode.env.remoteName ? ' (' + vscode.env.remoteName + ')' : '');
       const report = await setupReport(configuration, paths, host);
       setup.replace(report + (lastError ? '\nLast failure: ' + lastError + '\nSee TeXpresso Engine for engine output.\n' : ''));

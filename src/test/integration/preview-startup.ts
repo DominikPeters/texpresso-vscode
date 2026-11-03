@@ -42,11 +42,14 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
             }});
             const decode = HTMLImageElement.prototype.decode;
             HTMLImageElement.prototype.decode = async function() {
-              await new Promise(resolve => {releaseDecode=resolve; report('pending');});
-              await decode.call(this); prepared=identity(this);
+              const action = await new Promise(resolve => {releaseDecode=resolve; report('pending');});
+              if(action === 'reject') throw Error('Controlled retirement during image decode');
+              try { await decode.call(this); prepared=identity(this); }
+              catch(error) { api.postMessage({startupCheck:'decode-failed', error:String(error), src:this.src,
+                complete:this.complete, naturalWidth:this.naturalWidth}); throw error; }
             };
             window.addEventListener('message', event=>{
-              if(event.data.startupRelease) { const release=releaseDecode; releaseDecode=undefined; release?.(); }
+              if(event.data.startupRelease) { const release=releaseDecode; releaseDecode=undefined; release?.(event.data.startupRelease); }
               if(event.data.type==='error') paint(()=>report('error'));
             });`;
           // Window/editor-group restoration may resize the panel while startup decodes
@@ -67,7 +70,9 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
   const until = async (condition: () => boolean, description: string) => {
     const deadline = Date.now() + 30000;
     while (!condition()) {
-      if (Date.now() > deadline) { throw new Error(description + ': ' + JSON.stringify({ reports, commands })); }
+      if (reports.some(r => r.startupCheck === 'error') || Date.now() > deadline) {
+        throw new Error(description + ': ' + JSON.stringify({ reports, commands }));
+      }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   };
@@ -78,7 +83,7 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     bounds: [0, 0, 595.28, 841.89], width, height: width, mime: 'image/png', byteLength: bytes.length }, bytes });
   const advance = () => { session.previewSequence++; controller.handle({ sourceSequence: session.previewSequence });
     controller.handle(['preview-state', session.previewSequence + 1, session.previewSequence, 1, true, 0]); };
-  const release = () => panel!.webview.postMessage({ startupRelease: true });
+  const release = (reject = false) => panel!.webview.postMessage({ startupRelease: reject ? 'reject' : true });
   const renderFor = async (sequence: number) => {
     await until(() => commands.some(command => command[0] === 'preview-render' && command[5] === sequence), 'render for source ' + sequence);
     return commands.filter(command => command[0] === 'preview-render' && command[5] === sequence).at(-1)!;
@@ -97,7 +102,7 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     // Explicit retirement covers cancellation; ordinary source barriers may now
     // display monotonic older pixels and are exercised by continuous-preview.
     await (controller as any).post({ type: 'invalidate', retire: true });
-    await release();
+    await release(true);
     await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === startup[1]) && commands.some(command => command[0] === 'preview-render' && command[5] === 1), 'retired startup decode released');
     const obsolete = reports.find(r => r.startupCheck === 'decoded' && r.id === startup[1]);
     assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'retired decode cannot reveal an empty image');
