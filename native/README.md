@@ -169,7 +169,7 @@ After building a bundle whose engine revision matches the recorded submodule pin
 ```sh
 npm run package:vsix -- --target darwin-arm64 --bundle native/.bundles/darwin-arm64
 VSCODE_EXECUTABLE='/path/to/Code' npm run test:package:preview -- \
-  --vsix artifacts/texpresso-1.9.0-darwin-arm64.vsix
+  --vsix artifacts/texpresso-2.0.0-darwin-arm64.vsix
 ```
 
 Use the current `package.json` version in the VSIX filename, or pass `--out` to

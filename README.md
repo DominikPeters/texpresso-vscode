@@ -263,11 +263,13 @@ Developer performance measurements and the repeatable offline suite are in
 
 ## Release Notes
 
-### Unreleased
+### 2.0.0 (release candidate)
 
 - Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
 - Run as a workspace extension, including directly inside Remote WSL.
-- Add an editor preview with capability detection, bounded PNG rendering, page/zoom controls, and both SyncTeX directions.
+- Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.
+- Support sharp SVG rendering and bounded PNG rendering, incremental updates, adaptive rendering, and cached page navigation.
+- Prepare nearby compiler checkpoints during idle time to reduce edit latency, and recover from unexpected engine exits while replaying unsaved buffers.
 - Preserve the external viewer for older engines and explicit Window selection.
 - Accept upstream's unknown SyncTeX column marker instead of dropping the navigation notification.
 

@@ -74,15 +74,45 @@ jobs:
           persist-credentials: false
       - name: Prepare locked source inputs
         run: |
+          for source in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/native/texpresso" "$GITHUB_WORKSPACE/.native-sources/mupdf" "$GITHUB_WORKSPACE/.native-sources/mupdf/thirdparty/lcms2" "$GITHUB_WORKSPACE/.native-sources/zlib-ng"; do
+            git config --global --add safe.directory "$source"
+          done
           git -C .native-sources/mupdf submodule update --init --depth 1 thirdparty/lcms2
           python3 - <<'PY'
           import json, urllib.request
           lock = json.load(open('native/dependencies.lock.json'))
           urllib.request.urlretrieve(lock['icu']['sourceUrl'], '.native-sources/icu.tgz')
           PY
-      - name: Build checksum-verified ICU and native bundle
+      - name: Validate source pins before expensive compilation
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'native/scripts')
+          from common import pinned_engine, check_source, load_lock
+          pinned_engine()
+          lock = load_lock()
+          check_source(Path('.native-sources/mupdf'), lock['mupdf']['revision'])
+          check_source(Path('.native-sources/zlib-ng'), lock['zlibNg']['revision'])
+          PY
+      - name: Restore locked ICU build on GitHub
+        id: icu-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: native/.icu
+          key: icu-ubuntu2204-${{ runner.arch }}-${{ hashFiles('native/dependencies.lock.json', 'native/scripts/build_icu.py') }}
+      - name: Build checksum-verified ICU
+        if: steps.icu-cache.outputs.cache-hit != 'true'
         run: |
           python3 native/scripts/build_icu.py --archive .native-sources/icu.tgz --output native/.icu
+      - name: Save ICU build before native validation
+        if: steps.icu-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: native/.icu
+          key: ${{ steps.icu-cache.outputs.cache-primary-key }}
+      - name: Check tooling and build native bundle
+        run: |
           python3 -m unittest discover -s native/tests
           python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/linux
       - run: npm ci

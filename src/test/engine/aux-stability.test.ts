@@ -69,7 +69,9 @@ Later page before the auxiliary output closes.
       text = text.slice(0, offset) + '{changed}' + text.slice(offset + 6);
       session.sync.change(main, [{ rangeOffset: offset, rangeLength: 6, text: '{changed}',
         range: { start: { line, character }, end: { line, character: character + 6 } } as import('vscode').Range }]);
-      await render(); const oldFinishing = finishing;
+      await render();
+      assert.equal(state?.[4], false, 'an edit beyond the retained checkpoint invalidates completed pagination');
+      const oldFinishing = finishing;
       session.send(['rerun-once']); await until(() => finishing > oldFinishing && changedRead);
       assert.ok(changedRead, 'changed auxiliary bytes still feed the next real compiler pass');
     } finally { await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
