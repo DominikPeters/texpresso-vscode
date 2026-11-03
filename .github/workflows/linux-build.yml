@@ -10,6 +10,9 @@ on:
       - '.github/workflows/linux-build.yml'
 permissions:
   contents: read
+concurrency:
+  group: linux-bundles-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   linux:
     name: Native bundle / ${{ matrix.target }}
@@ -34,16 +37,15 @@ jobs:
       - name: Install runner build and test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates git curl build-essential cmake pkg-config patchelf unzip \
+          apt-get install -y --no-install-recommends ca-certificates git curl python3 build-essential cmake pkg-config patchelf unzip \
             libfreetype-dev libjpeg-dev libopenjp2-7-dev libbrotli-dev libsdl2-dev libharfbuzz-dev libgraphite2-dev \
             libfontconfig-dev libpng-dev libjbig2dec0-dev texlive-xetex xvfb xauth libgtk-3-0 libnss3 libgbm1 libasound2
       - uses: actions/checkout@v4
         with:
           submodules: true
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Check container Python extraction support
+        run: python3 -c "import tarfile; assert hasattr(tarfile, 'data_filter'), 'Install the current Ubuntu Python security update'"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
