@@ -20,6 +20,8 @@ test('convergence accepts identical filesystem auxiliary input but rereads chang
 \input{stable.dat}
 \typeout{READ-VALUE:\StableValue}
 \StableValue
+\newpage
+Later page before the auxiliary output closes.
 \immediate\openout\stableout=stable.dat
 \immediate\write\stableout{\string\def\string\StableValue{same}}
 \immediate\closeout\stableout
