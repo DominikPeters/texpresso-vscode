@@ -47,7 +47,7 @@ function validateBundle(directory, target, root) {
     }
   }
   for (const executable of ['bin/texpresso', 'bin/texpresso-xetex']) {
-    if (!hashed.has(executable) || !(fs.statSync(path.join(directory, executable)).mode & 0o111)) {
+    if (!hashed.has(executable) || (process.platform !== 'win32' && !(fs.statSync(path.join(directory, executable)).mode & 0o111))) {
       throw new Error('Missing executable in bundle: ' + executable);
     }
   }

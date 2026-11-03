@@ -64,6 +64,9 @@ def bundle(executables, destination, metadata, notices_sources):
     (destination / 'lib').mkdir()
     notices = destination / 'notices'
     notices.mkdir()
+    # Debian copyright files often reference these texts instead of embedding
+    # them. Include the texts so notices remain complete outside the build OS.
+    shutil.copytree('/usr/share/common-licenses', notices / 'common-licenses')
     mapping = {Path('bin') / p.name: p.resolve() for p in executables}
     pending = list(executables)
     seen = set()

@@ -37,6 +37,11 @@ test('native packaging rejects wrong architectures, stale pins, and modified or 
     await fs.writeFile(path.join(directory, 'extra-library'), 'unrecorded');
     assert.throws(() => validateBundle(directory, 'darwin-arm64', root), /Unrecorded bundle file/);
     await fs.rm(path.join(directory, 'extra-library'));
+    if (process.platform !== 'win32') {
+      await fs.chmod(path.join(directory, 'bin', 'texpresso'), 0o644);
+      assert.throws(() => validateBundle(directory, 'darwin-arm64', root), /Missing executable/);
+      await fs.chmod(path.join(directory, 'bin', 'texpresso'), 0o755);
+    }
     await fs.rm(path.join(directory, 'bin', 'texpresso-xetex'));
     assert.throws(() => validateBundle(directory, 'darwin-arm64', root), /Invalid manifest file/);
   } finally { await fs.rm(directory, { recursive: true, force: true }); }
