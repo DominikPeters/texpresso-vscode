@@ -46,7 +46,9 @@ for i in range(1, 13):
     s.sendall(b'SIZE' + struct.pack('<II', i, 0))
     assert tag() == b'SIZE'
     exact(4)
-    print('TXP-LATENCY-QUERY %d' % i, file=sys.stderr, flush=True)
+    # stderr is shared with the frontend's JSON profiling records. Keep the
+    # marker and newline in one write so they cannot split a profile line.
+    os.write(2, ('TXP-LATENCY-QUERY %d\\n' % i).encode())
     if i == 2:
         os.write(0, b'["pause"]\\n')
 time.sleep(60)
