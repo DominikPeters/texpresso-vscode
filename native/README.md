@@ -78,8 +78,16 @@ There is no Tectonic requirement.
 
 The result is `native/.bundles/darwin-<architecture>/` and a neighboring ZIP.
 Use `--output /new/path` for another build; existing bundles are never replaced.
-Work files are retained in `native/.work/` for diagnostics and may be deleted
-after the build. Run the result as `.../bin/texpresso -texlive /path/to/main.tex`.
+Successful builds remove their `native/.work/` intermediates automatically.
+Use `--keep-work` for debugging; failed builds retain their workspace for diagnosis.
+Run the result as `.../bin/texpresso -texlive /path/to/main.tex`.
+
+Preview old generated files with `npm run clean:generated`; add `-- --apply` to
+remove outputs older than seven days, or `-- --days 1 --apply` after summarized
+work when space is tight. Stop builds and profilers before cleanup. A `.keep`
+file inside an output directory, or a sibling `filename.keep` for a file, pins
+it. Cleanup preserves canonical local bundles and the latest VSIX per target.
+Large native builds and release artifacts normally stay on GitHub.
 
 The bundle includes both executables, recursively collected non-system dynamic
 libraries, collected dependency notices, and `build-manifest.json`. Mach-O
@@ -202,9 +210,40 @@ caches stay on GitHub; developer machines only need the source checkout.
 
 ## Release and Marketplace publishing
 
+The extension's own code remains MIT. Platform distributions also contain an
+AGPL-covered renderer, a GPL-covered XeTeX helper and libraries with additional
+licenses. `THIRD-PARTY-NOTICES.txt` explains the scope of those grants; the
+Marketplace license asset includes that explanation alongside the original MIT
+text. Full license texts, source/header attributions and a per-target component
+inventory are included and hashed in each native bundle.
+
+After building, CI runs `native/scripts/release_sources.py --fetch` on the
+runner. This explicit network step is separate from the offline builders. It
+archives sanitized single-commit Git snapshots for the extension, engine,
+MuPDF, LCMS and zlib-ng; lockfile-verified npm tarballs; exact Ubuntu source
+packages or installed Homebrew recipes with their source/resource/patch
+downloads; and the ICU inputs. `SOURCE-BUILDING.txt` supplies rebuilding and
+LGPL library-replacement instructions, including local macOS re-signing without
+the release's private keys. Source archive checksums and permanent URLs are
+bound to the native build manifest before signing. Archive verification checks
+file inventories, identities and runtime-library source coverage without
+extracting the large archives.
+
+`sources-<target>` CI artifacts are temporary staging. The manual publish job
+verifies the complete source/binary set, creates a GitHub release, uploads and
+checks the exact reviewed assets, then makes it public and checks public source
+downloads before Marketplace promotion. A retry may reuse identical public
+assets, but never replaces a published version's sources or binaries. Source
+assets must remain available with the release; do not treat CI retention as
+the corresponding-source distribution mechanism.
+
 Dispatch **Release candidate artifacts** (`release-build.yml`) for a candidate
 commit. It builds and tests both signed/notarized macOS targets, both Linux
 targets, and the universal fallback. Inspect that run and its artifacts first.
+Before that new workflow reaches the default branch, its complete reusable
+workflow can also be validated with `gh workflow run test.yml --ref BRANCH
+-f release_candidate=true`. This validation does not publish; the publish job
+still accepts only successful direct manual `release-build.yml` runs.
 
 Then dispatch **Publish reviewed release artifacts** (`publish.yml`) with that
 successful build run's numeric ID. It downloads the exact artifacts without
@@ -218,10 +257,10 @@ repository; no GitHub environment is used. Both jobs install the latest stable
 
 ## Remaining release checks
 
-The initial host build records system dependency versions but is not yet a
-fully pinned toolchain. Release work includes pinning the remaining codec/font
-dependencies and build SDKs, completing notice/source-distribution review,
-building Linux and other supported targets, and testing on clean machines.
+The host builds record dependency versions and archive exact dependency sources
+and packaging recipes, but are not yet a fully pinned compiler/SDK toolchain.
+Keep the license inventory current when dependencies change, and test target
+VSIXs without the development libraries from their build environments.
 The universal VSIX excludes native archives. Platform VSIXs include only the
 selected bundle. Local ad-hoc signed candidates are for development; distribution
 requires the signed/notarized CI artifacts and platform acceptance results.

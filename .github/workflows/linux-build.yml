@@ -116,6 +116,14 @@ jobs:
           python3 -m unittest discover -s native/tests
           python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/linux
       - run: npm ci
+      - name: Enable matching Ubuntu source repositories
+        run: |
+          sed -n 's/^deb /deb-src /p' /etc/apt/sources.list > /etc/apt/sources.list.d/texpresso-sources.list
+          apt-get update
+      - name: Collect exact corresponding sources and complete native notices
+        run: |
+          python3 native/scripts/release_sources.py --fetch --bundle native/.bundles/linux --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng
+          python3 native/scripts/verify_sources.py artifacts --target '${{ matrix.target }}'
       - name: Test the relocated engine with TeX Live
         run: |
           mv native/.bundles/linux 'native/.bundles/relocated Linux bundle'
@@ -131,6 +139,14 @@ jobs:
           npm run package:vsix -- --target '${{ matrix.target }}' --bundle 'native/.bundles/relocated Linux bundle' --out 'artifacts/texpresso-${{ matrix.target }}.vsix'
           xvfb-run -a npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
         timeout-minutes: 8
+      - name: Save the matching corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources-${{ matrix.target }}
+          path: artifacts/*sources-${{ matrix.target }}.tar.gz*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
       - name: Save the accepted platform VSIX and checksum
         uses: actions/upload-artifact@v4
         with:
@@ -147,5 +163,6 @@ jobs:
           name: diagnostics-${{ matrix.target }}
           path: |
             artifacts/
+            !artifacts/*sources-*.tar.gz*
             native/.bundles/relocated Linux bundle/build-manifest.json
           if-no-files-found: ignore

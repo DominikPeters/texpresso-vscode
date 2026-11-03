@@ -1,4 +1,4 @@
-"""Shared native build helpers. No command in this directory downloads sources."""
+"""Shared offline native build helpers; downloads belong to release_sources.py."""
 import hashlib
 import json
 import subprocess

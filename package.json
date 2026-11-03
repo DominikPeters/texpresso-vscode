@@ -32,9 +32,13 @@
   "extensionKind": [
     "workspace"
   ],
-  "license": "MIT",
+  "license": "SEE LICENSE IN THIRD-PARTY-NOTICES.txt",
   "contributes": {
     "commands": [
+      {
+        "command": "texpresso.showLicenses",
+        "title": "TeXpresso: Licenses and Corresponding Source"
+      },
       {
         "command": "texpresso.openInWSL",
         "title": "TeXpresso: Reopen Folder in WSL",
@@ -342,6 +346,7 @@
     }
   },
   "scripts": {
+    "clean:generated": "node scripts/clean-generated.cjs",
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
     "watch": "webpack --watch",

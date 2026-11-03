@@ -85,6 +85,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Collect exact corresponding sources and complete native notices
+        run: |
+          python3 native/scripts/release_sources.py --fetch --bundle native/.bundles/macos --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng
+          python3 native/scripts/verify_sources.py artifacts --target '${{ matrix.target }}'
       - name: Install latest stable packaging tool
         run: |
           npm install --global @vscode/vsce@latest
@@ -136,6 +140,14 @@ jobs:
           export PATH="/Library/TeX/texbin:$PATH"
           npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
         timeout-minutes: 8
+      - name: Save the matching corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources-${{ matrix.target }}
+          path: artifacts/*sources-${{ matrix.target }}.tar.gz*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
       - name: Save the accepted platform VSIX and checksum
         uses: actions/upload-artifact@v4
         with:
@@ -173,9 +185,10 @@ jobs:
         with:
           name: native-macos-${{ runner.arch }}
           path: |
-            native/.bundles/macos.zip
             native/.bundles/macos/build-manifest.json
             native/.bundles/notarization/
             artifacts/
+            !artifacts/*sources-*.tar.gz*
+            !artifacts/*.vsix*
           if-no-files-found: ignore
           retention-days: 14

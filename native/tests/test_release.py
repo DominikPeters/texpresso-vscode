@@ -22,6 +22,9 @@ class ReleaseArtifacts(unittest.TestCase):
         (self.root / 'package.json').write_text(json.dumps(self.identity))
         subprocess.run(['git', 'init', '-q', self.root], check=True)
         subprocess.run(['git', 'update-index', '--add', '--cacheinfo', f'160000,{REVISION},native/texpresso'], cwd=self.root, check=True)
+        subprocess.run(['git', '-c', 'user.name=Release Test', '-c', 'user.email=release@example.invalid',
+                        'commit', '-qm', 'candidate'], cwd=self.root, check=True)
+        self.extension = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.root, text=True).strip()
         self.production = json.loads(subprocess.check_output(['node', '-e',
             'console.log(JSON.stringify(require(process.argv[1]).productionFiles))', str(ROOT / 'scripts/vsix-payload.cjs')]))
         for target in ['darwin-arm64', 'darwin-x64', 'linux-x64', 'linux-arm64', 'universal']:
@@ -31,7 +34,17 @@ class ReleaseArtifacts(unittest.TestCase):
         self.temporary.cleanup()
 
     def write_artifact(self, target, revision=REVISION, signing='developer-id'):
-        files = {'extension/' + ('readme.md' if p == 'README.md' else 'LICENSE.txt' if p == 'LICENSE' else p): b'fixture'
+        source_name = f'texpresso-2.0.0-sources-{target}.tar.gz'
+        source_bytes = b'corresponding source fixture for ' + target.encode()
+        source = {'name': source_name, 'target': target, 'version': '2.0.0', 'extensionRevision': self.extension,
+                  'engineRevision': REVISION if target != 'universal' else None,
+                  'url': f'https://github.com/DominikPeters/texpresso-vscode/releases/download/v2.0.0/{source_name}',
+                  'sha256': hashlib.sha256(source_bytes).hexdigest(), 'bytes': len(source_bytes)}
+        source_file = self.artifacts / source_name
+        source_file.write_bytes(source_bytes)
+        Path(str(source_file) + '.sha256').write_text(source['sha256'] + '  ' + source_name + '\n')
+        Path(str(source_file) + '.json').write_text(json.dumps(source))
+        files = {'extension/' + ('readme.md' if p == 'README.md' else p): b'fixture'
                  for p in self.production}
         files['extension/package.json'] = json.dumps(self.identity).encode()
         files['extension.vsixmanifest'] = (f'<Identity TargetPlatform="{target}"/>' if target != 'universal' else '<Identity/>').encode()
@@ -45,10 +58,18 @@ class ReleaseArtifacts(unittest.TestCase):
                 files[prefix + binary] = data
                 executables.add(prefix + binary)
                 entries.append({'path': binary, 'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data)})
-            files[prefix + 'notices/LICENSE'] = b'dependency license'
+            notices = json.loads(subprocess.check_output(['node', '-e',
+                'console.log(JSON.stringify(require(process.argv[1]).requiredNotices))', str(ROOT / 'scripts/release-licensing.cjs')]))
+            license_entries = []
+            for name in notices:
+                data = json.dumps([{'name': name} for name in ['tmp', 'wsl-path', 'mupdf', 'lcms2', 'zlib-ng', 'icu']]).encode() \
+                    if name.endswith('COMPONENTS.json') else b'complete license text'
+                files[prefix + name] = data
+                license_entries.append({'path': name, 'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data)})
             files[prefix + 'build-manifest.json'] = json.dumps({'platform': platform, 'architecture': architecture,
                 'engineRevision': revision, 'features': {'embeddedPreview': True}, 'capabilities': {'previewProtocol': 1},
-                'signing': {'kind': signing, 'hardenedRuntime': True, 'secureTimestamp': True}, 'files': entries}).encode()
+                'signing': {'kind': signing, 'hardenedRuntime': True, 'secureTimestamp': True}, 'files': entries,
+                'licenseFiles': license_entries, 'sourceArchive': source}).encode()
         filename = self.artifacts / f'texpresso-{target}.vsix'
         with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as archive:
             for name, data in files.items():
@@ -80,3 +101,11 @@ class ReleaseArtifacts(unittest.TestCase):
         self.write_artifact('darwin-arm64')
         self.write_artifact('linux-x64', revision='2' * 40)
         self.assertIn('engine pin', self.verify().stderr)
+
+    def test_missing_or_modified_corresponding_sources_are_rejected(self):
+        source = self.artifacts / 'texpresso-2.0.0-sources-linux-x64.tar.gz'
+        source.unlink()
+        self.assertIn('complete corresponding source set', self.verify().stderr)
+        self.write_artifact('linux-x64')
+        source.write_bytes(b'wrong source')
+        self.assertIn('corresponding source checksum', self.verify().stderr)

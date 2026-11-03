@@ -7,6 +7,9 @@ const { spawnSync } = require('node:child_process');
 const directory = path.resolve(__dirname, '../out/test', process.argv[2] || '');
 const files = fs.readdirSync(directory).filter(file => file.endsWith('.test.js'))
   .map(file => path.join(directory, file));
+if (!process.argv[2]) {
+  files.push(path.join(__dirname, 'test-clean-generated.cjs'), path.join(__dirname, 'test-publish-release.cjs'));
+}
 // Native engines share a format cache. Concurrent cold starts can read a
 // partially written .fmt while another test file is generating it.
 const concurrency = process.argv[2] === 'engine' ? ['--test-concurrency=1'] : [];

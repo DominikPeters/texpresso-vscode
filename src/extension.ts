@@ -343,6 +343,19 @@ export function activate(context: vscode.ExtensionContext): void {
   register('stop', stop);
   register('showControls', () => controls.show(activeSession?.state === 'stopped' ? undefined : activeSession));
   register('checkSetup', checkSetup);
+  register('showLicenses', async () => {
+    const version = context.extension.packageJSON.version as string;
+    const choice = await vscode.window.showQuickPick([
+      { label: 'Licenses and third-party notices', action: 'notices', description: 'Read the included license terms offline' },
+      { label: 'Corresponding source for TeXpresso ' + version, action: 'source', description: 'Release source archives and rebuilding instructions' }
+    ], { title: 'TeXpresso — Licenses and Source' });
+    if (choice?.action === 'source') {
+      await vscode.env.openExternal(vscode.Uri.parse('https://github.com/DominikPeters/texpresso-vscode/releases/tag/v' + version));
+    } else if (choice?.action === 'notices') {
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(
+        vscode.Uri.joinPath(context.extensionUri, 'THIRD-PARTY-NOTICES.txt')), { preview: true });
+    }
+  });
   register('openInWSL', async () => {
     if (process.platform !== 'win32' || vscode.env.remoteName) {
       void vscode.window.showInformationMessage('Use this command in a local Windows VS Code window.');

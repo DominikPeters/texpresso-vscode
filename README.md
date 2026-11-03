@@ -148,6 +148,17 @@ Use theme colors in preview (if the `useEditorTheme` setting is activated):
 
 ## Requirements
 
+The extension code is MIT-licensed. Platform packages also contain native
+software under AGPL, GPL, LGPL and permissive licenses; these components retain
+their own terms. See [third-party notices](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/THIRD-PARTY-NOTICES.txt).
+Complete corresponding sources and build/replacement instructions for version
+2.0.0 are provided with the [v2.0.0 release](https://github.com/DominikPeters/texpresso-vscode/releases/tag/v2.0.0),
+as `texpresso-2.0.0-sources-<target>.tar.gz`. Downloading sources is optional;
+normal use only needs the VSIX and a TeX package provider.
+Run **TeXpresso: Licenses and Corresponding Source** from the Command Palette
+or preview controls to read the included terms offline or open the matching
+release's source downloads and rebuilding instructions.
+
 Use a platform-specific VSIX with a bundled engine, or install TeXpresso separately. Install TeX Live or Tectonic on the extension host for LaTeX packages and fonts. In Remote WSL, these requirements apply inside the Linux distribution.
 
 ## Using UTF-16 version of TeXpresso for more robust performance

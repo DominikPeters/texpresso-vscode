@@ -3,7 +3,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { parseArgs } = require('node:util');
 const { spawnSync } = require('node:child_process');
-const { productionFiles, productionManifest, validateBundle, sha256 } = require('./vsix-payload.cjs');
+const { productionFiles, productionManifest, productionBytes, validateBundle, sha256 } = require('./vsix-payload.cjs');
 const { checkVSIX } = require('./check-vsix.cjs');
 
 const root = path.resolve(__dirname, '..');
@@ -22,7 +22,7 @@ const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'txp-vsix-'));
 try {
   for (const file of productionFiles.filter(file => file !== 'package.json')) {
     fs.mkdirSync(path.dirname(path.join(stage, file)), { recursive: true });
-    fs.copyFileSync(path.join(root, file), path.join(stage, file));
+    fs.writeFileSync(path.join(stage, file), productionBytes(file, root));
   }
   const manifest = productionManifest(root);
   fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');

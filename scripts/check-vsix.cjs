@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const zlib = require('node:zlib');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { productionFiles, productionManifest, validateBundle } = require('./vsix-payload.cjs');
+const { productionFiles, productionManifest, productionBytes, validateBundle } = require('./vsix-payload.cjs');
 const root = path.resolve(__dirname, '..');
 
 // Read the small ZIP produced by vsce without another runtime dependency.
@@ -37,7 +37,7 @@ function readVSIX(file) {
 
 function checkVSIX(file, { bundle, target } = {}) {
   const files = readVSIX(file);
-  const rename = name => name === 'README.md' ? 'readme.md' : name === 'LICENSE' ? 'LICENSE.txt' : name;
+  const rename = name => name === 'README.md' ? 'readme.md' : name;
   const allowed = productionFiles.map(rename);
   const nativeFiles = bundle ? validateBundle(bundle, target, root) : [];
   allowed.push(...nativeFiles.map(name => 'runtime/' + target + '/' + name));
@@ -50,7 +50,8 @@ function checkVSIX(file, { bundle, target } = {}) {
     }
     const source = name.startsWith('runtime/') ? path.join(bundle, name.slice(('runtime/' + target + '/').length)) :
       path.join(root, name === 'readme.md' ? 'README.md' : name === 'LICENSE.txt' ? 'LICENSE' : name);
-    assert.deepEqual(files.get('extension/' + name), fs.readFileSync(source), name + ' is current');
+    assert.deepEqual(files.get('extension/' + name), name.startsWith('runtime/') ? fs.readFileSync(source) :
+      productionBytes(name === 'readme.md' ? 'README.md' : name === 'LICENSE.txt' ? 'LICENSE' : name, root), name + ' is current');
   }
   const vsixManifest = files.get('extension.vsixmanifest').toString();
   if (target) {

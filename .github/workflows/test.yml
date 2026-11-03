@@ -4,12 +4,21 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_candidate:
+        description: Also validate the complete release-candidate workflow (never publishes)
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  release-candidate:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_candidate
+    uses: ./.github/workflows/release-build.yml
+    secrets: inherit
   test:
     name: Extension / ${{ matrix.os }} / VS Code ${{ matrix.vscode }}
     strategy:
@@ -63,6 +72,10 @@ jobs:
           cache: npm
       - run: npm ci
         timeout-minutes: 4
+      - name: Verify universal corresponding-source collection
+        run: |
+          python3 native/scripts/release_sources.py --fetch
+          python3 native/scripts/verify_sources.py artifacts --target universal
       - name: Install latest stable packaging tool
         run: |
           npm install --global @vscode/vsce@latest

@@ -38,6 +38,9 @@ values. Observations from repeated edits within one process are correlated; the
 five fresh-process startup samples are a small sample, not a population estimate.
 Generated fixtures, exported images and memory traces stay under ignored
 `artifacts/`. The compact committed results/report identify the measured inputs.
+After saving the compact report and reproduction command, remove old raw runs
+with `npm run clean:generated -- --days 1 --apply`. Keep only an active run or
+one comparison pair locally; a `.keep` file pins a run until its analysis ends.
 `--exports N --exports-only 1` restricts work to startup and retained-list export
 for resolution/encoder microbenchmarks.
 

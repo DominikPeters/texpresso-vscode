@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--zlib-ng-source', type=Path, required=True)
     parser.add_argument('--icu-prefix', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--keep-work', action='store_true', help='retain successful build intermediates for debugging')
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'aarch64'):
         parser.error('Build on a native Linux x64 or arm64 runner')
@@ -83,6 +84,9 @@ def main():
         'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
         'lcms2-LICENSE': mupdf / 'thirdparty/lcms2/LICENSE', 'zlib-ng-LICENSE': zng_notice,
         'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE'})
+    if not args.keep_work:
+        shutil.rmtree(work)
+        print('Removed successful build workspace:', work)
 
 
 if __name__ == '__main__':

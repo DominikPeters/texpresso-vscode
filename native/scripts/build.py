@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--output', type=Path, default=NATIVE / '.bundles' / ('darwin-' + platform.machine()))
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 2, 8))
     parser.add_argument('--check', action='store_true', help='validate inputs without compiling')
+    parser.add_argument('--keep-work', action='store_true', help='retain successful build intermediates for debugging')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() not in ('arm64', 'x86_64'):
         parser.error('The initial bundle builder supports native macOS arm64/x86_64 hosts')
@@ -132,6 +133,9 @@ def main():
                'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE',
                'zlib-ng-LICENSE': zng_notice}
     bundle([txp / 'build/texpresso', txp / 'build/texpresso-xetex'], args.output, metadata, notices)
+    if not args.keep_work:
+        shutil.rmtree(work)
+        print('Removed successful build workspace:', work)
 
 
 if __name__ == '__main__':
