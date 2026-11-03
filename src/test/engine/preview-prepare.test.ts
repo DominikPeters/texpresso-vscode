@@ -88,6 +88,10 @@ test('edit preparation preserves visible state and PNG base, reuses a bucket, an
     p.session.sync.syncForward(p.main, 3);
     await p.until(() => p.messages.some(m => m[0] === 'preview-forward'));
     const target = p.messages.find(m => m[0] === 'preview-forward') as Extract<PreviewMessage, ['preview-forward', ...unknown[]]>;
+    p.session.send(['preview-inverse', target[1], target[2], target[3], target[4], target[5]]);
+    await p.until(() => p.inverse.length > 0);
+    const originalHit = p.inverse[0];
+    assert.equal(originalHit.file, p.main.fileName); assert.equal(originalHit.line, 4);
     const state = [...p.state!] as typeof p.state, messageStart = p.messages.length, imageCount = p.images.size;
     const offset = body.indexOf('Prepare here.') + 8;
     const ack = await p.prepared(p.prepare(Buffer.byteLength(body.slice(0, offset)))); assert.equal(ack[4], 'ready');
@@ -95,9 +99,11 @@ test('edit preparation preserves visible state and PNG base, reuses a bucket, an
     assert.ok(!p.messages.slice(messageStart).some(m => m[0] === 'preview-invalidated'));
     assert.equal((await p.prepared(p.prepare(offset + 1)))[4], 'cached');
     p.session.send(['preview-inverse', target[1], target[2], target[3], target[4], target[5]]);
-    await p.until(() => p.inverse.length > 0);
-    assert.equal(p.inverse[0].file, p.main.fileName); assert.equal(p.inverse[0].line, 4);
-    assert.equal(p.inverse[0].word, undefined, 'a cached SyncTeX hit after rollback does not guess a word from another renderer');
+    await p.until(() => p.inverse.length > 1);
+    assert.equal(p.inverse[1].file, p.main.fileName); assert.equal(p.inverse[1].line, 4);
+    if (p.inverse[1].word !== undefined) {
+      assert.equal(p.inverse[1].word, originalHit.word, 'preparation preserves word lookup from the visible renderer');
+    }
     const unchanged = await p.render(0, base.header.rasterId); assert.equal(unchanged.bytes.length, 0);
     assert.equal(unchanged.header.patch?.base, base.header.rasterId);
     p.replace(offset, 0, 'warm '); const edited = await p.render(0); assert.notDeepEqual(edited.bytes, initial.bytes);

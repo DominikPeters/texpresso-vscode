@@ -129,20 +129,23 @@ Pages are compiled when requested, and images have a bounded pixel budget.
   try {
     await command('startDocument');
     await until(async () => (await renders()).some(r => r.page === 0), 'first webview render request', 90000);
-    await until(async () => (await decoded()).at(-1)?.page === 0, 'first page decoded');
+    await until(async () => (await decoded()).some(d => d.page === 0), 'first page decoded');
     if (process.env.TEXPRESSO_TEST_BUNDLED === '1') {
       const executable = path.join(extension.extensionPath, 'runtime', process.platform + '-' + process.arch, 'bin', 'texpresso');
       assert.ok((await logs()).includes(JSON.stringify(executable)), 'installed VSIX selects its bundled engine without a command override');
       console.log('PASS: installed platform VSIX starts its bundled engine and decodes the first page');
     }
     assert.ok(vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)));
+    const beforeNext = (await decoded()).at(-1)!.id;
     await command('nextPage');
     await until(async () => (await renders()).some(r => r.page === 1) && (await logs()).includes('PREVIEW-SECOND'),
       'decoded first frame grants credit for the next page');
-    await until(async () => (await decoded()).at(-1)?.page === 1, 'second page decoded');
+    // A small viewport can display both pages: decoding a neighboring page may
+    // follow the requested page before the next log poll.
+    await until(async () => (await decoded()).some(d => d.id > beforeNext && d.page === 1), 'second page decoded');
     const before = (await renders()).filter(r => r.page === 0).length, lastDecoded = (await decoded()).at(-1)!.id;
     await command('previousPage');
-    await until(async () => (await decoded()).at(-1)!.id > lastDecoded && (await decoded()).at(-1)!.page === 0, 'cached first page decoded');
+    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 0), 'cached first page decoded');
     assert.equal((await renders()).filter(r => r.page === 0).length, before,
       'cached navigation skips native export of the retained page while neighboring prefetch may continue');
 
