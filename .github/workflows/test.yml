@@ -147,6 +147,7 @@ jobs:
       - name: Test real MiKTeX compilation, fonts and provider cache
         run: |
           miktex packages update-package-database
+          miktex packages check-update || test "$?" -eq 100
           miktex packages update
           python3 .engine/test/test-miktex-real.py .engine/build/texpresso
         timeout-minutes: 15
