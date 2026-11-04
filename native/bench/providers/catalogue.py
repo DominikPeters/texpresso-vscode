@@ -146,7 +146,12 @@ class Catalogue:
             return None
         ext=ntpath.splitext(filename)[1].lower()
         if kind is None:
-            kind=next((k for k,v in self.types.items() if ext and ext in v['extensions']+v['alternates']),'tex')
+            kind=next((k for k,v in self.types.items() if ext and ext in v['extensions']),None)
+            if kind is None:
+                # A known type whose search policy was not exported belongs to
+                # MiKTeX, rather than the default TeX search path.
+                if ext in self.metadata.get('other_extensions',[]): return None
+                kind='tex'
         if kind not in self.types: return None
         spec=self.types[kind]
         names=([filename+e for e in spec['extensions']] if ext not in spec['extensions']+spec['alternates'] else [])+[filename]
@@ -154,6 +159,9 @@ class Catalogue:
             deferred=[]
             directory,base=ntpath.split(name)
             for pattern in spec['paths']:
+                if pattern == '.':
+                    pattern=self.metadata.get('working_directory')
+                    if not pattern: return None
                 pattern=pattern.replace('\\','/')
                 if directory: pattern=pattern.rstrip('/')+('/' if not pattern.endswith('//') else '//')+directory.replace('\\','/')
                 try: match=pattern_regex(pattern)
@@ -181,7 +189,7 @@ class Catalogue:
                             prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
                             if self.translate(prefix).exists(): return None
                         else:
-                            win=ntpath.join(pattern,base)
+                            win=ntpath.normpath(ntpath.join(pattern,base))
                             if self.translate(win).is_file(): return (0,win+'\n')
                     except (OSError,ValueError): return None
             for pattern in deferred:
@@ -190,7 +198,7 @@ class Catalogue:
                         prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
                         if self.translate(prefix).exists(): return None
                     else:
-                        win=ntpath.join(pattern,base)
+                        win=ntpath.normpath(ntpath.join(pattern,base))
                         if self.translate(win).is_file(): return (0,win+'\n')
                 except (OSError,ValueError): return None
         return None if install else (1,'')
@@ -201,6 +209,9 @@ class WindowsTools:
     def __init__(self, engine, powershell, bin_directory, log):
         script=(Path(engine).resolve().parents[1]/'src/common/miktex_windows.ps1').read_text()
         script=script.replace("@('findtexmf.exe','miktex.exe')","@('findtexmf.exe','miktex.exe','initexmf.exe')")
+        # Export the same working directory used by ProcessStartInfo, without
+        # permitting arbitrary commands through the helper protocol.
+        script=script.replace("    if ($tool -notin", "    if ($tool -eq 'catalogue-context') {\n      [Console]::WriteLine('0:' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([IO.Path]::GetTempPath())))\n      continue\n    }\n    if ($tool -notin")
         encoded=base64.b64encode(script.encode('utf-16-le')).decode()
         self.bin=bin_directory
         self.child=subprocess.Popen([powershell,'-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',encoded],
@@ -223,6 +234,7 @@ class WindowsTools:
 def export_metadata(engine,powershell,bin_directory,wslpath,log):
     started=time.monotonic(); tools=WindowsTools(engine,powershell,bin_directory,log)
     try:
+        working_directory=tools.call('catalogue-context',[]).strip()
         report=tools.call('initexmf.exe',['--report'])
         values={k:v.strip() for k,v in re.findall(r'^([^:\r\n]+): (.*)$',report,re.M)}
         roots=[v for k,v in values.items() if re.fullmatch(r'Root\d+',k)]
@@ -249,8 +261,13 @@ def export_metadata(engine,powershell,bin_directory,wslpath,log):
         listed=tools.call('findtexmf.exe',['--list-file-types'])
         # Export the actual configured file-type policy, not guessed TDS paths.
         wanted={'tex','tfm','vf','map','enc','type1 fonts','truetype fonts','opentype fonts','misc fonts','graphic/figure','PostScript header','cid maps'}
-        for name,extensions in re.findall(r'^\s+(.+?) \(([^)]*)\)',listed,re.M):
-            if name not in wanted: continue
+        listed_types=dict(re.findall(r'^\s+(.+?) \(([^)]*)\)',listed,re.M))
+        other_extensions=[e.lower() for name,extensions in listed_types.items() if name not in wanted
+                          for e in extensions.split(';') if e]
+        # --list-file-types omits types with no primary extensions (including
+        # misc fonts), but explicit requests still need their search paths.
+        for name in sorted(wanted):
+            extensions=listed_types.get(name,'')
             paths=tools.call('findtexmf.exe',['--the-name-of-the-game=xetex','--show-path='+name]).strip().split(';')
             alternate=tools.call('initexmf.exe',['--show-config-value=[Core.FileTypes.'+name+']AltExtensions[]'],optional=True)
             types[name]={'extensions':[e.lower() for e in extensions.split(';') if e],
@@ -263,6 +280,9 @@ def export_metadata(engine,powershell,bin_directory,wslpath,log):
                 watch.append(str(directory)); watch.extend(str(p) for p in directory.glob('*.ini'))
         return {'schema':1,'source_revision':'76d1b3bd2b69857f30133c62ff9ab66c83dcf80f',
                 'version':tools.call('findtexmf.exe',['--version']),'roots':records,'types':types,'drives':drives,
+                'other_extensions':sorted(set(other_extensions)),
+                'working_directory':working_directory,
+                'listed_types':listed,
                 'config_watch':sorted(set(watch)),'bootstrap_ms':(time.monotonic()-started)*1000,'report':report}
     finally: tools.close()
 

@@ -81,6 +81,21 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(c.resolve(self.query('UnicodeData.txt','--file-type=tex')),(1,''))
         config.write_text('changed config')
         self.assertIsNone(c.resolve(self.query('absent.sty')))
+    def test_unexported_filetype_falls_back(self):
+        self.metadata['other_extensions']=['.txt','.fmt']
+        c=Catalogue(self.metadata)
+        self.assertIsNone(c.resolve(self.query('document.txt')))
+        self.assertIsNone(c.resolve(self.query('xetex.fmt')))
+        self.assertEqual(c.resolve(self.query('UnicodeData.txt','--file-type=tex')),(1,''))
+        self.assertEqual(c.resolve(self.query('unknown.extension')),(1,''))
+    def test_windows_working_directory(self):
+        temp=self.folder/'temp'; temp.mkdir(); (temp/'local.tex').write_text('local')
+        self.metadata['working_directory']='D:\\temp'
+        self.metadata['types']['tex']['paths'].insert(0,'.')
+        c=Catalogue(self.metadata)
+        self.assertEqual(c.resolve(self.query('local.tex')),(0,'D:\\temp\\local.tex\n'))
+        self.assertTrue(c.resolve(self.query('article.cls'))[1].endswith('article.cls\n'))
+        self.assertEqual(c.resolve(self.query('absent.sty')),(1,''))
     def test_case_and_requested_subdirectory(self):
         c=Catalogue(self.metadata)
         self.assertTrue(c.resolve(self.query('ARTICLE.CLS'))[1].endswith('article.cls\n'))
