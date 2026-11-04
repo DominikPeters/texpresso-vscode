@@ -189,7 +189,7 @@ def main():
         checkpoint()
         print(label+' warm '+json.dumps(run),flush=True)
     assert len({value['cold']['initial_png_sha256'] for label,value in results.items() if label.startswith('miktex-windows-')}) == 1, 'Cache strategy changed initial pixels'
-    rows = ['| Provider / cache | Empty format (s) | Warm median (s) | Edit median / max (ms) | Cache MiB |',
+    rows = ['| Provider / cache | Empty format (s) | Warm median (s) | Edit median / max (ms) | Extra lookup/cache MiB |',
             '| --- | ---: | ---: | ---: | ---: |']
     for label, value in results.items():
         folder = Path(value.pop('folder')); value.pop('env')
@@ -199,11 +199,11 @@ def main():
         rows.append('| %s | %.3f | %.3f | %.1f / %.1f | %.2f |' % (label,value['cold']['startup_ms']/1000,
             statistics.median(r['startup_ms'] for r in warm)/1000,statistics.median(edits),max(edits),value['cache_bytes']/1024**2))
     metadata = {'engine_revision': subprocess.check_output(['git','-C',str(Path(engine).parents[1]),'rev-parse','HEAD'],text=True).strip(),
-                'versions': {command: subprocess.check_output(['/usr/bin/kpsewhich' if command == 'kpsewhich' else command, '--version'],stderr=subprocess.STDOUT,text=True).splitlines()[0] for command in ('kpsewhich','findtexmf','tectonic')},
+                'versions': {command: subprocess.check_output(['/usr/bin/kpsewhich' if command == 'kpsewhich' else command, '--version'],stderr=subprocess.DEVNULL,text=True).splitlines()[0] for command in ('kpsewhich','findtexmf','tectonic')},
                 'document_sha256': hashlib.sha256(DOCUMENT.encode()).hexdigest(), 'repeats': args.repeats,
                 'environment': subprocess.check_output(['uname','-a'],text=True).strip(), 'results': results}
     (output/'results.json').write_text(json.dumps(metadata,indent=2)+'\n')
-    report = '# Provider/cache benchmark\n\n'+ '\n'.join(rows)+'\n\nAll cases use the same document and WSL runner. Packages are primed before timing; measured MiKTeX sessions disable installation. Empty-format timing does not clear OS caches. Warm trials are interleaved in a fixed random order; each has five visible edits. Latency ends at current changed PNG payload arrival, before VS Code/browser decoding or paint. Direct Windows versus proxy-none quantifies harness overhead. Paths/mirror are benchmark-only positive caches under a frozen package installation; original files are stat-validated, misses retried, and font-map configuration clears path records. Package database/ranking changes need a production invalidation design. Local mirroring adds storage and licensing/distribution considerations. No runtime caching policy is changed.\n'
+    report = '# Provider/cache benchmark\n\n'+ '\n'.join(rows)+'\n\nAll cases use the same document and WSL runner. Packages are primed before timing; measured MiKTeX sessions disable installation. Empty-format timing does not clear OS caches. Warm trials are interleaved in a fixed random order; each has five visible edits. Latency ends at current changed PNG payload arrival, before VS Code/browser decoding or paint. Direct Windows versus proxy-none quantifies harness overhead. Paths/mirror are benchmark-only positive caches under a frozen package installation; original files are stat-validated, misses retried, and font-map configuration clears lookup records while retaining original-file validation records. Package database/ranking changes need a production invalidation design. Local mirroring adds storage. No runtime caching policy is changed.\n'
     (output/'results.md').write_text(report); print(report,flush=True)
 
 

@@ -2,8 +2,9 @@
 
 The manual `Provider and cache benchmark` Actions workflow compares the same
 article/math document on one Windows/WSL runner with TeX Live, Linux MiKTeX,
-Tectonic, and Windows MiKTeX. It also runs automatically when this benchmark's
-sources change in a PR. It builds the committed shared-engine pin.
+Tectonic, and Windows MiKTeX. It builds the committed shared-engine pin. Run it
+explicitly when measurements are needed; ordinary PR edits do not repeat this
+substantial job.
 
 Packages are provisioned before timing. Each provider gets a fresh TeXpresso
 format cache, followed by three interleaved warm launches. Every measured
@@ -49,3 +50,5 @@ Use a new output directory. GitHub retains compact JSON/Markdown results and
 logs for seven days. Format caches, mirrored packages and executables stay on
 the disposable runner. Save the final compact report, revisions and command in
 `docs/profiling/` before raw diagnostic retention expires.
+
+Results: [4 November 2026](../../../docs/profiling/2026-11-04-provider-cache.md).

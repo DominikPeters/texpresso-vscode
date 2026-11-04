@@ -1,11 +1,6 @@
 name: Provider and cache benchmark
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/provider-benchmark.yml
-      - native/bench/providers/**
-      - scripts/ci/provider-benchmark*
 permissions:
   contents: read
 concurrency:

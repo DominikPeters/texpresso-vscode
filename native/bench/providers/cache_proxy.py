@@ -77,6 +77,13 @@ def refresh_mirrors(cache):
             path.unlink(missing_ok=True)
 
 
+def invalidate_lookups(cache):
+    # Absolute path records also track mirrored format dependencies. Keep them
+    # when ranking changes, so the next startup still validates their originals.
+    for item in (cache/'lookups').glob('*'):
+        item.unlink(missing_ok=True)
+
+
 def main():
     mode = os.environ['TXP_BENCH_CACHE_MODE']
     cache = Path(os.environ['TXP_BENCH_CACHE'])
@@ -136,9 +143,7 @@ def main():
                     counts['misses'] += 1
                 # A regenerated user map may outrank an unchanged system map.
                 if args[1] == 'miktex.exe' and status == '0' and mode != 'none':
-                    for folder in ('lookups', 'paths'):
-                        for item in (cache/folder).glob('*'):
-                            item.unlink(missing_ok=True)
+                    invalidate_lookups(cache)
             counts['lookup_ms'] += (time.monotonic()-started)*1000
             sys.stdout.write(response); sys.stdout.flush()
     finally:
