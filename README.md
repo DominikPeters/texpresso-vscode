@@ -28,6 +28,8 @@ For Windows, we recommend opening your project in a [WSL](https://code.visualstu
 
 Alternatively, from a local Windows window, enable `texpresso.useWSL` to use a separately installed engine in WSL. Set `texpresso.wslDistribution` if you do not want the default distribution, and set `texpresso.command` to the Linux executable path or leave it empty to find `texpresso` on the distribution's PATH.
 
+To try an existing **Windows MiKTeX installation**, select **Windows MiKTeX from WSL (Experimental)** in `texpresso.packageProvider`. The engine still runs in WSL; packages and fonts come from Windows MiKTeX. If MiKTeX is absent from the Windows PATH, set `texpresso.miktexWindowsBin` to its Windows binary directory, such as `C:\Program Files\MiKTeX\miktex\bin\x64`. Enable `texpresso.miktexAutoInstall` if you want missing packages downloaded automatically. This works in a Remote WSL window or with the local Windows configuration above, and requires WSL Windows interoperability and Windows PowerShell.
+
 ## Settings
 
 Search for **TeXpresso** in VS Code Settings. Common options include:

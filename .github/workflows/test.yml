@@ -170,7 +170,7 @@ jobs:
   wsl:
     name: Windows VS Code / real TeXpresso in WSL 2
     runs-on: windows-2022
-    timeout-minutes: 40
+    timeout-minutes: 55
     env:
       TEXPRESSO_BINARY: /opt/texpresso/build/texpresso
     steps:
@@ -228,6 +228,18 @@ jobs:
       - name: Test binary preview images between WSL and the Windows webview
         run: npm run test:integration:preview
         timeout-minutes: 5
+      - name: Install Windows MiKTeX for WSL bridge acceptance
+        run: ./scripts/ci/windows-miktex.ps1
+        timeout-minutes: 10
+      - name: Test WSL engine using Windows MiKTeX packages and cancellation
+        run: node scripts/ci/test-windows-miktex.cjs
+        timeout-minutes: 25
+      - name: Copy Windows-MiKTeX bridge diagnostics
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/windows-miktex
+          wsl -e tar -C /opt/texpresso -cf - windows-miktex-diagnostics | tar -C artifacts/windows-miktex -xf - || true
       - name: Save Windows host and real-engine diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

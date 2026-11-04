@@ -3,7 +3,7 @@ import * as path from 'path';
 import { SessionPaths } from './paths';
 import { wslArguments } from './wsl';
 
-export type PackageProvider = 'auto' | 'texlive' | 'miktex' | 'tectonic';
+export type PackageProvider = 'auto' | 'texlive' | 'miktex' | 'miktex-windows' | 'tectonic';
 
 export interface SessionConfiguration {
   command: string;
@@ -14,6 +14,7 @@ export interface SessionConfiguration {
   useChangeRangeMode: boolean;
   packageProvider: PackageProvider;
   miktexAutoInstall?: boolean;
+  miktexWindowsBin?: string;
   includeDirectories: string[];
   arguments: string[];
   autoRerun: boolean;
@@ -37,6 +38,7 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
     packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
     miktexAutoInstall: configuration.get<boolean>('miktexAutoInstall', false),
+    miktexWindowsBin: configuration.get<string>('miktexWindowsBin', '').trim(),
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
     arguments: configuration.get<string[]>('arguments', []),
     autoRerun: configuration.get<boolean>('autoRerun', false),
@@ -57,11 +59,15 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
         throw new Error('The -I argument needs a directory.');
       }
       args.push('-I', directory);
+    } else if (argument === '-miktex-windows-bin') {
+      const directory = config.arguments[++i];
+      if (directory === undefined) { throw new Error('The -miktex-windows-bin argument needs a Windows directory.'); }
+      if (!config.miktexWindowsBin) { args.push(argument, directory); }
     } else if (argument === '-headless' || argument === '-capabilities') {
       throw new Error('Use TeXpresso Preview Location in Settings instead of adding ' + argument + ' to arguments.');
     } else if (argument === '-stream') {
       throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
-    } else if (argument === '-texlive' || argument === '-miktex' || argument === '-tectonic') {
+    } else if (argument === '-texlive' || argument === '-miktex' || argument === '-miktex-windows' || argument === '-tectonic') {
       if (config.packageProvider === 'auto') {
         providers.add(argument);
         args.push(argument);
@@ -75,13 +81,17 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
     args.push('-' + config.packageProvider);
   }
   if (providers.size > 1) {
-    throw new Error('Choose one of -texlive, -miktex or -tectonic in TeXpresso additional arguments.');
+    throw new Error('Choose one of -texlive, -miktex, -miktex-windows or -tectonic in TeXpresso additional arguments.');
   }
   if (config.miktexAutoInstall) {
-    if (config.packageProvider !== 'miktex' && !(config.packageProvider === 'auto' && providers.has('-miktex'))) {
+    if (config.packageProvider !== 'miktex' && config.packageProvider !== 'miktex-windows' &&
+        !(config.packageProvider === 'auto' && (providers.has('-miktex') || providers.has('-miktex-windows')))) {
       throw new Error('Select MiKTeX explicitly before enabling automatic package installation.');
     }
     args.push('-miktex-auto-install');
+  }
+  if (config.miktexWindowsBin) {
+    args.push('-miktex-windows-bin', config.miktexWindowsBin);
   }
   for (const directory of config.includeDirectories) {
     args.push('-I', paths.includeDirectory(directory));

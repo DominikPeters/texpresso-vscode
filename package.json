@@ -228,24 +228,33 @@
             "auto",
             "texlive",
             "miktex",
+            "miktex-windows",
             "tectonic"
           ],
           "enumItemLabels": [
             "Automatic",
             "TeX Live",
             "MiKTeX",
+            "Windows MiKTeX from WSL (Experimental)",
             "Tectonic"
           ],
           "enumDescriptions": [
             "Let TeXpresso choose an installed package provider.",
             "Load packages from TeX Live.",
             "Load packages from MiKTeX (requires a compatible engine).",
+            "Reuse Windows MiKTeX packages and fonts from a WSL engine. Requires Windows interoperability and a compatible engine.",
             "Load packages from Tectonic."
           ],
           "default": "auto",
           "scope": "resource",
           "order": 2,
           "markdownDescription": "Where TeXpresso loads LaTeX packages. Requires TeXpresso v0.2 or newer. An explicit selection overrides provider flags in `texpresso.arguments`. Takes effect when starting a document."
+        },
+        "texpresso.miktexWindowsBin": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Optional Windows directory containing findtexmf.exe and miktex.exe for the experimental Windows MiKTeX provider. Use a Windows path, for example C:\\Program Files\\MiKTeX\\miktex\\bin\\x64. Empty searches the Windows PATH."
         },
         "texpresso.miktexAutoInstall": {
           "type": "boolean",

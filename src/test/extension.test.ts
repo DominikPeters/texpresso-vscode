@@ -222,3 +222,19 @@ test('MiKTeX selection and automatic installation are explicit launch arguments'
   assert.throws(() => buildLaunchCommand({ ...config, miktexAutoInstall: true }, paths));
   assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-miktex', '-texlive'] }, paths));
 });
+
+
+test('Windows MiKTeX keeps its Windows directory literal across WSL launch arguments', () => {
+  const paths = new SessionPaths(path.resolve('/work/main.tex'), false);
+  const bin = String.raw`C:\MiKTeX café ' $(literal)\bin`;
+  const launch = buildLaunchCommand({ ...config, useWSL: true, packageProvider: 'miktex-windows',
+    miktexWindowsBin: bin, miktexAutoInstall: true,
+    arguments: ['-miktex', '-miktex-windows-bin', 'old directory'] }, paths);
+  assert.equal(launch.command, 'wsl');
+  assert.ok(launch.args.includes('-miktex-windows'));
+  assert.ok(launch.args.includes('-miktex-auto-install'));
+  assert.equal(launch.args[launch.args.indexOf('-miktex-windows-bin') + 1], bin);
+  assert.ok(!launch.args.includes('old directory'));
+  assert.ok(!launch.args.includes('-miktex'));
+  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-miktex-windows-bin'] }, paths));
+});

@@ -412,7 +412,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
       }
-      const launchKeys = ['command', 'useWSL', 'wslDistribution', 'useChangeRangeMode', 'packageProvider', 'miktexAutoInstall', 'includeDirectories', 'arguments',
+      const launchKeys = ['command', 'useWSL', 'wslDistribution', 'useChangeRangeMode', 'packageProvider', 'miktexAutoInstall', 'miktexWindowsBin', 'includeDirectories', 'arguments',
         'streamFiles', 'watchDependencies', 'previewLocation'];
       if (launchKeys.some(key => event.affectsConfiguration('texpresso.' + key, session.document.uri)) &&
           JSON.stringify(configurationFor(session.document)) !== JSON.stringify(session.configuration)) {
