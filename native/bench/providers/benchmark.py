@@ -49,10 +49,17 @@ def session(engine, provider, source, env, logfile, automatic=False, edits=5):
             p.stdin.write((json.dumps(message)+'\n').encode()); p.stdin.flush()
         def frame(sequence, timeout):
             nonlocal pending, header, request
-            end = time.monotonic()+timeout; ready = None
+            end = time.monotonic()+timeout; ready = None; diagnostic_at = time.monotonic()+1
             while time.monotonic() < end:
                 if not selector.select(.05):
                     if p.poll() is not None: raise RuntimeError('Engine exited: '+str(p.returncode))
+                    if time.monotonic() >= diagnostic_at:
+                        diagnostic_at = time.monotonic()+1
+                        with logfile.open('rb') as diagnostic:
+                            diagnostic.seek(0,2); length = diagnostic.tell(); diagnostic.seek(max(0,length-4096))
+                            tail = diagnostic.read()
+                        if b'Compiler startup timed out' in tail or b'Compiler startup failed' in tail:
+                            raise RuntimeError('Compiler startup failed; see '+str(logfile))
                     continue
                 data = os.read(p.stdout.fileno(), 65536)
                 if not data: raise RuntimeError('Engine EOF')
@@ -97,6 +104,9 @@ def session(engine, provider, source, env, logfile, automatic=False, edits=5):
                 image = frame(sequence, 60); last_hash = image['png_sha256']
                 result['edit_ms'].append((image['payload_at']-tick)*1000)
             p.stdin.close(); assert p.wait(timeout=10) == 0
+            contents = logfile.read_text(errors='replace')
+            assert 'no font file nor VF file found' not in contents, 'Missing rendered font'
+            assert not any('Font mapping' in line and 'not found' in line for line in contents.splitlines()), 'Missing TECkit map'
             return result
         except Exception:
             print(logfile.read_text(errors='replace')[-8000:], flush=True)
@@ -138,6 +148,9 @@ def main():
              ('miktex-windows','direct'), ('miktex-windows','none'),
              ('miktex-windows','paths'), ('miktex-windows','mirror')]
     results = {}
+    def checkpoint():
+        compact = {label: {k:v for k,v in value.items() if k not in ('env','folder')} for label,value in results.items()}
+        (output/'progress.json').write_text(json.dumps(compact,indent=2)+'\n')
     # Provision with this exact document before any timed case. All measured
     # MiKTeX sessions have downloads disabled. Do not count network setup as startup.
     for provider in dict.fromkeys(p for p,_ in cases):
@@ -158,6 +171,7 @@ def main():
         cold = session(engine,provider,source,env,folder/'cold.log')
         print(label+' cold '+json.dumps(cold),flush=True)
         results[label] = {'cold': cold, 'warm': [], 'folder': str(folder), 'env': env}
+        checkpoint()
     # Fixed random seed interleaves warm cases to reduce ordering/host-load bias.
     schedule = [label for label in results for _ in range(args.repeats)]
     random.Random(20261104).shuffle(schedule)
@@ -172,6 +186,7 @@ def main():
         assert before and before == after, 'Warm run rebuilt format: '+label
         assert run['initial_png_sha256'] == value['cold']['initial_png_sha256'], 'Cache changed rendered output: '+label
         value['warm'].append(run)
+        checkpoint()
         print(label+' warm '+json.dumps(run),flush=True)
     assert len({value['cold']['initial_png_sha256'] for label,value in results.items() if label.startswith('miktex-windows-')}) == 1, 'Cache strategy changed initial pixels'
     rows = ['| Provider / cache | Empty format (s) | Warm median (s) | Edit median / max (ms) | Cache MiB |',
