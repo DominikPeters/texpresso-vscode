@@ -4,8 +4,20 @@ if ($env:GITHUB_ACTIONS -ne 'true') { throw 'This installer is for disposable Gi
 $diagnostics = Join-Path $PWD 'artifacts/windows-miktex'
 $null = New-Item -ItemType Directory -Force $diagnostics
 $installer = Join-Path $env:RUNNER_TEMP 'basic-miktex-25.12-x64.exe'
-Invoke-WebRequest 'https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-25.12-x64.exe' -OutFile $installer
-if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne '14b42dd9f4b4a7813a8bfd69c8f99316c2888cc4ee26f631f397e163d85d6c62') { throw 'MiKTeX installer checksum mismatch' }
+$expectedHash = '14b42dd9f4b4a7813a8bfd69c8f99316c2888cc4ee26f631f397e163d85d6c62'
+if (!(Test-Path -LiteralPath $installer) -or (Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      Invoke-WebRequest 'https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-25.12-x64.exe' -OutFile $installer -TimeoutSec 180
+      if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) { throw 'MiKTeX installer checksum mismatch' }
+      break
+    } catch {
+      if ($attempt -eq 3) { throw }
+      Write-Host "Retrying MiKTeX installer download ($attempt/3)"
+      Start-Sleep -Seconds 5
+    }
+  }
+}
 $root = Join-Path $env:RUNNER_TEMP ('MiKTeX bridge caf' + [char]0xe9)
 $process = Start-Process $installer -ArgumentList @('--unattended','--private', ('--user-install="' + $root + '"')) -PassThru -Wait -RedirectStandardOutput (Join-Path $diagnostics 'setup.out') -RedirectStandardError (Join-Path $diagnostics 'setup.err')
 if ($process.ExitCode) { throw "MiKTeX installer failed: $($process.ExitCode)" }

@@ -83,14 +83,17 @@ def session(engine, provider, source, env, logfile, automatic=False, edits=5):
                     else: break
             raise TimeoutError('No current changed PNG for sequence '+str(sequence))
         try:
+            send(['open', str(source), DOCUMENT]); send(['preview-barrier', 0])
             image = frame(0, 600); last_hash = image['png_sha256']
             result = {'startup_ms': (image['payload_at']-started)*1000,
                       'ready_ms': (image['ready_at']-started)*1000 if image['ready_at'] else None,
                       'initial_png_sha256': last_hash, 'edit_ms': []}
+            marker = 'INITIAL'; offset = len(DOCUMENT[:DOCUMENT.index(marker)].encode())
             for sequence in range(1, edits+1):
-                changed = DOCUMENT.replace('INITIAL', 'EDIT '+str(sequence)+' changed '+('word '*sequence))
+                changed = 'EDIT '+str(sequence)+' changed '+('word '*sequence)
                 tick = time.monotonic()
-                send(['open', str(source), changed]); send(['preview-barrier', sequence]); send(['rerun', True])
+                send(['change', str(source), offset, len(marker.encode()), changed])
+                send(['preview-barrier', sequence]); send(['rerun', True]); marker = changed
                 image = frame(sequence, 60); last_hash = image['png_sha256']
                 result['edit_ms'].append((image['payload_at']-tick)*1000)
             p.stdin.close(); assert p.wait(timeout=10) == 0

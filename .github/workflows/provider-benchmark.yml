@@ -47,9 +47,19 @@ jobs:
         run: node scripts/ci/wsl-environment.cjs install
       - name: Build pinned engine
         run: node scripts/ci/wsl-environment.cjs build
+      - uses: actions/cache/restore@v4
+        id: miktex-installer
+        with:
+          path: ${{ runner.temp }}/basic-miktex-25.12-x64.exe
+          key: miktex-basic-windows-25.12-14b42dd9
       - name: Install Windows MiKTeX
         run: ./scripts/ci/windows-miktex.ps1
         timeout-minutes: 15
+      - uses: actions/cache/save@v4
+        if: steps.miktex-installer.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/basic-miktex-25.12-x64.exe
+          key: miktex-basic-windows-25.12-14b42dd9
       - name: Install Linux MiKTeX and Tectonic in disposable WSL
         run: node scripts/ci/provider-benchmark.cjs prepare
         timeout-minutes: 15
