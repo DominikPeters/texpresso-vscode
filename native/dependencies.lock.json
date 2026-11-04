@@ -2,7 +2,7 @@
   "schema": 1,
   "texpresso": {
     "repository": "https://github.com/DominikPeters/texpresso.git",
-    "branch": "vscode",
+    "branch": "codex/unified-engine",
     "revisionSource": "Git submodule native/texpresso"
   },
   "mupdf": {
