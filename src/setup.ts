@@ -58,7 +58,7 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
       ? await inWsl(paths.engineDirectory, configuration.command, configuration.wslDistribution)
       : await findExecutable(configuration.command, paths.engineDirectory);
     lines.push(resolved ? 'Executable found: ' + resolved : 'Executable NOT FOUND: ' + configuration.command);
-    for (const command of ['kpsewhich', 'tectonic']) {
+    for (const command of ['kpsewhich', 'findtexmf', 'tectonic']) {
       let found: string | undefined;
       try {
         found = configuration.useWSL ? await inWsl(paths.engineDirectory, command, configuration.wslDistribution)
@@ -68,7 +68,7 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
     }
     lines.push('', 'Remote WSL runs the extension and Linux engine together; Windows bridge settings are ignored there.',
       'On Windows, use TeXpresso: Reopen Folder in WSL for the recommended setup.',
-      'Install TeX Live or Tectonic in the same environment as the engine.');
+      'Install TeX Live, MiKTeX or Tectonic in the same environment as the engine.');
   } catch (error) {
     lines.push('Setup check failed: ' + (error instanceof Error ? error.message : String(error)));
   }

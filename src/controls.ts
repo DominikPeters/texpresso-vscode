@@ -65,7 +65,6 @@ export class PreviewControls {
       { label: '$(tools) Check Setup', command: 'texpresso.checkSetup', description: 'Executable, provider, and launch settings' },
       { label: '$(output) Show Compiler Output', command: 'texpresso.showCompilerOutput' },
       { label: '$(terminal) Show Engine Log', command: 'texpresso.showEngineLog' },
-      { label: '$(book) Licenses and Corresponding Source', command: 'texpresso.showLicenses' },
       { label: '$(gear) Open Settings', command: 'texpresso.openSettings' }
     );
     const chosen = await vscode.window.showQuickPick(items, {

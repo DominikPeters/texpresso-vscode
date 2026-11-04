@@ -1,335 +1,57 @@
-# TeXpresso VS Code Extension
-Visual Studio Code extension for interacting with [TeXpresso](https://github.com/let-def/texpresso/), which provides a "live rendering" experience when editing LaTeX documents. Platform-specific VSIX builds can include the native engine; the universal VSIX uses a separately installed engine, following its [install guide](https://github.com/let-def/texpresso/blob/main/INSTALL.md). A package provider such as TeX Live is still required. The extension can be used simultaneously with other LaTeX extensions such as [LaTeX Workshop](https://github.com/James-Yu/LaTeX-Workshop).
-
-![ezgif-6-3b2ad402f4](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/0ff5cf57-5a2e-48cd-9e5f-633a5ed44411)
-
-Leave `texpresso.command` empty to use the bundled engine when available, otherwise `texpresso` on PATH. Set it explicitly to use an external engine, including an older upstream build. Check Setup reports the selected engine and bundled revision.
-
-To use this extension, open the `.tex` document you wish to edit, then open the command palette (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>), and select `TeXpresso: Start Document`. With a capable engine, the preview opens in an editor tab beside the source; older builds open their native window. The preview immediately updates when you edit the file in VS Code. SyncTeX can automatically reveal the current source location in the preview. Compiler messages are available in the Output panel.
-
-The TeXpresso status-bar entry opens preview controls: Rerun Once, Automatic Reruns, Pause/Resume, Start, Stop, Restart, Check Setup, logs, and Settings. It shows the main document while running and indicates startup, pause, or failure. Start and Stop are also available in the editor toolbar. Stop can cancel a preview that is still starting; Restart keeps the same main document when you are editing an included file.
-
-### Preview in the editor
-
-`texpresso.previewLocation` selects **Auto**, **Editor**, or **Window**. Auto
-checks the installed engine's capabilities and uses the editor preview when
-supported. Editor requires the new headless backend in the pinned engine fork;
-an ordinary older/upstream installation may still require Window. Point
-`texpresso.command` at the new build's `bin/texpresso` to try it, or install a
-platform-specific VSIX containing that build. The extension does not download
-native binaries at runtime.
-
-The preview scrolls continuously across pages. The page field follows the
-viewport; the arrows and page field jump to a page, while Page Up/Down scroll
-by a viewport. Nearby pages are prepared after scrolling settles, with bounded
-render caches and page surfaces. Longer documents compile further pages on
-demand rather than rendering the whole document on startup. The pinned engine
-also reuses unchanged pages across edits and return navigation when their
-rendering dependencies match.
-
-With a compatible engine, resting the source cursor prepares a nearby compiler
-checkpoint during idle time to reduce the wait for the first edit. Typing and
-preview navigation interrupt preparation immediately; source changes are sent
-without a debounce. See [edit prewarming](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/edit-prewarming.md) for details.
-
-Pinch on a trackpad (or Control/Command scroll) to zoom around the pointer.
-Rendering uses the display's device pixel ratio and follows changes between
-monitors. Full pages have a 4-megapixel budget; at larger zoom levels, capable
-engines render the visible area separately for sharp text without rasterizing
-the entire enlarged page.
-
-The **Auto / PNG / SVG** selector chooses the rendering strategy. **Auto** is
-selected for new previews: small pages start as SVG; larger pages appear as PNG
-and can upgrade to SVG after a short pause. Auto learns which pages handle SVG
-updates quickly and retains their DOM for small edits. The selector shows the
-choice with a stable **Auto** label. Explicit PNG and SVG choices
-remain available. SVG stays sharp while zooming or using the magnifier; PDF
-features that cannot be preserved in SVG use PNG. Pages exceeding the shared
-browser surface budget keep using PNG across edits; changing zoom, available
-space, or substantially simplifying the page permits another SVG attempt.
-Older engines use PNG in Auto.
+# TeXpresso for Visual Studio Code
 
+Edit LaTeX with a live preview beside your source. TeXpresso updates the preview as you type and supports navigation in both directions with SyncTeX. It can be used alongside other LaTeX extensions, including [LaTeX Workshop](https://github.com/James-Yu/LaTeX-Workshop).
 
-With a compatible engine, PNG updates transfer only the changed pixel rectangle
-and reuse a canvas. Unchanged pixels require no image payload. Missing bases,
-large changes and unsupported engines use full PNGs.
-
-
-Hyperref web and email links open through VS Code on a plain click. Internal
-links jump to their named destination, compiling later pages on demand.
-Control/Command click still performs inverse SyncTeX, including on links.
-For TeX Live, TeXpresso excludes documentation/source examples from runtime
-package lookup so example `hyperref.cfg` files cannot override the driver.
-
-The preview toolbar provides page navigation, fit page width, fit text width, fit page, zoom,
-pause/resume, restart, and compiler output, using VS Code product icons.
-**Fit to text width** fills the viewport with the text area while keeping the
-full paper available by horizontal scrolling. It learns a shared text extent
-from pages as they render, without compiling the whole document, and retains
-that geometry while scrolling and editing. Figures do not widen the fit unless
-they contain text. Switching away and back refits the latest learned geometry.
-Engines without text geometry use the page-width fit.
-Toggle the magnifier (or press **M** while the preview has focus), then hold the
-left mouse button on the page for a sharp 2.5× loupe; release to dismiss it, or
-press Escape to leave magnifier mode. The loupe requires an engine advertising
-region rendering. It caches a larger surrounding region, so small movements
-reuse the same image and replacements appear after decoding. Use Control click
-(Command click on macOS) on the page for inverse SyncTeX. Forward SyncTeX reveals
-and highlights
-the corresponding point, with a highlight that fades out. Inverse SyncTeX
-refines line-only locations to a unique matching word in nearby source text;
-ambiguous or macro-generated words keep the original line location. Closing the
-preview stops its session; hiding its tab
-releases the browser view and restores its page/zoom/scroll state when reopened.
-The last successful image remains visible while updating or after an engine
-failure.
-
-Rendering and caching details are documented in the
-[embedded preview design](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/embedded-preview.md) and
-[Auto rendering policy](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/auto-rendering.md).
-
-For a local demo, build the pinned engine into
-`native/.bundles/<platform>-<architecture>-preview` (or set `TEXPRESSO_BINARY`),
-then run `npm run demo:preview`. This packages the current extension and opens
-an editable sample beside its preview in an isolated VS Code profile. It
-preserves sample edits and uses the installed TeX Live without downloading an
-engine or TeX packages. The three-page sample includes clickable cleveref
-references, equations, a TikZ diagram, a table and a BibTeX bibliography. Local
-`latexmk -xelatex` prepares the references before launch; automatic reruns are
-enabled. After editing `showcase.bib`, use **TeXpresso: External Compile and
-Refresh**. Set `TEXPRESSO_DEMO_SAMPLE=original` for the earlier minimal example. `VSCODE_CLI` can select a different Code executable.
-
-### Troubleshooting
+  ![TeXpresso live preview](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/0ff5cf57-5a2e-48cd-9e5f-633a5ed44411)
 
-Run **TeXpresso: Check Setup** from the Command Palette or preview controls. The **TeXpresso Setup** Output channel shows the extension host, main document, execution mode, package provider, executable lookup, and exact launch arguments. It also checks for `kpsewhich` and `tectonic` on the host (or inside WSL).
+## Getting started
 
-Launch errors offer **Check Setup**, **Open Settings**, and **Show Engine Log**. The **TeXpresso Engine** channel contains process diagnostics, while **TeXpresso** and **TeXpresso Log** contain compiler output. Logs remain available after the preview exits. An engine crash or unsupported option is reported separately from an executable that cannot be found.
+1. Install the extension and a TeX package provider, such as TeX Live, MiKTeX or Tectonic, on the machine where the extension runs.
+2. Open a LaTeX document in VS Code.
+3. Open the Command Palette and run **TeXpresso: Start Document**. The preview opens beside your source and updates as you edit.
 
-With a compatible engine, unexpected runtime exits trigger at most two automatic
-restarts per minute. Recovery supplies current editor buffers before compilation
-resumes and preserves the preview viewport and pause state. Compiler and setup
-errors require correction. A preview that stops acknowledging images can reload
-its webview within the same retry limit. **Stop** cancels recovery; **Restart**
-starts a fresh attempt.
+Platform-specific packages for macOS and Linux include the TeXpresso engine. The universal package requires a [separately installed engine](https://github.com/let-def/texpresso/blob/main/INSTALL.md). Leave `texpresso.command` empty to use the bundled engine when available, or set it to an executable to use your own. Older engines may open a separate native window instead of an editor preview.
 
-### Synchronization and refresh
+For projects with multiple files, add a `% !TeX root = ../main.tex` comment or use **TeXpresso: Select Main Document**. The extension remembers your selection for the workspace folder.
 
-With automatic SyncTeX enabled, the preview synchronizes to the active cursor after compilation, including the first compilation and recovery from a temporary syntax error. Source following keeps comfortably visible targets in place and ignores tiny scroll corrections; targets approaching the viewport edge are revealed automatically. Source line numbers are translated between VS Code and SyncTeX conventions.
+## Preview controls
 
-Renaming a tracked source file or its containing folder through VS Code restarts the preview with the current main-document path. Included files found through configured `-I` directories are matched to their editor buffers, including paths containing spaces and buffers opened through directory symlinks.
+Use the preview toolbar to navigate pages, adjust zoom and fit, pause or restart compilation, and open compiler output. Pinch or use Control/Command-scroll to zoom. Hyperlinks are clickable; Control-click (Command-click on macOS) in the preview to jump to the corresponding source. Forward SyncTeX can follow your editor cursor.
 
-**Refresh** and a successful **External Compile and Refresh** restart the engine. A plain upstream `rescan` can miss auxiliary files that did not exist at startup, leaving references unresolved. Restarting clears that cache and automatic SyncTeX restores the active source position. It also resets manual preview navigation and zoom. External compilation saves dirty tracked source buffers first.
+The magnifier button, or **M** while the preview has focus, enables a loupe: hold the left mouse button over the page to use it, and press Escape to leave magnifier mode. The toolbar also offers Auto, PNG and SVG rendering. Availability of some controls depends on the engine version.
 
-With `texpresso.watchDependencies` enabled (the default), project files used by TeXpresso are watched for changes on disk. Recent engines report file lookups, allowing images and other resources to be tracked alongside TeX sources. Older engines still provide source-file tracking. Changes are batched into a rescan; creating a previously missing dependency or deleting an input restarts the preview to clear the engine's cached filesystem state. Editor buffers take precedence over disk updates, and engine-written files are excluded to avoid refresh loops.
+The TeXpresso status-bar entry opens controls for starting, stopping, restarting and pausing the preview, running additional compilation passes, opening logs and changing settings. Use **External Compile and Refresh** when you need an external build, for example to run a bibliography program.
 
-### Reruns, pause, and streaming
+## Windows and WSL
 
-Recent upstream builds support **Rerun Once** and **Automatic Reruns** in the preview controls and Command Palette. Enable `texpresso.autoRerun` to run additional passes for references and the table of contents when editing pauses. This setting takes effect immediately and keeps the preview window open. Bibliography programs still run through **External Compile and Refresh**.
+For Windows, we recommend opening your project in a [WSL](https://code.visualstudio.com/docs/remote/wsl) window. Run **TeXpresso: Reopen Folder in WSL**, install the extension in that window, and install TeX Live or Tectonic in the Linux distribution. The Linux engine runs in WSL while the preview appears in VS Code on Windows.
 
-**Pause Preview** suspends compilation while you edit; **Resume Preview** applies the accumulated changes. The status bar indicates when the preview is paused.
+Alternatively, from a local Windows window, enable `texpresso.useWSL` to use a separately installed engine in WSL. Set `texpresso.wslDistribution` if you do not want the default distribution, and set `texpresso.command` to the Linux executable path or leave it empty to find `texpresso` on the distribution's PATH.
 
-Enable `texpresso.streamFiles` for editor-managed file transfer. TeXpresso starts paused; the extension registers and supplies open buffers, then resumes it and supplies discovered project resources, including binary data. The extension also updates streamed resources when they change on disk. A changed streamed image currently restarts the preview to clear upstream's cached image dimensions. Use this setting instead of putting `-stream` in additional arguments.
+## Settings
 
-Automatic reruns require the merged July 2026 `rerun` support. Pause/resume and streaming require the merged May 2026 protocol additions. These features are tested against upstream [e8df770](https://github.com/let-def/texpresso/commit/e8df7709077b2f86f6e16e6c86ceefb86de06f8d). Automatic reruns and streaming default to off; if an older engine rejects a control, the extension reports it and disables that control for the session.
+Search for **TeXpresso** in VS Code Settings. Common options include:
 
-## Features
+- `texpresso.command`: choose an external engine.
+- `texpresso.previewLocation`: choose Auto, Editor or Window.
+- `texpresso.packageProvider`: choose Automatic, TeX Live, MiKTeX or Tectonic.
+- `texpresso.miktexAutoInstall`: allow MiKTeX to download missing packages without prompting (off by default; select MiKTeX explicitly).
+- `texpresso.includeDirectories`: add directories for project inputs.
+- `texpresso.autoRerun`: run additional passes for references and the table of contents when editing pauses.
+- `texpresso.watchDependencies`: refresh when project files change on disk.
+- `texpresso.syncTeXForwardOnSelection`: follow the source cursor in the preview.
+- `texpresso.useEditorTheme`: use editor theme colors in the preview.
 
-To change pages, use the buttons:
-![recording10](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/2dbfb081-409e-4f31-b3af-e64cea25414b)
+## Troubleshooting
 
-Use SyncTeX (forwards - editor to preview):
-![recording11](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/80824192-f9e9-4f71-9959-df5ed7d5d617)
+Run **TeXpresso: Check Setup** to inspect the selected engine, package provider and launch settings. If compilation fails, open the **TeXpresso** and **TeXpresso Log** output channels; **TeXpresso Engine** contains process diagnostics. Check that the package provider and required LaTeX packages are installed on the extension host, including inside WSL when applicable.
 
-Use SyncTeX (backwards - preview to editor):
-![recording12](https://github.com/DominikPeters/texpresso-vscode/assets/3543224/4a9c7709-275f-48d5-b6f9-dcaeede0c622)
+If a document uses an older external engine, select **Window** in `texpresso.previewLocation` or install a compatible platform package for the editor preview.
 
-Use theme colors in preview (if the `useEditorTheme` setting is activated):
-<img src="https://github.com/DominikPeters/texpresso-vscode/assets/3543224/8b09d947-82cc-418b-a4d0-a0b66f75dd49" width="800">
+## Licensing and source
 
-## Requirements
+The extension's own code is MIT licensed. Platform packages also contain native components under AGPL, GPL, LGPL and permissive licenses; see the [third-party notices](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/THIRD-PARTY-NOTICES.txt). License texts are included with the extension. Corresponding source archives and build instructions are available under the matching version in the [release downloads](https://github.com/DominikPeters/texpresso-vscode/releases).
 
-The extension code is MIT-licensed. Platform packages also contain native
-software under AGPL, GPL, LGPL and permissive licenses; these components retain
-their own terms. See [third-party notices](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/THIRD-PARTY-NOTICES.txt).
-Complete corresponding sources and build/replacement instructions for version
-2.0.0 are provided with the [v2.0.0 release](https://github.com/DominikPeters/texpresso-vscode/releases/tag/v2.0.0),
-as `texpresso-2.0.0-sources-<target>.tar.gz`. Downloading sources is optional;
-normal use only needs the VSIX and a TeX package provider.
-Run **TeXpresso: Licenses and Corresponding Source** from the Command Palette
-or preview controls to read the included terms offline or open the matching
-release's source downloads and rebuilding instructions.
+## Development
 
-Use a platform-specific VSIX with a bundled engine, or install TeXpresso separately. Install TeX Live or Tectonic on the extension host for LaTeX packages and fonts. In Remote WSL, these requirements apply inside the Linux distribution.
-
-## Using UTF-16 version of TeXpresso for more robust performance
-
-If you use TeXpresso version v0.1 or newer, you can use its new `change-range` feature, which allows the extension to work more efficiently and more robustly (the file is less likely to go out of sync with the preview). To use this, you need to enable the `texpresso.useChangeRangeMode` setting. 
-
-## Extension Settings
-
-This extension contributes the following settings:
-
-* `texpresso.command`: Optional external executable path or command. Empty selects the bundled engine when available, otherwise `texpresso` on PATH.
-* `texpresso.previewLocation`: Auto, Editor, or Window; determines where the preview appears. Editor requires a headless-capable engine.
-* `texpresso.packageProvider`: Select Automatic, TeX Live, or Tectonic as the package provider (TeXpresso v0.2 or newer).
-* `texpresso.includeDirectories`: Additional include directories, relative to the main document or absolute.
-* `texpresso.arguments`: Additional command-line arguments, with one argument per array item.
-* `texpresso.autoRerun`: Run additional passes for references and the table of contents after editing pauses. Defaults to off and can be toggled from preview controls.
-* `texpresso.watchDependencies`: Refresh when project dependencies change on disk. Defaults to on.
-* `texpresso.streamFiles`: Supply project files through the editor protocol, including binary resources. Defaults to off.
-* `texpresso.useWSL`: Controls whether to run TeXpresso within Windows Subsystem for Linux (WSL).
-* `texpresso.wslDistribution`: Optional distribution name for the Windows bridge. Empty uses the default distribution; Remote WSL ignores bridge settings.
-* `texpresso.syncTeXForwardOnSelection`: Controls whether the preview should be updated when the selection in the editor changes.
-* `texpresso.useEditorTheme`: Controls whether the preview should use the same color theme as the editor.
-* `texpresso.useChangeRangeMode`: Use the newer change-range command (line/character based) instead of change command (byte based). Requires TeXpresso version v0.1 or newer. When enabled, improves performance by eliminating the need for internal byte-to-character conversion.
-
-### Package providers and additional arguments
-
-Select a package provider in Settings by searching for `texpresso.packageProvider`. This chooses where TeXpresso loads packages; it does not install TeX Live or Tectonic or select a different TeX engine.
-
-For example, to use Tectonic and search a project build directory:
-
-```json
-{
-  "texpresso.packageProvider": "tectonic",
-  "texpresso.includeDirectories": ["build"],
-  "texpresso.arguments": []
-}
-```
-
-Existing `-tectonic` or `-texlive` entries in `texpresso.arguments` continue to work with the Automatic provider setting. An explicit provider selection overrides those flags. Paths containing spaces remain a single array item; do not add shell quotes. For example, `["-I", "/path/to/support files"]` is valid. In additional arguments, WSL paths must use Linux syntax; the dedicated include directory setting can also convert Windows paths.
-
-Launch settings are read for the main document on each start. The extension offers to restart a running preview when those settings change.
-
-### Main document selection
-
-Start Preview follows `% !TeX root = ../main.tex` comments, with relative paths resolved from the file containing the comment. Chained comments are supported; circular references and missing targets produce an error. Quoted paths containing spaces are accepted.
-
-When editing a known input of the current preview, Start keeps that preview’s main document. A standalone file containing `\documentclass` or `\begin{document}` is used directly. Otherwise a picker lists standalone TeX files in the current workspace folder, with relative paths to distinguish duplicate filenames. Browse and Use Current File are also available.
-
-Use **TeXpresso: Select Main Document** from the Command Palette or preview controls to choose explicitly. The choice is remembered for that workspace folder and follows VS Code file/folder renames. Selecting a different main document replaces an existing preview; with no preview running, it chooses the document for the next start. Each folder in a multi-root workspace has its own selection and launch settings. The extension does not infer include relationships by parsing the whole project.
-
-Stop and extension deactivation wait for shutdown. On Linux and macOS, the extension owns a process group and terminates its helper processes too, escalating after a short grace period if necessary. Native Windows launches use process-tree termination.
-
-### Windows and WSL
-
-Remote WSL is the recommended Windows setup: open the project in a WSL window and install TeXpresso in that window. The extension runs on Linux and uses its Linux engine while the preview remains in the Windows editor. The Windows bridge setting is ignored on non-Windows extension hosts.
-
-Use **TeXpresso: Reopen Folder in WSL** in a local Windows window to open the project through the WSL extension. If that extension is missing, the command opens its installation page. Install TeXpresso in the WSL window and install TeX Live or Tectonic in that distribution.
-
-When VS Code runs locally on Windows and launches TeXpresso inside WSL, enable `texpresso.useWSL` and use the Linux executable path, or leave the command empty to find `texpresso` on the distribution's PATH. `texpresso.wslDistribution` selects a distribution by name; leave it empty to use the default. Launches, path conversions, capability checks, and external compilation use the same distribution. This bridge requires a separately installed engine there.
-
-## Architecture
-
-`extension.ts` connects VS Code commands and editor events to one active `TexpressoSession`. Each session owns its process, document synchronization state, and output buffers, so a previous process cannot reset a newer session.
-
-- `configuration.ts` resolves settings for the main document and constructs launch arguments.
-- `paths.ts` translates between editor paths and engine paths, including WSL, symlinks, and include-directory lookup. Logical engine filenames remain distinct from physical editor paths.
-- `engine-process.ts` handles process startup, shutdown, errors, and UTF-8-safe protocol framing.
-- `protocol.ts` validates incoming messages and defines outgoing commands.
-- `document-sync.ts` synchronizes the main document and imported files. Range mode sends UTF-16 edits directly; legacy mode calculates byte offsets from a pre-edit text snapshot to preserve surrogate pairs.
-- `dependencies.ts` handles file lookups, dependency changes, and binary resource transfer. Watchers are shared by directory and disposed with their sessions.
-- `controls.ts`, `failures.ts`, and `setup.ts` provide preview controls and troubleshooting.
-- `logs.ts` applies output appends and truncations as TeXpresso backtracks.
-
-Compiler output, compiler logs, process diagnostics, and external builds have separate Output channels. Logs remain available after a session stops or fails.
-
-Automatic reruns and streaming are explicit settings. Received lookup messages extend dependency discovery; unknown-verb replies disable rejected controls for the session.
-
-### Development checks
-
-Run `npm test` to type-check, bundle, lint, and run the Node regression tests. `npm run test:unit` runs the type-checked tests without launching VS Code. The regressions include main-document resolution, concurrent starts, stale session events, atomic dependency replacement, and shutdown of an unresponsive process tree.
-
-Run `npm run test:integration` for tests inside a real VS Code Extension Development Host, with an isolated workspace and profile. The suite launches a deterministic protocol fixture as a real child process and exercises magic-root chains, multi-root settings, imported-file Unicode edits and undo, initial SyncTeX, stop/restart, file/folder renames, external compilation, and failed-startup recovery. It requires no TeXpresso installation. CI runs the suite on Linux, macOS, and Windows, plus VS Code 1.88 on Linux.
-
-Run `npm run test:package` to build and inspect a VSIX, install it into an isolated extension directory, and run the same host suite against the installed extension. This needs the `vsce` CLI; CI installs the latest stable `@vscode/vsce` and records its version in the build log. The production bundle includes its JavaScript dependencies, so the universal VSIX contains only the manifest, runtime bundle, webview assets, icon, README, and licenses. The resulting VSIX is saved under `artifacts/`.
-
-Set `VSCODE_EXECUTABLE` to an existing VS Code executable to avoid downloading a test copy, or `VSCODE_VERSION` to test a particular version (default: stable). Linux host tests need a display, for example `xvfb-run -a npm run test:integration`. Failed host runs retain logs, the engine trace, and their synthetic workspace under `artifacts/`; `TEXPRESSO_TEST_ARTIFACTS` overrides that location. CI uploads diagnostics on failure and cancels superseded runs.
-
-For tests against an actual TeXpresso build, set `TEXPRESSO_BINARY` to its absolute path and run `npm run test:engine`. These use **TeX Live only by default** and test byte/range edits, filesystem/stream modes, reference convergence, pause/resume, and image updates. Set `TEXPRESSO_TEST_TECTONIC=1` to opt into Tectonic cases, which may download TeX packages. Native tests are skipped when `TEXPRESSO_BINARY` is unset. The runner uses SDL's dummy video driver to avoid opening or focusing native windows on every start/restart; set `TEXPRESSO_TEST_NATIVE_WINDOW=1` only when deliberately testing visible windows. Set `TEXPRESSO_TEST_ARTIFACTS` to retain native-engine diagnostics on failure. The Linux and WSL CI jobs build the committed `native/texpresso` submodule revision from the fork and run the TeX Live cases.
-
-Run `npm run test:integration:engine` with `TEXPRESSO_BINARY` set to test real compilation through the extension inside VS Code. On Windows, this launches the binary in the default WSL distribution, so provide its **Linux path**. CI installs Ubuntu 24.04 in WSL 2, builds the pinned TeXpresso revision with TeX Live, and runs Windows VS Code against it. The suite checks magic-root and include-directory paths containing spaces and Unicode, unsaved edits with both byte and range protocols, disk dependency refresh, streaming, restart, and termination of Linux engine/worker processes. The same suite can run against a native engine on Linux/macOS. It selects SDL's dummy video driver, as upstream's own test targets do; visible-window rendering and theme integration still need separate checks.
-
-The WSL job caches an exported Ubuntu distribution containing TeX Live and the native build dependencies. Its key covers `scripts/ci/wsl-environment.cjs` and `scripts/ci/wsl-packages.txt`; unrelated workflow edits reuse the image. Cold setup uses the official WSL CLI with web downloads. The image is saved before source checkout copies and builds, so test failures do not discard a prepared environment and the pinned engine is rebuilt each run. The job summary records setup/import/export timings and archive size; cache download/upload timings appear in the cache steps.
-
-Set `TEXPRESSO_TEST_PREVIEW=1` for additional native headless tests: PNG output,
-pixel limits, page demand, forward/inverse SyncTeX, stale-coordinate rejection,
-and unsaved edits in filesystem/stream modes. Run
-`npm run test:integration:preview` with `TEXPRESSO_BINARY` set to exercise the
-actual webview, including image decoding, edits, navigation, tab restoration,
-and cleanup. It also accepts a Linux binary path on Windows/WSL. Set
-`VSCODE_EXECUTABLE` to an installed VS Code executable for offline testing.
-
-### Native engine development
-
-The maintained engine fork is pinned as the optional `native/texpresso` submodule.
-See [native build documentation](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/native/README.md) for the fork/branch workflow,
-dependency locks, compact MuPDF and ICU profiles, offline macOS development
-bundles, and native checks. Ordinary TypeScript development needs no native
-source checkout. Native build outputs stay outside the published VSIX while
-bundled-engine selection and platform packaging are developed.
-
-Developer performance measurements and the repeatable offline suite are in
-[preview profiling](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/profiling/README.md).
-
-## Release Notes
-
-### 2.0.0 (release candidate)
-
-- Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
-- Run as a workspace extension, including directly inside Remote WSL.
-- Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.
-- Support sharp SVG rendering and bounded PNG rendering, incremental updates, adaptive rendering, and cached page navigation.
-- Prepare nearby compiler checkpoints during idle time to reduce edit latency, and recover from unexpected engine exits while replaying unsaved buffers.
-- Preserve the external viewer for older engines and explicit Window selection.
-- Accept upstream's unknown SyncTeX column marker instead of dropping the navigation notification.
-
-### 1.9.0
-
-- Support automatic and one-shot reruns, pause/resume, and streaming with registered buffers and binary resources.
-- Watch project dependencies using upstream file-lookup notifications, with source tracking on older engines.
-- Add preview status and controls, Restart, Check Setup, and actionable process errors.
-- Fix legacy Unicode edit offsets, forward SyncTeX line numbers, initial synchronization, and synchronization after compilation.
-- Restart previews after source renames and external compilation, including newly created auxiliary files.
-- Resolve included editor buffers through include directories and symlinks while retaining engine filenames.
-- Add cross-platform CI, VS Code host integration tests, and optional tests against a real TeXpresso build.
-
-### 1.8.0
-
-Track imported files (e.g. using `\input`) in the extension and transmit changes to TeXpresso. Requires TeXpresso version v0.1 or newer (versions with support for the `input-file` command).
-
-Fix logging output when using the lines mode.
-
-### 1.7.0
-
-Add support for the `change-range` command in TeXpresso. Fix WSL paths for external compile feature.
-
-### 1.6.0
-
-Add External Compile feature.
-
-### 1.5.1
-
-Fixes testing of TeXpresso command on WSL.
-
-### 1.4.0
-
-Add support for executing TeXpresso on WSL (Windows Subsystem for Linux).
-
-### 1.3.0
-
-Add a button for toggling automatic SyncTeX forward when the selection changes.
-
-Turn off the extension when the TeXpresso window is closed.
-
-### 1.2.0
-
-Added support for color themes.
-
-### 1.1.0
-
-Changed settings identifiers.
-
-### 1.0.0
-
-Initial release of the extension.
+See the [development guide](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/development.md), [native build guide](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/native/README.md), and [release notes](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/CHANGELOG.md).

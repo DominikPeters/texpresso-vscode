@@ -209,3 +209,16 @@ test('session handles reset-sync and preserves final output when the process exi
   assert.equal(session.state, 'stopped');
   assert.deepEqual(published, [['out', 'last message\n']]);
 });
+
+
+test('MiKTeX selection and automatic installation are explicit launch arguments', () => {
+  const paths = new SessionPaths(path.resolve('/work/main.tex'), false);
+  const launch = buildLaunchCommand({ ...config, packageProvider: 'miktex', miktexAutoInstall: true,
+    arguments: ['-texlive'] }, paths);
+  assert.ok(launch.args.includes('-miktex'));
+  assert.ok(launch.args.includes('-miktex-auto-install'));
+  assert.ok(!launch.args.includes('-texlive'));
+  assert.ok(!buildLaunchCommand({ ...config, packageProvider: 'miktex' }, paths).args.includes('-miktex-auto-install'));
+  assert.throws(() => buildLaunchCommand({ ...config, miktexAutoInstall: true }, paths));
+  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-miktex', '-texlive'] }, paths));
+});

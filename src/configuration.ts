@@ -3,7 +3,7 @@ import * as path from 'path';
 import { SessionPaths } from './paths';
 import { wslArguments } from './wsl';
 
-export type PackageProvider = 'auto' | 'texlive' | 'tectonic';
+export type PackageProvider = 'auto' | 'texlive' | 'miktex' | 'tectonic';
 
 export interface SessionConfiguration {
   command: string;
@@ -13,6 +13,7 @@ export interface SessionConfiguration {
   wslDistribution?: string;
   useChangeRangeMode: boolean;
   packageProvider: PackageProvider;
+  miktexAutoInstall?: boolean;
   includeDirectories: string[];
   arguments: string[];
   autoRerun: boolean;
@@ -35,6 +36,7 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
     wslDistribution: configuration.get<string>('wslDistribution', '').trim(),
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
     packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
+    miktexAutoInstall: configuration.get<boolean>('miktexAutoInstall', false),
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
     arguments: configuration.get<string[]>('arguments', []),
     autoRerun: configuration.get<boolean>('autoRerun', false),
@@ -59,7 +61,7 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
       throw new Error('Use TeXpresso Preview Location in Settings instead of adding ' + argument + ' to arguments.');
     } else if (argument === '-stream') {
       throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
-    } else if (argument === '-texlive' || argument === '-tectonic') {
+    } else if (argument === '-texlive' || argument === '-miktex' || argument === '-tectonic') {
       if (config.packageProvider === 'auto') {
         providers.add(argument);
         args.push(argument);
@@ -73,7 +75,13 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
     args.push('-' + config.packageProvider);
   }
   if (providers.size > 1) {
-    throw new Error('Choose either -texlive or -tectonic in TeXpresso additional arguments.');
+    throw new Error('Choose one of -texlive, -miktex or -tectonic in TeXpresso additional arguments.');
+  }
+  if (config.miktexAutoInstall) {
+    if (config.packageProvider !== 'miktex' && !(config.packageProvider === 'auto' && providers.has('-miktex'))) {
+      throw new Error('Select MiKTeX explicitly before enabling automatic package installation.');
+    }
+    args.push('-miktex-auto-install');
   }
   for (const directory of config.includeDirectories) {
     args.push('-I', paths.includeDirectory(directory));
