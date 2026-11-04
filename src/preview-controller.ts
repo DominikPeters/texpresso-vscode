@@ -38,6 +38,7 @@ export class PreviewController {
   // Foreground render priority can differ from the browser's centered page.
   private page = 0;
   private viewportPage = 0;
+  private navigationObservation?: number;
   private sourcePage?: number;
   private width = 1200;
   private continuous = false;
@@ -302,7 +303,7 @@ export class PreviewController {
     this.svgDecodeFailed = false; this.inverse = undefined; this.forceNative = false;
     let page = Math.max(0, (this.continuous ? this.viewportPage : this.page) + delta);
     if (this.state?.[4]) { page = Math.min(page, Math.max(0, this.state[3] - 1)); }
-    this.selectPage(page); this.viewportPage = page;
+    this.selectPage(page); this.viewportPage = page; this.navigationObservation = page;
     this.manualNavigation();
     this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
   }
@@ -396,6 +397,14 @@ export class PreviewController {
           this.dirty = !this.failed.has(this.page) && !pendingActive && !this.isPresented({ page: this.page, width: this.width });
           this.schedulePrefetch();
         }
+        // A retained surface can become foreground after its decode ACK was
+        // processed while a previous viewport was still active. Observe the
+        // actual browser viewport without requiring another image/decode.
+        if (this.navigationObservation === this.viewportPage &&
+            this.isPresented({ page: this.viewportPage, width: Math.round(m.width as number) })) {
+          this.session.previewVisible?.(this.presented.get(this.viewportPage)!.header);
+          this.navigationObservation = undefined;
+        }
         this.ready = true; this.status(); this.flush(); this.prewarm.refresh();
         break;
       case 'decoded':
@@ -422,6 +431,7 @@ export class PreviewController {
           }
           if (current && !this.inFlight.background && this.shown?.requestId === m.id && this.shown.page === this.page && this.inFlight.page === this.page &&
               this.shown.revision === this.state?.[1] && this.shown.sequence === this.session.previewSequence) {
+            if (this.navigationObservation === this.shown.page) { this.navigationObservation = undefined; }
             this.session.previewDecoded?.(this.shown, typeof m.svg === 'string');
             if (!this.inFlight.cached && this.inFlight.costContext && this.shown.exportMs !== undefined &&
                 typeof m.renderMs === 'number' && Number.isFinite(m.renderMs) && m.renderMs >= 0 &&

@@ -1463,3 +1463,29 @@ test('late SVG budget evidence survives source edits only for unchanged physical
     } finally { f.controller.dispose(); }
   }
 });
+
+
+test('navigation observes a current retained surface after its ACK preceded the viewport update', () => {
+  const f = fixture(), decoded: number[] = [], visible: number[] = [];
+  Object.assign(f.session, { previewDecoded: (h: { page: number }) => decoded.push(h.page),
+    previewVisible: (h: { page: number }) => visible.push(h.page) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }], nearby: [], resident: [0], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(first, 0)); f.send({ type: 'decoded', id: first[1] });
+    f.controller.navigate(1);
+    const next = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(next, 1));
+    const viewport = (page: number, epoch: number) => f.send({ type: 'viewport', page, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }, { page: 1, width: 1000 }], nearby: [], resident: [0, 1], epoch });
+    viewport(0, 1); f.send({ type: 'decoded', id: next[1] });
+    assert.deepEqual(decoded, [0], 'neighbor ACK is not a foreground decode');
+    const commands = f.commands.length;
+    viewport(1, 2);
+    assert.deepEqual(visible, [1], 'browser viewport confirms the current decoded surface');
+    assert.equal(f.commands.length, commands, 'no extra native export is needed');
+    viewport(1, 2); assert.deepEqual(visible, [1], 'observation is bounded to this navigation');
+  } finally { f.controller.dispose(); }
+});

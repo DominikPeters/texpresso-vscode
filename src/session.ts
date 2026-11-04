@@ -37,6 +37,11 @@ export class TexpressoSession {
       header.revision, header.sequence, svgDom]) + '\n');
   }
 
+  previewVisible(header: PreviewImageHeader): void {
+    this.events.debug('[preview-ui] ' + JSON.stringify(['visible', header.requestId, header.page,
+      header.revision, header.sequence]) + '\n');
+  }
+
   private engine: EngineProcess;
   private output: SessionOutput;
   private ended = false;

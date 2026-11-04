@@ -29,6 +29,11 @@ async function decoded(): Promise<{ id: number; page: number }[]> {
     .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
 }
 
+async function presentations(): Promise<{ id: number; page: number }[]> {
+  return [...(await logs()).matchAll(/\[preview-ui\] \["(?:decoded|visible)",(\d+),(\d+),/g)]
+    .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
+}
+
 async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
   const media = vscode.Uri.joinPath(extensionUri, 'media');
   const panel = vscode.window.createWebviewPanel('texpresso.svg-check', 'SVG renderer test',
@@ -136,25 +141,27 @@ Pages are compiled when requested, and images have a bounded pixel budget.
       console.log('PASS: installed platform VSIX starts its bundled engine and decodes the first page');
     }
     assert.ok(vscode.window.tabGroups.all.some(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview)));
-    const beforeNext = (await decoded()).at(-1)!.id;
+    const beforeNext = (await presentations()).length;
     await command('nextPage');
     await until(async () => (await renders()).some(r => r.page === 1) && (await logs()).includes('PREVIEW-SECOND'),
       'decoded first frame grants credit for the next page');
+    // Resident surfaces can be revealed without another decode. Observe a
+    // current decode or the actual browser viewport confirming that surface.
     // A small viewport can display both pages: decoding a neighboring page may
     // follow the requested page before the next log poll.
-    await until(async () => (await decoded()).some(d => d.id > beforeNext && d.page === 1), 'second page decoded');
-    let lastDecoded = (await decoded()).at(-1)!.id;
+    await until(async () => (await presentations()).slice(beforeNext).some(d => d.page === 1), 'second page decoded');
+    let lastPresentation = (await presentations()).length;
     await command('previousPage');
-    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 0), 'first page restored');
+    await until(async () => (await presentations()).slice(lastPresentation).some(d => d.page === 0), 'first page restored');
     // Discovering more pages can introduce a scrollbar and change the render
     // width. Warm the resulting geometry before asserting cache reuse.
-    lastDecoded = (await decoded()).at(-1)!.id;
+    lastPresentation = (await presentations()).length;
     await command('nextPage');
-    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 1), 'second page restored');
+    await until(async () => (await presentations()).slice(lastPresentation).some(d => d.page === 1), 'second page restored');
     const before = (await renders()).filter(r => r.page === 0).length;
-    lastDecoded = (await decoded()).at(-1)!.id;
+    lastPresentation = (await presentations()).length;
     await command('previousPage');
-    await until(async () => (await decoded()).some(d => d.id > lastDecoded && d.page === 0), 'cached first page decoded');
+    await until(async () => (await presentations()).slice(lastPresentation).some(d => d.page === 0), 'cached first page decoded');
     assert.equal((await renders()).filter(r => r.page === 0).length, before,
       'cached navigation skips native export of the retained page while neighboring prefetch may continue');
 
