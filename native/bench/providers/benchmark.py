@@ -123,6 +123,14 @@ def main():
     for name in ('powershell.exe', 'wslpath'):
         (wrappers/name).symlink_to(proxy)
     base = {**os.environ, 'SDL_VIDEODRIVER': 'dummy'}
+    # MiKTeX creates a kpsewhich compatibility alias in ~/bin. Keep the
+    # TeX Live case on its actual system executable, including worker children.
+    texlive_tools = output/'texlive-bin'; texlive_tools.mkdir()
+    (texlive_tools/'kpsewhich').symlink_to('/usr/bin/kpsewhich')
+    texlive_version = subprocess.check_output(['/usr/bin/kpsewhich','--version'],text=True)
+    assert 'kpathsea' in texlive_version.lower(), 'System kpsewhich is not TeX Live'
+    def provider_environment(provider):
+        return {**base, 'PATH': str(texlive_tools)+os.pathsep+base['PATH']} if provider == 'texlive' else dict(base)
     cases = [('texlive','direct'), ('tectonic','direct'), ('miktex','direct'),
              ('miktex-windows','direct'), ('miktex-windows','none'),
              ('miktex-windows','paths'), ('miktex-windows','mirror')]
@@ -131,14 +139,14 @@ def main():
     # MiKTeX sessions have downloads disabled. Do not count network setup as startup.
     for provider in dict.fromkeys(p for p,_ in cases):
         print('Priming installed packages: '+provider, flush=True)
-        env = {**base, 'XDG_CACHE_HOME': str(output/'prime'/provider)}
+        env = {**provider_environment(provider), 'XDG_CACHE_HOME': str(output/'prime'/provider)}
         session(engine,provider,source,env,output/('prime-'+provider+'.log'),provider.startswith('miktex'),0)
     for provider, mode in cases:
         label = provider+'-'+mode; folder = output/label; folder.mkdir()
         if provider == 'tectonic':
             shutil.copytree(output/'prime'/provider, folder/'formats')
             shutil.rmtree(folder/'formats/texpresso', ignore_errors=True)
-        env = {**base, 'XDG_CACHE_HOME': str(folder/'formats'), 'TXP_BENCH_CACHE_MODE': mode,
+        env = {**provider_environment(provider), 'XDG_CACHE_HOME': str(folder/'formats'), 'TXP_BENCH_CACHE_MODE': mode,
                'TXP_BENCH_CACHE': str(folder/'lookup-cache'), 'TXP_BENCH_REAL_POWERSHELL': real_ps,
                'TXP_BENCH_REAL_WSLPATH': real_wslpath}
         if mode != 'direct': env['PATH'] = str(wrappers)+os.pathsep+base['PATH']
@@ -173,7 +181,7 @@ def main():
         rows.append('| %s | %.3f | %.3f | %.1f / %.1f | %.2f |' % (label,value['cold']['startup_ms']/1000,
             statistics.median(r['startup_ms'] for r in warm)/1000,statistics.median(edits),max(edits),value['cache_bytes']/1024**2))
     metadata = {'engine_revision': subprocess.check_output(['git','-C',str(Path(engine).parents[1]),'rev-parse','HEAD'],text=True).strip(),
-                'versions': {command: subprocess.check_output([command, '--version'],stderr=subprocess.STDOUT,text=True).splitlines()[0] for command in ('kpsewhich','findtexmf','tectonic')},
+                'versions': {command: subprocess.check_output(['/usr/bin/kpsewhich' if command == 'kpsewhich' else command, '--version'],stderr=subprocess.STDOUT,text=True).splitlines()[0] for command in ('kpsewhich','findtexmf','tectonic')},
                 'document_sha256': hashlib.sha256(DOCUMENT.encode()).hexdigest(), 'repeats': args.repeats,
                 'environment': subprocess.check_output(['uname','-a'],text=True).strip(), 'results': results}
     (output/'results.json').write_text(json.dumps(metadata,indent=2)+'\n')

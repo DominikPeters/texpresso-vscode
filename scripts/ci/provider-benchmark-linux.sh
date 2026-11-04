@@ -31,4 +31,4 @@ tar -xzf /tmp/texpresso-benchmark-tectonic.tar.gz -C /usr/local/bin tectonic
 rm /tmp/texpresso-benchmark-tectonic.tar.gz
 tectonic --version
 findtexmf --version
-kpsewhich --version | head -n 1
+/usr/bin/kpsewhich --version | head -n 1

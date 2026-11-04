@@ -15,7 +15,7 @@ if (process.argv[2] === 'prepare') {
 } else if (process.argv[2] === 'collect') {
   const output = path.resolve('artifacts/provider-benchmark'); fs.mkdirSync(output,{recursive:true});
   // Collect compact reports/logs, not format caches, mirrored files or binaries.
-  const list = spawnSync('wsl',['-e','sh','-ec','cd /opt/provider-benchmark-output && find . -type f \\( -name "*.json" -o -name "*.md" -o -name "*.log" \\) ! -path "*/lookup-cache/*" -print0'],{encoding:'buffer'});
+  const list = spawnSync('wsl',['-e','sh','-ec','cd /opt/provider-benchmark-output && find . -maxdepth 3 -type f \\( -name "*.json" -o -name "*.md" -o -name "*.log" \\) ! -path "*/lookup-cache/*" ! -path "*/formats/*" -print0'],{encoding:'buffer'});
   if (list.status !== 0) { console.log('Benchmark output unavailable'); process.exit(0); }
   const archive = spawnSync('wsl',['-e','tar','-C','/opt/provider-benchmark-output','--null','-T','-','-cf','-'],{input:list.stdout,maxBuffer:30*1024*1024});
   if (archive.status !== 0) throw new Error('Diagnostic collection failed');
