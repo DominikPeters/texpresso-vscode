@@ -266,7 +266,8 @@ def export_metadata(engine,powershell,bin_directory,wslpath,log):
                           for e in extensions.split(';') if e]
         # --list-file-types omits types with no primary extensions (including
         # misc fonts), but explicit requests still need their search paths.
-        for name in sorted(wanted):
+        # Preserve MiKTeX's type order when extensions overlap (e.g. .enc).
+        for name in [n for n in listed_types if n in wanted]+sorted(wanted-listed_types.keys()):
             extensions=listed_types.get(name,'')
             paths=tools.call('findtexmf.exe',['--the-name-of-the-game=xetex','--show-path='+name]).strip().split(';')
             alternate=tools.call('initexmf.exe',['--show-config-value=[Core.FileTypes.'+name+']AltExtensions[]'],optional=True)
