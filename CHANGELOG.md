@@ -2,6 +2,8 @@
 
 ### 2.0.0 (release candidate)
 
+- Support MiKTeX as a package and font provider, with optional noninteractive installation of missing packages.
+
 - Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
 - Run as a workspace extension, including directly inside Remote WSL.
 - Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.

@@ -132,6 +132,9 @@ jobs:
           make -C .engine -j2 all test-synctex
           make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes test-protocol-numbers test-checkpoint-selection test-activity test-parent-watch
         timeout-minutes: 4
+      - name: Test idle pagination after an external full build
+        run: python3 .engine/test/test-idle-rerun.py .engine/build/texpresso
+        timeout-minutes: 3
       - name: Test MiKTeX lookup contract without external packages
         run: python3 .engine/test/test-miktex-provider.py
       - name: Install actual MiKTeX

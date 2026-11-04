@@ -24,7 +24,7 @@ The TeXpresso status-bar entry opens controls for starting, stopping, restarting
 
 ## Windows and WSL
 
-For Windows, we recommend opening your project in a [WSL](https://code.visualstudio.com/docs/remote/wsl) window. Run **TeXpresso: Reopen Folder in WSL**, install the extension in that window, and install TeX Live or Tectonic in the Linux distribution. The Linux engine runs in WSL while the preview appears in VS Code on Windows.
+For Windows, we recommend opening your project in a [WSL](https://code.visualstudio.com/docs/remote/wsl) window. Run **TeXpresso: Reopen Folder in WSL**, install the extension in that window, and install TeX Live, MiKTeX or Tectonic in the Linux distribution. The Linux engine runs in WSL while the preview appears in VS Code on Windows.
 
 Alternatively, from a local Windows window, enable `texpresso.useWSL` to use a separately installed engine in WSL. Set `texpresso.wslDistribution` if you do not want the default distribution, and set `texpresso.command` to the Linux executable path or leave it empty to find `texpresso` on the distribution's PATH.
 
