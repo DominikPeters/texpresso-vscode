@@ -99,6 +99,14 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(c.resolve(self.query('local.tex')),(0,'D:\\temp\\local.tex\n'))
         self.assertTrue(c.resolve(self.query('article.cls'))[1].endswith('article.cls\n'))
         self.assertEqual(c.resolve(self.query('absent.sty')),(1,''))
+    def test_explicit_frozen_snapshot(self):
+        c=Catalogue(self.metadata,snapshot=True)
+        self.assertTrue(c.resolve(self.query('article.cls'))[1].endswith('article.cls\n'))
+        database(self.db,[])
+        self.assertTrue(c.resolve(self.query('article.cls'))[1].endswith('article.cls\n'))
+        self.assertEqual(c.stats['reloads'],1)
+        (self.root/'tex/latex/base/article.cls').unlink()
+        self.assertEqual(c.resolve(self.query('article.cls')),(1,''),'existing indexed paths still validate the file')
     def test_case_and_requested_subdirectory(self):
         c=Catalogue(self.metadata)
         self.assertTrue(c.resolve(self.query('ARTICLE.CLS'))[1].endswith('article.cls\n'))

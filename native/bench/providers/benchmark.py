@@ -125,7 +125,9 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--catalogue', action='store_true')
+    parser.add_argument('--catalogue-snapshot', action='store_true', help='Benchmark a frozen installation without per-query change checks')
     args = parser.parse_args()
+    args.catalogue=args.catalogue or args.catalogue_snapshot
     output = Path(args.output).resolve(); output.mkdir(parents=True, exist_ok=True)
     engine = str(Path(args.engine).resolve())
     source = output/'main.tex'; source.write_text(DOCUMENT)
@@ -150,7 +152,7 @@ def main():
              ('miktex-windows','direct'), ('miktex-windows','none'),
              ('miktex-windows','paths'), ('miktex-windows','mirror')]
     if args.catalogue:
-        cases=[('texlive','direct'),('miktex-windows','direct'),('miktex-windows','none'),('miktex-windows','catalogue')]
+        cases=[('texlive','direct'),('miktex-windows','direct'),('miktex-windows','none'),('miktex-windows','snapshot' if args.catalogue_snapshot else 'catalogue')]
     catalogue_metadata=None
     results = {}
     def checkpoint():
@@ -169,6 +171,7 @@ def main():
             (output/'catalogue.json').write_text(json.dumps(catalogue_metadata,indent=2))
             validation=validate_catalogue(catalogue_metadata,engine,real_ps,os.environ['TEXPRESSO_MIKTEX_WINDOWS_BIN'],log)
             catalogue_metadata['validation']=validation
+            catalogue_metadata['policy']='frozen installation snapshot' if args.catalogue_snapshot else 'check configuration and database changes per query'
             (output/'catalogue.json').write_text(json.dumps(catalogue_metadata,indent=2))
             print('Catalogue bootstrap/parity: '+json.dumps({'bootstrap_ms':catalogue_metadata['bootstrap_ms'],**validation}),flush=True)
     for provider, mode in cases:

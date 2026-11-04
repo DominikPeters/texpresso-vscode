@@ -84,11 +84,13 @@ def pattern_regex(pattern):
 
 
 class Catalogue:
-    def __init__(self, metadata):
+    def __init__(self, metadata, snapshot=False):
         self.metadata = metadata
         self.roots = metadata['roots']
         self.types = metadata['types']
         self.drives = metadata['drives']
+        self.snapshot=snapshot  # benchmark-only: installation/configuration frozen
+        self.absent=set()
         self.loaded = None
         self.tables = {}
         self.stats = {'local_hits':0,'local_misses':0,'fallbacks':0,'reloads':0,'load_ms':0}
@@ -135,9 +137,13 @@ class Catalogue:
         directories on misses; finding anything delegates ordering to MiKTeX.
         A bounded/incomplete traversal also delegates, including directory links.
         """
+        key=(pattern,base)
+        if self.snapshot and key in self.absent: return True
         prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
         directory=self.translate(prefix)
-        if not directory.exists(): return True
+        if not directory.exists():
+            if self.snapshot: self.absent.add(key)
+            return True
         match=pattern_regex(pattern)
         def failed(error): raise error
         count=0
@@ -148,13 +154,15 @@ class Catalogue:
             windows=ntpath.join(prefix,str(relative).replace('/','\\')) if str(relative)!='.' else prefix
             if match.fullmatch(normal(windows).rstrip('/')+'/') and any(normal(f)==normal(base) for f in files):
                 return False
+        if self.snapshot: self.absent.add(key)
         return True
 
     def _resolve(self, arguments):
         if arguments[1] != 'findtexmf.exe': return None
         if arguments[2:]==['--version']: return (0,self.metadata['version'])
-        if any(fingerprint(p)!=s for p,s in self.config_stamp): return None
-        self.refresh()
+        if not self.snapshot:
+            if any(fingerprint(p)!=s for p,s in self.config_stamp): return None
+            self.refresh()
         kind=None; install=False; filename=None
         for i,argument in enumerate(arguments[2:]):
             if argument=='--':

@@ -92,7 +92,7 @@ def main():
     tool = Path(sys.argv[0]).name
     real_path = os.environ['TXP_BENCH_REAL_WSLPATH']
     catalogue = None
-    if mode == 'catalogue':
+    if mode in ('catalogue','snapshot'):
         from catalogue import Catalogue
         metadata=json.loads(Path(os.environ['TXP_BENCH_CATALOGUE']).read_text())
         if tool == 'wslpath':
@@ -101,7 +101,7 @@ def main():
                 try: print(view.translate(sys.argv[2])); return
                 except ValueError: pass
             os.execv(real_path,[real_path,*sys.argv[1:]])
-        catalogue=Catalogue(metadata)
+        catalogue=Catalogue(metadata,snapshot=mode=='snapshot')
     if tool == 'wslpath':
         # Match the actual provider call; delegate every other invocation.
         if mode == 'mirror' and len(sys.argv) == 3 and sys.argv[1] == '-u':
@@ -128,7 +128,7 @@ def main():
                     counts['lookup_ms'] += (time.monotonic()-started)*1000
                     sys.stdout.write(response); sys.stdout.flush(); continue
             key = cache/'lookups'/digest(encoded)
-            record = read_record(key) if lookup and mode not in ('none','catalogue') else None
+            record = read_record(key) if lookup and mode not in ('none','catalogue','snapshot') else None
             if record:
                 response = record['response']
                 counts['hits'] += 1
@@ -143,7 +143,7 @@ def main():
                 if not response:
                     raise RuntimeError('Windows helper exited')
                 status, body = response.strip().split(':', 1)
-                if lookup and status == '0' and mode in ('none','catalogue'):
+                if lookup and status == '0' and mode in ('none','catalogue','snapshot'):
                     counts['positive'] += 1
                 elif lookup and status == '0':
                     windows = base64.b64decode(body).decode('utf8').strip().strip('"')

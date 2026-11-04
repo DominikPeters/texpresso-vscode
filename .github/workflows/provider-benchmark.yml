@@ -6,6 +6,10 @@ on:
         description: Compare the local Windows MiKTeX FNDB catalogue prototype
         type: boolean
         default: false
+      snapshot:
+        description: Catalogue experiment with installation/configuration frozen (no per-query change checks)
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -17,7 +21,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     env:
-      TEXPRESSO_BENCH_CATALOGUE: ${{ inputs.catalogue }}
+      TEXPRESSO_BENCH_CATALOGUE: ${{ inputs.catalogue || inputs.snapshot }}
+      TEXPRESSO_BENCH_SNAPSHOT: ${{ inputs.snapshot }}
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4

@@ -64,8 +64,10 @@ Bootstrap time is reported separately; catalogue parsing and per-query database
 checks are included in engine timings. No package files are copied.
 
 Before timing, a deterministic sample of installed files and absent names is
-compared against `findtexmf`. Unsupported formats, ambiguous same-pattern names,
-unindexed recursive trees and changed configuration fall back to MiKTeX.
+compared against `findtexmf`. Unsupported formats, ambiguous same-pattern names
+and changed configuration fall back to MiKTeX. Misses also check unmanaged user
+trees locally: an unindexed candidate, directory link or traversal above 4,096
+directories falls back to MiKTeX rather than guessing a result.
 Installation-enabled misses also fall back so package installation stays explicit.
 Existing database/journal updates reload the catalogue. Root/search configuration
 is a startup snapshot; changing it requires exporting fresh metadata/restarting.
@@ -75,3 +77,11 @@ The prototype uses Python and the benchmark proxy, not a new extension setting.
 gh workflow run provider-benchmark.yml --ref codex/v2-release-packaging -f catalogue=true
 PYTHONDONTWRITEBYTECODE=1 python3 native/bench/providers/test_catalogue.py
 ```
+
+The separate `snapshot=true` workflow input (or `--catalogue-snapshot`) measures
+the same catalogue with a **frozen installation/configuration**. It loads the
+database once per helper and does not stat configuration/database files on each
+request; proven unmanaged-tree misses are retained within that helper. Indexed
+positive paths still check that the file exists. This isolates lookup cost from
+update detection and is not safe as a general runtime policy: package/database,
+configuration and unindexed-file changes require a new snapshot/restart.
