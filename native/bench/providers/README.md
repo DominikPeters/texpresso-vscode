@@ -79,9 +79,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 native/bench/providers/test_catalogue.py
 ```
 
 The separate `snapshot=true` workflow input (or `--catalogue-snapshot`) measures
-the same catalogue with a **frozen installation/configuration**. It loads the
+the catalogue against TeX Live with a **frozen installation/configuration**.
+It loads the
 database once per helper and does not stat configuration/database files on each
-request; proven unmanaged-tree misses are retained within that helper. Indexed
+request; resolved misses are retained within that helper. Indexed
 positive paths still check that the file exists. This isolates lookup cost from
 update detection and is not safe as a general runtime policy: package/database,
 configuration and unindexed-file changes require a new snapshot/restart.

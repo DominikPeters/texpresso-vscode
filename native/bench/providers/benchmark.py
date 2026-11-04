@@ -152,7 +152,8 @@ def main():
              ('miktex-windows','direct'), ('miktex-windows','none'),
              ('miktex-windows','paths'), ('miktex-windows','mirror')]
     if args.catalogue:
-        cases=[('texlive','direct'),('miktex-windows','direct'),('miktex-windows','none'),('miktex-windows','snapshot' if args.catalogue_snapshot else 'catalogue')]
+        cases=([('texlive','direct'),('miktex-windows','snapshot')] if args.catalogue_snapshot else
+               [('texlive','direct'),('miktex-windows','direct'),('miktex-windows','none'),('miktex-windows','catalogue')])
     catalogue_metadata=None
     results = {}
     def checkpoint():
@@ -206,6 +207,8 @@ def main():
         checkpoint()
         print(label+' warm '+json.dumps(run),flush=True)
     assert len({value['cold']['initial_png_sha256'] for label,value in results.items() if label.startswith('miktex-windows-')}) == 1, 'Cache strategy changed initial pixels'
+    if args.catalogue_snapshot:
+        assert len({v['cold']['initial_png_sha256'] for v in results.values()}) == 1, 'Snapshot differs from TeX Live reference pixels'
     rows = ['| Provider / cache | Empty format (s) | Warm median (s) | Edit median / max (ms) | Extra lookup/cache MiB |',
             '| --- | ---: | ---: | ---: | ---: |']
     for label, value in results.items():

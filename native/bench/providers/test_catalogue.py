@@ -107,6 +107,15 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(c.stats['reloads'],1)
         (self.root/'tex/latex/base/article.cls').unlink()
         self.assertEqual(c.resolve(self.query('article.cls')),(1,''),'existing indexed paths still validate the file')
+    def test_frozen_misses_are_retained_but_installer_requests_are_not(self):
+        c=Catalogue(self.metadata,snapshot=True)
+        query=self.query('absent.sty')
+        self.assertEqual(c.resolve(query),(1,''))
+        self.assertIn(tuple(query),c.missing_requests)
+        self.assertIsNone(c.resolve(self.query('absent.sty','--must-exist')))
+        self.assertNotIn(tuple(self.query('absent.sty','--must-exist')),c.missing_requests)
+        self.db.unlink()
+        self.assertEqual(c.resolve(query),(1,''),'snapshot does not repeat filesystem work for proven misses')
     def test_case_and_requested_subdirectory(self):
         c=Catalogue(self.metadata)
         self.assertTrue(c.resolve(self.query('ARTICLE.CLS'))[1].endswith('article.cls\n'))

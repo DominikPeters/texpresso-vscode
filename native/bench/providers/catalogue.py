@@ -91,6 +91,7 @@ class Catalogue:
         self.drives = metadata['drives']
         self.snapshot=snapshot  # benchmark-only: installation/configuration frozen
         self.absent=set()
+        self.missing_requests=set()
         self.loaded = None
         self.tables = {}
         self.stats = {'local_hits':0,'local_misses':0,'fallbacks':0,'reloads':0,'load_ms':0}
@@ -126,7 +127,9 @@ class Catalogue:
         self.stats['reloads']+=1; self.stats['load_ms']+=(time.monotonic()-started)*1000
 
     def resolve(self, arguments):
-        result=self._resolve(arguments)
+        key=tuple(arguments)
+        result=(1,'') if self.snapshot and key in self.missing_requests else self._resolve(arguments)
+        if self.snapshot and result == (1,''): self.missing_requests.add(key)
         self.stats['fallbacks' if result is None else 'local_hits' if result[0]==0 else 'local_misses']+=1
         return result
 
