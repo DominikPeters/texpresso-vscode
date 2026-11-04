@@ -124,12 +124,14 @@ def main():
     parser.add_argument('--engine', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--repeats', type=int, default=3)
+    parser.add_argument('--catalogue', action='store_true')
     args = parser.parse_args()
     output = Path(args.output).resolve(); output.mkdir(parents=True, exist_ok=True)
     engine = str(Path(args.engine).resolve())
     source = output/'main.tex'; source.write_text(DOCUMENT)
     real_ps = shutil.which('powershell.exe'); real_wslpath = shutil.which('wslpath')
-    assert real_ps and real_wslpath and shutil.which('findtexmf') and shutil.which('tectonic')
+    assert real_ps and real_wslpath
+    if not args.catalogue: assert shutil.which('findtexmf') and shutil.which('tectonic')
     wrappers = output/'proxy-bin'; wrappers.mkdir(exist_ok=True)
     proxy = Path(__file__).with_name('cache_proxy.py').resolve()
     proxy.chmod(0o755)
@@ -147,6 +149,9 @@ def main():
     cases = [('texlive','direct'), ('tectonic','direct'), ('miktex','direct'),
              ('miktex-windows','direct'), ('miktex-windows','none'),
              ('miktex-windows','paths'), ('miktex-windows','mirror')]
+    if args.catalogue:
+        cases=[('texlive','direct'),('miktex-windows','direct'),('miktex-windows','none'),('miktex-windows','catalogue')]
+    catalogue_metadata=None
     results = {}
     def checkpoint():
         compact = {label: {k:v for k,v in value.items() if k not in ('env','folder')} for label,value in results.items()}
@@ -157,6 +162,15 @@ def main():
         print('Priming installed packages: '+provider, flush=True)
         env = {**provider_environment(provider), 'XDG_CACHE_HOME': str(output/'prime'/provider)}
         session(engine,provider,source,env,output/('prime-'+provider+'.log'),provider.startswith('miktex'),0)
+    if args.catalogue:
+        from catalogue import export_metadata,validate_catalogue
+        with (output/'catalogue-bootstrap.log').open('w') as log:
+            catalogue_metadata=export_metadata(engine,real_ps,os.environ['TEXPRESSO_MIKTEX_WINDOWS_BIN'],real_wslpath,log)
+            (output/'catalogue.json').write_text(json.dumps(catalogue_metadata,indent=2))
+            validation=validate_catalogue(catalogue_metadata,engine,real_ps,os.environ['TEXPRESSO_MIKTEX_WINDOWS_BIN'],log)
+            catalogue_metadata['validation']=validation
+            (output/'catalogue.json').write_text(json.dumps(catalogue_metadata,indent=2))
+            print('Catalogue bootstrap/parity: '+json.dumps({'bootstrap_ms':catalogue_metadata['bootstrap_ms'],**validation}),flush=True)
     for provider, mode in cases:
         label = provider+'-'+mode; folder = output/label; folder.mkdir()
         if provider == 'tectonic':
@@ -164,7 +178,7 @@ def main():
             shutil.rmtree(folder/'formats/texpresso', ignore_errors=True)
         env = {**provider_environment(provider), 'XDG_CACHE_HOME': str(folder/'formats'), 'TXP_BENCH_CACHE_MODE': mode,
                'TXP_BENCH_CACHE': str(folder/'lookup-cache'), 'TXP_BENCH_REAL_POWERSHELL': real_ps,
-               'TXP_BENCH_REAL_WSLPATH': real_wslpath}
+               'TXP_BENCH_REAL_WSLPATH': real_wslpath, 'TXP_BENCH_CATALOGUE': str(output/'catalogue.json')}
         if mode != 'direct': env['PATH'] = str(wrappers)+os.pathsep+base['PATH']
         stats = folder/'stats-cold'; env['TXP_BENCH_STATS'] = str(stats)
         print('Measuring empty format/cache: '+label, flush=True)
@@ -199,7 +213,8 @@ def main():
         rows.append('| %s | %.3f | %.3f | %.1f / %.1f | %.2f |' % (label,value['cold']['startup_ms']/1000,
             statistics.median(r['startup_ms'] for r in warm)/1000,statistics.median(edits),max(edits),value['cache_bytes']/1024**2))
     metadata = {'engine_revision': subprocess.check_output(['git','-C',str(Path(engine).parents[1]),'rev-parse','HEAD'],text=True).strip(),
-                'versions': {command: subprocess.check_output(['/usr/bin/kpsewhich' if command == 'kpsewhich' else command, '--version'],stderr=subprocess.DEVNULL,text=True).splitlines()[0] for command in ('kpsewhich','findtexmf','tectonic')},
+                'catalogue':catalogue_metadata,
+                'versions': {command: subprocess.check_output(['/usr/bin/kpsewhich' if command == 'kpsewhich' else command, '--version'],stderr=subprocess.DEVNULL,text=True).splitlines()[0] for command in (('kpsewhich',) if args.catalogue else ('kpsewhich','findtexmf','tectonic'))},
                 'document_sha256': hashlib.sha256(DOCUMENT.encode()).hexdigest(), 'repeats': args.repeats,
                 'environment': subprocess.check_output(['uname','-a'],text=True).strip(), 'results': results}
     (output/'results.json').write_text(json.dumps(metadata,indent=2)+'\n')

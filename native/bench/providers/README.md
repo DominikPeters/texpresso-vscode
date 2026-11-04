@@ -52,3 +52,26 @@ the disposable runner. Save the final compact report, revisions and command in
 `docs/profiling/` before raw diagnostic retention expires.
 
 Results: [4 November 2026](../../../docs/profiling/2026-11-04-provider-cache.md).
+
+## Local FNDB catalogue prototype
+
+Run the manual workflow with `catalogue=true` to compare TeX Live, the existing
+Windows bridge, the instrumented control, and a local FNDB-5 catalogue. This mode
+only needs Windows MiKTeX and the prepared WSL TeX Live installation. It exports
+MiKTeX's configured roots, file types and expanded search paths once after package
+provisioning, then reads the installed FNDB files and update journals in WSL.
+Bootstrap time is reported separately; catalogue parsing and per-query database
+checks are included in engine timings. No package files are copied.
+
+Before timing, a deterministic sample of installed files and absent names is
+compared against `findtexmf`. Unsupported formats, ambiguous same-pattern names,
+unindexed recursive trees and changed configuration fall back to MiKTeX.
+Installation-enabled misses also fall back so package installation stays explicit.
+Existing database/journal updates reload the catalogue. Root/search configuration
+is a startup snapshot; changing it requires exporting fresh metadata/restarting.
+The prototype uses Python and the benchmark proxy, not a new extension setting.
+
+```sh
+gh workflow run provider-benchmark.yml --ref codex/v2-release-packaging -f catalogue=true
+PYTHONDONTWRITEBYTECODE=1 python3 native/bench/providers/test_catalogue.py
+```

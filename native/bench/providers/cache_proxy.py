@@ -91,6 +91,17 @@ def main():
     stats.mkdir(parents=True, exist_ok=True)
     tool = Path(sys.argv[0]).name
     real_path = os.environ['TXP_BENCH_REAL_WSLPATH']
+    catalogue = None
+    if mode == 'catalogue':
+        from catalogue import Catalogue
+        metadata=json.loads(Path(os.environ['TXP_BENCH_CATALOGUE']).read_text())
+        if tool == 'wslpath':
+            if len(sys.argv)==3 and sys.argv[1]=='-u':
+                view=Catalogue.__new__(Catalogue); view.drives=metadata['drives']
+                try: print(view.translate(sys.argv[2])); return
+                except ValueError: pass
+            os.execv(real_path,[real_path,*sys.argv[1:]])
+        catalogue=Catalogue(metadata)
     if tool == 'wslpath':
         # Match the actual provider call; delegate every other invocation.
         if mode == 'mirror' and len(sys.argv) == 3 and sys.argv[1] == '-u':
@@ -109,8 +120,15 @@ def main():
             args = base64.b64decode(encoded).decode('utf8').split('\0')
             counts['requests'] += 1
             lookup = args[1] == 'findtexmf.exe' and '--version' not in args
+            if catalogue:
+                local=catalogue.resolve(args)
+                if local is not None:
+                    status,body=local
+                    response=str(status)+':'+base64.b64encode(body.encode('utf8')).decode()+'\n'
+                    counts['lookup_ms'] += (time.monotonic()-started)*1000
+                    sys.stdout.write(response); sys.stdout.flush(); continue
             key = cache/'lookups'/digest(encoded)
-            record = read_record(key) if lookup and mode != 'none' else None
+            record = read_record(key) if lookup and mode not in ('none','catalogue') else None
             if record:
                 response = record['response']
                 counts['hits'] += 1
@@ -125,7 +143,7 @@ def main():
                 if not response:
                     raise RuntimeError('Windows helper exited')
                 status, body = response.strip().split(':', 1)
-                if lookup and status == '0' and mode == 'none':
+                if lookup and status == '0' and mode in ('none','catalogue'):
                     counts['positive'] += 1
                 elif lookup and status == '0':
                     windows = base64.b64decode(body).decode('utf8').strip().strip('"')
@@ -147,6 +165,7 @@ def main():
             counts['lookup_ms'] += (time.monotonic()-started)*1000
             sys.stdout.write(response); sys.stdout.flush()
     finally:
+        if catalogue: counts['catalogue']=catalogue.stats
         write_record(stats/('proxy-'+str(os.getpid())+'.json'), counts)
         if child:
             child.stdin.close()

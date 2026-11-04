@@ -1,6 +1,11 @@
 name: Provider and cache benchmark
 on:
   workflow_dispatch:
+    inputs:
+      catalogue:
+        description: Compare the local Windows MiKTeX FNDB catalogue prototype
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -11,6 +16,8 @@ jobs:
     name: Same-runner WSL providers and cache strategies
     runs-on: windows-2022
     timeout-minutes: 90
+    env:
+      TEXPRESSO_BENCH_CATALOGUE: ${{ inputs.catalogue }}
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4

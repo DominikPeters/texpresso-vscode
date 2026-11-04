@@ -7,11 +7,14 @@ const wsl = args => execFileSync('wsl', ['-e', ...args], { stdio: 'inherit', tim
 const linuxPath = input => execFileSync('wsl', ['-e','wslpath','-a','-u',input], { encoding:'utf8' }).trim();
 const source = linuxPath(path.resolve('native/bench/providers'));
 if (process.argv[2] === 'prepare') {
+  if (process.env.TEXPRESSO_BENCH_CATALOGUE === 'true') { console.log('Catalogue benchmark uses the existing WSL TeX Live and Windows MiKTeX'); process.exit(0); }
   wsl(['env','GITHUB_ACTIONS=true','bash',linuxPath(path.resolve('scripts/ci/provider-benchmark-linux.sh'))]);
 } else if (process.argv[2] === 'run') {
   wsl(['sh','-ec','mkdir -p /opt/provider-benchmark; cp -a "$1/." /opt/provider-benchmark/','benchmark-copy',source]);
+  wsl(['env','PYTHONDONTWRITEBYTECODE=1','python3','/opt/provider-benchmark/test_catalogue.py']);
+  wsl(['env','PYTHONDONTWRITEBYTECODE=1','python3','/opt/provider-benchmark/test_cache.py']);
   wsl(['env','TEXPRESSO_MIKTEX_WINDOWS_BIN='+process.env.TEXPRESSO_WINDOWS_MIKTEX_BIN,
-    'sh','-c','export PATH="$HOME/bin:$HOME/.miktex/texmfs/install/miktex/bin:$PATH"; exec python3 /opt/provider-benchmark/benchmark.py --engine /opt/texpresso/build/texpresso --output /opt/provider-benchmark-output --repeats 3']);
+    'sh','-c','export PATH="$HOME/bin:$HOME/.miktex/texmfs/install/miktex/bin:$PATH"; exec python3 /opt/provider-benchmark/benchmark.py --engine /opt/texpresso/build/texpresso --output /opt/provider-benchmark-output --repeats 3'+(process.env.TEXPRESSO_BENCH_CATALOGUE === 'true' ? ' --catalogue' : '')]);
 } else if (process.argv[2] === 'collect') {
   const output = path.resolve('artifacts/provider-benchmark'); fs.mkdirSync(output,{recursive:true});
   // Collect compact reports/logs, not format caches, mirrored files or binaries.
