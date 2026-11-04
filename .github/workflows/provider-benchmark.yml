@@ -1,0 +1,70 @@
+name: Provider and cache benchmark
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/provider-benchmark.yml
+      - native/bench/providers/**
+      - scripts/ci/provider-benchmark*
+permissions:
+  contents: read
+concurrency:
+  group: provider-benchmark-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    name: Same-runner WSL providers and cache strategies
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - name: Read committed engine pin
+        id: engine-pin
+        shell: bash
+        run: echo "revision=$(git rev-parse HEAD:native/texpresso)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: DominikPeters/texpresso
+          ref: ${{ steps.engine-pin.outputs.revision }}
+          path: .engine
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Configure prepared WSL cache
+        id: wsl-config
+        run: node scripts/ci/wsl-environment.cjs configure
+      - uses: actions/cache/restore@v4
+        id: wsl-cache
+        with:
+          path: ${{ runner.temp }}/texpresso-wsl.tar
+          key: wsl2-windows2022-ubuntu2404-v2-${{ hashFiles('scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
+      - name: Import prepared WSL distribution
+        if: steps.wsl-cache.outputs.cache-hit == 'true'
+        run: node scripts/ci/wsl-environment.cjs import
+      - name: Install prepared WSL distribution
+        if: steps.wsl-cache.outputs.cache-hit != 'true'
+        run: node scripts/ci/wsl-environment.cjs install
+      - name: Build pinned engine
+        run: node scripts/ci/wsl-environment.cjs build
+      - name: Install Windows MiKTeX
+        run: ./scripts/ci/windows-miktex.ps1
+        timeout-minutes: 15
+      - name: Install Linux MiKTeX and Tectonic in disposable WSL
+        run: node scripts/ci/provider-benchmark.cjs prepare
+        timeout-minutes: 15
+      - name: Benchmark providers, edits, path cache and local file mirror
+        run: node scripts/ci/provider-benchmark.cjs run
+        timeout-minutes: 55
+      - name: Collect compact benchmark results and logs
+        if: always()
+        run: node scripts/ci/provider-benchmark.cjs collect
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: provider-benchmark
+          path: |
+            artifacts/provider-benchmark/
+            artifacts/windows-miktex/
+          retention-days: 7
+          if-no-files-found: ignore
