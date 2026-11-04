@@ -128,6 +128,28 @@ class Catalogue:
         self.stats['fallbacks' if result is None else 'local_hits' if result[0]==0 else 'local_misses']+=1
         return result
 
+    def filesystem_miss(self, pattern, base):
+        """Prove absence in an unmanaged recursive tree, never guess a hit.
+
+        User config/data roots are not FNDB-authoritative. Walk their actual
+        directories on misses; finding anything delegates ordering to MiKTeX.
+        A bounded/incomplete traversal also delegates, including directory links.
+        """
+        prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
+        directory=self.translate(prefix)
+        if not directory.exists(): return True
+        match=pattern_regex(pattern)
+        def failed(error): raise error
+        count=0
+        for folder,dirs,files in os.walk(directory,onerror=failed):
+            count+=1
+            if count>4096 or any((Path(folder)/d).is_symlink() for d in dirs): return False
+            relative=Path(folder).relative_to(directory)
+            windows=ntpath.join(prefix,str(relative).replace('/','\\')) if str(relative)!='.' else prefix
+            if match.fullmatch(normal(windows).rstrip('/')+'/') and any(normal(f)==normal(base) for f in files):
+                return False
+        return True
+
     def _resolve(self, arguments):
         if arguments[1] != 'findtexmf.exe': return None
         if arguments[2:]==['--version']: return (0,self.metadata['version'])
@@ -186,8 +208,7 @@ class Catalogue:
                     # Existing unindexed recursive trees must use the real resolver.
                     try:
                         if '//' in normal(pattern)[3:]:
-                            prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
-                            if self.translate(prefix).exists(): return None
+                            if not self.filesystem_miss(pattern,base): return None
                         else:
                             win=ntpath.normpath(ntpath.join(pattern,base))
                             if self.translate(win).is_file(): return (0,win+'\n')
@@ -195,8 +216,7 @@ class Catalogue:
             for pattern in deferred:
                 try:
                     if '//' in normal(pattern)[3:]:
-                        prefix=re.split(r'/{2,}',pattern,maxsplit=1)[0]
-                        if self.translate(prefix).exists(): return None
+                        if not self.filesystem_miss(pattern,base): return None
                     else:
                         win=ntpath.normpath(ntpath.join(pattern,base))
                         if self.translate(win).is_file(): return (0,win+'\n')

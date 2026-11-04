@@ -72,8 +72,11 @@ class CatalogueTests(unittest.TestCase):
         c=Catalogue(self.metadata)
         self.assertTrue(c.resolve(self.query('article.cls'))[1].endswith('base\\article.cls\n'))
         self.metadata['roots'][0]['managed']=False
+        self.metadata['types']['tex']['paths']=['D:/texmf/tex//']
         c=Catalogue(self.metadata)
-        self.assertIsNone(c.resolve(self.query('not-indexed.sty')),'unmanaged filesystem fallback is required')
+        self.assertEqual(c.resolve(self.query('not-indexed.sty')),(1,''))
+        (self.root/'tex/latex/base/not-indexed.sty').write_text('unindexed')
+        self.assertIsNone(c.resolve(self.query('not-indexed.sty')),'unindexed filesystem hit needs reference ordering')
     def test_configuration_change_and_explicit_filetype(self):
         config=self.folder/'miktex.ini'; config.write_text('initial')
         self.metadata['config_watch']=[str(config)]; c=Catalogue(self.metadata)
