@@ -135,34 +135,6 @@ jobs:
       - name: Test idle pagination after an external full build
         run: python3 .engine/test/test-idle-rerun.py .engine/build/texpresso
         timeout-minutes: 3
-      - name: Test MiKTeX lookup contract without external packages
-        run: python3 .engine/test/test-miktex-provider.py
-      - name: Install actual MiKTeX
-        run: |
-          curl -fsSL https://miktex.org/download/key | sudo gpg --dearmor -o /usr/share/keyrings/miktex.gpg
-          echo "deb [signed-by=/usr/share/keyrings/miktex.gpg] https://miktex.org/download/ubuntu noble universe" | sudo tee /etc/apt/sources.list.d/miktex.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends miktex
-          miktexsetup finish
-        timeout-minutes: 8
-      - name: Test real MiKTeX compilation, fonts and provider cache
-        run: |
-          export PATH="$HOME/bin:$HOME/.miktex/texmfs/install/miktex/bin:$PATH"
-          retry_miktex() {
-            for attempt in 1 2 3; do
-              status=0
-              miktex packages "$@" || status=$?
-              if [ "$status" -eq 0 ] || { [ "$1" = check-update ] && [ "$status" -eq 100 ]; }; then return 0; fi
-              if [ "$attempt" -eq 3 ]; then return "$status"; fi
-              echo "Retrying MiKTeX package metadata after exit $status (attempt $attempt)"
-              sleep 5
-            done
-          }
-          retry_miktex update-package-database
-          retry_miktex check-update
-          retry_miktex update
-          python3 .engine/test/test-miktex-real.py .engine/build/texpresso
-        timeout-minutes: 15
       - name: Test native synchronization, controls, and dependencies
         run: npm run test:engine
         timeout-minutes: 4
@@ -238,18 +210,6 @@ jobs:
       - name: Test binary preview images between WSL and the Windows webview
         run: npm run test:integration:preview
         timeout-minutes: 5
-      - name: Install Windows MiKTeX for WSL bridge acceptance
-        run: ./scripts/ci/windows-miktex.ps1
-        timeout-minutes: 10
-      - name: Test WSL engine using Windows MiKTeX packages and cancellation
-        run: node scripts/ci/test-windows-miktex.cjs
-        timeout-minutes: 25
-      - name: Copy Windows-MiKTeX bridge diagnostics
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p artifacts/windows-miktex
-          MSYS_NO_PATHCONV=1 wsl -e tar -C /opt/texpresso -cf - windows-miktex-diagnostics | tar -C artifacts/windows-miktex -xf - || true
       - name: Save Windows host and real-engine diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

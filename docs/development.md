@@ -50,3 +50,14 @@ source checkout. Platform-specific VSIXs include the tested native bundle.
 Developer performance measurements and the repeatable offline suite are in
 [preview profiling](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/profiling/README.md).
 
+
+### Deferred MiKTeX experiments
+
+VS Code v2 exposes TeX Live and Tectonic, with TeX Live selected explicitly by
+default. MiKTeX extension settings, Windows/WSL integration, catalogue/cache
+prototypes and their dedicated workflow are preserved on
+[`codex/miktex-experiments`](https://github.com/DominikPeters/texpresso-vscode/tree/codex/miktex-experiments).
+The compact [provider measurements](profiling/2026-11-04-provider-cache.md) and
+[catalogue results](profiling/2026-11-04-miktex-catalogue.md) remain here.
+Shared-engine provider code and history remain unified with TeXstudio; the
+extension release boundary does not require a separate engine fork.

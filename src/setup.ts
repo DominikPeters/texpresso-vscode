@@ -58,8 +58,7 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
       ? await inWsl(paths.engineDirectory, configuration.command, configuration.wslDistribution)
       : await findExecutable(configuration.command, paths.engineDirectory);
     lines.push(resolved ? 'Executable found: ' + resolved : 'Executable NOT FOUND: ' + configuration.command);
-    for (const command of (configuration.packageProvider === 'miktex-windows'
-      ? ['powershell.exe', 'wslpath'] : ['kpsewhich', 'findtexmf', 'tectonic'])) {
+    for (const command of ['kpsewhich', 'tectonic']) {
       let found: string | undefined;
       try {
         found = configuration.useWSL ? await inWsl(paths.engineDirectory, command, configuration.wslDistribution)
@@ -67,15 +66,9 @@ export async function setupReport(configuration: SessionConfiguration, paths: Se
       } catch { /* An absent package provider is useful information, not a failed report. */ }
       lines.push(command + ': ' + (found || 'not found on PATH'));
     }
-    if (configuration.packageProvider === 'miktex-windows') {
-      lines.push('', 'Experimental: the Linux engine reads packages from Windows MiKTeX through WSL interop.',
-        'Windows MiKTeX directory: ' + (configuration.miktexWindowsBin || 'Windows PATH'),
-        'Automatic package installation: ' + (configuration.miktexAutoInstall ? 'enabled' : 'disabled'),
-        'Requires Windows PowerShell and access to the Windows installation through wslpath.');
-    }
     lines.push('', 'Remote WSL runs the extension and Linux engine together; useWSL is ignored there.',
       'On Windows, use TeXpresso: Reopen Folder in WSL for the recommended setup.',
-      'Install a package provider beside the engine, or explicitly select Windows MiKTeX from WSL.');
+      'Install TeX Live or Tectonic beside the engine.');
   } catch (error) {
     lines.push('Setup check failed: ' + (error instanceof Error ? error.message : String(error)));
   }

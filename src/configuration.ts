@@ -3,7 +3,7 @@ import * as path from 'path';
 import { SessionPaths } from './paths';
 import { wslArguments } from './wsl';
 
-export type PackageProvider = 'auto' | 'texlive' | 'miktex' | 'miktex-windows' | 'tectonic';
+export type PackageProvider = 'texlive' | 'tectonic';
 
 export interface SessionConfiguration {
   command: string;
@@ -13,8 +13,6 @@ export interface SessionConfiguration {
   wslDistribution?: string;
   useChangeRangeMode: boolean;
   packageProvider: PackageProvider;
-  miktexAutoInstall?: boolean;
-  miktexWindowsBin?: string;
   includeDirectories: string[];
   arguments: string[];
   autoRerun: boolean;
@@ -31,14 +29,17 @@ export interface LaunchCommand {
 
 // Read settings for the root document on every start, including multi-root workspaces.
 export function readConfiguration(configuration: vscode.WorkspaceConfiguration): SessionConfiguration {
+  const savedProvider = configuration.get<string>('packageProvider', 'texlive');
+  const packageProvider = savedProvider === 'auto' ? 'texlive' : savedProvider;
+  if (packageProvider !== 'texlive' && packageProvider !== 'tectonic') {
+    throw new Error('Select TeX Live or Tectonic in TeXpresso Package Provider settings.');
+  }
   return {
     command: configuration.get<string>('command', ''),
     useWSL: configuration.get<boolean>('useWSL', false),
     wslDistribution: configuration.get<string>('wslDistribution', '').trim(),
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
-    packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
-    miktexAutoInstall: configuration.get<boolean>('miktexAutoInstall', false),
-    miktexWindowsBin: configuration.get<string>('miktexWindowsBin', '').trim(),
+    packageProvider,
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
     arguments: configuration.get<string[]>('arguments', []),
     autoRerun: configuration.get<boolean>('autoRerun', false),
@@ -50,7 +51,6 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
 
 export function buildLaunchCommand(config: SessionConfiguration, paths: SessionPaths): LaunchCommand {
   const args: string[] = [];
-  const providers = new Set<string>();
   for (let i = 0; i < config.arguments.length; i++) {
     const argument = config.arguments[i];
     if (argument === '-I') {
@@ -59,40 +59,18 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
         throw new Error('The -I argument needs a directory.');
       }
       args.push('-I', directory);
-    } else if (argument === '-miktex-windows-bin') {
-      const directory = config.arguments[++i];
-      if (directory === undefined) { throw new Error('The -miktex-windows-bin argument needs a Windows directory.'); }
-      if (!config.miktexWindowsBin) { args.push(argument, directory); }
     } else if (argument === '-headless' || argument === '-capabilities') {
       throw new Error('Use TeXpresso Preview Location in Settings instead of adding ' + argument + ' to arguments.');
     } else if (argument === '-stream') {
       throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
-    } else if (argument === '-texlive' || argument === '-miktex' || argument === '-miktex-windows' || argument === '-tectonic') {
-      if (config.packageProvider === 'auto') {
-        providers.add(argument);
-        args.push(argument);
-      }
+    } else if (argument === '-texlive' || argument === '-tectonic') {
+      // The dedicated setting takes precedence over legacy provider arguments.
     } else {
       args.push(argument);
     }
   }
-  if (config.packageProvider !== 'auto') {
-    // Dedicated settings take precedence over equivalent legacy arguments.
-    args.push('-' + config.packageProvider);
-  }
-  if (providers.size > 1) {
-    throw new Error('Choose one of -texlive, -miktex, -miktex-windows or -tectonic in TeXpresso additional arguments.');
-  }
-  if (config.miktexAutoInstall) {
-    if (config.packageProvider !== 'miktex' && config.packageProvider !== 'miktex-windows' &&
-        !(config.packageProvider === 'auto' && (providers.has('-miktex') || providers.has('-miktex-windows')))) {
-      throw new Error('Select MiKTeX explicitly before enabling automatic package installation.');
-    }
-    args.push('-miktex-auto-install');
-  }
-  if (config.miktexWindowsBin) {
-    args.push('-miktex-windows-bin', config.miktexWindowsBin);
-  }
+  // Select explicitly so the shared engine cannot auto-detect a parked provider.
+  args.push('-' + config.packageProvider);
   for (const directory of config.includeDirectories) {
     args.push('-I', paths.includeDirectory(directory));
   }

@@ -1,5 +1,11 @@
 # Windows MiKTeX catalogue in WSL, 4 November 2026
 
+MiKTeX integration is deferred from VS Code v2.0.0. The extension integration,
+experiment sources and dedicated workflow are preserved on
+[`codex/miktex-experiments`](https://github.com/DominikPeters/texpresso-vscode/tree/codex/miktex-experiments).
+Check out that branch for the reproduction commands below. Shared-engine
+provider code remains in the unified engine history.
+
 The FNDB catalogue can answer ordinary lookups correctly without launching
 Windows processes. It passes 102 real-resolver parity checks. A deliberately
 frozen snapshot cuts later edits from about 1.37 seconds to about 0.10 seconds
@@ -137,8 +143,8 @@ runner is insufficient to establish performance across real projects or systems.
 - Document SHA-256: `b046c0e18e28bcfbae6d52adca6053ac25094ebfd1543f4264d02aa541f08700`.
 
 ```sh
-gh workflow run provider-benchmark.yml --ref codex/v2-release-packaging -f catalogue=true
-gh workflow run provider-benchmark.yml --ref codex/v2-release-packaging -f snapshot=true
+gh workflow run provider-benchmark.yml --ref codex/miktex-experiments -f catalogue=true
+gh workflow run provider-benchmark.yml --ref codex/miktex-experiments -f snapshot=true
 python3 -B native/bench/providers/test_catalogue.py
 ```
 

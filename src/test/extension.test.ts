@@ -4,7 +4,7 @@ import { PassThrough } from 'node:stream';
 import type * as vscode from 'vscode';
 import { readProtocol, Command, Message } from '../protocol';
 import { OutputBuffer, SessionOutput } from '../logs';
-import { buildLaunchCommand } from '../configuration';
+import { buildLaunchCommand, readConfiguration } from '../configuration';
 import { SessionPaths } from '../paths';
 import { DocumentSync } from '../document-sync';
 import { TexpressoSession } from '../session';
@@ -79,8 +79,9 @@ test('provider settings override legacy flags without mutating user arguments', 
   assert.equal(first.command, 'texpresso');
   assert.equal(first.cwd, directory);
   assert.deepEqual(buildLaunchCommand({ ...config, arguments: ['-tectonic'] }, paths).args,
+    ['-texlive', '-json', '-lines', root]);
+  assert.deepEqual(buildLaunchCommand({ ...config, packageProvider: 'tectonic', arguments: ['-tectonic', '-texlive'] }, paths).args,
     ['-tectonic', '-json', '-lines', root]);
-  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-tectonic', '-texlive'] }, paths));
   assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-I'] }, paths));
   assert.deepEqual(buildLaunchCommand({ ...configuration, arguments: ['-I', '-tectonic'] }, paths).args.slice(0, 3),
     ['-I', '-tectonic', '-texlive']);
@@ -211,30 +212,14 @@ test('session handles reset-sync and preserves final output when the process exi
 });
 
 
-test('MiKTeX selection and automatic installation are explicit launch arguments', () => {
-  const paths = new SessionPaths(path.resolve('/work/main.tex'), false);
-  const launch = buildLaunchCommand({ ...config, packageProvider: 'miktex', miktexAutoInstall: true,
-    arguments: ['-texlive'] }, paths);
-  assert.ok(launch.args.includes('-miktex'));
-  assert.ok(launch.args.includes('-miktex-auto-install'));
-  assert.ok(!launch.args.includes('-texlive'));
-  assert.ok(!buildLaunchCommand({ ...config, packageProvider: 'miktex' }, paths).args.includes('-miktex-auto-install'));
-  assert.throws(() => buildLaunchCommand({ ...config, miktexAutoInstall: true }, paths));
-  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-miktex', '-texlive'] }, paths));
-});
-
-
-test('Windows MiKTeX keeps its Windows directory literal across WSL launch arguments', () => {
-  const paths = new SessionPaths(path.resolve('/work/main.tex'), false);
-  const bin = String.raw`C:\MiKTeX café ' $(literal)\bin`;
-  const launch = buildLaunchCommand({ ...config, useWSL: true, packageProvider: 'miktex-windows',
-    miktexWindowsBin: bin, miktexAutoInstall: true,
-    arguments: ['-miktex', '-miktex-windows-bin', 'old directory'] }, paths);
-  assert.equal(launch.command, 'wsl');
-  assert.ok(launch.args.includes('-miktex-windows'));
-  assert.ok(launch.args.includes('-miktex-auto-install'));
-  assert.equal(launch.args[launch.args.indexOf('-miktex-windows-bin') + 1], bin);
-  assert.ok(!launch.args.includes('old directory'));
-  assert.ok(!launch.args.includes('-miktex'));
-  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-miktex-windows-bin'] }, paths));
+test('release provider configuration defaults explicitly and handles saved experimental choices', () => {
+  const settings = (values: Record<string, unknown>) => ({
+    get: (key: string, fallback: unknown) => values[key] ?? fallback
+  }) as vscode.WorkspaceConfiguration;
+  assert.equal(readConfiguration(settings({})).packageProvider, 'texlive');
+  assert.equal(readConfiguration(settings({ packageProvider: 'auto' })).packageProvider, 'texlive');
+  assert.equal(readConfiguration(settings({ packageProvider: 'tectonic' })).packageProvider, 'tectonic');
+  for (const packageProvider of ['miktex', 'miktex-windows']) {
+    assert.throws(() => readConfiguration(settings({ packageProvider })), /Select TeX Live or Tectonic/);
+  }
 });

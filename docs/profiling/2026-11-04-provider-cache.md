@@ -1,5 +1,11 @@
 # Package providers and cache experiments, 4 November 2026
 
+MiKTeX integration is deferred from VS Code v2.0.0. The extension integration,
+experiment sources and dedicated workflow are preserved on
+[`codex/miktex-experiments`](https://github.com/DominikPeters/texpresso-vscode/tree/codex/miktex-experiments).
+Check out that branch for the reproduction commands below. Shared-engine
+provider code remains in the unified engine history.
+
 TeX Live and Tectonic are responsive on this fixture. Both MiKTeX paths are too
 slow for a good live-preview experience in their current implementation.
 Persisting positive lookup paths helps, but does not solve that problem. Copying

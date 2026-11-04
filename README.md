@@ -6,7 +6,7 @@ Edit LaTeX with a live preview beside your source. TeXpresso updates the preview
 
 ## Getting started
 
-1. Install the extension and a TeX package provider, such as TeX Live or Tectonic, on the machine where the extension runs.
+1. Install the extension and a TeX package provider, such as TeX Live or Tectonic, on the machine where the extension runs. For Tectonic, select it in `texpresso.packageProvider`.
 2. Open a LaTeX document in VS Code.
 3. Open the Command Palette and run **TeXpresso: Start Document**. The preview opens beside your source and updates as you edit.
 
@@ -28,18 +28,13 @@ For Windows, we recommend opening your project in a [WSL](https://code.visualstu
 
 Alternatively, from a local Windows window, enable `texpresso.useWSL` to use a separately installed engine in WSL. Set `texpresso.wslDistribution` if you do not want the default distribution, and set `texpresso.command` to the Linux executable path or leave it empty to find `texpresso` on the distribution's PATH.
 
-To try an existing **Windows MiKTeX installation**, select **Windows MiKTeX from WSL (Experimental)** in `texpresso.packageProvider`. The engine still runs in WSL; packages and fonts come from Windows MiKTeX. If MiKTeX is absent from the Windows PATH, set `texpresso.miktexWindowsBin` to its Windows binary directory, such as `C:\Program Files\MiKTeX\miktex\bin\x64`. Enable `texpresso.miktexAutoInstall` if you want missing packages downloaded automatically. This works in a Remote WSL window or with the local Windows configuration above, and requires WSL Windows interoperability and Windows PowerShell.
-
-MiKTeX support is experimental and currently substantially slower, including during editing. Select TeX Live or Tectonic in `texpresso.packageProvider` for the most responsive preview; see the [provider benchmarks](https://github.com/DominikPeters/texpresso-vscode/blob/HEAD/docs/profiling/2026-11-04-provider-cache.md).
-
 ## Settings
 
 Search for **TeXpresso** in VS Code Settings. Common options include:
 
 - `texpresso.command`: choose an external engine.
 - `texpresso.previewLocation`: choose Auto, Editor or Window.
-- `texpresso.packageProvider`: choose Automatic, TeX Live, MiKTeX or Tectonic.
-- `texpresso.miktexAutoInstall`: allow MiKTeX to download missing packages without prompting (off by default; select MiKTeX explicitly).
+- `texpresso.packageProvider`: choose TeX Live (the default) or Tectonic.
 - `texpresso.includeDirectories`: add directories for project inputs.
 - `texpresso.autoRerun`: run additional passes for references and the table of contents when editing pauses.
 - `texpresso.watchDependencies`: refresh when project files change on disk.

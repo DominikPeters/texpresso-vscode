@@ -8,7 +8,7 @@ import * as path from 'node:path';
 
 export const config: SessionConfiguration = {
   command: 'texpresso', useWSL: false, useChangeRangeMode: true,
-  packageProvider: 'auto', includeDirectories: [], arguments: [],
+  packageProvider: 'texlive', includeDirectories: [], arguments: [],
   autoRerun: false, watchDependencies: true, streamFiles: false, previewLocation: 'window'
 };
 
