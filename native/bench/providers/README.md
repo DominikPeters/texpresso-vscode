@@ -52,6 +52,7 @@ the disposable runner. Save the final compact report, revisions and command in
 `docs/profiling/` before raw diagnostic retention expires.
 
 Results: [4 November 2026](../../../docs/profiling/2026-11-04-provider-cache.md).
+Catalogue results: [FNDB and frozen snapshots](../../../docs/profiling/2026-11-04-miktex-catalogue.md).
 
 ## Local FNDB catalogue prototype
 

@@ -1,0 +1,842 @@
+{
+  "engine_revision": "25ea10f6a443636fff55f36c69dfd9e46952a0ea",
+  "catalogue": {
+    "schema": 1,
+    "source_revision": "76d1b3bd2b69857f30133c62ff9ab66c83dcf80f",
+    "version": "MiKTeX Find Utility 4.1 (MiKTeX 26.5)\r\n\r\n\u00a9 2001-2024 Christian Schenk\r\n\r\nThis is free software; see the source for copying conditions.  There is NO\r\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\r\n",
+    "roots": [
+      {
+        "windows": "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX",
+        "linux": "/mnt/c/Users/runneradmin/AppData/Roaming/MiKTeX",
+        "fndb": "/mnt/c/Users/runneradmin/AppData/Local/MiKTeX/miktex/data/le/01fb240f4856bb33062fbe0df7e0e805.fndb-5",
+        "managed": false
+      },
+      {
+        "windows": "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX",
+        "linux": "/mnt/c/Users/runneradmin/AppData/Local/MiKTeX",
+        "fndb": "/mnt/c/Users/runneradmin/AppData/Local/MiKTeX/miktex/data/le/fbfe04d6c1f03b40a14beb962e76e34d.fndb-5",
+        "managed": false
+      },
+      {
+        "windows": "D:\\a\\_temp\\MiKTeX bridge caf\u00e9",
+        "linux": "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9",
+        "fndb": "/mnt/c/Users/runneradmin/AppData/Local/MiKTeX/miktex/data/le/912ad6100ddec98b52f847696281207a.fndb-5",
+        "managed": true
+      }
+    ],
+    "types": {
+      "cid maps": {
+        "extensions": [
+          ".cid",
+          ".cidmap"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/cid//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/cid//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/cid//"
+        ]
+      },
+      "enc": {
+        "extensions": [
+          ".enc"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/enc//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/enc//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/enc//"
+        ]
+      },
+      "graphic/figure": {
+        "extensions": [
+          ".eps",
+          ".epsi",
+          ".png"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\dvips//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\pdftex//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\pdftex//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\pdftex//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\tex//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\tex//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\tex//"
+        ]
+      },
+      "map": {
+        "extensions": [
+          ".map"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/map/findtexmf//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/map/pdftex//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/map/dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/map///",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/map/findtexmf//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/map/pdftex//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/map/dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/map///",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/map/findtexmf//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/map/pdftex//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/map/dvips//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/map///"
+        ]
+      },
+      "opentype fonts": {
+        "extensions": [
+          ".otf"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/opentype//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/opentype//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/opentype//",
+          "C:\\Windows\\Fonts"
+        ]
+      },
+      "PostScript header": {
+        "extensions": [
+          ".pro",
+          ".enc"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/enc//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/type1//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/type42//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/type3//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\dvips//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/enc//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/type1//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/type42//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/type3//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\dvips//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/enc//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/type1//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/type42//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/type3//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\$psfontdirs"
+        ]
+      },
+      "tex": {
+        "extensions": [
+          ".tex"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\tex/findtexmf//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\tex/generic//",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\tex///",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\tex/findtexmf//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\tex/generic//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\tex///",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\tex/findtexmf//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\tex/generic//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\tex///"
+        ]
+      },
+      "tfm": {
+        "extensions": [
+          ".tfm"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/tfm//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/tfm//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/tfm//"
+        ]
+      },
+      "truetype fonts": {
+        "extensions": [
+          ".ttf",
+          ".ttc"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/truetype//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/truetype//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/truetype//",
+          "C:\\Windows\\Fonts"
+        ]
+      },
+      "type1 fonts": {
+        "extensions": [
+          ".pfb",
+          ".pfa"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/type1//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/type1//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/type1//",
+          "C:\\Windows\\Fonts"
+        ]
+      },
+      "vf": {
+        "extensions": [
+          ".vf"
+        ],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/vf//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/vf//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/vf//"
+        ]
+      },
+      "misc fonts": {
+        "extensions": [],
+        "alternates": [],
+        "paths": [
+          ".",
+          "C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\\fonts/misc//",
+          "C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\\fonts/misc//",
+          "D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\fonts/misc//"
+        ]
+      }
+    },
+    "drives": {
+      "C:\\": "/mnt/c/",
+      "D:\\": "/mnt/d/"
+    },
+    "other_extensions": [
+      ".afm",
+      ".base",
+      ".bat",
+      ".bib",
+      ".bst",
+      ".cmd",
+      ".com",
+      ".cpl",
+      ".dll",
+      ".dvi",
+      ".exe",
+      ".fea",
+      ".fmt",
+      ".gf",
+      ".hbf",
+      ".html",
+      ".ist",
+      ".js",
+      ".jse",
+      ".lig",
+      ".lua",
+      ".luatex",
+      ".luc",
+      ".luctex",
+      ".md",
+      ".mem",
+      ".mf",
+      ".mft",
+      ".mlbib",
+      ".mp",
+      ".msc",
+      ".ocp",
+      ".ofm",
+      ".opl",
+      ".otp",
+      ".ovf",
+      ".ovp",
+      ".pdf",
+      ".pk",
+      ".pool",
+      ".ps",
+      ".sfd",
+      ".so",
+      ".t42",
+      ".tcx",
+      ".texlua",
+      ".texluc",
+      ".tfm",
+      ".tlu",
+      ".txt",
+      ".vbe",
+      ".vbs",
+      ".w",
+      ".web",
+      ".wsf",
+      ".wsh"
+    ],
+    "working_directory": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\",
+    "listed_types": "  afm (.afm)\r\n  base (.base)\r\n  bib (.bib)\r\n  bst (.bst)\r\n  cid maps (.cid;.cidmap)\r\n  clua (.dll;.so)\r\n  cweb (.w)\r\n  dvi (.dvi)\r\n  enc (.enc)\r\n  executables (.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL)\r\n  font feature files (.fea)\r\n  fmt (.fmt)\r\n  hbf (.hbf)\r\n  graphic/figure (.eps;.epsi;.png)\r\n  gf (.gf)\r\n  ist (.ist)\r\n  lig files (.lig)\r\n  lua (.lua;.luatex;.luc;.luctex;.texlua;.texluc;.tlu)\r\n  map (.map)\r\n  mem (.mem)\r\n  mf (.mf)\r\n  mfpool (.pool)\r\n  mft (.mft)\r\n  mlbib (.mlbib;.bib)\r\n  mlbst (.bst)\r\n  mp (.mp)\r\n  mppool (.pool)\r\n  ocp (.ocp)\r\n  ofm (.ofm;.tfm)\r\n  opl (.opl)\r\n  opentype fonts (.otf)\r\n  otp (.otp)\r\n  ovf (.ovf)\r\n  ovp (.ovp)\r\n  pk (.pk)\r\n  PostScript header (.pro;.enc)\r\n  subfont definition files (.sfd)\r\n  tcx (.tcx)\r\n  tex (.tex)\r\n  texpool (.pool)\r\n  TeX system documentation (.pdf;.html;.md;.txt;.ps;.dvi)\r\n  tfm (.tfm)\r\n  truetype fonts (.ttf;.ttc)\r\n  type1 fonts (.pfb;.pfa)\r\n  type42 fonts (.t42;.T42)\r\n  vf (.vf)\r\n  web (.web)\r\n",
+    "config_watch": [
+      "/mnt/c/Users/runneradmin/AppData/Roaming/MiKTeX/miktex/config",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/amstex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/bibtex-x.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/bibtex8.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/bibtexu.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/cslatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/csplain.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/dvilualatex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/dvilualatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/dviluatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/dvipdfm.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/dvipdfmx.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/elatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/eplain.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/etex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/fontinst.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/formats.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/frlatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/frtex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/ftex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/jadetex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/languages.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/latex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/latex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/latex209.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/luahblatex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/luahblatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/luahbtex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/lualatex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/lualatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/luatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/mllatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/mltex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/mpm.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/olatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/package-manifests.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/packages.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfamstex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfcslatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfcsplain.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfelatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfjadetex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdflatex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdflatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfplatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdftex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdftexinfo.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfxlatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfxmltex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/pdfxtex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/platex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/ptex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/scripts.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/t4ht.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/tex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/tex4ht.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/texapp.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/texinfo.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/texmfapp.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/ttf2pk.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/ttf2tfm.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/utf8mex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xdvipdfmx.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xelatex-dev.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xelatex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xeplain.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xetex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/xmltex.ini",
+      "/mnt/d/a/_temp/MiKTeX bridge caf\u00e9/miktex/config/yap.ini"
+    ],
+    "bootstrap_ms": 9980.407455000006,
+    "report": "ReportDate: 2026-11-04 21:53:17\r\nCurrentVersion: 26.5\r\nSetupDate: 2026-11-04 21:48:00\r\nSetupVersion: 25.12\r\nConfiguration: Regular\r\nGitInfo: 77333fa / 2026-05-13 12:29:06\r\nOS: Windows 10.0.20348\r\nSharedSetup: no\r\nLinkTargetDirectory: D:\\a\\_temp\\MiKTeX bridge caf\u00e9\\miktex\\bin\\x64\r\nPathOkay: no\r\nLastUpdateCheck: 2026-11-04 21:49:03\r\nLastUpdate: 2026-11-04 21:49:43\r\nLastUpdateDb: 2026-11-04 21:49:01\r\nSystemAdmin: yes\r\nRootPrivileges: yes\r\nAdminMode: no\r\nRoot0: C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\r\nRoot1: C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\r\nRoot2: D:\\a\\_temp\\MiKTeX bridge caf\u00e9\r\nUserInstall: D:\\a\\_temp\\MiKTeX bridge caf\u00e9\r\nUserConfig: C:\\Users\\runneradmin\\AppData\\Roaming\\MiKTeX\r\nUserData: C:\\Users\\runneradmin\\AppData\\Local\\MiKTeX\r\n",
+    "validation": {
+      "compared_hits": 82,
+      "compared_misses": 20,
+      "fallbacks": 0,
+      "indexed_roots": 3,
+      "indexed_files": 19061
+    },
+    "policy": "frozen installation snapshot"
+  },
+  "versions": {
+    "kpsewhich": "kpathsea version 6.3.5"
+  },
+  "document_sha256": "b046c0e18e28bcfbae6d52adca6053ac25094ebfd1543f4264d02aa541f08700",
+  "repeats": 3,
+  "environment": "Linux runnervmquqza 6.18.54.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Tue Oct  6 19:13:07 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+  "results": {
+    "texlive-direct": {
+      "cold": {
+        "startup_ms": 5139.837277999959,
+        "ready_ms": 5128.821088999985,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          76.20681800000284,
+          18.039747000045736,
+          18.25484799996957,
+          18.059945999993943,
+          16.22753199995941
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 221.87072699989585,
+          "ready_ms": 214.01654099997813,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            185.40312799996173,
+            15.588569999977153,
+            14.941064000026927,
+            15.886173000012604,
+            15.813871999966977
+          ]
+        },
+        {
+          "startup_ms": 200.93825399999332,
+          "ready_ms": 193.06739700004982,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            235.29750299996977,
+            15.180510000050162,
+            15.704513000059706,
+            15.628012999968632,
+            15.954415999999583
+          ]
+        },
+        {
+          "startup_ms": 296.8147479999743,
+          "ready_ms": 289.1853920000358,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            252.41372599998613,
+            15.563912999937202,
+            18.092731000024287,
+            18.330932000026223,
+            15.470012000037059
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "miktex-windows-direct": {
+      "cold": {
+        "startup_ms": 163423.62459600004,
+        "ready_ms": 154909.935095,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          10431.318508999993,
+          1466.9126210000059,
+          1463.8182010000378,
+          1346.1613460000308,
+          1362.9044529999987
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 24195.585416999962,
+          "ready_ms": 15192.829219000032,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12674.423236000053,
+            1347.5347250000596,
+            1352.6909790000445,
+            1375.540436999927,
+            1448.0003550000902
+          ]
+        },
+        {
+          "startup_ms": 23680.03399700001,
+          "ready_ms": 14913.589982000076,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12393.421367999963,
+            1363.27859000005,
+            1466.769193999994,
+            1461.6255120000687,
+            1362.470390999988
+          ]
+        },
+        {
+          "startup_ms": 23985.23113600004,
+          "ready_ms": 14941.780963000041,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12540.449326999918,
+            1363.4307080000099,
+            1451.4896839999665,
+            1470.2273000000332,
+            1362.8574510000817
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "miktex-windows-none": {
+      "cold": {
+        "startup_ms": 171621.42019699997,
+        "ready_ms": 162545.38430099995,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          10930.217989000084,
+          1397.6769419999755,
+          1393.2551479999802,
+          1400.8524360000365,
+          1387.4287849999973
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 24642.553257000032,
+          "ready_ms": 15208.580231000042,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12956.939949999993,
+            1388.4381740000435,
+            1399.1534150000007,
+            1588.2711229999131,
+            1379.4038269999191
+          ]
+        },
+        {
+          "startup_ms": 24975.009685000034,
+          "ready_ms": 15722.274643999981,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12891.062021000038,
+            1384.6432259999801,
+            1487.9401770000413,
+            1387.038840999935,
+            1508.3541029999878
+          ]
+        },
+        {
+          "startup_ms": 24562.00288100001,
+          "ready_ms": 15292.20270199994,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            12848.652351999932,
+            1492.5981129999855,
+            1503.4205579999025,
+            1608.7451600000122,
+            1378.409581000028
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {
+        "stats-warm-1/proxy-1347.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10783.121859000288,
+          "lookup_ms": 10788.471006000236,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-1/proxy-1354.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 11240.842668999903,
+          "lookup_ms": 11247.136528999818,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-1/proxy-1382.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 16198.379013999896,
+          "lookup_ms": 16206.823384999774,
+          "positive": 17,
+          "misses": 17
+        },
+        "stats-cold/proxy-664.json": {
+          "requests": 339,
+          "hits": 0,
+          "remote_ms": 154860.2964809994,
+          "lookup_ms": 154891.70422900002,
+          "positive": 260,
+          "misses": 78
+        },
+        "stats-cold/proxy-657.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10412.404916000072,
+          "lookup_ms": 10418.269260999692,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-2/proxy-1641.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 16359.029100000156,
+          "lookup_ms": 16365.354254999489,
+          "positive": 17,
+          "misses": 17
+        },
+        "stats-warm-2/proxy-1605.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10699.304267000116,
+          "lookup_ms": 10705.22612900004,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-2/proxy-1613.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10874.194387000103,
+          "lookup_ms": 10879.329031999645,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-0/proxy-1282.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10884.25590199995,
+          "lookup_ms": 10890.444364999894,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-0/proxy-1275.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 10768.849369999769,
+          "lookup_ms": 10774.780530000044,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-0/proxy-1310.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 16256.989206999606,
+          "lookup_ms": 16263.935755000035,
+          "positive": 17,
+          "misses": 17
+        }
+      }
+    },
+    "miktex-windows-snapshot": {
+      "cold": {
+        "startup_ms": 36163.915008,
+        "ready_ms": 35277.55323100007,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          981.4945560000297,
+          110.63750999994681,
+          112.71563299999343,
+          113.13813699996444,
+          104.71764600004008
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 5847.171493000019,
+          "ready_ms": 4954.721434000021,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            4316.01093300003,
+            108.83538300004147,
+            109.65539200003604,
+            111.81411200004732,
+            110.37359800002378
+          ]
+        },
+        {
+          "startup_ms": 5850.608176000037,
+          "ready_ms": 4952.418548999958,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            4366.000188000044,
+            104.89408099999764,
+            106.33239200001299,
+            109.65512100005981,
+            109.61071999997785
+          ]
+        },
+        {
+          "startup_ms": 5882.392376999974,
+          "ready_ms": 4981.687115999989,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            4331.847102999973,
+            105.47470599999542,
+            110.13713699992422,
+            108.75492700006362,
+            110.71402900006433
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {
+        "stats-warm-1/proxy-1822.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1679.823077000492,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 14,
+            "local_misses": 9,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 194.89812300002995
+          }
+        },
+        "stats-warm-1/proxy-1816.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 204.07631799992032,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 16,
+            "local_misses": 7,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 197.64574800001355
+          }
+        },
+        "stats-warm-1/proxy-1849.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1786.502872000142,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 18,
+            "local_misses": 17,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 199.29667000008067
+          }
+        },
+        "stats-cold/proxy-960.json": {
+          "requests": 339,
+          "hits": 0,
+          "remote_ms": 1735.9896250001157,
+          "lookup_ms": 12733.523842999388,
+          "positive": 1,
+          "misses": 2,
+          "catalogue": {
+            "local_hits": 258,
+            "local_misses": 78,
+            "fallbacks": 3,
+            "reloads": 1,
+            "load_ms": 200.9456720001026
+          }
+        },
+        "stats-cold/proxy-954.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 200.35791099996914,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 16,
+            "local_misses": 7,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 191.75306800002545
+          }
+        },
+        "stats-warm-2/proxy-1884.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 203.5167089997003,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 16,
+            "local_misses": 7,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 197.69786000006206
+          }
+        },
+        "stats-warm-2/proxy-1890.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1700.9908809999388,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 14,
+            "local_misses": 9,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 199.3333729999449
+          }
+        },
+        "stats-warm-2/proxy-1917.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1789.0159090003408,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 18,
+            "local_misses": 17,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 192.91871900009028
+          }
+        },
+        "stats-warm-0/proxy-1571.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1791.6234559999111,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 18,
+            "local_misses": 17,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 197.39230499999394
+          }
+        },
+        "stats-warm-0/proxy-1538.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 200.73476799973378,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 16,
+            "local_misses": 7,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 201.59649900006116
+          }
+        },
+        "stats-warm-0/proxy-1544.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 0,
+          "lookup_ms": 1705.5669770001032,
+          "positive": 0,
+          "misses": 0,
+          "catalogue": {
+            "local_hits": 14,
+            "local_misses": 9,
+            "fallbacks": 0,
+            "reloads": 1,
+            "load_ms": 198.1030640000654
+          }
+        }
+      }
+    }
+  },
+  "benchmark_revision": "081a807e4857da7f788eac86e05cf715973c3c45",
+  "workflow_run": "https://github.com/DominikPeters/texpresso-vscode/actions/runs/41919014591"
+}

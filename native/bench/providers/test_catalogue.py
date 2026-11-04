@@ -108,14 +108,17 @@ class CatalogueTests(unittest.TestCase):
         (self.root/'tex/latex/base/article.cls').unlink()
         self.assertEqual(c.resolve(self.query('article.cls')),(1,''),'existing indexed paths still validate the file')
     def test_frozen_misses_are_retained_but_installer_requests_are_not(self):
+        temp=self.folder/'temp'; temp.mkdir()
+        self.metadata['working_directory']='D:\\temp'
+        self.metadata['types']['tex']['paths'].insert(0,'.')
         c=Catalogue(self.metadata,snapshot=True)
         query=self.query('absent.sty')
         self.assertEqual(c.resolve(query),(1,''))
-        self.assertIn(tuple(query),c.missing_requests)
         self.assertIsNone(c.resolve(self.query('absent.sty','--must-exist')))
-        self.assertNotIn(tuple(self.query('absent.sty','--must-exist')),c.missing_requests)
-        self.db.unlink()
-        self.assertEqual(c.resolve(query),(1,''),'snapshot does not repeat filesystem work for proven misses')
+        (temp/'absent.sty').write_text('new input after snapshot')
+        self.assertEqual(c.resolve(query),(1,''),'frozen snapshot retains proven misses until restart')
+        self.assertEqual(c.resolve(self.query('absent.sty','--must-exist')),(0,'D:\\temp\\absent.sty\n'))
+        self.assertEqual(Catalogue(self.metadata).resolve(query),(0,'D:\\temp\\absent.sty\n'))
     def test_case_and_requested_subdirectory(self):
         c=Catalogue(self.metadata)
         self.assertTrue(c.resolve(self.query('ARTICLE.CLS'))[1].endswith('article.cls\n'))
