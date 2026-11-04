@@ -141,11 +141,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends miktex
           miktexsetup finish
-          echo "$HOME/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.miktex/texmfs/install/miktex/bin" >> "$GITHUB_PATH"
         timeout-minutes: 8
       - name: Test real MiKTeX compilation, fonts and provider cache
         run: |
+          export PATH="$HOME/bin:$HOME/.miktex/texmfs/install/miktex/bin:$PATH"
           miktex packages update-package-database
           miktex packages check-update || test "$?" -eq 100
           miktex packages update
