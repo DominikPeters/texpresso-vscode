@@ -146,7 +146,8 @@ jobs:
         timeout-minutes: 8
       - name: Test real MiKTeX compilation, fonts and provider cache
         run: |
-          mpm --update-db
+          miktex packages update-package-database
+          miktex packages update
           python3 .engine/test/test-miktex-real.py .engine/build/texpresso
         timeout-minutes: 15
       - name: Test native synchronization, controls, and dependencies
