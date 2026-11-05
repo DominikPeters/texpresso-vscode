@@ -236,9 +236,12 @@ def rpm_sources(package, host, notices):
     keys = re.findall(r'(?im)\bsignature, key ID ([0-9a-f]+): OK\s*$', signature)
     if not keys:
         raise ValueError('Source RPM has no verified signature: ' + archive.name)
-    identity = run(['rpm', '-qp', '--qf', '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}', archive], capture=True)
-    if identity != '\t'.join([source, version, 'src']):
+    # SRPM ARCH records the original builder's architecture (even i686 for an
+    # architecture-independent source package). SOURCEPACKAGE is the type flag.
+    identity = run(['rpm', '-qp', '--qf', '%{NAME}\t%{VERSION}-%{RELEASE}\t%{SOURCEPACKAGE}', archive], capture=True)
+    if identity != '\t'.join([source, version, '1']):
         raise ValueError('Downloaded source RPM identity mismatch: ' + identity)
+    print('Verified exact source RPM: ' + archive.name + ' (keys ' + ', '.join(sorted(set(keys))) + ')', flush=True)
     with tempfile.TemporaryDirectory(prefix='txp-rpm-notices-') as temporary:
         top = Path(temporary)
         # Source installation extracts SOURCES/SPECS without executing recipes.

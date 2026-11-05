@@ -22,7 +22,7 @@ class RpmSources(unittest.TestCase):
                 elif args[0] == 'rpmkeys':
                     return 'Header V4 RSA/SHA256 Signature, key ID abc12345: OK\nHeader SHA256 digest: OK'
                 elif args[:2] == ['rpm', '-qp']:
-                    return 'fixture\t1.2-3.el8\tsrc'
+                    return 'fixture\t1.2-3.el8\t1'
                 elif args[:2] == ['rpm', '-i']:
                     top = Path(args[4].removeprefix('_topdir ')); (top/'SOURCES').mkdir(); (top/'SPECS').mkdir()
                     (top/'SPECS/fixture.spec').write_text('original RPM build recipe')
@@ -54,7 +54,7 @@ class RpmSources(unittest.TestCase):
                     if args[0] == 'rpmkeys':
                         return 'Header V4 RSA/SHA256 Signature, key ID abc12345: OK'
                     if args[:2] == ['rpm', '-qp']:
-                        return 'fixture\t1.3-1.el8\tsrc'
+                        return 'fixture\t1.3-1.el8\t1'
                 with patch('release_sources.run', side_effect=run), self.assertRaises(ValueError):
                     rpm_sources('fixture.x86_64\t0:1.2-3.el8\tfixture\t1.2-3.el8', host, host/'notices')
 
