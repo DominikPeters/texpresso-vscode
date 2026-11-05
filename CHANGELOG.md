@@ -1,6 +1,6 @@
 # Release notes
 
-### 2.0.0 (release candidate)
+### 2.0.0
 
 - Select TeX Live (default) or Tectonic as the package provider.
 - Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
