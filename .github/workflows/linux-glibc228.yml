@@ -50,10 +50,15 @@ jobs:
           docker build --pull -t texpresso-glibc228 -f native/containers/glibc228.Dockerfile native/containers
           docker image inspect texpresso-glibc228 > artifacts/glibc228/builder-image.json
           docker run --rm texpresso-glibc228 bash -c 'ldd --version; gcc --version; python3 --version; rpm -qa' > artifacts/glibc228/builder-packages.txt
+      - uses: actions/cache/restore@v4
+        id: icu-cache
+        with:
+          path: native/.icu
+          key: icu-alma8-gcc13-${{ matrix.architecture }}-${{ hashFiles('native/dependencies.lock.json', 'native/scripts/build_icu.py', 'native/containers/glibc228.Dockerfile') }}
       - name: Fetch only locked native inputs
         run: |
           python3 - <<'PY'
-          import hashlib, json, pathlib, subprocess, urllib.request
+          import hashlib, json, pathlib, subprocess
           lock = json.load(open('native/dependencies.lock.json'))
           inputs = pathlib.Path('.native-sources'); inputs.mkdir(exist_ok=True)
           for name, key in [('mupdf', 'mupdf'), ('zlib-ng', 'zlibNg')]:
@@ -61,15 +66,11 @@ jobs:
               subprocess.run(['git', 'clone', '--filter=blob:none', '--no-checkout', value['repository'], str(inputs/name)], check=True)
               subprocess.run(['git', '-C', str(inputs/name), 'checkout', value['revision']], check=True)
           subprocess.run(['git', '-C', str(inputs/'mupdf'), 'submodule', 'update', '--init', '--depth', '1', 'thirdparty/lcms2', 'thirdparty/jbig2dec', 'thirdparty/harfbuzz'], check=True)
-          archive = inputs/'icu.tgz'
-          urllib.request.urlretrieve(lock['icu']['sourceUrl'], archive)
-          assert hashlib.sha256(archive.read_bytes()).hexdigest() == lock['icu']['sourceSha256']
+          if '${{ steps.icu-cache.outputs.cache-hit }}' != 'true':
+              archive = inputs/'icu.tgz'
+              subprocess.run(['curl', '--fail', '--location', '--retry', '5', '--retry-all-errors', '--connect-timeout', '20', '--max-time', '300', '--output', str(archive), lock['icu']['sourceUrl']], check=True)
+              assert hashlib.sha256(archive.read_bytes()).hexdigest() == lock['icu']['sourceSha256']
           PY
-      - uses: actions/cache/restore@v4
-        id: icu-cache
-        with:
-          path: native/.icu
-          key: icu-alma8-gcc13-${{ matrix.architecture }}-${{ hashFiles('native/dependencies.lock.json', 'native/scripts/build_icu.py', 'native/containers/glibc228.Dockerfile') }}
       - name: Build baseline ICU without retaining successful intermediates
         if: steps.icu-cache.outputs.cache-hit != 'true'
         run: |
