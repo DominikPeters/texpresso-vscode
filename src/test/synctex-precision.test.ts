@@ -103,7 +103,11 @@ test('precise inverse settles nulls and guards the ID, page, revision, source ep
   const fifth = request(); f.reply(result(fifth[1])); assert.equal(f.reveals.length, 1);
   assert.equal(f.reveals[0].options?.utf8Column, true); assert.equal(f.reveals[0].options?.current?.(), true);
   request(); assert.equal(f.reveals[0].options?.current?.(), false, 'a newer click retires an already delivered asynchronous reveal');
+  const canceled = request(); f.reply(result(canceled[1]));
+  const delivered = f.reveals.at(-1)!; assert.equal(delivered.options?.current?.(), true);
+  f.session.send(['preview-cancel', 0, 0]); assert.equal(delivered.options?.current?.(), false);
+  const beforeBarrier = f.reveals.length;
   const pending = request(); f.session.send(['rescan']);
-  f.reply(result(pending[1])); assert.equal(f.reveals.length, 1);
+  f.reply(result(pending[1])); assert.equal(f.reveals.length, beforeBarrier);
   assert.ok(f.child.commands.every(c => !/^preview-(render|svg|png|auto|background)$/.test(c[0])), 'inverse lookup requests no images');
 }));

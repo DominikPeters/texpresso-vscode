@@ -201,7 +201,9 @@ export class DocumentSync {
   sourceLine(document: vscode.TextDocument, line: number): { path: string; text: string } | undefined {
     const file = this.find(document);
     if (!file || !Number.isSafeInteger(line) || line < 0) { return; }
-    const text = document.getText().split(/\r?\n/)[line];
+    const text = typeof document.lineAt === 'function'
+      ? line < document.lineCount ? document.lineAt(line).text : undefined
+      : document.getText().split(/\r?\n/)[line];
     const path = [...file.enginePaths][0];
     return path && text !== undefined ? { path, text } : undefined;
   }

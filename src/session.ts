@@ -247,12 +247,15 @@ export class TexpressoSession {
       }
       if (command[0] === 'preview-cancel') {
         if (command[1] === 0 || command[1] === this.sourceRequest) { this.sourceRequest = 0; }
-        if (command[1] === 0 || command[1] === this.preciseInverse?.id) { this.preciseInverse = undefined; }
+        if (command[1] === 0 || command[1] === this.preciseInverse?.id || command[1] === this.latestInverseId) {
+          this.preciseInverse = undefined; this.latestInverseId = 0;
+        }
       }
       this.engine.send(command);
       if (this.embedded && ['open', 'open-base64', 'close', 'change', 'change-range', 'rescan', 'rerun-once'].includes(command[0])) {
         this.sourceRequest = 0;
         this.preciseInverse = undefined;
+        this.latestInverseId = 0;
         this.previewSequence++;
         this.events.preview?.({ sourceSequence: this.previewSequence });
         this.engine.send(['preview-barrier', this.previewSequence]);
