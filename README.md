@@ -16,7 +16,7 @@ For projects with multiple files, add a `% !TeX root = ../main.tex` comment or u
 
 ## Preview controls
 
-Use the preview toolbar to navigate pages, adjust zoom and fit, pause or restart compilation, and open compiler output. Pinch or use Control/Command-scroll to zoom. Hyperlinks are clickable; Control-click (Command-click on macOS) in the preview to jump to the corresponding source. Forward SyncTeX can follow your editor cursor.
+Use the preview toolbar to navigate pages, adjust zoom and fit, pause or restart compilation, and open compiler output. Pinch or use Control/Command-scroll to zoom. Hyperlinks are clickable; Control-click (Command-click on macOS) in the preview to jump to the corresponding source. Forward SyncTeX can follow your editor cursor quietly. Explicit forward jumps briefly highlight matching text in yellow when supported by the engine.
 
 The magnifier button, or **M** while the preview has focus, enables a loupe: hold the left mouse button over the page to use it, and press Escape to leave magnifier mode. The toolbar also offers Auto, PNG and SVG rendering. Availability of some controls depends on the engine version.
 
