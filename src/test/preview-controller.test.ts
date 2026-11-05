@@ -1534,3 +1534,26 @@ test('figure actions use the decoded current header and reject stale or forged w
     f.send({ type: 'tikz-open', page: 0, revision: 1, sequence: 0, index: 0 }); assert.equal(opened, 1);
   } finally { f.controller.dispose(); }
 });
+
+test('precise cached-page inverse skips image restoration and retires its editor guard on newer source intent', () => {
+  const f = fixture(), queries: any[][] = [];
+  Object.assign(f.session, { previewSynctexPrecision: true, inversePrecise: (...args: any[]) => queries.push(args) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }, { page: 1, width: 1000 }], nearby: [], resident: [0, 1], epoch: 0 });
+    for (const page of [0, 1]) {
+      const command = f.commands.at(-1)!; f.controller.handle(continuousFrame(command, page));
+      const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+      f.send({ type: 'decoded', id: image.header.requestId, page, cached: [image.contentId] });
+    }
+    const commands = f.commands.length;
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 100, y: 200 });
+    assert.deepEqual(queries[0].slice(0, 5), [1, 0, 0, 100, 200]);
+    assert.equal(f.commands.length, commands, 'a nonforeground cached page needs no render');
+    assert.equal(queries[0][5](), true);
+    f.controller.beginSourceFollow(); assert.equal(queries[0][5](), false, 'new source selection wins over an older click');
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: -100, y: 200 });
+    assert.equal(queries.length, 1, 'malformed webview coordinates cannot query native state');
+  } finally { f.controller.dispose(); }
+});

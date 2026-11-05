@@ -71,3 +71,7 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 .tikz-action:hover { background:var(--vscode-list-hoverBackground,#e9e9e9); }
 .tikz-action:focus-visible { outline:1px solid var(--vscode-focusBorder,#007acc); outline-offset:1px; }
 .tikz-action[hidden],.tikz-highlight[hidden] { display:none; }
+
+/* Like TeXstudio's PDF viewer: briefly tint real source boxes, without a border. */
+#highlight.source-boxes, .page-highlight.source-boxes { width:100%; height:100%; margin:0; border-radius:0; background:none; }
+.source-highlight-box { position:absolute; background:rgba(255,255,0,.25); pointer-events:none; }

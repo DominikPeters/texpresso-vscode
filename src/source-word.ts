@@ -1,3 +1,24 @@
+/** A conservative literal word hint; control sequences and comments are excluded. */
+export function sourceWordAt(line: string, character: number): string | undefined {
+  const excluded = [...line.matchAll(/\\(?:[a-zA-Z@]+|.)|%.*/g)];
+  for (const match of line.matchAll(/[\p{L}\p{N}][\p{L}\p{N}\p{M}]*/gu)) {
+    const start = match.index!, end = start + match[0].length;
+    if (character >= start && character <= end && Buffer.byteLength(match[0]) <= 256 &&
+        !excluded.some(m => start < m.index! + m[0].length && end > m.index!)) { return match[0]; }
+  }
+}
+
+/** Native columns are one-based UTF-8 bytes; VS Code uses UTF-16 characters. */
+export function characterFromByteColumn(line: string, column: number): number | undefined {
+  if (!Number.isSafeInteger(column) || column < 1 || column > Buffer.byteLength(line) + 1) { return; }
+  let bytes = 0, character = 0;
+  for (const char of line) {
+    if (bytes + Buffer.byteLength(char) > column - 1) { break; }
+    bytes += Buffer.byteLength(char); character += char.length;
+  }
+  return character;
+}
+
 /** Refine line-only SyncTeX with a unique literal word near that source line.
  * Ambiguous words and macro-generated text retain the engine's line location.
  */

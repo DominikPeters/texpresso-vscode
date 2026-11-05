@@ -1,4 +1,4 @@
-import { refineSourceWord } from './source-word';
+import { refineSourceWord, characterFromByteColumn } from './source-word';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,7 +6,7 @@ import * as tmp from 'tmp';
 import { readConfiguration } from './configuration';
 import { resolveEngine } from './engine-selection';
 import { SessionPaths } from './paths';
-import { TexpressoSession } from './session';
+import { TexpressoSession, type SourceRevealOptions } from './session';
 import { ExternalCompiler } from './external-compile';
 import { PreviewControls } from './controls';
 import { PreviewController } from './preview-controller';
@@ -233,7 +233,7 @@ export function activate(context: vscode.ExtensionContext): void {
               debug.appendLine(text);
             }
           },
-          synctex: (file, line, column, word) => { void revealSource(session, file, line, column, word); },
+          synctex: (file, line, column, word, options) => { void revealSource(session, file, line, column, word, options); },
           preview: event => { if (activeSession === session) { preview?.handle(event); } },
           rendered: () => {
             if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
@@ -286,26 +286,29 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  async function revealSource(session: TexpressoSession, file: string, line: number, column?: number, word?: string): Promise<void> {
-    if (running() !== session) {
+  async function revealSource(session: TexpressoSession, file: string, line: number, column?: number, word?: string, options?: SourceRevealOptions): Promise<void> {
+    const current = () => running() === session && options?.current?.() !== false;
+    if (!current()) {
       return;
     }
     try {
       const document = session.document.isUntitled && file === session.paths.rootEditorPath
         ? session.document : await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-      if (running() !== session) {
+      if (!current()) {
         return;
       }
       const sourceColumn = session.embedded
         ? vscode.window.visibleTextEditors.find(editor => session.sync.contains(editor.document))?.viewColumn || vscode.ViewColumn.One
         : undefined;
       const editor = await vscode.window.showTextDocument(document, sourceColumn);
-      if (running() !== session) {
+      if (!current()) {
         return;
       }
-      const refined = column === undefined || column <= 0 ? refineSourceWord(document.getText(), line - 1, word) : undefined;
+      const refined = options?.utf8Column || column === undefined || column <= 0 ? refineSourceWord(document.getText(), line - 1, word) : undefined;
+      const character = options?.utf8Column && line > 0 && line <= document.lineCount
+        ? characterFromByteColumn(document.lineAt(line - 1).text, column || 0) : Math.max(0, (column || 1) - 1);
       const position = document.validatePosition(new vscode.Position(refined?.line ?? Math.max(0, line - 1),
-        refined?.character ?? Math.max(0, (column || 1) - 1)));
+        refined?.character ?? character ?? 0));
       editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
       editor.selection = new vscode.Selection(position, position);
     } catch (error) {
@@ -324,9 +327,10 @@ export function activate(context: vscode.ExtensionContext): void {
     const state = session.previewState;
     const revision = state?.[2] === session.previewSequence ? state[1] : 0;
     if (!sourceFollow.request({ session, document: editor.document.uri.toString(), version: editor.document.version,
-      line: editor.selection.active.line, column: editor.selection.active.character, sequence: session.previewSequence, revision }, explicit)) { return; }
+      line: editor.selection.active.line, column: editor.selection.active.character, precise: session.previewSynctexPrecision,
+      sequence: session.previewSequence, revision }, explicit)) { return; }
     preview?.beginSourceFollow(explicit);
-    session.sync.syncForward(editor.document, editor.selection.active.line);
+    session.syncForward(editor.document, editor.selection.active.line, editor.selection.active.character);
   }
 
   function register(name: string, callback: (...args: never[]) => unknown): void {

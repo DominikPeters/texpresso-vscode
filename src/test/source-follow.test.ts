@@ -119,3 +119,10 @@ test('horizontal caret motion resumes a preview hold without issuing redundant o
   source.column = 4; assert.equal(follow.request(source), true, 'a new same-line selection resumes the source intent');
   assert.equal(follow.request(source), false);
 });
+
+test('precise engines follow horizontal caret changes once, while duplicate flushes stay deduplicated', () => {
+  const follow = new SourceFollow(), source = { ...intent(), column: 2, precise: true };
+  assert.equal(follow.request(source), true);
+  source.column = 3; assert.equal(follow.request(source), true);
+  assert.equal(follow.request(source), false);
+});

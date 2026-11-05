@@ -82,7 +82,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     const drain=async(limit=30)=>{for(let i=0;i<limit;i++){if(!pending.length){await new Promise(resolve=>setTimeout(resolve,30));if(!pending.length){return;}}const command=pending.shift()!;if((controller as any).inFlight?.id!==command[1]){continue;}respond(command);await until(()=>reports.some(r=>r.continuousCheck==='decoded'&&r.request===command[1])||(controller as any).inFlight?.id!==command[1],'page decode '+command[2]);}throw Error('unbounded render queue');};
     state();await until(()=>reports.some(r=>r.continuousCheck==='ready')&&pending.length>0,'continuous startup ready');
     return {controller,panel:()=>panel!,session,reports,commands,pending,regionPending,opened,until,action,state,respond,respondRegion,drain,
-      forward:(page:number,x:number,y:number,explicit=true)=>{controller.beginSourceFollow(explicit);controller.handle(['preview-forward',revision,sequence,page,x,y]);},
+      forward:(page:number,x:number,y:number,explicit=true,rectangles?:[number,number,number,number][])=>{controller.beginSourceFollow(explicit);controller.handle(['preview-forward',revision,sequence,page,x,y,rectangles]);},
       invalidate:()=>{session.previewSequence=++sequence;revision++;controller.handle({sourceSequence:sequence});controller.handle(['preview-invalidated',revision,sequence]);state();}};
   };
   const f=await make();
@@ -162,8 +162,15 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
         markerLeft=marker.highlightLeft;
         assert.ok(Math.abs(edge.scrollLeft-first.scrollLeft)<1,'visible text-edge SyncTeX target cannot drift horizontally');
       }
+      fitted.forward(0,100,edgeY,true,[[20,80,80,100],[80,100,200,120]]);
+      const boxes=(await fitted.action('snapshot')).shells.find((s:any)=>s.page===0).highlightBoxes;
+      assert.equal(boxes.length,2,'wrapped native source boxes are highlighted individually');
+      assert.equal(boxes[0].left,'10%','native geometry respects a nonzero page origin');
+      assert.equal(boxes[0].top,'20%');assert.equal(boxes[0].width,'10%');
+      assert.equal(boxes[0].color,'rgba(255, 255, 0, 0.25)','text is briefly tinted yellow without a blue circle');
       fitted.forward(0,40,edgeY,false);const quiet=await fitted.action('snapshot');
       assert.equal(quiet.shells.find((s:any)=>s.page===0).highlightHidden,true,'automatic follow clears a preceding explicit marker');
+      assert.equal(quiet.shells.find((s:any)=>s.page===0).highlightBoxes.length,0,'automatic following retains no word overlays');
       fitted.forward(0,220,300);const vertical=await fitted.action('snapshot');
       assert.ok(vertical.scrollTop>first.scrollTop+first.height/2,'text fit retains vertical SyncTeX following: '+JSON.stringify({before:first.scrollTop,after:vertical.scrollTop,height:first.height,point:first.centerPoint,sheet:vertical.shells.find((s:any)=>s.page===0)}));
       const panned=await fitted.action('scroll',{left:0});

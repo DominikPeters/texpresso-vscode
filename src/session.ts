@@ -11,13 +11,16 @@ import { Dependencies, WatchFile } from './dependencies';
 import { probePreview } from './preview-capabilities';
 import { isPreviewMessage, type PreviewImage, type PreviewImageHeader, type PreviewMessage } from './preview-protocol';
 import * as path from 'path';
+import { sourceWordAt } from './source-word';
+
+export interface SourceRevealOptions { utf8Column?: boolean; current?: () => boolean }
 
 export type SessionState = 'starting' | 'running' | 'stopped' | 'failed';
 export interface SessionEvents {
   state(state: SessionState): void;
   output(target: OutputTarget, contents: string): void;
   debug(text: string): void;
-  synctex(file: string, line: number, column?: number, word?: string): void;
+  synctex(file: string, line: number, column?: number, word?: string, options?: SourceRevealOptions): void;
   error(error: Error): void;
   rendered?(): void;
   restart?(): void;
@@ -61,7 +64,10 @@ export class TexpressoSession {
   previewBackground = false;
   previewPrepareEdit = false;
   previewRequestLifecycle = false;
+  previewSynctexPrecision = false;
   private sourceRequest = 0;
+  private preciseInverse?: { id: number; revision: number; sequence: number; page: number; current: () => boolean };
+  private latestInverseId = 0;
   private nextSourceRequest = 0x40000000;
   previewLinks = false;
   previewSequence = 0;
@@ -127,7 +133,7 @@ export class TexpressoSession {
       launch = buildLaunchCommand({ ...this.configuration, streamFiles: this.configuration.streamFiles || !!this.services.recovering }, this.paths);
       const location = this.configuration.previewLocation;
       if (location && location !== 'window') {
-        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; this.previewSvg = features.svg; this.previewAuto = features.auto; this.previewPngPatches = features.pngPatches; this.previewBackground = features.background; this.previewPrepareEdit = features.prepareEdit; this.previewLinks = features.links; this.previewRequestLifecycle = features.requestLifecycle === true; });
+        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; this.previewSvg = features.svg; this.previewAuto = features.auto; this.previewPngPatches = features.pngPatches; this.previewBackground = features.background; this.previewPrepareEdit = features.prepareEdit; this.previewLinks = features.links; this.previewRequestLifecycle = features.requestLifecycle === true; this.previewSynctexPrecision = features.synctexPrecision === true; });
         if (this.ended) { return; }
         if (!this.embedded && location === 'editor') {
           throw new EngineFailure('configuration', 'This TeXpresso build does not support the editor preview. Choose a build with headless preview support, or set Preview Location to Window.', 'PREVIEW_UNSUPPORTED');
@@ -174,6 +180,26 @@ export class TexpressoSession {
       return;
     }
     if (isPreviewMessage(message)) {
+      if (message[0] === 'preview-source-precise') {
+        if (!this.previewSynctexPrecision || message[1] !== this.sourceRequest || message[3] !== this.previewSequence ||
+            message[2] !== this.previewState?.[1]) { return; }
+        this.sourceRequest = 0;
+        this.events.preview?.(['preview-forward', message[2], message[3], message[4], message[5], message[6], message[7]]);
+        return;
+      }
+      if (message[0] === 'preview-inverse-result') {
+        const request = this.preciseInverse;
+        if (!request || message[1] !== request.id || message[2] !== request.revision || message[3] !== request.sequence ||
+            message[4] !== request.page) { return; }
+        this.preciseInverse = undefined;
+        const current = () => !this.ended && this.latestInverseId === request.id && this.previewSequence === request.sequence && this.previewState?.[1] === request.revision && request.current();
+        const location = message[5];
+        if (location && current()) {
+          const file = this.sync.sourceFile(location.file);
+          if (file) { this.events.synctex(file, location.line, location.column, location.word, { utf8Column: true, current }); }
+        }
+        return;
+      }
       if (message[0] === 'preview-source') {
         if (message[1] !== this.sourceRequest || message[3] !== this.previewSequence) { return; }
         this.sourceRequest = 0;
@@ -219,15 +245,43 @@ export class TexpressoSession {
         this.engine.send(['preview-search', this.sourceRequest, command[1], command[2], this.previewSequence]);
         return;
       }
-      if (command[0] === 'preview-cancel' && (command[1] === 0 || command[1] === this.sourceRequest)) { this.sourceRequest = 0; }
+      if (command[0] === 'preview-cancel') {
+        if (command[1] === 0 || command[1] === this.sourceRequest) { this.sourceRequest = 0; }
+        if (command[1] === 0 || command[1] === this.preciseInverse?.id) { this.preciseInverse = undefined; }
+      }
       this.engine.send(command);
       if (this.embedded && ['open', 'open-base64', 'close', 'change', 'change-range', 'rescan', 'rerun-once'].includes(command[0])) {
         this.sourceRequest = 0;
+        this.preciseInverse = undefined;
         this.previewSequence++;
         this.events.preview?.({ sourceSequence: this.previewSequence });
         this.engine.send(['preview-barrier', this.previewSequence]);
       }
     }
+  }
+
+  syncForward(document: vscode.TextDocument, line: number, character = 0): void {
+    if (!this.embedded || !this.previewSynctexPrecision || !this.previewRequestLifecycle) {
+      this.sync.syncForward(document, line); return;
+    }
+    const source = this.sync.sourceLine(document, line);
+    if (!source || !Number.isSafeInteger(character) || character < 0 || character > source.text.length || this.ended) { return; }
+    this.sourceRequest = ++this.nextSourceRequest;
+    const word = sourceWordAt(source.text, character);
+    const command: Extract<Command, ['preview-search-precise', ...unknown[]]> = ['preview-search-precise', this.sourceRequest, source.path, line + 1, this.previewSequence,
+      Buffer.byteLength(source.text.slice(0, character)) + 1];
+    if (word) { command[6] = word; }
+    this.engine.send(command);
+  }
+
+  inversePrecise(revision: number, sequence: number, page: number, x: number, y: number, current: () => boolean): void {
+    if (this.ended || !this.previewSynctexPrecision || sequence !== this.previewSequence || revision !== this.previewState?.[1] || !current()) { return; }
+    const id = ++this.nextSourceRequest;
+    this.latestInverseId = id;
+    this.preciseInverse = { id, revision, sequence, page, current };
+    // An explicit click may prepare an unpublished target. Published/cached
+    // pages are queried directly without asking the viewer for another image.
+    this.engine.send(['preview-inverse-precise', id, revision, sequence, page, x, y, null, true]);
   }
 
   setAutoRerun(enabled: boolean): void {

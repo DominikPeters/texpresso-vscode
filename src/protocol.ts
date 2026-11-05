@@ -18,6 +18,8 @@ export type Command =
   | ['preview-background', number, number, number, number, number, 0 | 1 | 2, number]
   | ['preview-cancel', number, number]
   | ['preview-search', number, string, number, number]
+  | ['preview-search-precise', number, string, number, number, number, string?]
+  | ['preview-inverse-precise', number, number, number, number, number, number, number[] | null, boolean]
   | ['preview-prepare', number, string, number, number, number]
   | ['preview-prepare-cancel', number]
   | ['preview-auto', number, number, number, number, number, number, number?]

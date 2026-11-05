@@ -33,6 +33,7 @@ export class PreviewController {
   private disposed = false;
   private sourceFollowing = true;
   private sourceHighlight = false;
+  private sourceIntent = 0;
   private recoveryCapabilities?: { regions: boolean; svg: boolean; links: boolean };
   private recoveryPagination?: { count: number; complete: boolean };
   private ready = false;
@@ -95,7 +96,7 @@ export class PreviewController {
   private decodeTimeout?: NodeJS.Timeout;
   private state?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
   private shown?: PreviewImageHeader;
-  private target?: { revision: number; sequence: number; page: number; x: number; y: number; highlight: boolean };
+  private target?: { revision: number; sequence: number; page: number; x: number; y: number; highlight: boolean; rectangles?: import('./preview-protocol').SourceRect[] };
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, public session: TexpressoSession,
     closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void, private tikz?: TikzActions) {
@@ -264,7 +265,8 @@ export class PreviewController {
           this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
           this.sourcePage = event[3];
-          this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5], highlight: this.sourceHighlight };
+          this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5], highlight: this.sourceHighlight,
+            ...(event[6] ? { rectangles: event[6] } : {}) };
           if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
             if (this.page !== event[3]) { this.renderIntent++; this.svgDecodeFailed = false; }
@@ -285,7 +287,7 @@ export class PreviewController {
     this.prewarm.select(document ? `${document.uri.toString()}:${version ?? this.session.previewSequence}:${utf16Offset}` : undefined,
       document ? () => document.version === version ? this.session.sync.sourcePosition(document, utf16Offset) : undefined : undefined);
   }
-  beginSourceFollow(explicit = false): void { this.sourceFollowing = true; this.sourceHighlight = explicit; this.prewarm.interrupt(); }
+  beginSourceFollow(explicit = false): void { this.sourceIntent++; this.sourceFollowing = true; this.sourceHighlight = explicit; this.prewarm.interrupt(); }
   interruptPreparation(): void { this.prewarm.interrupt(); }
   private manualNavigation(): void {
     this.sourcePage = undefined;
@@ -574,7 +576,12 @@ export class PreviewController {
             typeof m.x === 'number' && typeof m.y === 'number' && Number.isFinite(m.x) && Number.isFinite(m.y) &&
             m.x >= h.bounds[0] && m.x <= h.bounds[2] && m.y >= h.bounds[1] && m.y <= h.bounds[3]) {
           this.interactive();
-          if (this.enginePage?.revision === h.revision && this.enginePage.sequence === h.sequence && this.enginePage.page === h.page) {
+          if (this.session.previewSynctexPrecision) {
+            const session = this.session, intent = this.renderIntent, sourceIntent = this.sourceIntent;
+            this.session.inversePrecise(h.revision, h.sequence, h.page, m.x, m.y, () =>
+              !this.disposed && this.panel.visible && this.session === session && this.renderIntent === intent && this.sourceIntent === sourceIntent &&
+              this.headerFor(h.page)?.requestId === h.requestId);
+          } else if (this.enginePage?.revision === h.revision && this.enginePage.sequence === h.sequence && this.enginePage.page === h.page) {
             this.session.send(['preview-inverse', h.revision, h.sequence, h.page, m.x, m.y]);
           } else {
             // A cache hit need not move the native viewer. Load its hit-testing

@@ -4,6 +4,7 @@ export interface SourceFollowIntent {
   version: number;
   line: number;
   column?: number;
+  precise?: boolean;
   sequence: number;
   revision: number;
 }
@@ -35,7 +36,8 @@ export class SourceFollow {
     }
     this.suspended.delete(intent.session);
     if (!explicit && !resumed && previous && previous.document === intent.document && previous.version === intent.version &&
-        previous.line === intent.line && previous.sequence === intent.sequence && previous.revision === intent.revision) {
+        previous.line === intent.line && previous.sequence === intent.sequence && previous.revision === intent.revision &&
+        (!intent.precise || previous.column === intent.column)) {
       // Horizontal caret motion does not need another line-based SyncTeX
       // request, but a later preview hold must remember the latest selection.
       previous.column = intent.column;

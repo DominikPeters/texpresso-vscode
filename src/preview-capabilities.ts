@@ -3,7 +3,7 @@ import type { SessionConfiguration, LaunchCommand } from './configuration';
 import { EngineFailure, processFailure } from './failures';
 import { wslArguments } from './wsl';
 
-export function probePreview(config: SessionConfiguration, cwd?: string, features?: (value: { regions: boolean; svg: boolean; links: boolean; auto: boolean; pngPatches: boolean; background: boolean; prepareEdit: boolean; requestLifecycle?: boolean }) => void): Promise<boolean> {
+export function probePreview(config: SessionConfiguration, cwd?: string, features?: (value: { regions: boolean; svg: boolean; links: boolean; auto: boolean; pngPatches: boolean; background: boolean; prepareEdit: boolean; requestLifecycle?: boolean; synctexPrecision?: boolean }) => void): Promise<boolean> {
   const launch: LaunchCommand = config.useWSL
     ? { command: 'wsl', args: wslArguments(config.command, ['-capabilities'], config.wslDistribution) }
     : { command: config.command, args: ['-capabilities'], cwd };
@@ -19,7 +19,7 @@ export function probePreview(config: SessionConfiguration, cwd?: string, feature
       }
       try {
         const capabilities = JSON.parse(stdout);
-        features?.({ regions: capabilities?.regions === true, svg: capabilities?.codecs?.includes('svg') === true, links: capabilities?.links === true, auto: capabilities?.adaptiveRendering === true, pngPatches: capabilities?.pngPatches === true, background: capabilities?.backgroundRendering === true, prepareEdit: capabilities?.prepareEdit === true, requestLifecycle: capabilities?.requestLifecycle === true });
+        features?.({ regions: capabilities?.regions === true, svg: capabilities?.codecs?.includes('svg') === true, links: capabilities?.links === true, auto: capabilities?.adaptiveRendering === true, pngPatches: capabilities?.pngPatches === true, background: capabilities?.backgroundRendering === true, prepareEdit: capabilities?.prepareEdit === true, requestLifecycle: capabilities?.requestLifecycle === true, synctexPrecision: capabilities?.synctexPrecision === 1 });
         resolve(capabilities?.previewProtocol === 1 && Array.isArray(capabilities.codecs) &&
           capabilities.codecs.includes('png') && capabilities.synctex === true);
       } catch { resolve(false); }

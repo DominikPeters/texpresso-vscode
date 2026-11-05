@@ -7,7 +7,8 @@
 - Run as a workspace extension, including directly inside Remote WSL.
 - Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.
 - Open substantial TikZ figures in a locally installed TikZ Editor from a hover action in trusted desktop workspaces.
-- Keep automatic SyncTeX following quiet; explicit forward jumps briefly mark the target line in yellow in the page margin.
+- Keep automatic SyncTeX following quiet; explicit forward jumps briefly highlight actual source boxes in yellow when the engine supports precise SyncTeX, with a margin cue on older engines.
+- Use column and word hints for precise SyncTeX and query cached pages for inverse synchronization without another image export.
 - Support sharp SVG rendering and bounded PNG rendering, incremental updates, adaptive rendering, and cached page navigation.
 - Prepare nearby compiler checkpoints during idle time to reduce edit latency, and recover from unexpected engine exits while replaying unsaved buffers.
 - Release compiler checkpoint processes after abrupt shutdown, and resume compilation after a worker exits even when the next edit is beyond its last observed input.

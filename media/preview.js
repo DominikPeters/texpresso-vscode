@@ -261,13 +261,28 @@
       if (!header || stale || target.page !== page) { return; }
       const mark = element('highlight');
       clearTimeout(highlightTimer); mark.hidden = true;
-      // Automatic following only scrolls. An explicit jump marks the margin at
-      // the resolved line; a SyncTeX point cannot identify an exact word box.
+      mark.replaceChildren(); mark.classList.remove('source-boxes');
+      // Geometry belongs to this source epoch, never to the reused image alone.
+      // Without native boxes retain the honest line-level margin cue.
       if (target.highlight === true) {
-        const textLeft = header.textBounds?.[0] ?? bounds[0];
-        const left = 100*(textLeft-bounds[0])/(bounds[2]-bounds[0]);
-        mark.style.left = `max(4px, calc(${left}% - 10px))`;
-        mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
+        const rectangles = (target.rectangles || []).slice(0,128).filter(b =>
+          Array.isArray(b) && b.length === 4 && b.every(Number.isFinite)).map(b =>
+          [Math.max(bounds[0],b[0]),Math.max(bounds[1],b[1]),Math.min(bounds[2],b[2]),Math.min(bounds[3],b[3])])
+          .filter(b => b[2]>b[0] && b[3]>b[1]);
+        if (rectangles.length) {
+          mark.classList.add('source-boxes'); mark.style.left = '0'; mark.style.top = '0';
+          for (const b of rectangles) {
+            const box = document.createElement('div'); box.className = 'source-highlight-box';
+            Object.assign(box.style, {left:`${100*(b[0]-bounds[0])/(bounds[2]-bounds[0])}%`,top:`${100*(b[1]-bounds[1])/(bounds[3]-bounds[1])}%`,
+              width:`${100*(b[2]-b[0])/(bounds[2]-bounds[0])}%`,height:`${100*(b[3]-b[1])/(bounds[3]-bounds[1])}%`});
+            mark.append(box);
+          }
+        } else {
+          const textLeft = header.textBounds?.[0] ?? bounds[0];
+          const left = 100*(textLeft-bounds[0])/(bounds[2]-bounds[0]);
+          mark.style.left = `max(4px, calc(${left}% - 10px))`;
+          mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
+        }
         void mark.offsetWidth; mark.hidden = false;
         highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
       }
