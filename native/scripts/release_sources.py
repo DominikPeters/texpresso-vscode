@@ -14,7 +14,6 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-import urllib.request
 import zipfile
 from pathlib import Path
 from common import ROOT, NATIVE, run, sha256, load_lock, pinned_engine, check_source
@@ -32,7 +31,9 @@ def record(file, root):
 def download(url, destination, expected=None):
     if not url.startswith('https://'):
         raise ValueError('Release sources require HTTPS')
-    urllib.request.urlretrieve(url, destination)
+    # Release endpoints can transiently return 5xx; never relax integrity checks.
+    run(['curl', '--fail', '--location', '--retry', '5', '--retry-all-errors',
+         '--connect-timeout', '20', '--max-time', '300', '--output', destination, url])
     if expected and sha256(destination) != expected:
         raise ValueError('Downloaded source checksum mismatch')
 
@@ -211,6 +212,59 @@ def debian_sources(package, host, notices):
             'sourceDirectory': 'host-sources/' + directory.name}
 
 
+def rpm_sources(package, host, notices):
+    binary, binary_version, source, version = package.split('\t')
+    if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9+_.-]*', binary) or
+            not re.fullmatch(r'[0-9]+:[A-Za-z0-9+_.~-]+', binary_version) or
+            not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9+_.-]*', source) or
+            not re.fullmatch(r'[A-Za-z0-9+_.~-]+', version)):
+        raise ValueError('Invalid RPM source package identity')
+    name, architecture = binary.rsplit('.', 1)
+    directory = host / (source + '-' + version)
+    if directory.exists():
+        return None
+    directory.mkdir()
+    # --source enables corresponding source repositories. Select the exact
+    # installed binary NEVRA, then independently verify its SRPM identity.
+    run(['dnf', 'download', '--source', '--downloaddir', directory,
+         name + '-' + binary_version + '.' + architecture])
+    archives = list(directory.glob('*.src.rpm'))
+    if len(archives) != 1:
+        raise ValueError('Missing exact source RPM for ' + binary)
+    archive = archives[0]
+    run(['rpmkeys', '--checksig', archive])
+    identity = run(['rpm', '-qp', '--qf', '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}', archive], capture=True)
+    if identity != '\t'.join([source, version, 'src']):
+        raise ValueError('Downloaded source RPM identity mismatch: ' + identity)
+    with tempfile.TemporaryDirectory(prefix='txp-rpm-notices-') as temporary:
+        top = Path(temporary)
+        # Source installation extracts SOURCES/SPECS without executing recipes.
+        run(['rpm', '-i', '--nodeps', '--define', '_topdir ' + str(top), archive])
+        specs = list((top / 'SPECS').glob('*.spec'))
+        if len(specs) != 1:
+            raise ValueError('Source RPM has no unique build recipe')
+        shutil.copyfile(specs[0], directory / specs[0].name)
+        unpack_notices([p for p in (top / 'SOURCES').iterdir() if p.is_file()], notices / source)
+    return {'name': source, 'version': version, 'binaryPackage': binary,
+            'sourceDirectory': 'host-sources/' + directory.name,
+            'sourceRpm': 'host-sources/' + directory.name + '/' + archive.name}
+
+
+def mupdf_submodules(source, native, lock):
+    expected = dict(lock['mupdf']['submodules'])
+    recorded = native.get('mupdfSubmodules', expected)
+    if not expected.items() <= recorded.items():
+        raise ValueError('Missing locked MuPDF submodules')
+    for path, revision in recorded.items():
+        if path not in ('thirdparty/lcms2', 'thirdparty/jbig2dec', 'thirdparty/harfbuzz'):
+            raise ValueError('Unreviewed MuPDF submodule: ' + path)
+        entry = run(['git', 'ls-tree', 'HEAD', path], cwd=source, capture=True)
+        if not entry.startswith('160000 commit ') or entry.split()[2] != revision:
+            raise ValueError('MuPDF submodule source identity mismatch: ' + path)
+        check_source(source / path, revision)
+    return recorded
+
+
 def create_archive(payload, output, manifest):
     files = [record(p, payload) for p in sorted(payload.rglob('*')) if p.is_file() and not p.is_symlink()]
     manifest['files'] = files
@@ -296,12 +350,12 @@ def main():
                 snapshot(source, inputs / name, expected)
                 copy_notices(source, notices / name)
                 manifest['components'].append({'name': name, 'revision': expected, 'sourceDirectory': 'inputs/' + name})
-            for submodule, expected in lock['mupdf']['submodules'].items():
+            for submodule, expected in mupdf_submodules(args.mupdf_source, native, lock).items():
                 source = args.mupdf_source / submodule
-                check_source(source, expected)
+                name = Path(submodule).name
                 snapshot(source, inputs / 'mupdf' / submodule, expected)
-                copy_notices(source, notices / 'lcms2')
-                manifest['components'].append({'name': 'lcms2', 'revision': expected, 'sourceDirectory': 'inputs/mupdf/' + submodule})
+                copy_notices(source, notices / name)
+                manifest['components'].append({'name': name, 'revision': expected, 'sourceDirectory': 'inputs/mupdf/' + submodule})
             host = payload / 'host-sources'
             host.mkdir()
             if native['platform'] == 'darwin':
@@ -317,8 +371,9 @@ def main():
                 finally:
                     shutil.rmtree(tap)
             else:
-                for package in native['hostLibraries']:
-                    component = debian_sources(package, host, notices)
+                collector = rpm_sources if native.get('hostPackageManager') == 'rpm' else debian_sources
+                for package in [*native['hostLibraries'], *native.get('buildSourcePackages', [])]:
+                    component = collector(package, host, notices)
                     if component:
                         manifest['components'].append(component)
                 download(lock['icu']['sourceUrl'], inputs / 'icu.tgz', lock['icu']['sourceSha256'])

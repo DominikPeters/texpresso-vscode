@@ -97,7 +97,7 @@ def rpm_notice(source, destination):
     return identity
 
 
-def bundle(executables, destination, metadata, notices_sources, *, maximum_glibc=None):
+def bundle(executables, destination, metadata, notices_sources, *, maximum_glibc=None, source_inputs=()):
     if destination.exists() or destination.with_suffix('.zip').exists():
         raise ValueError(f'Refusing to replace bundle {destination}')
     (destination / 'bin').mkdir(parents=True)
@@ -139,6 +139,8 @@ def bundle(executables, destination, metadata, notices_sources, *, maximum_glibc
     for name, source in notices_sources.items():
         shutil.copyfile(source, notices / name)
     metadata['hostLibraries'] = sorted(packages)
+    if source_inputs:
+        metadata['buildSourcePackages'] = sorted({package_notice(p, notices) for p in source_inputs})
     if maximum_glibc:
         from audit_linux import audit
         metadata['compatibility'] = audit(destination, maximum_glibc, metadata['architecture'])

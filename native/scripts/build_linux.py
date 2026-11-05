@@ -120,10 +120,18 @@ def main():
     if args.bundled_harfbuzz:
         notices['harfbuzz-COPYING'] = mupdf / 'thirdparty/harfbuzz/COPYING'
     metadata['mupdfSubmodules'] = submodules
+    source_inputs = []
+    if manager == 'rpm':
+        for compiler, archive in [('gcc', 'libgcc.a'), ('g++', 'libstdc++_nonshared.a')]:
+            library = Path(run([compiler, '-print-file-name=' + archive], capture=True)).resolve()
+            if not library.is_file():
+                raise ValueError('Missing compiler runtime source input: ' + archive)
+            source_inputs.append(library)
     bundle([txp / 'build/texpresso', txp / 'build/texpresso-xetex'], args.output, metadata, {
         'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
         'lcms2-LICENSE': mupdf / 'thirdparty/lcms2/LICENSE', 'zlib-ng-LICENSE': zng_notice,
-        'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE', **notices}, maximum_glibc=args.maximum_glibc)
+        'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE', **notices},
+        maximum_glibc=args.maximum_glibc, source_inputs=source_inputs)
     if not args.keep_work:
         shutil.rmtree(work)
         print('Removed successful build workspace:', work)

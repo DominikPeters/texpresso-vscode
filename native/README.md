@@ -196,18 +196,24 @@ external-engine VSIX at `artifacts/texpresso.vsix`.
 
 ## Linux builds on GitHub
 
-`linux-build.yml` builds x64 and ARM64 on GitHub runners inside Ubuntu 22.04
-containers (glibc 2.35 baseline). Local Docker is not required. The runner
-downloads the locked ICU archive, checks its SHA-256, and builds its static core
-with the same filtered data profile as macOS. MuPDF and zlib-ng use the locked
-source revisions. ELF dependencies are recursively collected with notices and
-source-package versions, then relocated using `$ORIGIN` paths. glibc and its
-loader remain supplied by the runtime OS, as do graphics drivers and fonts.
+`linux-build.yml` builds x64 and ARM64 on GitHub in AlmaLinux 8 containers
+with GCC 13, a glibc 2.28 baseline and explicit x86-64/Armv8 CPU flags. Local
+Docker is not required. ICU and zlib-ng use locked sources; MuPDF supplies pinned
+LCMS, JBIG2 and modern HarfBuzz sources. Runtime-dispatched SIMD stays enabled.
 
-The job tests a moved bundle, packages its platform VSIX, and exercises that
-installed VSIX through a real VS Code webview. Only accepted VSIXs and checksums
-are uploaded as `vsix-linux-x64` and `vsix-linux-arm64`. Downloads and build
-caches stay on GitHub; developer machines only need the source checkout.
+ELF dependencies are recursively collected, relocated using `$ORIGIN` paths,
+and audited against glibc 2.28. glibc and its loader remain supplied by the OS,
+as do graphics drivers and fonts. Matching signed source RPMs, their build
+recipes and license texts are collected for every bundled library and the
+statically linked GCC runtime inputs. The verifier also requires every pinned
+MuPDF submodule used by the build.
+
+Both architectures must pass baseline CPU startup, real compilation/rendering/
+SyncTeX checks on glibc 2.28, full native tests on a modern host, and a moved
+bundle's installed platform VSIX through a real VS Code webview. The old-glibc
+runtime uses AlmaLinux's `kpsewhich` with the host's matching modern TeX data.
+Only accepted VSIXs, checksums and verified corresponding sources are uploaded.
+Downloads, caches and all substantial builds stay on GitHub.
 
 ## Release and Marketplace publishing
 
@@ -221,7 +227,7 @@ inventory are included and hashed in each native bundle.
 After building, CI runs `native/scripts/release_sources.py --fetch` on the
 runner. This explicit network step is separate from the offline builders. It
 archives sanitized single-commit Git snapshots for the extension, engine,
-MuPDF, LCMS and zlib-ng; lockfile-verified npm tarballs; exact Ubuntu source
+MuPDF, LCMS and zlib-ng; lockfile-verified npm tarballs; exact signed RPM (or legacy Debian/Ubuntu) source
 packages or installed Homebrew recipes with their source/resource/patch
 downloads; and the ICU inputs. `SOURCE-BUILDING.txt` supplies rebuilding and
 LGPL library-replacement instructions, including local macOS re-signing without
@@ -265,19 +271,3 @@ VSIXs without the development libraries from their build environments.
 The universal VSIX excludes native archives. Platform VSIXs include only the
 selected bundle. Local ad-hoc signed candidates are for development; distribution
 requires the signed/notarized CI artifacts and platform acceptance results.
-
-### glibc 2.28 trial
-
-`linux-glibc228.yml` is an isolated compatibility trial on x64 and
-ARM64. It builds in AlmaLinux 8 with a newer compiler, explicit baseline CPU
-flags, MuPDF’s pinned JBIG2 decoder and HarfBuzz text shaper, and the same locked engine/MuPDF/ICU/zlib-ng sources. It audits required
-ELF versions in **every** executable and bundled library, checks startup under
-a baseline CPU model on glibc 2.28, and runs real engine checks in an older
-runtime as well as full native/webview acceptance on a modern distribution.
-The old runtime uses an AlmaLinux `kpsewhich` with the modern host’s identical
-TeX macro/font data, isolating ABI compatibility from old LaTeX behavior.
-
-Only compact manifests and audit reports are uploaded. Trial binaries are not
-release artifacts: production adoption must also collect matching RPM sources
-and pass the normal source-archive and installed-VSIX gates. The existing
-Ubuntu 22.04 release workflow remains in use until those gates pass.

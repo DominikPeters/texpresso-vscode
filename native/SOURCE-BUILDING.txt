@@ -6,7 +6,8 @@ only the extension and JavaScript inputs.
 
 SOURCE-MANIFEST.json identifies the exact inputs and contains checksums for
 the source files and archives. The project/ directory is the extension source
-with its native/texpresso submodule populated. inputs/mupdf (including lcms2)
+with its native/texpresso submodule populated. inputs/mupdf (including all
+submodules listed in BINARY-BUILD-MANIFEST.json)
 and inputs/zlib-ng contain the locked native inputs. These are sanitized shallow
 Git snapshots: the original commits and complete working trees are preserved,
 without CI remotes, credentials, unrelated history, caches, or private keys.
@@ -25,15 +26,25 @@ JavaScript:
   For offline installation, preload those tarballs with npm cache add PATH.
 
 Linux:
-  host-sources/ contains the exact Debian/Ubuntu source package versions for
-  every collected ELF library. Each directory has .dsc, original tarballs,
-  packaging patches, and Debian copyright. Extract with dpkg-source -x FILE.dsc
-  and follow debian/rules/build instructions, or use dpkg-buildpackage after
-  installing its Build-Depends. glibc and its loader are supplied by the OS.
+  The portable release builder uses AlmaLinux 8, GCC 13 and glibc 2.28.
+  project/native/containers/glibc228.Dockerfile records the build environment;
+  project/.github/workflows/linux-build.yml contains the complete recipe.
+  host-sources/ contains exact signed source RPMs for the bundled libraries
+  and compiler runtime archives, including all original source tarballs,
+  packaging patches and SPEC build recipes. A copy of each SPEC is also saved
+  beside its SRPM. Verify with rpmkeys --checksig using the distribution keys.
+  Extract with rpm -i --define '_topdir /YOUR/BUILD/DIR' FILE.src.rpm, install
+  the SPEC's BuildRequires, and rebuild with rpmbuild -ba /YOUR/BUILD/DIR/SPECS/FILE.spec.
+  The manifest records the package manager and exact binary/source versions.
+  Legacy Debian/Ubuntu archives instead contain .dsc files and their original
+  sources/patches; extract those with dpkg-source -x and follow debian/rules.
+  glibc and its matching loader are supplied by the runtime OS.
   inputs/icu.tgz is the checksum-verified ICU source from the dependency lock.
   From project/, build ICU with native/scripts/build_icu.py, then run
   native/scripts/build_linux.py with --mupdf-source ../inputs/mupdf,
   --zlib-ng-source ../inputs/zlib-ng and the resulting --icu-prefix.
+  On the portable RPM builder include --maximum-glibc 2.28 --bundled-jbig2dec
+  --bundled-harfbuzz. The required MuPDF submodules are populated in inputs/.
 
 macOS:
   host-sources/ contains each installed Homebrew formula snapshot, receipt and

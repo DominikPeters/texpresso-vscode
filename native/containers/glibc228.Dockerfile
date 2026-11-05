@@ -1,10 +1,11 @@
-# Experimental portable builder. Images and all substantial builds stay in CI.
+# Portable release builder. Images and all substantial builds stay in CI.
 FROM almalinux:8
 RUN dnf -y install dnf-plugins-core epel-release \
  && dnf config-manager --set-enabled powertools \
+ && dnf -y upgrade \
  && dnf -y --setopt=install_weak_deps=False install \
       git ca-certificates curl make cmake pkgconf-pkg-config patchelf binutils \
-      gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ python3.12 \
+      gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ python3.12 rpm-build \
       freetype-devel libjpeg-turbo-devel openjpeg2-devel brotli-devel SDL2-devel \
       harfbuzz-devel graphite2-devel fontconfig-devel libpng-devel \
  && ln -s /usr/bin/python3.12 /usr/local/bin/python3 \

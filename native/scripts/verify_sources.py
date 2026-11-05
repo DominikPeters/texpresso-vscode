@@ -86,7 +86,7 @@ def verify_archive(filename, info):
         if not binary_manifest or binary_manifest['engineRevision'] != info['engineRevision']:
             raise ValueError('Native source build provenance mismatch')
         identities = {(p['name'], p.get('version')) for p in manifest['components']}
-        for package in binary_manifest['hostLibraries']:
+        for package in [*binary_manifest['hostLibraries'], *binary_manifest.get('buildSourcePackages', [])]:
             if isinstance(package, dict):
                 expected = (package['package'], package['version'])
             else:
@@ -94,6 +94,19 @@ def verify_archive(filename, info):
                 expected = (source or binary.split(':')[0], version or binary_version)
             if expected not in identities:
                 raise ValueError('Missing exact runtime library sources: ' + str(expected))
+        components = {p['name']: p for p in manifest['components']}
+        for path, revision in binary_manifest.get('mupdfSubmodules', {}).items():
+            component = components.get(PurePosixPath(path).name, {})
+            if component.get('revision') != revision or component.get('sourceDirectory') != 'inputs/mupdf/' + path:
+                raise ValueError('Missing exact MuPDF submodule sources: ' + path)
+        if binary_manifest.get('hostPackageManager') == 'rpm':
+            if not binary_manifest.get('buildSourcePackages'):
+                raise ValueError('Missing compiler runtime source inventory')
+            for package in [*binary_manifest['hostLibraries'], *binary_manifest.get('buildSourcePackages', [])]:
+                source, version = package.split('\t')[2:]
+                component = components.get(source, {})
+                if component.get('version') != version or component.get('sourceRpm') not in observed:
+                    raise ValueError('Missing exact source RPM: ' + source)
     for component in manifest['components']:
         if 'sourceDirectory' in component:
             prefix = component['sourceDirectory'].rstrip('/') + '/'
