@@ -103,6 +103,7 @@ Last page untouched.
     assert.deepEqual(shifted.bytes,original.bytes,'a source-only change keeps exact vectors');
     await f.until(()=>f.profile.slice(beforeComment).some(p=>p.stage.startsWith('page-list-cache-')&&p.page===1));
     assert.ok(f.profile.slice(beforeComment).some(p=>p.stage==='page-list-cache-hit'&&p.page===1),f.debug().slice(-6000));
+    await f.until(()=>f.profile.slice(beforeComment).some(p=>p.stage==='page-export-cache-hit'&&p.page===1));
     const target=await f.forward('Stable linked words.');assert.equal(target[3],1);
     const sourceCount=f.sources.length;
     f.session.send(['preview-inverse',target[1],target[2],1,target[4],target[5]]);
