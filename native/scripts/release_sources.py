@@ -32,7 +32,7 @@ def download(url, destination, expected=None):
     if not url.startswith('https://'):
         raise ValueError('Release sources require HTTPS')
     # Release endpoints can transiently return 5xx; never relax integrity checks.
-    run(['curl', '--fail', '--location', '--retry', '5', '--retry-all-errors',
+    run(['curl', '--fail', '--location', '--retry', '5',
          '--connect-timeout', '20', '--max-time', '300', '--output', destination, url])
     if expected and sha256(destination) != expected:
         raise ValueError('Downloaded source checksum mismatch')
