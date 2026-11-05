@@ -21,7 +21,7 @@ export async function runRecoveryChecks(main: vscode.TextDocument, child: vscode
   const settings = vscode.workspace.getConfiguration('texpresso', main.uri), previous = settings.get('streamFiles', false);
   const starts = async () => (await trace()).filter(item => item.type === 'start');
   const trigger = path.join(path.dirname(main.fileName), '.texpresso-test-exit');
-  async function exitOnNextCommand(value: { code: number; error?: string }): Promise<void> {
+  async function exitOnEdit(value: { code: number; error?: string; afterText: string }): Promise<void> {
     // The fixture may receive unrelated initialization/watch commands while
     // this is written. Publish the complete instruction with an atomic rename.
     await fs.writeFile(trigger + '.tmp', JSON.stringify(value));
@@ -42,7 +42,7 @@ export async function runRecoveryChecks(main: vscode.TextDocument, child: vscode
     const before = (await starts()).length;
     await edit(main, '% unsaved root survives recovery\n'); await edit(child, '% unsaved include survives recovery\n');
     const firstPid = (await starts()).at(-1)!.pid!;
-    await exitOnNextCommand({ code: 1 });
+    await exitOnEdit({ code: 1, afterText: '% trigger runtime exit' });
     await edit(main, '% trigger runtime exit\n');
     await until(async () => (await starts()).length === before + 1, 'unexpected runtime exit restarts the engine');
     const secondPid = (await starts()).at(-1)!.pid!;
@@ -69,7 +69,7 @@ export async function runRecoveryChecks(main: vscode.TextDocument, child: vscode
     assert.equal((await starts()).length, stopped, 'manual Stop cancels a racing recovery');
     await vscode.window.showTextDocument(main); await restart('startDocument');
     const errorsBefore = (await starts()).length;
-    await exitOnNextCommand({ code: 1, error: '! Undefined control sequence.\n' });
+    await exitOnEdit({ code: 1, error: '! Undefined control sequence.\n', afterText: '% trigger compiler error' });
     await edit(main, '% trigger compiler error\n'); await settle();
     assert.equal((await starts()).length, errorsBefore, 'compiler errors never trigger automatic recovery');
     console.log('PASS: manual Stop wins recovery races and compiler errors are not retried');
