@@ -22,7 +22,7 @@ def build(source, work, jobs, cflags=()):
          '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-DZLIB_COMPAT=OFF',
          '-DBUILD_SHARED_LIBS=OFF', '-DBUILD_TESTING=OFF', '-DWITH_GTEST=OFF',
          '-DWITH_GZFILEOP=OFF', '-DWITH_NATIVE_INSTRUCTIONS=OFF', '-DWITH_RUNTIME_CPU_DETECTION=ON',
-         '-DCMAKE_C_FLAGS=' + shlex.join(cflags)])
+         *(['-DCMAKE_C_FLAGS=' + shlex.join(cflags)] if cflags else [])])
     run(['cmake', '--build', output, '--parallel', str(jobs)])
     library = output / 'libz-ng.a'
     metadata = {'version': lock['version'], 'revision': lock['revision'],

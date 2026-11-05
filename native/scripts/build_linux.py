@@ -75,6 +75,9 @@ def main():
              '-DHB_BUILD_UTILS=OFF', '-DHB_BUILD_SUBSET=OFF'])
         run(['cmake', '--build', work / 'harfbuzz-build', '--parallel', str(jobs)])
         run(['cmake', '--install', work / 'harfbuzz-build'])
+        # MuPDF's locked HarfBuzz fork prefixes symbols through this public
+        # header, but its upstream CMake install list does not include it.
+        shutil.copyfile(mupdf / 'thirdparty/harfbuzz/src/hb-rename.h', prefix / 'include/harfbuzz/hb-rename.h')
         os.environ['PKG_CONFIG_PATH'] = str(prefix / 'lib/pkgconfig') + os.pathsep + os.environ.get('PKG_CONFIG_PATH', '')
     zng_include, zng_library, zng_notice, zng_metadata = zlib_ng.build(args.zlib_ng_source, work / 'zlib-ng', jobs, cpu_flags)
     packages = ['freetype2', 'libjpeg', 'libopenjp2', 'libbrotlidec', 'libbrotlienc', 'sdl2',
