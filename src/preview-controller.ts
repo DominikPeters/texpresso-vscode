@@ -8,6 +8,7 @@ import { AutoRenderCosts } from './auto-render-costs';
 import { EditPrewarm } from './edit-prewarm';
 import { RenderFallbacks, type FallbackContext, type RenderBudget } from './render-fallback';
 import { RecoveryBudget } from './recovery';
+import type { TikzActions } from './tikz-editor';
 
 // Official VS Code product icons, bundled as SVG to avoid shipping an icon font.
 const icons = require('../media/codicons.json') as Record<string, string>;
@@ -96,7 +97,7 @@ export class PreviewController {
   private target?: { revision: number; sequence: number; page: number; x: number; y: number };
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, public session: TexpressoSession,
-    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void) {
+    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void, private tikz?: TikzActions) {
     this.prewarm = new EditPrewarm(() => ({
       available: !!this.session.previewPrepareEdit && !this.disposed && this.panel?.visible && !this.session.paused && this.session.state === 'running',
       idle: this.ready && !this.dirty && !this.inFlight && !this.region && !this.detail && !this.inverse && !this.destination && !this.gesture &&
@@ -135,7 +136,7 @@ export class PreviewController {
     });
     this.html = `<!doctype html><html><head><meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob:; style-src ${webview.cspSource}; script-src 'nonce-${this.instance}';">
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${this.instance}';">
       <link rel="stylesheet" href="${style}"></head><body data-instance="${this.instance}">
       <header aria-label="Preview controls"><div class="navigation">
       <button id="previous" title="Previous page" aria-label="Previous page">${icon('chevron-left')}</button>
@@ -152,7 +153,7 @@ export class PreviewController {
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="alert" hidden></div>
       <main id="viewport" tabindex="0" aria-label="Document preview. Control or Command click to open source.">
-      <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false" hidden><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div></div>
+      <div id="sheet" hidden><div id="raster" hidden></div><div id="vector" hidden role="img" aria-label="Rendered LaTeX page"></div><img id="image" alt="Rendered LaTeX page" draggable="false" hidden><img id="detail" alt="" draggable="false" hidden><div id="links"></div><div id="highlight" hidden></div><div id="tikzHighlight" class="tikz-highlight" hidden></div><button id="tikzAction" class="tikz-action" type="button" hidden><img class="tikz-editor-icon" src="${webview.asWebviewUri(api.Uri.joinPath(media, 'tikz-editor.png'))}" alt="" draggable="false"><span>Edit in TikZ Editor</span></button></div>
       <p id="empty">Your document will appear here.</p></main><div id="lens" hidden><canvas id="lensCanvas" hidden></canvas><div id="lensVector" hidden></div><img id="lensBase" alt="" draggable="false"><img id="lensImage" alt="Magnified page region" draggable="false"></div>
       <script nonce="${this.instance}" src="${viewportScript}"></script>
       <script nonce="${this.instance}" src="${lensScript}"></script>
@@ -423,6 +424,7 @@ export class PreviewController {
           const presented = this.presented.get(this.inFlight.page);
           if (current && presented?.header.requestId === m.id) {
             presented.decoded = true; this.resident.add(this.inFlight.page);
+            void this.prepareTikz(presented.header);
             const id = this.inFlight.contentId;
             if (id) {
               this.decodedPages.delete(this.inFlight.page); this.decodedPages.set(this.inFlight.page, new Set([id]));
@@ -540,6 +542,13 @@ export class PreviewController {
             }
           } catch { /* Unsupported or malformed document links remain inert. */ }
         }
+        break;
+      }
+      case 'tikz-open': {
+        const h = this.headerFor(m.page), session = this.session;
+        if (!this.tikz || !h || m.revision !== h.revision || m.sequence !== h.sequence ||
+            !Number.isSafeInteger(m.index) || (m.index as number) < 0 || !this.tikzCurrent(session, h)) { break; }
+        void this.tikz.open(session, h, m.index as number, () => this.tikzCurrent(session, h)).catch(() => undefined);
         break;
       }
       case 'region':
@@ -901,6 +910,19 @@ export class PreviewController {
   private post(message: object): Promise<boolean> {
     return this.disposed ? Promise.resolve(false) : Promise.resolve(
       this.panel.webview.postMessage({ instance: this.instance, ...message })).catch(() => false);
+  }
+  private tikzCurrent(session: TexpressoSession, h: PreviewImageHeader): boolean {
+    return !this.disposed && this.panel.visible && this.session === session && session.state === 'running' &&
+      h.revision === this.state?.[1] && h.sequence === this.state?.[2] && h.sequence === session.previewSequence &&
+      this.headerFor(h.page)?.requestId === h.requestId;
+  }
+  private async prepareTikz(h: PreviewImageHeader): Promise<void> {
+    const session = this.session;
+    if (!this.tikz || !h.annotations?.figures?.length || !this.tikzCurrent(session, h)) { return; }
+    const indices = await this.tikz.prepare(session, h).catch(() => []);
+    if (this.tikzCurrent(session, h)) {
+      await this.post({ type: 'tikz-targets', page: h.page, id: h.requestId, revision: h.revision, sequence: h.sequence, indices });
+    }
   }
   private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; this.rasterPending = undefined; }
   dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBase = undefined; this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }

@@ -4,8 +4,9 @@ import type * as vscode from 'vscode';
 import type { TexpressoSession } from '../session';
 import type { Command } from '../protocol';
 import { PreviewController } from '../preview-controller';
+import type { TikzActions } from '../tikz-editor';
 
-function fixture() {
+function fixture(tikz?: TikzActions) {
   let receive!: (value: unknown) => void, view!: () => void, closed!: () => void;
   let stops = 0;
   const messages: Record<string, any>[] = [], commands: Command[] = [], opened: string[] = [];
@@ -19,7 +20,7 @@ function fixture() {
   const session = { embedded: true, state: 'running', paused: false, previewSequence: 0,
     document: { fileName: '/work/main.tex' }, send: (command: Command) => commands.push(command) };
   const controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri,
-    session as unknown as TexpressoSession, () => { stops++; }, () => {});
+    session as unknown as TexpressoSession, () => { stops++; }, () => {}, undefined, tikz);
   const instance = () => panel.webview.html.match(/data-instance="([^"]+)"/)![1];
   return { controller, panel, session, messages, commands, opened, stops: () => stops,
     send: (m: object) => receive({ instance: instance(), ...m }), view: () => view() };
@@ -1487,5 +1488,30 @@ test('navigation observes a current retained surface after its ACK preceded the 
     assert.deepEqual(visible, [1], 'browser viewport confirms the current decoded surface');
     assert.equal(f.commands.length, commands, 'no extra native export is needed');
     viewport(1, 2); assert.deepEqual(visible, [1], 'observation is bounded to this navigation');
+  } finally { f.controller.dispose(); }
+});
+
+test('figure actions use the decoded current header and reject stale or forged webview routing', async () => {
+  let prepared = 0, opened = 0, routeCurrent: (() => boolean) | undefined;
+  const f = fixture({ prepare: async () => { prepared++; return [0]; },
+    open: async (_session, _header, _index, current) => { if (current()) { opened++; } routeCurrent = current; } });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, false, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    const id = f.commands[0][1] as number;
+    f.controller.handle({ header: { requestId: id, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4,
+      annotations: { links: [], destinations: [], figures: [{ file: 'main.tex', line: 1, endLine: 4, bounds: [60, 80, 160, 160] }] } }, bytes: Buffer.alloc(4) });
+    assert.equal(prepared, 0, 'no figure actions for an image which has not decoded');
+    f.send({ type: 'decoded', id }); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(prepared, 1);
+    assert.deepEqual(f.messages.find(m => m.type === 'tikz-targets')?.indices, [0]);
+    f.send({ type: 'tikz-open', page: 0, revision: 0, sequence: 0, index: 0 });
+    f.send({ type: 'tikz-open', instance: 'forged', page: 0, revision: 1, sequence: 0, index: 0 });
+    assert.equal(opened, 0);
+    f.send({ type: 'tikz-open', page: 0, revision: 1, sequence: 0, index: 0 }); assert.equal(opened, 1);
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    assert.equal(routeCurrent!(), false, 'async save/open must recheck after source invalidation');
+    f.send({ type: 'tikz-open', page: 0, revision: 1, sequence: 0, index: 0 }); assert.equal(opened, 1);
   } finally { f.controller.dispose(); }
 });

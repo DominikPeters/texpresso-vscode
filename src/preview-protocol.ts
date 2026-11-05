@@ -2,9 +2,13 @@ import type { Readable } from 'stream';
 import { validateMessage, type Message } from './protocol';
 
 export const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
+export interface PreviewFigure {
+  bounds: [number, number, number, number]; file: string; line: number; endLine: number;
+}
 export interface PreviewAnnotations {
   links: { bounds: [number, number, number, number]; uri: string }[];
   destinations: { name: string; x: number; y: number }[];
+  figures?: PreviewFigure[];
 }
 export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
@@ -43,7 +47,10 @@ function annotations(a: unknown): boolean {
   return Array.isArray(value.links) && value.links.length <= 4096 && value.links.every(link =>
     link && rectangle(link.bounds) && name(link.uri)) &&
     Array.isArray(value.destinations) && value.destinations.length <= 4096 && value.destinations.every(dest =>
-      dest && name(dest.name) && coordinate(dest.x) && coordinate(dest.y));
+      dest && name(dest.name) && coordinate(dest.x) && coordinate(dest.y)) &&
+    (value.figures === undefined || (Array.isArray(value.figures) && value.figures.length <= 1024 &&
+      value.figures.every(f => f && rectangle(f.bounds) && name(f.file) && !/[\x00-\x1f\x7f]/.test(f.file) &&
+        count(f.line) && f.line > 0 && count(f.endLine) && f.endLine > f.line)));
 }
 function rasterPatch(h: PreviewImageHeader): boolean {
   if (h.rasterId !== undefined && (!count(h.rasterId) || h.rasterId < 1 || h.mime !== 'image/png')) { return false; }

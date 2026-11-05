@@ -10,6 +10,7 @@ import { TexpressoSession } from './session';
 import { ExternalCompiler } from './external-compile';
 import { PreviewControls } from './controls';
 import { PreviewController } from './preview-controller';
+import { TikzEditor } from './tikz-editor';
 import { SourceFollow } from './source-follow';
 import { RecoveryBudget, isRecoverableEngineFailure } from './recovery';
 import { describeFailure } from './failures';
@@ -113,7 +114,7 @@ export function activate(context: vscode.ExtensionContext): void {
           if (action === 'restart') { void startDocument(session.document, false); }
           else if (action === 'pause') { session.setPaused(!session.paused); }
           else { output.show(true); }
-        }, () => { if (activeSession) { sourceFollow.suspend(activeSession); } });
+        }, () => { if (activeSession) { sourceFollow.suspend(activeSession); } }, new TikzEditor(vscode));
       preview = controller;
     }
     preview?.update();

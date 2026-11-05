@@ -6,7 +6,7 @@ const { validateNativeLicenses, validateSourceInfo } = require('./release-licens
 
 const productionFiles = ['package.json', 'README.md', 'LICENSE', 'assets/texpresso_logo.png', 'dist/extension.js',
   'media/preview.js', 'media/preview-cache.js', 'media/preview-svg.js', 'media/preview-png.js', 'media/preview.css',
-  'media/preview-lens.js', 'media/preview-viewport.js', 'media/codicons-LICENSE', 'THIRD-PARTY-NOTICES.txt',
+  'media/tikz-editor.png', 'media/tikz-editor-LICENSE', 'media/preview-lens.js', 'media/preview-viewport.js', 'media/codicons-LICENSE', 'THIRD-PARTY-NOTICES.txt',
   'licenses/tmp-MIT.txt', 'licenses/wsl-path-MIT.txt', 'licenses/AGPL-3.0.txt', 'licenses/GPL-2.0.txt',
   'licenses/GPL-3.0.txt', 'licenses/LGPL-2.1.txt', 'licenses/texpresso-MIT.txt', 'licenses/README.txt'];
 const targets = ['darwin-arm64', 'darwin-x64', 'linux-x64', 'linux-arm64'];

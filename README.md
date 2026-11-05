@@ -22,6 +22,8 @@ The magnifier button, or **M** while the preview has focus, enables a loupe: hol
 
 The TeXpresso status-bar entry opens controls for starting, stopping, restarting and pausing the preview, running additional compilation passes, opening logs and changing settings. Use **External Compile and Refresh** when you need an external build, for example to run a bibliography program.
 
+When TikZ Editor is installed locally, hover over a TikZ figure to show **Edit in TikZ Editor**. The action opens the matching source figure after saving any unsaved changes with your approval. This integration is available in trusted local desktop workspaces; use `texpresso.tikzEditorPath` if automatic detection misses the app.
+
 ## Windows and WSL
 
 For Windows, we recommend opening your project in a [WSL](https://code.visualstudio.com/docs/remote/wsl) window. Run **TeXpresso: Reopen Folder in WSL**, install the extension in that window, and install TeX Live or Tectonic in the Linux distribution. The Linux engine runs in WSL while the preview appears in VS Code on Windows.

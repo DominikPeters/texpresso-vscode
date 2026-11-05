@@ -392,6 +392,58 @@
       x: bounds[0] + (event.clientX - rect.left) / rect.width * (bounds[2] - bounds[0]),
       y: bounds[1] + (event.clientY - rect.top) / rect.height * (bounds[3] - bounds[1]) });
   }
+  const tikzButton = element('tikzAction'), tikzHighlight = element('tikzHighlight');
+  let tikzIndices = [], hoveredFigure = -1, figureTimer, figureLeaveTimer;
+  function hideFigure() {
+    clearTimeout(figureTimer); clearTimeout(figureLeaveTimer); hoveredFigure = -1;
+    tikzButton.hidden = true; tikzHighlight.hidden = true;
+  }
+  function showFigure(index) {
+    if (stale || !header || !currentSnapshot(header) || magnify || !tikzIndices.includes(index)) { hideFigure(); return; }
+    const figure = header.annotations?.figures?.[index]; if (!figure) { return; }
+    const b = figure.bounds, rect = surface().getBoundingClientRect(), sheetRect = sheet.getBoundingClientRect();
+    const visible = viewport.getBoundingClientRect();
+    const left = Math.max(rect.left, visible.left) + 4, right = Math.min(rect.right, visible.right) - 4;
+    const top = Math.max(rect.top, visible.top) + 4, bottom = Math.min(rect.bottom, visible.bottom) - 4;
+    const x = rect.left + (b[0]-bounds[0])/(bounds[2]-bounds[0])*rect.width;
+    const y = rect.top + (b[1]-bounds[1])/(bounds[3]-bounds[1])*rect.height;
+    const w = (b[2]-b[0])/(bounds[2]-bounds[0])*rect.width, h = (b[3]-b[1])/(bounds[3]-bounds[1])*rect.height;
+    if (right <= left || bottom <= top || x+w < left || x > right || y+h < top || y > bottom) { hideFigure(); return; }
+    tikzButton.hidden = false; tikzButton.style.visibility = 'hidden';
+    const size = tikzButton.getBoundingClientRect();
+    let by = y-size.height-4;
+    if (by < top) { by = y+h+4; if (by+size.height > bottom) { by = Math.max(y+4, top); } }
+    tikzButton.style.left = `${clamp(x+w-size.width,left,Math.max(left,right-size.width))-sheetRect.left}px`;
+    tikzButton.style.top = `${clamp(by,top,Math.max(top,bottom-size.height))-sheetRect.top}px`;
+    tikzButton.style.visibility = '';
+    Object.assign(tikzHighlight.style, { left:`${x-sheetRect.left}px`, top:`${y-sheetRect.top}px`, width:`${w}px`, height:`${h}px` });
+    tikzHighlight.hidden = false; hoveredFigure = index;
+  }
+  const leaveFigure = () => { clearTimeout(figureLeaveTimer); figureLeaveTimer = setTimeout(() => { if (!tikzButton.matches(':hover,:focus')) { hideFigure(); } },150); };
+  sheet.addEventListener('pointermove', event => {
+    if (event.target.closest('.tikz-action')) { clearTimeout(figureLeaveTimer); return; }
+    if (stale || !header || magnify || event.ctrlKey || event.metaKey) { hideFigure(); return; }
+    const r = surface().getBoundingClientRect();
+    const x = bounds[0]+(event.clientX-r.left)/r.width*(bounds[2]-bounds[0]);
+    const y = bounds[1]+(event.clientY-r.top)/r.height*(bounds[3]-bounds[1]);
+    const index = tikzIndices.find(i => { const b = header.annotations?.figures?.[i]?.bounds; return b && x>=b[0] && x<=b[2] && y>=b[1] && y<=b[3]; });
+    if (index === undefined) { leaveFigure(); return; }
+    clearTimeout(figureLeaveTimer);
+    if (index !== hoveredFigure) { hideFigure(); hoveredFigure = index; figureTimer = setTimeout(() => showFigure(index),350); }
+  });
+  sheet.addEventListener('pointerleave', leaveFigure);
+  tikzButton.addEventListener('pointerenter', () => clearTimeout(figureLeaveTimer));
+  tikzButton.addEventListener('pointerleave', leaveFigure);
+  tikzButton.addEventListener('pointerdown', event => { event.stopPropagation(); event.preventDefault(); });
+  tikzButton.onclick = event => {
+    event.preventDefault(); event.stopPropagation();
+    if (event.ctrlKey || event.metaKey) { inverseAt(event); return; }
+    if (!stale && header && currentSnapshot(header) && hoveredFigure >= 0) {
+      const index = hoveredFigure; hideFigure();
+      post({ type:'tikz-open', revision:header.revision, sequence:header.sequence, page:header.page, index });
+    }
+  };
+  sheet.addEventListener('keydown', event => { if (event.key === 'Escape') { hideFigure(); } });
   function renderLinks() {
     const layer = element('links'); layer.replaceChildren();
     if (stale || !header) { return; }
@@ -414,7 +466,7 @@
   }
   sheet.addEventListener('click', event => { if ((event.ctrlKey || event.metaKey) && !event.target.closest('.page-link')) { inverseAt(event); } });
 
-    view = { sheet, page, currentId:()=>imageId, header: () => header, width, highlight, closeLens, clearDetail, scheduleDetail,
+    view = { sheet, page, hideFigure, currentId:()=>imageId, header: () => header, width, highlight, closeLens, clearDetail, scheduleDetail,
       recost() {
         if (!header || !imageId || header.mime !== 'image/svg+xml') { return; }
         const entry = decoded.entries.get(cacheKey(imageId)); if (!entry) { return; }
@@ -430,17 +482,22 @@
       resident: () => !!header && !stale && !!imageId && images.has(imageId),
       touch: () => imageId && images.get(imageId),
       retire() { generation++; },
-      invalidate(retire = false, reset = false) { if (retire) { generation++; } if (reset) { visualSnapshot = undefined; } stale = true; element('links').replaceChildren(); element('highlight').hidden = true; closeLens(); clearDetail(); },
+      invalidate(retire = false, reset = false) { if (retire) { generation++; } if (reset) { visualSnapshot = undefined; } stale = true; hideFigure(); element('links').replaceChildren(); element('highlight').hidden = true; closeLens(); clearDetail(); },
       evicted(id) {
         if (id !== imageId) { return; }
         closeLens(); clearDetail();
         svgPage = undefined; pngPage = undefined; objectUrl = undefined; imageId = undefined;
-        stale = true; image.hidden = true; vector.hidden = true; raster.hidden = true; element('links').replaceChildren();
+        stale = true; hideFigure(); image.hidden = true; vector.hidden = true; raster.hidden = true; element('links').replaceChildren();
         sheet.classList.add('waiting'); generation++; diagnostics();
         if (!disposing) { post({ type: 'evicted', page, contentId: id, cached: inventory() }); }
       },
       async receive(m) {
         switch (m.type) {
+      case 'tikz-targets':
+        if (!stale && header && currentSnapshot(header) && m.id === header.requestId && m.revision === header.revision && m.sequence === header.sequence) {
+          hideFigure(); tikzIndices = (m.indices || []).filter(i => Number.isSafeInteger(i) && i >= 0 && header.annotations?.figures?.[i]);
+        }
+        break;
       case 'region-error':
         if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
         break;
@@ -565,7 +622,7 @@
             if (candidate !== image) { image.replaceWith(candidate); image = candidate; }
           }
           image.hidden = !!svgPage || !!pngPage;
-          objectUrl = url; header = m.header; bounds = header.bounds;
+          hideFigure(); tikzIndices = []; objectUrl = url; header = m.header; bounds = header.bounds;
           visualSnapshot = { sequence: header.sequence, revision: header.revision };
           problem = ''; stale = m.visualOnly === true || sourceToken !== sourceGeneration || !currentSnapshot(header);
           sheet.dataset.stale = String(stale); sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
@@ -615,7 +672,7 @@
         }
       },
       dispose() {
-        generation++; closeLens(); clearDetail(); clearTimeout(highlightTimer);
+        generation++; hideFigure(); closeLens(); clearDetail(); clearTimeout(highlightTimer);
         // Retain bounded decoded content for a quick return, but unmount its DOM.
         sheet.remove(); if (svgPage?.layer) { svgPage.layer.remove(); } if (pngPage) { pngPage.canvas.remove(); }
       }
@@ -623,6 +680,8 @@
     return view;
   }
 
+  window.addEventListener('resize', () => { for (const view of views.values()) { view.hideFigure(); } });
+  viewport.addEventListener('wheel', () => { for (const view of views.values()) { view.hideFigure(); } }, {passive:true});
   window.addEventListener('message', async event => {
     const m = event.data; if (!m || m.instance !== instance) { return; }
     switch (m.type) {
@@ -669,6 +728,7 @@
   globalElement('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   for (const id of ['restart','pause','output']) { globalElement(id).onclick = () => post({ type: id }); }
   viewport.addEventListener('scroll', () => {
+    for (const view of views.values()) { view.hideFigure(); }
     closeLens(); cancelAnimationFrame(scrollFrame);
     scrollFrame = requestAnimationFrame(() => {
       const top = viewport.scrollTop, left = viewport.scrollLeft;

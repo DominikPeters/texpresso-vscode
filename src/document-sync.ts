@@ -119,6 +119,11 @@ export class DocumentSync {
         this.paths.identity(file) === this.paths.identity(doc.uri.fsPath))) : undefined);
   }
 
+  // Figure metadata may refer only to inputs already registered by the engine.
+  sourceFile(enginePath: string): string | undefined {
+    return this.engineFiles.get(this.paths.absoluteEnginePath(enginePath))?.editorPath;
+  }
+
   hasOverlay(editorPath: string): boolean {
     return [...this.files.values()].some(file => file.document && !file.document.isClosed &&
       this.paths.identity(file.editorPath) === this.paths.identity(editorPath));

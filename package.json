@@ -287,6 +287,12 @@
           ],
           "description": "Where to display the TeXpresso preview. Restart the preview after changing this setting.",
           "scope": "resource"
+        },
+        "texpresso.tikzEditorPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Optional TikZ Editor executable or macOS `.app` bundle. Leave empty for automatic detection. Available in trusted local desktop workspaces. Restart the preview after installing the app or changing this setting."
         }
       }
     },
