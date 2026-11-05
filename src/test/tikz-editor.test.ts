@@ -60,11 +60,19 @@ test('app detection handles declared macOS executables, explicit missing overrid
     assert.equal(scanned, false, 'a configured missing path never silently launches another installation');
     const data = path.join(root, 'data'); await fs.mkdir(path.join(data, 'applications'), { recursive: true });
     const desktop = path.join(data, 'applications/tikz-editor.desktop');
-    await fs.writeFile(desktop, '[Desktop Entry]\nExec="' + executable + '" %U\n');
+    const desktopExecutable = executable.replace(/\\/g, '/');
+    await fs.writeFile(desktop, '[Desktop Entry]\nExec="' + desktopExecutable + '" %U\n');
     const env = { XDG_DATA_HOME: data, XDG_DATA_DIRS: data, PATH: '' };
-    assert.equal(await findTikzEditor('', { platform: 'linux', home: root, env }), executable);
+    assert.equal(await findTikzEditor('', { platform: 'linux', home: root, env }), desktopExecutable);
     await fs.writeFile(desktop, '[Desktop Entry]\nExec=sh -c "some command"\n');
     assert.equal(await findTikzEditor('', { platform: 'linux', home: root, env }), undefined);
+    const registry: string[][] = [];
+    assert.equal(await findTikzEditor('', { platform: 'win32', home: root, env: { PATH: '', EDITOR_ROOT: root },
+      run: async (tool, args) => {
+        assert.equal(tool, 'C:\\Windows\\System32\\reg.exe'); registry.push(args);
+        return '    (Default)    REG_EXPAND_SZ    %EDITOR_ROOT%' + executable.slice(root.length);
+      } }), executable);
+    assert.deepEqual(registry.map(args => args.slice(-1)), [['/ve'], ['/ve']]);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
