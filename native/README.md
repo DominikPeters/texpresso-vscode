@@ -274,6 +274,8 @@ flags, MuPDF’s pinned JBIG2 decoder and HarfBuzz text shaper, and the same loc
 ELF versions in **every** executable and bundled library, checks startup under
 a baseline CPU model on glibc 2.28, and runs real engine checks in an older
 runtime as well as full native/webview acceptance on a modern distribution.
+The old runtime uses an AlmaLinux `kpsewhich` with the modern host’s identical
+TeX macro/font data, isolating ABI compatibility from old LaTeX behavior.
 
 Only compact manifests and audit reports are uploaded. Trial binaries are not
 release artifacts: production adoption must also collect matching RPM sources

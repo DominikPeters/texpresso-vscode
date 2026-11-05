@@ -93,6 +93,11 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" native/.bundles/glibc228
           python3 native/scripts/audit_linux.py native/.bundles/glibc228 --maximum-glibc 2.28 --architecture '${{ matrix.architecture }}' --output artifacts/glibc228/elf-audit.json
           cp native/.bundles/glibc228/build-manifest.json artifacts/glibc228/
+          python3 - <<'PYREPORT'
+          import json
+          report = json.load(open('artifacts/glibc228/elf-audit.json'))
+          print(f"Audited {len(report['files'])} ELF files: GLIBC_{report['requiredGlibc']}, CPU {report['cpuBaseline']}")
+          PYREPORT
       - name: Check a baseline CPU in a fresh glibc 2.28 runtime
         run: |
           docker run --rm --network none --read-only --tmpfs /tmp -w /tmp \
@@ -104,11 +109,20 @@ jobs:
         run: |
           npm run compile-tests
           node_binary="$(command -v node)"
+          docker build --pull -t texpresso-glibc228-runtime -f native/containers/glibc228-runtime.Dockerfile native/containers
+          # Reuse the exact same TeX macro/font data as the modern-host checks.
+          # This isolates the glibc change from TeX Live 2017's legacy SyncTeX
+          # attribution differences; kpsewhich itself still runs on glibc 2.28.
+          kpsewhich --version > artifacts/glibc228/tex-data-provider.txt
           docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" \
             -v "$node_binary:/usr/local/bin/node:ro" \
+            -v /usr/share/texlive:/usr/share/texlive:ro -v /usr/share/texmf:/usr/share/texmf:ro \
+            -v /etc/texmf:/etc/texmf:ro -v /var/lib/texmf:/var/lib/texmf:ro \
             -e TEXPRESSO_BINARY="$GITHUB_WORKSPACE/native/.bundles/glibc228/bin/texpresso" \
-            -e TEXPRESSO_TEST_PREVIEW=1 -e SDL_VIDEODRIVER=dummy -e LD_BIND_NOW=1 almalinux:8 bash -euxc '
-              dnf -y --setopt=install_weak_deps=False install texlive-xetex texlive-latex texlive-lm libstdc++
+            -e TEXPRESSO_TEST_PREVIEW=1 -e SDL_VIDEODRIVER=dummy -e LD_BIND_NOW=1 \
+            -e TEXMFCNF=/etc/texmf/web2c texpresso-glibc228-runtime bash -euxc '
+              ldd --version
+              kpsewhich --version
               node --test --test-concurrency=1 out/test/engine/synctex-precision.test.js out/test/engine/preview.test.js
             '
       - name: Full native and development-webview acceptance on a modern distribution
