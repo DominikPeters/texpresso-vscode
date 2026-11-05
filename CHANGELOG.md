@@ -4,6 +4,7 @@
 
 - Select TeX Live (default) or Tectonic as the package provider.
 - Select a bundled native engine automatically in platform-specific VSIXs; retain explicit external-engine overrides and PATH fallback in the universal package.
+- Bundle portable Linux x64/ARM64 engines for glibc 2.28 or newer, with matching dependency sources and licenses.
 - Run as a workspace extension, including directly inside Remote WSL.
 - Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.
 - Open substantial TikZ figures in a locally installed TikZ Editor from a hover action in trusted desktop workspaces.

@@ -10,7 +10,7 @@ Edit LaTeX with a live preview beside your source. TeXpresso updates the preview
 2. Open a LaTeX document in VS Code.
 3. Open the Command Palette and run **TeXpresso: Start Document**. The preview opens beside your source and updates as you edit.
 
-Platform-specific packages for macOS and Linux include the TeXpresso engine. The universal package requires a [separately installed engine](https://github.com/let-def/texpresso/blob/main/INSTALL.md). Leave `texpresso.command` empty to use the bundled engine when available, or set it to an executable to use your own. Older engines may open a separate native window instead of an editor preview.
+Platform-specific packages for macOS and Linux include the TeXpresso engine. Linux bundles require glibc 2.28 or newer. The universal package requires a [separately installed engine](https://github.com/let-def/texpresso/blob/main/INSTALL.md). Leave `texpresso.command` empty to use the bundled engine when available, or set it to an executable to use your own. Older engines may open a separate native window instead of an editor preview.
 
 For projects with multiple files, add a `% !TeX root = ../main.tex` comment or use **TeXpresso: Select Main Document**. The extension remembers your selection for the workspace folder.
 
