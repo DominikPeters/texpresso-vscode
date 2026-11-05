@@ -105,7 +105,8 @@ def verify_archive(filename, info):
             for package in [*binary_manifest['hostLibraries'], *binary_manifest.get('buildSourcePackages', [])]:
                 source, version = package.split('\t')[2:]
                 component = components.get(source, {})
-                if component.get('version') != version or component.get('sourceRpm') not in observed:
+                if (component.get('version') != version or component.get('sourceRpm') not in observed or
+                        not component.get('sourceRpmSigningKeys')):
                     raise ValueError('Missing exact source RPM: ' + source)
     for component in manifest['components']:
         if 'sourceDirectory' in component:

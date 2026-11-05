@@ -232,7 +232,10 @@ def rpm_sources(package, host, notices):
     if len(archives) != 1:
         raise ValueError('Missing exact source RPM for ' + binary)
     archive = archives[0]
-    run(['rpmkeys', '--checksig', archive])
+    signature = run(['rpmkeys', '--checksig', '--verbose', archive], capture=True)
+    keys = re.findall(r'(?im)\bsignature, key ID ([0-9a-f]+): OK\s*$', signature)
+    if not keys:
+        raise ValueError('Source RPM has no verified signature: ' + archive.name)
     identity = run(['rpm', '-qp', '--qf', '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}', archive], capture=True)
     if identity != '\t'.join([source, version, 'src']):
         raise ValueError('Downloaded source RPM identity mismatch: ' + identity)
@@ -247,7 +250,8 @@ def rpm_sources(package, host, notices):
         unpack_notices([p for p in (top / 'SOURCES').iterdir() if p.is_file()], notices / source)
     return {'name': source, 'version': version, 'binaryPackage': binary,
             'sourceDirectory': 'host-sources/' + directory.name,
-            'sourceRpm': 'host-sources/' + directory.name + '/' + archive.name}
+            'sourceRpm': 'host-sources/' + directory.name + '/' + archive.name,
+            'sourceRpmSigningKeys': sorted(set(keys))}
 
 
 def mupdf_submodules(source, native, lock):

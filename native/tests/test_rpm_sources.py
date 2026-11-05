@@ -19,6 +19,8 @@ class RpmSources(unittest.TestCase):
                 calls.append(args)
                 if args[0] == 'dnf':
                     (Path(args[4])/'fixture-1.2-3.el8.src.rpm').write_bytes(b'original signed sources')
+                elif args[0] == 'rpmkeys':
+                    return 'Header V4 RSA/SHA256 Signature, key ID abc12345: OK\nHeader SHA256 digest: OK'
                 elif args[:2] == ['rpm', '-qp']:
                     return 'fixture\t1.2-3.el8\tsrc'
                 elif args[:2] == ['rpm', '-i']:
@@ -32,7 +34,8 @@ class RpmSources(unittest.TestCase):
             with patch('release_sources.run', side_effect=run):
                 component = rpm_sources(package, host, notices)
                 self.assertIsNone(rpm_sources(package.replace('libfixture.', 'fixture-devel.'), host, notices))
-            self.assertIn(['rpmkeys', '--checksig', host/'fixture-1.2-3.el8/fixture-1.2-3.el8.src.rpm'], calls)
+            self.assertIn(['rpmkeys', '--checksig', '--verbose', host/'fixture-1.2-3.el8/fixture-1.2-3.el8.src.rpm'], calls)
+            self.assertEqual(component['sourceRpmSigningKeys'], ['abc12345'])
             self.assertEqual(calls[0][-1], 'libfixture-0:1.2-3.el8.x86_64')
             self.assertEqual(component['version'], '1.2-3.el8')
             self.assertTrue((root/component['sourceRpm'].replace('host-sources/', 'host/')).is_file())
@@ -48,10 +51,23 @@ class RpmSources(unittest.TestCase):
                         (Path(args[4])/'fixture.src.rpm').write_bytes(b'wrong source')
                     if args[0] == 'rpmkeys' and signature_error:
                         raise ValueError('untrusted signature')
+                    if args[0] == 'rpmkeys':
+                        return 'Header V4 RSA/SHA256 Signature, key ID abc12345: OK'
                     if args[:2] == ['rpm', '-qp']:
                         return 'fixture\t1.3-1.el8\tsrc'
                 with patch('release_sources.run', side_effect=run), self.assertRaises(ValueError):
                     rpm_sources('fixture.x86_64\t0:1.2-3.el8\tfixture\t1.2-3.el8', host, host/'notices')
+
+    def test_digest_only_unsigned_rpm_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary)
+            def run(args, **kwargs):
+                if args[0] == 'dnf':
+                    (Path(args[4])/'fixture.src.rpm').write_bytes(b'unsigned source')
+                if args[0] == 'rpmkeys':
+                    return 'Header SHA256 digest: OK\nPayload SHA256 digest: OK'
+            with patch('release_sources.run', side_effect=run), self.assertRaisesRegex(ValueError, 'no verified signature'):
+                rpm_sources('fixture.x86_64\t0:1.2-3.el8\tfixture\t1.2-3.el8', host, host/'notices')
 
     def test_unsafe_identity_is_rejected_before_download(self):
         with patch('release_sources.run') as run, self.assertRaisesRegex(ValueError, 'Invalid RPM'):
