@@ -82,6 +82,7 @@ jobs:
           path: native/.icu
           key: ${{ steps.icu-cache.outputs.cache-primary-key }}
       - name: Build and audit the complete glibc 2.28 dependency closure
+        id: bundle
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" texpresso-glibc228 bash -euxc '
             for source in "$PWD" "$PWD/native/texpresso" "$PWD/.native-sources/mupdf" "$PWD/.native-sources/mupdf/thirdparty/lcms2" "$PWD/.native-sources/mupdf/thirdparty/jbig2dec" "$PWD/.native-sources/mupdf/thirdparty/harfbuzz" "$PWD/.native-sources/zlib-ng"; do
@@ -133,13 +134,17 @@ jobs:
                 exit 1
               fi
             '
-      - name: Full native and development-webview acceptance on a modern distribution
+      - name: Full native acceptance on a modern distribution
         run: |
           export TEXPRESSO_BINARY="$PWD/native/.bundles/glibc228/bin/texpresso"
           # SDL 2.0.10 cannot satisfy vsync on its dummy software renderer.
           # Exercise real native-window startup on the isolated Xvfb display;
           # embedded-preview cases independently require headless operation.
-          TEXPRESSO_TEST_NATIVE_WINDOW=1 SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a npm run test:engine
+          TEXPRESSO_TEST_NATIVE_WINDOW=1 SDL_VIDEODRIVER=x11 SDL_RENDER_DRIVER=software xvfb-run -a npm run test:engine
+      - name: Development-webview acceptance on a modern distribution
+        if: ${{ !cancelled() && steps.bundle.outcome == 'success' }}
+        run: |
+          export TEXPRESSO_BINARY="$PWD/native/.bundles/glibc228/bin/texpresso"
           xvfb-run -a npm run test:integration:preview
       - name: Save compact trial evidence only
         if: always()
