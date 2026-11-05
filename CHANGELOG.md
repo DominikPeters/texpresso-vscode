@@ -8,6 +8,7 @@
 - Add a live editor preview with continuous scrolling, page navigation, fit and zoom controls, a magnifier, hyperlinks, and both SyncTeX directions.
 - Support sharp SVG rendering and bounded PNG rendering, incremental updates, adaptive rendering, and cached page navigation.
 - Prepare nearby compiler checkpoints during idle time to reduce edit latency, and recover from unexpected engine exits while replaying unsaved buffers.
+- Release compiler checkpoint processes after abrupt shutdown, and resume compilation after a worker exits even when the next edit is beyond its last observed input.
 - Preserve the external viewer for older engines and explicit Window selection.
 - Accept upstream's unknown SyncTeX column marker instead of dropping the navigation notification.
 

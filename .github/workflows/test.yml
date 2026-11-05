@@ -125,13 +125,19 @@ jobs:
             build-essential libsdl2-dev libmupdf-dev libmujs-dev \
             libfreetype-dev libgumbo-dev libjbig2dec0-dev libjpeg-dev \
             libopenjp2-7-dev libfontconfig-dev libharfbuzz-dev \
-            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev libtesseract-dev texlive-xetex
+            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev libtesseract-dev texlive-xetex texlive-pictures
         timeout-minutes: 8
       - name: Build pinned engine
         run: |
           make -C .engine -j2 all test-synctex
-          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes test-protocol-numbers test-checkpoint-selection test-activity test-parent-watch
+          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes test-protocol-numbers test-checkpoint-selection test-activity test-parent-watch test-checkpoint-cleanup
         timeout-minutes: 4
+      - name: Test real checkpoint shutdown and recovery after a worker exits
+        run: python3 .engine/test/test-checkpoint-cleanup.py .engine/build/texpresso
+        timeout-minutes: 3
+      - name: Check shared TikZ metadata preserves rendered pixels
+        run: python3 .engine/test/test-tikz-figures.py .engine/build/texpresso
+        timeout-minutes: 3
       - name: Test idle pagination after an external full build
         run: python3 .engine/test/test-idle-rerun.py .engine/build/texpresso
         timeout-minutes: 3
