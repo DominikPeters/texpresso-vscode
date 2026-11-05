@@ -120,10 +120,18 @@ jobs:
             -v /etc/texmf:/etc/texmf:ro -v /var/lib/texmf:/var/lib/texmf:ro \
             -e TEXPRESSO_BINARY="$GITHUB_WORKSPACE/native/.bundles/glibc228/bin/texpresso" \
             -e TEXPRESSO_TEST_PREVIEW=1 -e SDL_VIDEODRIVER=dummy -e LD_BIND_NOW=1 \
-            -e TEXMFCNF=/etc/texmf/web2c texpresso-glibc228-runtime bash -euxc '
+            -e TEXMFDBS=/var/lib/texmf:/usr/share/texmf:/usr/share/texlive/texmf-dist \
+            -e TEXPRESSO_TEST_ARTIFACTS="$GITHUB_WORKSPACE/artifacts/glibc228-runtime-failures" \
+            texpresso-glibc228-runtime bash -euxc '
               ldd --version
               kpsewhich --version
-              node --test --test-concurrency=1 out/test/engine/synctex-precision.test.js out/test/engine/preview.test.js
+              kpsewhich --all -engine=xetex ls-R
+              mkdir -p "$TEXPRESSO_TEST_ARTIFACTS"
+              if ! node --test --test-concurrency=1 out/test/engine/synctex-precision.test.js out/test/engine/preview.test.js; then
+                find "$TEXPRESSO_TEST_ARTIFACTS" -name engine.txt -exec cat {} +
+                find "$TEXPRESSO_TEST_ARTIFACTS" -name compiler.txt -exec cat {} +
+                exit 1
+              fi
             '
       - name: Full native and development-webview acceptance on a modern distribution
         run: |
