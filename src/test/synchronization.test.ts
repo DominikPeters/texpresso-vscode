@@ -99,3 +99,25 @@ test('canonical engine paths match buffers opened through a directory symlink', 
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
+
+test('cursor preparation positions use UTF-8 offsets and existing included-source aliases without opening files', async () => {
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'texpresso-cursor-position-'));
+  try {
+    const root=document(path.join(directory,'main.tex'),'é😀 root');
+    const support=path.join(directory,'support');await fs.mkdir(support);
+    const child=document(path.join(support,'child.tex'),'章节 é😀 target');
+    await fs.writeFile(root.fileName,root.getText());await fs.writeFile(child.fileName,child.getText());
+    const unrelated=document(path.join(directory,'other.tex'),'not part of this document');
+    const paths=new SessionPaths(root.fileName,false),sent:Command[]=[];
+    const sync=new DocumentSync(root,paths,true,()=>[root,child,unrelated],command=>sent.push(command));
+    sync.includeDirectories=[support];sync.announce('child.tex');
+    const before=sent.length;
+    assert.deepEqual(sync.sourcePosition(root,3),{path:paths.rootEnginePath,offset:Buffer.byteLength('é😀')});
+    assert.deepEqual(sync.sourcePosition(child,7),{path:path.join(paths.engineDirectory,'child.tex'),offset:Buffer.byteLength(child.getText().slice(0,7))});
+    assert.equal(sync.sourcePosition(unrelated,0),undefined,'an unrelated open file is not speculative compiler input');
+    for(const offset of [-1,0.5,NaN,Infinity,child.getText().length+1]) {
+      assert.equal(sync.sourcePosition(child,offset),undefined,'invalid absolute UTF-16 offset '+offset);
+    }
+    assert.equal(sent.length,before,'cursor preparation does not reopen overlays or mutate source synchronization');
+  } finally {await fs.rm(directory,{recursive:true,force:true});}
+});

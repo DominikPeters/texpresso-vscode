@@ -5,12 +5,19 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 (async () => {
-  const profileAuto = process.argv.includes('--profile-auto');
-  const preview = process.argv.includes('--preview') || profileAuto;
+  const bundled = process.argv.includes('--bundled');
+  const packaged = process.argv.includes('--packaged') || bundled;
+  const vsixIndex = process.argv.indexOf('--vsix');
+  if (vsixIndex >= 0 && !process.argv[vsixIndex + 1]) { throw new Error('--vsix requires a file path'); }
+  const vsix = path.resolve(vsixIndex >= 0 ? process.argv[vsixIndex + 1] : 'artifacts/texpresso.vsix');
+  const profileVaried = process.argv.includes('--profile-varied');
+  const profileAuto = process.argv.includes('--profile-auto') || profileVaried;
+  const preview = process.argv.includes('--preview') || profileAuto || bundled;
   const realEngine = process.argv.includes('--real-engine') || preview;
   const useWSL = realEngine && process.platform === 'win32';
   const binary = process.env.TEXPRESSO_BINARY;
-  if (realEngine && !binary) { throw new Error('--real-engine requires TEXPRESSO_BINARY (a Linux path when using WSL)'); }
+  if (realEngine && !binary && !bundled) { throw new Error('--real-engine requires TEXPRESSO_BINARY (a Linux path when using WSL)'); }
+  if (bundled && useWSL) { throw new Error('Run bundled-engine acceptance inside a Linux/Remote WSL extension host'); }
   if (realEngine) { process.env.SDL_VIDEODRIVER = 'dummy'; }
   // macOS Unix-domain sockets have a short path limit; keep the profile nearby.
   // The native implementation also expands Windows 8.3 names (RUNNER~1),
@@ -22,7 +29,7 @@ const { spawnSync } = require('node:child_process');
   const builder = path.resolve(__dirname, '../src/test/fixtures/build.cjs');
   const quote = value => process.platform === 'win32' ? '"' + value + '"' : "'" + value.replace(/'/g, "'\\''") + "'";
   fs.writeFileSync(path.join(workspace, '.vscode/settings.json'), JSON.stringify({
-    'texpresso.command': realEngine ? (useWSL && !preview ? 'env' : binary) : process.execPath,
+    'texpresso.command': bundled ? '' : realEngine ? (useWSL && !preview ? 'env' : binary) : process.execPath,
     'texpresso.arguments': realEngine ? (useWSL && !preview ? ['SDL_VIDEODRIVER=dummy', binary] : []) : [fixture],
     'texpresso.useWSL': useWSL,
     'texpresso.packageProvider': realEngine ? 'texlive' : 'auto',
@@ -41,7 +48,6 @@ const { spawnSync } = require('node:child_process');
   const workspaceFile = path.join(root, 'fixture.code-workspace');
   fs.writeFileSync(workspaceFile, JSON.stringify({ folders: [{ path: workspace }] }));
   let failed = true;
-  const packaged = process.argv.includes('--packaged');
   try {
     let executable = process.env.VSCODE_EXECUTABLE || await downloadAndUnzipVSCode(process.env.VSCODE_VERSION || 'stable');
     // test-electron 2.5 still returns Electron for macOS; newer VS Code
@@ -54,7 +60,7 @@ const { spawnSync } = require('node:child_process');
     let development = path.resolve(__dirname, '..');
     if (packaged) {
       const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(executable, { reuseMachineInstall: true });
-      const result = spawnSync(cli, [...cliArgs, '--install-extension', path.resolve('artifacts/texpresso.vsix'), '--force', ...profiles],
+      const result = spawnSync(cli, [...cliArgs, '--install-extension', vsix, '--force', ...profiles],
         { encoding: 'utf8', timeout: 60000, shell: process.platform === 'win32' });
       if (result.error) { throw result.error; }
       if (result.status !== 0) { throw new Error('VSIX installation failed: ' + result.stdout + result.stderr); }
@@ -70,17 +76,23 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileVaried ? 'varied-profile.js' : profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
+        TEXPRESSO_PROFILE: profileVaried ? '1' : process.env.TEXPRESSO_PROFILE,
         TEXPRESSO_TEST_WEBVIEW_ONLY: process.env.TEXPRESSO_TEST_WEBVIEW_ONLY,
         TEXPRESSO_TEST_PACKAGED: packaged ? '1' : undefined,
+        TEXPRESSO_TEST_BUNDLED: bundled ? '1' : undefined,
         TEXPRESSO_TEST_TRACE: path.join(root, 'engine.jsonl'),
         TEXPRESSO_TEST_NODE: process.execPath,
         TEXPRESSO_TEST_ENGINE: fixture,
         TEXPRESSO_BINARY: binary,
         TEXPRESSO_TEST_LOGS: path.join(root, 'user/logs'),
         TEXPRESSO_CAPTURE_DIR: process.env.TEXPRESSO_CAPTURE_DIR,
+        TEXPRESSO_PROFILE_INPUT_LIMIT: process.env.TEXPRESSO_PROFILE_INPUT_LIMIT,
+        TEXPRESSO_PROFILE_PHASES: process.env.TEXPRESSO_PROFILE_PHASES,
+        TEXPRESSO_PROFILE_LEGACY_FOLLOW: process.env.TEXPRESSO_PROFILE_LEGACY_FOLLOW,
         TEXPRESSO_PROFILE_RICH: process.env.TEXPRESSO_PROFILE_RICH,
+        TEXPRESSO_PROFILE_PREWARM_MODES: process.env.TEXPRESSO_PROFILE_PREWARM_MODES,
         TEXPRESSO_PROFILE_AUTORERUN: process.env.TEXPRESSO_PROFILE_AUTORERUN,
         TEXPRESSO_PROFILE_RAPID_EARLY: process.env.TEXPRESSO_PROFILE_RAPID_EARLY,
         TEXPRESSO_PROFILE_SCENARIO: process.env.TEXPRESSO_PROFILE_SCENARIO,
@@ -89,14 +101,18 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_PROFILE_PAGES: process.env.TEXPRESSO_PROFILE_PAGES,
         TEXPRESSO_PROFILE_KINDS: process.env.TEXPRESSO_PROFILE_KINDS,
         TEXPRESSO_PROFILE_REPEATS: process.env.TEXPRESSO_PROFILE_REPEATS,
+        TEXPRESSO_PROFILE_COORDINATE_PREWARM: process.env.TEXPRESSO_PROFILE_COORDINATE_PREWARM,
+        TEXPRESSO_PROFILE_VARIANTS: process.env.TEXPRESSO_PROFILE_VARIANTS,
+        TEXPRESSO_PROFILE_EXTRAS: process.env.TEXPRESSO_PROFILE_EXTRAS,
         TEXPRESSO_PROFILE_CODECS: process.env.TEXPRESSO_PROFILE_CODECS
       },
-      // Profilers generate browser-timed input; background/occlusion throttling
-      // must not silently turn 100 ms typing into 1000 ms typing.
+      // Preview checks use animation frames; background/occlusion throttling
+      // must not suspend their assertions or distort scheduled typing.
       // https://www.electronjs.org/docs/latest/api/command-line-switches
       // https://github.com/GoogleChrome/chrome-launcher/blob/main/docs/chrome-flags-for-tools.md
-      launchArgs: [workspaceFile, ...(profileAuto ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
+      launchArgs: [workspaceFile, ...(preview ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,
+        ...(process.platform === 'linux' && process.getuid?.() === 0 ? ['--no-sandbox'] : []),
         ...(process.env.TEXPRESSO_DEBUG_PORT ? ['--remote-debugging-port=' + process.env.TEXPRESSO_DEBUG_PORT] : [])]
     });
     failed = false;

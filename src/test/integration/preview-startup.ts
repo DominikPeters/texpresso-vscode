@@ -31,7 +31,8 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
             const identity = image => { if (!identities.has(image)) identities.set(image, ++nextIdentity); return identities.get(image); };
             const snapshot = () => { const image = document.getElementById('image'), sheet = document.getElementById('sheet');
               return {identity:identity(image), prepared, hidden:image.hidden, complete:image.complete,
-                naturalWidth:image.naturalWidth, sheetHeight:sheet.getBoundingClientRect().height, src:image.getAttribute('src')}; };
+                naturalWidth:image.naturalWidth, sheetHeight:sheet.getBoundingClientRect().height, src:image.getAttribute('src'),
+                viewportWidth:document.getElementById('viewport').clientWidth, viewportHeight:document.getElementById('viewport').clientHeight}; };
             const report = (startupCheck, id) => api.postMessage({startupCheck, id, ...snapshot()});
             const paint = callback => requestAnimationFrame(() => requestAnimationFrame(callback));
             window.startupApi = () => ({getState:()=>({format:'png',zoom:'page'}), setState:()=>{}, postMessage:m=>{
@@ -41,13 +42,21 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
             }});
             const decode = HTMLImageElement.prototype.decode;
             HTMLImageElement.prototype.decode = async function() {
-              await new Promise(resolve => {releaseDecode=resolve; report('pending');});
-              await decode.call(this); prepared=identity(this);
+              const action = await new Promise(resolve => {releaseDecode=resolve; report('pending');});
+              if(action === 'reject') throw Error('Controlled retirement during image decode');
+              try { await decode.call(this); prepared=identity(this); }
+              catch(error) { api.postMessage({startupCheck:'decode-failed', error:String(error), src:this.src,
+                complete:this.complete, naturalWidth:this.naturalWidth}); throw error; }
             };
             window.addEventListener('message', event=>{
-              if(event.data.startupRelease) { const release=releaseDecode; releaseDecode=undefined; release?.(); }
+              if(event.data.startupRelease) { const release=releaseDecode; releaseDecode=undefined; release?.(event.data.startupRelease); }
               if(event.data.type==='error') paint(()=>report('error'));
             });`;
+          // Window/editor-group restoration may resize the panel while startup decodes
+          // are held. Fix the browser viewport so this test exercises source cancellation,
+          // rather than racing unrelated replacement render requests from layout changes.
+          value = value.replace(/style-src ([^;]+);/, `style-src $1 'nonce-${nonce}';`)
+            .replace('</head>', `<style nonce="${nonce}">html,body{width:900px;height:800px;overflow:hidden}#viewport{flex:none;width:900px;height:700px}</style></head>`);
           value = value.replace(/<script nonce=/, () => `<script nonce="${nonce}">${bootstrap}</script><script nonce=`);
           value = value.replace(/<script nonce="[^"]+" src="[^"]*\/preview\.js"><\/script>/,
             () => `<script nonce="${nonce}">${mainSource}</script>`);
@@ -61,7 +70,9 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
   const until = async (condition: () => boolean, description: string) => {
     const deadline = Date.now() + 30000;
     while (!condition()) {
-      if (Date.now() > deadline) { throw new Error(description + ': ' + JSON.stringify({ reports, commands })); }
+      if (reports.some(r => r.startupCheck === 'error') || Date.now() > deadline) {
+        throw new Error(description + ': ' + JSON.stringify({ reports, commands }));
+      }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   };
@@ -72,7 +83,11 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     bounds: [0, 0, 595.28, 841.89], width, height: width, mime: 'image/png', byteLength: bytes.length }, bytes });
   const advance = () => { session.previewSequence++; controller.handle({ sourceSequence: session.previewSequence });
     controller.handle(['preview-state', session.previewSequence + 1, session.previewSequence, 1, true, 0]); };
-  const release = () => panel!.webview.postMessage({ startupRelease: true });
+  const release = (reject = false) => panel!.webview.postMessage({ startupRelease: reject ? 'reject' : true });
+  const renderFor = async (sequence: number) => {
+    await until(() => commands.some(command => command[0] === 'preview-render' && command[5] === sequence), 'render for source ' + sequence);
+    return commands.filter(command => command[0] === 'preview-render' && command[5] === sequence).at(-1)!;
+  };
   try {
     controller.handle(['preview-state', 1, 0, 1, true, 0]);
     await until(() => reports.some(r => r.startupCheck === 'ready') && commands.length > 0, 'startup ready');
@@ -80,30 +95,37 @@ export async function checkPreviewStartup(extensionUri: vscode.Uri): Promise<voi
     assert.equal(initial.hidden, true, 'source-less image is hidden');
     assert.ok(initial.sheetHeight > 0, 'continuous layout reserves stable page geometry before pixels arrive');
     assert.equal(initial.src, null, 'startup has no source-less image load');
-    frame(commands[0], png);
+    const startup = await renderFor(0);
+    frame(startup, png);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 1, 'first delayed decode');
-    advance(); await release();
-    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === commands[0][1]) && commands.length === 2, 'obsolete startup decode released');
-    const obsolete = reports.find(r => r.startupCheck === 'decoded' && r.id === commands[0][1]);
-    assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'stale decode cannot reveal an empty image');
-    assert.equal(obsolete.sheetHeight, initial.sheetHeight, 'canceling a decode preserves the page geometry');
-    frame(commands[1], png);
+    advance();
+    // Explicit retirement covers cancellation; ordinary source barriers may now
+    // display monotonic older pixels and are exercised by continuous-preview.
+    await (controller as any).post({ type: 'invalidate', retire: true });
+    await release(true);
+    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === startup[1]) && commands.some(command => command[0] === 'preview-render' && command[5] === 1), 'retired startup decode released');
+    const obsolete = reports.find(r => r.startupCheck === 'decoded' && r.id === startup[1]);
+    assert.equal(obsolete.hidden, true); assert.equal(obsolete.naturalWidth, 0, 'retired decode cannot reveal an empty image');
+    assert.equal(obsolete.sheetHeight, reports.find(r => r.startupCheck === 'pending').sheetHeight,
+      'canceling a decode preserves geometry established by the frame metadata');
+    const current = await renderFor(1);
+    frame(current, png);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 2, 'current startup decode');
     await release();
-    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === commands[1][1]), 'first displayed frame');
-    const first = reports.find(r => r.startupCheck === 'decoded' && r.id === commands[1][1]);
+    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === current[1]), 'first displayed frame');
+    const first = reports.find(r => r.startupCheck === 'decoded' && r.id === current[1]);
     assert.equal(first.identity, first.prepared, 'display the decoded element itself');
     assert.equal(first.hidden, false); assert.equal(first.complete, true); assert.equal(first.naturalWidth, 2);
-    advance(); frame(commands[2], red, 1);
+    advance(); const replacement = await renderFor(2); frame(replacement, red, 1);
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 3, 'replacement decode');
     const pending = reports.filter(r => r.startupCheck === 'pending').at(-1);
     assert.equal(pending.identity, first.identity, 'keep the previous good frame while decoding');
     assert.equal(pending.naturalWidth, 2); assert.equal(pending.hidden, false);
     await release();
-    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === commands[2][1]), 'replacement displayed');
-    const replaced = reports.find(r => r.startupCheck === 'decoded' && r.id === commands[2][1]);
+    await until(() => reports.some(r => r.startupCheck === 'decoded' && r.id === replacement[1]), 'replacement displayed');
+    const replaced = reports.find(r => r.startupCheck === 'decoded' && r.id === replacement[1]);
     assert.equal(replaced.identity, replaced.prepared); assert.equal(replaced.naturalWidth, 1);
-    advance(); frame(commands[3], Buffer.from('invalid PNG'));
+    advance(); const invalid = await renderFor(3); frame(invalid, Buffer.from('invalid PNG'));
     await until(() => reports.filter(r => r.startupCheck === 'pending').length === 4, 'invalid image decode');
     await release(); await until(() => reports.some(r => r.startupCheck === 'error'), 'decode failure');
     const failed = reports.find(r => r.startupCheck === 'error');

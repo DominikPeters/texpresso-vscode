@@ -4,7 +4,7 @@ import { PassThrough } from 'node:stream';
 import type * as vscode from 'vscode';
 import { readProtocol, Command, Message } from '../protocol';
 import { OutputBuffer, SessionOutput } from '../logs';
-import { buildLaunchCommand } from '../configuration';
+import { buildLaunchCommand, readConfiguration } from '../configuration';
 import { SessionPaths } from '../paths';
 import { DocumentSync } from '../document-sync';
 import { TexpressoSession } from '../session';
@@ -79,8 +79,9 @@ test('provider settings override legacy flags without mutating user arguments', 
   assert.equal(first.command, 'texpresso');
   assert.equal(first.cwd, directory);
   assert.deepEqual(buildLaunchCommand({ ...config, arguments: ['-tectonic'] }, paths).args,
+    ['-texlive', '-json', '-lines', root]);
+  assert.deepEqual(buildLaunchCommand({ ...config, packageProvider: 'tectonic', arguments: ['-tectonic', '-texlive'] }, paths).args,
     ['-tectonic', '-json', '-lines', root]);
-  assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-tectonic', '-texlive'] }, paths));
   assert.throws(() => buildLaunchCommand({ ...config, arguments: ['-I'] }, paths));
   assert.deepEqual(buildLaunchCommand({ ...configuration, arguments: ['-I', '-tectonic'] }, paths).args.slice(0, 3),
     ['-I', '-tectonic', '-texlive']);
@@ -208,4 +209,17 @@ test('session handles reset-sync and preserves final output when the process exi
   child.emit('close', 0, null);
   assert.equal(session.state, 'stopped');
   assert.deepEqual(published, [['out', 'last message\n']]);
+});
+
+
+test('release provider configuration defaults explicitly and handles saved experimental choices', () => {
+  const settings = (values: Record<string, unknown>) => ({
+    get: (key: string, fallback: unknown) => values[key] ?? fallback
+  }) as vscode.WorkspaceConfiguration;
+  assert.equal(readConfiguration(settings({})).packageProvider, 'texlive');
+  assert.equal(readConfiguration(settings({ packageProvider: 'auto' })).packageProvider, 'texlive');
+  assert.equal(readConfiguration(settings({ packageProvider: 'tectonic' })).packageProvider, 'tectonic');
+  for (const packageProvider of ['miktex', 'miktex-windows']) {
+    assert.throws(() => readConfiguration(settings({ packageProvider })), /Select TeX Live or Tectonic/);
+  }
 });

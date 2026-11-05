@@ -1,4 +1,4 @@
-"""Shared native build helpers. No command in this directory downloads sources."""
+"""Shared offline native build helpers; downloads belong to release_sources.py."""
 import hashlib
 import json
 import subprocess
@@ -17,8 +17,11 @@ def run(args, *, cwd=None, capture=False):
 
 
 def sha256(path):
+    digest = hashlib.sha256()
     with Path(path).open('rb') as source:
-        return hashlib.file_digest(source, 'sha256').hexdigest()
+        for chunk in iter(lambda: source.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def load_lock():

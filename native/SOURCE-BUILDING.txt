@@ -1,0 +1,83 @@
+Building and modifying a TeXpresso release
+========================================
+
+The native sections below apply to platform archives; universal archives contain
+only the extension and JavaScript inputs.
+
+SOURCE-MANIFEST.json identifies the exact inputs and contains checksums for
+the source files and archives. The project/ directory is the extension source
+with its native/texpresso submodule populated. inputs/mupdf (including all
+submodules listed in BINARY-BUILD-MANIFEST.json)
+and inputs/zlib-ng contain the locked native inputs. These are sanitized shallow
+Git snapshots: the original commits and complete working trees are preserved,
+without CI remotes, credentials, unrelated history, caches, or private keys.
+
+Use project/native/README.md and the workflows under project/.github/workflows
+for the build commands and tool dependencies. Build on the target architecture.
+The source manifest records the original compiler, SDK/glibc and host versions.
+Install general build tools (Git, C/C++ compiler, CMake, make, Python and Node)
+and TeX Live or Tectonic for compilation tests. Source archives are not intended
+to include proprietary OS SDKs, system libraries, signing keys or TeX packages.
+
+JavaScript:
+  project/package-lock.json locks the dependencies. Their exact registry
+  tarballs, checked against the lockfile's integrity hashes, are in npm/.
+  Run npm ci, then npm run package in project/; this builds dist/extension.js.
+  For offline installation, preload those tarballs with npm cache add PATH.
+
+Linux:
+  The portable release builder uses AlmaLinux 8, GCC 13 and glibc 2.28.
+  project/native/containers/glibc228.Dockerfile records the build environment;
+  project/.github/workflows/linux-build.yml contains the complete recipe.
+  host-sources/ contains exact signed source RPMs for the bundled libraries
+  and compiler runtime archives, including all original source tarballs,
+  packaging patches and SPEC build recipes. A copy of each SPEC is also saved
+  beside its SRPM. Verify with rpmkeys --checksig using the distribution keys.
+  Extract with rpm -i --define '_topdir /YOUR/BUILD/DIR' FILE.src.rpm, install
+  the SPEC's BuildRequires, and rebuild with rpmbuild -ba /YOUR/BUILD/DIR/SPECS/FILE.spec.
+  The manifest records the package manager and exact binary/source versions.
+  Legacy Debian/Ubuntu archives instead contain .dsc files and their original
+  sources/patches; extract those with dpkg-source -x and follow debian/rules.
+  glibc and its matching loader are supplied by the runtime OS.
+  inputs/icu.tgz is the checksum-verified ICU source from the dependency lock.
+  From project/, build ICU with native/scripts/build_icu.py, then run
+  native/scripts/build_linux.py with --mupdf-source ../inputs/mupdf,
+  --zlib-ng-source ../inputs/zlib-ng and the resulting --icu-prefix.
+  On the portable RPM builder include --maximum-glibc 2.28 --bundled-jbig2dec
+  --bundled-harfbuzz. The required MuPDF submodules are populated in inputs/.
+
+macOS:
+  host-sources/ contains each installed Homebrew formula snapshot, receipt and
+  the source/resource/patch downloads fetched using that exact recipe. This
+  includes the statically linked ICU input. Place a formula in your own local
+  tap and use brew install --build-from-source TAP/FORMULA to rebuild it. The
+  archived Homebrew recipe preserves build flags and any embedded patches.
+  From project/, run native/scripts/build.py with the input paths above and
+  --icu-prefix pointing to your rebuilt icu4c@78 installation.
+
+Modifications:
+  Commit changes in the relevant shallow input repository. For engine edits,
+  update project/'s native/texpresso gitlink with git add native/texpresso.
+  For other pinned Git dependencies, update native/dependencies.lock.json to
+  your new input commit; keep the original source provenance for reference.
+  The builders reject dirty inputs to avoid silently building unrecorded code.
+  --keep-work retains build intermediates if needed. Normal builds require no
+  Apple signing certificate and produce a locally usable development bundle.
+
+Replacing dynamic libraries, including LGPL libraries:
+  Each platform VSIX contains runtime/<target>/lib/ and bin/. Rebuild a library
+  from its supplied sources with a compatible ABI, replace the corresponding
+  library, and preserve the relative loader paths used by bundle.py or
+  bundle_linux.py. No policy in this distribution prohibits modification or
+  reverse engineering for debugging modifications to LGPL-covered libraries.
+  On macOS, local changes invalidate the release signatures. Re-sign the
+  libraries and both executables locally with ad-hoc signatures, for example:
+    codesign --force --sign - runtime/<target>/lib/LIBRARY.dylib
+    codesign --force --sign - runtime/<target>/bin/texpresso-xetex
+    codesign --force --sign - runtime/<target>/bin/texpresso
+  Do not add hardened-runtime options to these local ad-hoc signatures. This
+  avoids the release's library-validation restrictions on modified libraries.
+  No original Developer ID key or notarization account is needed for a local
+  build. You may instead configure texpresso.command to use your rebuilt engine.
+
+See THIRD-PARTY-NOTICES.txt and notices/ for copyright and license terms.

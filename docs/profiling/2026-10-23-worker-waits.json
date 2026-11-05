@@ -1,0 +1,2790 @@
+{
+  "schema": 1,
+  "scope": "One unchanged baseline and one opt-in diagnostic observation, controlled202 prose, PNG,30pages,100ms. Attribution only; not a speedup or precise overhead comparison.",
+  "runtimeNativeSourceLaterCommitted": "bd2d68f",
+  "canonicalDemoNativeUnchanged": "2010b9fec2c2450b4d06013544d5968d8605922b",
+  "baseline": {
+    "artifact": "artifacts/profile-worker-latency-baseline-prose-202/varied-30-png.json",
+    "created": "2026-10-23T17:38:45.590Z",
+    "nativeManifest": {
+      "schema": 1,
+      "kind": "development-host-build",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "engineRevision": "2010b9fec2c2450b4d06013544d5968d8605922b",
+      "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+      "icu": {
+        "version": "78.3",
+        "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+        "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+        "fullBytes": 33109168,
+        "filteredBytes": 10867248,
+        "retainedItems": 267
+      },
+      "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+      "sdk": "MacOSX26.2.sdk",
+      "hostPackageVersions": {
+        "freetype2": "26.7.20",
+        "libjpeg": "3.2.0",
+        "libopenjp2": "2.5.4",
+        "libbrotlidec": "1.2.0",
+        "libbrotlienc": "1.2.0",
+        "sdl2": "2.32.74",
+        "harfbuzz": "14.6.0",
+        "graphite2": "3.3.1",
+        "fontconfig": "2.18.3",
+        "libpng": "1.6.59"
+      },
+      "profiles": {
+        "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+        "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+      },
+      "features": {
+        "externalWindow": true,
+        "embeddedPreview": true
+      },
+      "capabilities": {
+        "previewProtocol": 1,
+        "codecs": [
+          "png",
+          "svg"
+        ],
+        "synctex": true,
+        "regions": true,
+        "links": true,
+        "adaptiveRendering": true,
+        "pngPatches": true,
+        "backgroundRendering": true,
+        "prepareEdit": true,
+        "requestLifecycle": true
+      },
+      "sourceDirty": false,
+      "sourceSha256": "b513b25af25f65ab572163c0fd9d28d92f4eb112c46e1bde9f70ecea7c99275c",
+      "sourceHashScope": "Sorted src/**/*.c and src/**/*.h then Makefile, test/test_protocol_numbers.c, test/test_checkpoint_selection.c; relative path NUL bytes NUL",
+      "created": "2026-10-23",
+      "purpose": "Validated source-priority, edit-prefix retention and responsive startup follow-up",
+      "workerProtocol": 2,
+      "hostLibraries": [
+        {
+          "package": "brotli",
+          "version": "1.2.0",
+          "noticesFound": true
+        },
+        {
+          "package": "fontconfig",
+          "version": "2.18.3",
+          "noticesFound": true
+        },
+        {
+          "package": "freetype",
+          "version": "2.15.0",
+          "noticesFound": true
+        },
+        {
+          "package": "gettext",
+          "version": "1.0",
+          "noticesFound": true
+        },
+        {
+          "package": "glib",
+          "version": "2.90.1",
+          "noticesFound": true
+        },
+        {
+          "package": "graphite2",
+          "version": "1.3.15",
+          "noticesFound": true
+        },
+        {
+          "package": "harfbuzz",
+          "version": "14.6.0",
+          "noticesFound": true
+        },
+        {
+          "package": "jbig2dec",
+          "version": "0.20",
+          "noticesFound": true
+        },
+        {
+          "package": "jpeg-turbo",
+          "version": "3.2.0",
+          "noticesFound": true
+        },
+        {
+          "package": "libpng",
+          "version": "1.6.59",
+          "noticesFound": true
+        },
+        {
+          "package": "openjpeg",
+          "version": "2.5.4_1",
+          "noticesFound": true
+        },
+        {
+          "package": "pcre2",
+          "version": "10.49",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl2-compat",
+          "version": "2.32.74",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl3",
+          "version": "3.4.18",
+          "noticesFound": true
+        }
+      ],
+      "files": [
+        {
+          "path": "bin/texpresso",
+          "sha256": "40d905780d70145eba44486059f5a85010b64ac67ac1549078e31a26213a049d",
+          "bytes": 9000752
+        },
+        {
+          "path": "bin/texpresso-xetex",
+          "sha256": "5f3cbd59e660b5ac23854134ab600c75cf04eb2aa9ef2b0e3a5d58fccc595bcd",
+          "bytes": 12933808
+        },
+        {
+          "path": "lib/libSDL3.dylib",
+          "sha256": "04d3462a84ebafe658e060846fc1a17b3bffd4130b33ee7f2d56bd7ca0107170",
+          "bytes": 2176864
+        },
+        {
+          "path": "lib/libharfbuzz.0.dylib",
+          "sha256": "f941b83bb7fa1f67a106d3e9817ced84ed890a3593c7b5b0371ba6b399dcd31b",
+          "bytes": 935648
+        },
+        {
+          "path": "lib/libgraphite2.3.3.1.dylib",
+          "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+          "bytes": 122960
+        },
+        {
+          "path": "lib/libfontconfig.1.dylib",
+          "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+          "bytes": 465616
+        },
+        {
+          "path": "lib/libfreetype.6.dylib",
+          "sha256": "4a1d90c58a5bdc8b0d39d7a23cf5493bf12c10ad970365eed0f42009228a4dd8",
+          "bytes": 615936
+        },
+        {
+          "path": "lib/libpng16.16.dylib",
+          "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+          "bytes": 200368
+        },
+        {
+          "path": "lib/libbrotlidec.1.2.0.dylib",
+          "sha256": "d13a3bda0c44c41c9f7e109ffadc9200550380c2204612d19bd3cc77725f6b08",
+          "bytes": 86512
+        },
+        {
+          "path": "lib/libbrotlicommon.1.2.0.dylib",
+          "sha256": "6104ff92e7689a6e215253478c94eaff38736f7fb08c158dafed412268bdc3ed",
+          "bytes": 167936
+        },
+        {
+          "path": "lib/libintl.8.dylib",
+          "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+          "bytes": 223440
+        },
+        {
+          "path": "lib/libglib-2.0.0.dylib",
+          "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+          "bytes": 1237248
+        },
+        {
+          "path": "lib/libpcre2-8.0.dylib",
+          "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+          "bytes": 554864
+        },
+        {
+          "path": "lib/libjpeg.8.3.2.dylib",
+          "sha256": "fcb3f5b3cf8f599dacc19479ce45dc0cd58e6a586237080e6c645aa131044d06",
+          "bytes": 445296
+        },
+        {
+          "path": "lib/libopenjp2.2.5.4.dylib",
+          "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+          "bytes": 317728
+        },
+        {
+          "path": "lib/libbrotlienc.1.2.0.dylib",
+          "sha256": "9395e278b78ba861a188b98257101c36734c096c34a5d2683f8e14ceecf17840",
+          "bytes": 648048
+        },
+        {
+          "path": "lib/libSDL2-2.0.0.dylib",
+          "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+          "bytes": 449696
+        },
+        {
+          "path": "lib/libjbig2dec.0.dylib",
+          "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+          "bytes": 158976
+        }
+      ],
+      "installedBytes": 30970523
+    },
+    "frontendSha256": "40d905780d70145eba44486059f5a85010b64ac67ac1549078e31a26213a049d",
+    "controllerRuntimeSha256": "f5f566587ef1003fd0c18916c38c9e434a4e66b73ee0c3e252fee1dad4ebfacd",
+    "profileEnabled": {
+      "inferred": true,
+      "evidence": "varied harness explicitly enables TEXPRESSO_PROFILE=1"
+    },
+    "profileActivity": {
+      "inferred": false,
+      "evidence": "baseline command did not enable activity; no activity rows"
+    },
+    "inputs": 202,
+    "maxInputLatenessMs": 5.815749999999753,
+    "timelineOverflow": 0,
+    "error": null,
+    "strictCommit": {
+      "count": 202,
+      "medianMs": 33.924542000000656,
+      "p95Ms": 70.17016700000022,
+      "p99Ms": 183.85933300000033,
+      "maxMs": 290.3522499999999,
+      "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+    },
+    "sampledExposure": {
+      "count": 201,
+      "medianMs": 33.924542000000656,
+      "p95Ms": 69.61462500000198,
+      "p99Ms": 141.13224999999875,
+      "maxMs": 192.29120799999964,
+      "counts": {
+        "sampled-visible": 201,
+        "hidden": 0,
+        "unknown": 1,
+        "unobserved": 0
+      },
+      "maxAllowedObservationGapMs": 150,
+      "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+      "worst": [
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 41.33387500000026,
+          "inputSequence": 3,
+          "inputAt": 5037.2025,
+          "ackAt": 5229.493708,
+          "ms": 192.29120799999964
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 84.87754100000166,
+          "inputSequence": 167,
+          "inputAt": 21438.544208,
+          "ackAt": 21622.403541,
+          "ms": 183.85933300000033
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 52.95958299999984,
+          "inputSequence": 189,
+          "inputAt": 23637.716333,
+          "ackAt": 23778.848583,
+          "ms": 141.13224999999875
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 50.583167000000685,
+          "inputSequence": 124,
+          "inputAt": 17138.197583,
+          "ackAt": 17233.933625,
+          "ms": 95.73604200000045
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 26.414958000000297,
+          "inputSequence": 4,
+          "inputAt": 5137.319958,
+          "ackAt": 5229.493708,
+          "ms": 92.17374999999993
+        }
+      ]
+    },
+    "twoRaf": {
+      "count": 202,
+      "medianMs": 47.560875000000124,
+      "p95Ms": 82.32062500000029,
+      "p99Ms": 197.71745799999917,
+      "maxMs": 297.0309580000003,
+      "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+      "worst": [
+        {
+          "inputSequence": 2,
+          "inputAt": 4939.141458,
+          "frameSequence": 4,
+          "frameRevision": 7,
+          "page": 0,
+          "observerAt": 5236.172416,
+          "ms": 297.0309580000003
+        },
+        {
+          "inputSequence": 3,
+          "inputAt": 5037.2025,
+          "frameSequence": 4,
+          "frameRevision": 7,
+          "page": 0,
+          "observerAt": 5236.172416,
+          "ms": 198.969916
+        },
+        {
+          "inputSequence": 167,
+          "inputAt": 21438.544208,
+          "frameSequence": 168,
+          "frameRevision": 335,
+          "page": 1,
+          "observerAt": 21636.261666,
+          "ms": 197.71745799999917
+        },
+        {
+          "inputSequence": 124,
+          "inputAt": 17138.197583,
+          "frameSequence": 125,
+          "frameRevision": 249,
+          "page": 1,
+          "observerAt": 17311.73725,
+          "ms": 173.53966699999728
+        },
+        {
+          "inputSequence": 189,
+          "inputAt": 23637.716333,
+          "frameSequence": 190,
+          "frameRevision": 379,
+          "page": 1,
+          "observerAt": 23790.823916,
+          "ms": 153.1075830000009
+        }
+      ]
+    },
+    "pixelProgress": {
+      "observedIntervals": {
+        "count": 167,
+        "medianMs": 48.80162500000006,
+        "p95Ms": 156.96787500000028,
+        "p99Ms": 197.71745799999917,
+        "maxMs": 380.88324999999986
+      },
+      "terminalPendingMs": 2.0234999999993306,
+      "terminalCensored": true,
+      "note": "Typing window ends at the last edit completion. An open interval is censored; unchanged pixels or an unfinished source epoch do not establish a visible stall."
+    },
+    "finalInputNoop": true,
+    "probes": [
+      {
+        "phrase": "Every new term has a source location",
+        "round": "initial",
+        "nativePage": 1
+      }
+    ],
+    "sourceFiles": [
+      {
+        "relative": "varied.tex",
+        "saved": "edited.tex",
+        "dirty": true,
+        "sha256": "b729846da4eec28abb13af33d7abacbe31257aa81d7c57e4f3e396ef8dd300f6"
+      }
+    ]
+  },
+  "activity": {
+    "artifact": "artifacts/profile-worker-latency-activity-prose-202/varied-30-png.json",
+    "created": "2026-10-23T17:48:33.423Z",
+    "nativeManifest": {
+      "schema": 1,
+      "kind": "development-host-build",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "engineRevision": "2010b9fec2c2450b4d06013544d5968d8605922b",
+      "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+      "icu": {
+        "version": "78.3",
+        "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+        "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+        "fullBytes": 33109168,
+        "filteredBytes": 10867248,
+        "retainedItems": 267
+      },
+      "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+      "sdk": "MacOSX26.2.sdk",
+      "hostPackageVersions": {
+        "freetype2": "26.7.20",
+        "libjpeg": "3.2.0",
+        "libopenjp2": "2.5.4",
+        "libbrotlidec": "1.2.0",
+        "libbrotlienc": "1.2.0",
+        "sdl2": "2.32.74",
+        "harfbuzz": "14.6.0",
+        "graphite2": "3.3.1",
+        "fontconfig": "2.18.3",
+        "libpng": "1.6.59"
+      },
+      "profiles": {
+        "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+        "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+      },
+      "features": {
+        "externalWindow": true,
+        "embeddedPreview": true
+      },
+      "capabilities": {
+        "previewProtocol": 1,
+        "codecs": [
+          "png",
+          "svg"
+        ],
+        "synctex": true,
+        "regions": true,
+        "links": true,
+        "adaptiveRendering": true,
+        "pngPatches": true,
+        "backgroundRendering": true,
+        "prepareEdit": true,
+        "requestLifecycle": true
+      },
+      "sourceDirty": true,
+      "sourceSha256": "39bf6fd65b78d62a30b1862a5c0b19507eae867ef7862962c49fb66f7019668c",
+      "sourceHashScope": "Sorted src/**/*.c and src/**/*.h, then Makefile, then sorted test/*.{c,py}; relative path NUL bytes NUL",
+      "created": "2026-10-23",
+      "purpose": "Opt-in worker and frontend activity attribution; canonical 2010 preserved",
+      "workerProtocol": 2,
+      "hostLibraries": [
+        {
+          "package": "brotli",
+          "version": "1.2.0",
+          "noticesFound": true
+        },
+        {
+          "package": "fontconfig",
+          "version": "2.18.3",
+          "noticesFound": true
+        },
+        {
+          "package": "freetype",
+          "version": "2.15.0",
+          "noticesFound": true
+        },
+        {
+          "package": "gettext",
+          "version": "1.0",
+          "noticesFound": true
+        },
+        {
+          "package": "glib",
+          "version": "2.90.1",
+          "noticesFound": true
+        },
+        {
+          "package": "graphite2",
+          "version": "1.3.15",
+          "noticesFound": true
+        },
+        {
+          "package": "harfbuzz",
+          "version": "14.6.0",
+          "noticesFound": true
+        },
+        {
+          "package": "jbig2dec",
+          "version": "0.20",
+          "noticesFound": true
+        },
+        {
+          "package": "jpeg-turbo",
+          "version": "3.2.0",
+          "noticesFound": true
+        },
+        {
+          "package": "libpng",
+          "version": "1.6.59",
+          "noticesFound": true
+        },
+        {
+          "package": "openjpeg",
+          "version": "2.5.4_1",
+          "noticesFound": true
+        },
+        {
+          "package": "pcre2",
+          "version": "10.49",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl2-compat",
+          "version": "2.32.74",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl3",
+          "version": "3.4.18",
+          "noticesFound": true
+        }
+      ],
+      "files": [
+        {
+          "path": "bin/texpresso",
+          "sha256": "eacb1ab3173da1beb36b909645191c1815f26ffc1930c994b9ab0465aff5b606",
+          "bytes": 9017600
+        },
+        {
+          "path": "bin/texpresso-xetex",
+          "sha256": "d165b82b4a9393da3774ec71b0b4a9b1ca43ced30834757b6cd4e0c67bd033a7",
+          "bytes": 12950480
+        },
+        {
+          "path": "lib/libSDL3.dylib",
+          "sha256": "04d3462a84ebafe658e060846fc1a17b3bffd4130b33ee7f2d56bd7ca0107170",
+          "bytes": 2176864
+        },
+        {
+          "path": "lib/libharfbuzz.0.dylib",
+          "sha256": "f941b83bb7fa1f67a106d3e9817ced84ed890a3593c7b5b0371ba6b399dcd31b",
+          "bytes": 935648
+        },
+        {
+          "path": "lib/libgraphite2.3.3.1.dylib",
+          "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+          "bytes": 122960
+        },
+        {
+          "path": "lib/libfontconfig.1.dylib",
+          "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+          "bytes": 465616
+        },
+        {
+          "path": "lib/libfreetype.6.dylib",
+          "sha256": "4a1d90c58a5bdc8b0d39d7a23cf5493bf12c10ad970365eed0f42009228a4dd8",
+          "bytes": 615936
+        },
+        {
+          "path": "lib/libpng16.16.dylib",
+          "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+          "bytes": 200368
+        },
+        {
+          "path": "lib/libbrotlidec.1.2.0.dylib",
+          "sha256": "d13a3bda0c44c41c9f7e109ffadc9200550380c2204612d19bd3cc77725f6b08",
+          "bytes": 86512
+        },
+        {
+          "path": "lib/libbrotlicommon.1.2.0.dylib",
+          "sha256": "6104ff92e7689a6e215253478c94eaff38736f7fb08c158dafed412268bdc3ed",
+          "bytes": 167936
+        },
+        {
+          "path": "lib/libintl.8.dylib",
+          "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+          "bytes": 223440
+        },
+        {
+          "path": "lib/libglib-2.0.0.dylib",
+          "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+          "bytes": 1237248
+        },
+        {
+          "path": "lib/libpcre2-8.0.dylib",
+          "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+          "bytes": 554864
+        },
+        {
+          "path": "lib/libjpeg.8.3.2.dylib",
+          "sha256": "fcb3f5b3cf8f599dacc19479ce45dc0cd58e6a586237080e6c645aa131044d06",
+          "bytes": 445296
+        },
+        {
+          "path": "lib/libopenjp2.2.5.4.dylib",
+          "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+          "bytes": 317728
+        },
+        {
+          "path": "lib/libbrotlienc.1.2.0.dylib",
+          "sha256": "9395e278b78ba861a188b98257101c36734c096c34a5d2683f8e14ceecf17840",
+          "bytes": 648048
+        },
+        {
+          "path": "lib/libSDL2-2.0.0.dylib",
+          "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+          "bytes": 449696
+        },
+        {
+          "path": "lib/libjbig2dec.0.dylib",
+          "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+          "bytes": 158976
+        }
+      ],
+      "installedBytes": 31004043,
+      "activityProfiling": {
+        "enabledBy": [
+          "TEXPRESSO_PROFILE=1",
+          "TEXPRESSO_PROFILE_ACTIVITY=1"
+        ],
+        "default": false,
+        "wireProtocolChange": false
+      }
+    },
+    "frontendSha256": "eacb1ab3173da1beb36b909645191c1815f26ffc1930c994b9ab0465aff5b606",
+    "controllerRuntimeSha256": "f5f566587ef1003fd0c18916c38c9e434a4e66b73ee0c3e252fee1dad4ebfacd",
+    "profileEnabled": true,
+    "profileActivity": true,
+    "inputs": 202,
+    "maxInputLatenessMs": 4.424041999999645,
+    "timelineOverflow": 0,
+    "error": null,
+    "strictCommit": {
+      "count": 202,
+      "medianMs": 32.95587499999965,
+      "p95Ms": 258.2797919999998,
+      "p99Ms": 844.9439579999998,
+      "maxMs": 1043.7835830000004,
+      "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+    },
+    "sampledExposure": {
+      "count": 189,
+      "medianMs": 32.83283300000039,
+      "p95Ms": 69.58787500000108,
+      "p99Ms": 250.38087500000074,
+      "maxMs": 258.2797919999998,
+      "counts": {
+        "sampled-visible": 189,
+        "hidden": 13,
+        "unknown": 0,
+        "unobserved": 0
+      },
+      "maxAllowedObservationGapMs": 150,
+      "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+      "worst": [
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 100.40091699999994,
+          "inputSequence": 2,
+          "inputAt": 3958.568167,
+          "ackAt": 4216.847959,
+          "ms": 258.2797919999998
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 79.67399999999998,
+          "inputSequence": 39,
+          "inputAt": 7656.239,
+          "ackAt": 7906.619875,
+          "ms": 250.38087500000074
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 100.40091699999994,
+          "inputSequence": 3,
+          "inputAt": 4056.988209,
+          "ackAt": 4216.847959,
+          "ms": 159.85974999999962
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 79.67399999999998,
+          "inputSequence": 40,
+          "inputAt": 7759.31,
+          "ackAt": 7906.619875,
+          "ms": 147.30987499999992
+        },
+        {
+          "state": "sampled-visible",
+          "maxSampleGapMs": 54.1302910000004,
+          "inputSequence": 44,
+          "inputAt": 8157.032375,
+          "ackAt": 8256.577917,
+          "ms": 99.54554200000075
+        }
+      ]
+    },
+    "twoRaf": {
+      "count": 202,
+      "medianMs": 47.761083000001236,
+      "p95Ms": 271.54524999999967,
+      "p99Ms": 857.1142500000024,
+      "maxMs": 1055.9538750000029,
+      "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+      "worst": [
+        {
+          "inputSequence": 139,
+          "inputAt": 17658.497084,
+          "frameSequence": 149,
+          "frameRevision": 295,
+          "page": 1,
+          "observerAt": 18714.450959,
+          "ms": 1055.9538750000029
+        },
+        {
+          "inputSequence": 140,
+          "inputAt": 17757.711417,
+          "frameSequence": 149,
+          "frameRevision": 295,
+          "page": 1,
+          "observerAt": 18714.450959,
+          "ms": 956.739542000003
+        },
+        {
+          "inputSequence": 141,
+          "inputAt": 17857.336709,
+          "frameSequence": 149,
+          "frameRevision": 295,
+          "page": 1,
+          "observerAt": 18714.450959,
+          "ms": 857.1142500000024
+        },
+        {
+          "inputSequence": 142,
+          "inputAt": 17957.6685,
+          "frameSequence": 149,
+          "frameRevision": 295,
+          "page": 1,
+          "observerAt": 18714.450959,
+          "ms": 756.7824590000018
+        },
+        {
+          "inputSequence": 143,
+          "inputAt": 18056.754667,
+          "frameSequence": 149,
+          "frameRevision": 295,
+          "page": 1,
+          "observerAt": 18714.450959,
+          "ms": 657.6962920000005
+        }
+      ]
+    },
+    "pixelProgress": {
+      "observedIntervals": {
+        "count": 158,
+        "medianMs": 48.23508299999958,
+        "p95Ms": 164.34208299999955,
+        "p99Ms": 397.61087499999985,
+        "maxMs": 1028.9111660000017
+      },
+      "terminalPendingMs": 2.4477919999990263,
+      "terminalCensored": true,
+      "note": "Typing window ends at the last edit completion. An open interval is censored; unchanged pixels or an unfinished source epoch do not establish a visible stall."
+    },
+    "finalInputNoop": true,
+    "probes": [
+      {
+        "phrase": "Every new term has a source location",
+        "round": "initial",
+        "nativePage": 1
+      }
+    ],
+    "sourceFiles": [
+      {
+        "relative": "varied.tex",
+        "saved": "edited.tex",
+        "dirty": true,
+        "sha256": "b729846da4eec28abb13af33d7abacbe31257aa81d7c57e4f3e396ef8dd300f6"
+      }
+    ]
+  },
+  "attribution": {
+    "visibleAmplification": {
+      "inputSequence": 39,
+      "inputIndex": 37,
+      "prefix": "\nA controlled comparison uses the same",
+      "inputAt": 7656.239,
+      "ackAt": 7906.619875,
+      "ms": 250.380875,
+      "page": 1,
+      "winningSequence": 41,
+      "winningRevision": 79,
+      "inputs": [
+        {
+          "phase": "controlled-prose",
+          "index": 37,
+          "scheduled": 7657.176125,
+          "applied": 7656.239,
+          "completed": 7662.416584,
+          "lateness": -0.9371250000003783,
+          "sequence": 39,
+          "generation": 0,
+          "document": "varied.tex",
+          "sourceValid": true,
+          "manualViewport": false,
+          "version": 39,
+          "line": 42,
+          "length": 1,
+          "deleteLength": 0
+        },
+        {
+          "phase": "controlled-prose",
+          "index": 38,
+          "scheduled": 7757.176125,
+          "applied": 7759.31,
+          "completed": 7761.430834,
+          "lateness": 2.133875000000444,
+          "sequence": 40,
+          "generation": 0,
+          "document": "varied.tex",
+          "sourceValid": true,
+          "manualViewport": false,
+          "version": 40,
+          "line": 42,
+          "length": 1,
+          "deleteLength": 0
+        },
+        {
+          "phase": "controlled-prose",
+          "index": 39,
+          "scheduled": 7857.176125,
+          "applied": 7857.046209,
+          "completed": 7858.512917,
+          "lateness": -0.12991599999986647,
+          "sequence": 41,
+          "generation": 0,
+          "document": "varied.tex",
+          "sourceValid": true,
+          "manualViewport": false,
+          "version": 41,
+          "line": 42,
+          "length": 1,
+          "deleteLength": 0
+        }
+      ],
+      "rollbacks": [
+        {
+          "at": 7678.743917,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "compiler-rollback",
+          "ms": 0.072,
+          "nativeAt": 615388470.866,
+          "pid": 66089,
+          "workerPid": 66117,
+          "request": -1,
+          "page": -1,
+          "bytes": 0,
+          "tokens": 17105769,
+          "resumeTokens": 17105373,
+          "changedTrace": 477,
+          "resumeTrace": 477,
+          "checkpoints": 0
+        },
+        {
+          "at": 7859.148959,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "compiler-rollback",
+          "ms": 0.072,
+          "nativeAt": 615388651.271,
+          "pid": 66089,
+          "workerPid": 66258,
+          "request": -1,
+          "page": -1,
+          "bytes": 0,
+          "tokens": 17574080,
+          "resumeTokens": 17105769,
+          "changedTrace": 478,
+          "resumeTrace": 478,
+          "checkpoints": 1
+        }
+      ],
+      "discardedTokenPositions": 468311,
+      "completedDiscardedPage": {
+        "sequence": 40,
+        "forwardAt": 7856.64625,
+        "newInputAt": 7857.046209,
+        "displayListReceiptAt": 7858.977959,
+        "rollbackReceiptAt": 7859.148959,
+        "headerProduced": false
+      },
+      "knownSpans": [
+        {
+          "at": 7726.087042,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "native-slow",
+          "actor": "worker",
+          "kind": "fork",
+          "pid": 66117,
+          "nativeAt": 615388516.65,
+          "beginAt": 615388482.398,
+          "ms": 34.252,
+          "cpuMs": 0.429,
+          "query": 1319,
+          "tag": "CHLD",
+          "tokens": 17105373,
+          "peerPid": 66258
+        },
+        {
+          "at": 7767.672792,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "native-slow",
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66258,
+          "nativeAt": 615388558.805,
+          "beginAt": 615388535.444,
+          "ms": 23.361,
+          "cpuMs": 1.699,
+          "query": 2,
+          "tag": "SEEN",
+          "tokens": 17105769,
+          "peerPid": 0
+        }
+      ],
+      "nativeCore": {
+        "start": 615388470.794,
+        "end": 615388696.565,
+        "ms": 225.771
+      },
+      "hostBurstCoverage": {
+        "ms": 206.40204179286957,
+        "outsideBurstsMs": 43.97883320713118,
+        "note": "Native intervals mapped to host with minimum nearby receipt offset; approximate boundary alignment, not calibrated one-way latency. Remainder includes known input/rollback/display-list/export/browser work and unclassified gaps."
+      },
+      "idlePossibleUpperMs": 2.569,
+      "exportMs": 3.905,
+      "browserReceiveToCommitMs": 1.3
+    },
+    "initialTail": {
+      "ms": 258.279792,
+      "aggregateWorker": {
+        "pid": 66117,
+        "windowMs": 232.258,
+        "wallWorkMs": 206.889,
+        "cpuWorkMs": 160.122,
+        "estimatedOverlapMs": 175.765917,
+        "estimatedPreInputMs": 56.492083,
+        "note": "Window overlaps tail but starts before it; no proportional CPU apportionment."
+      },
+      "exactInsideSpans": [
+        {
+          "at": 4042.076375,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "native-slow",
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "nativeAt": 615384834.198,
+          "beginAt": 615384822.655,
+          "ms": 11.543,
+          "cpuMs": 11.321,
+          "query": 1152,
+          "tag": "APND",
+          "tokens": 13576724,
+          "peerPid": 0
+        },
+        {
+          "at": 4078.316667,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "native-slow",
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "nativeAt": 615384870.368,
+          "beginAt": 615384853.541,
+          "ms": 16.827,
+          "cpuMs": 12.374,
+          "query": 1192,
+          "tag": "APND",
+          "tokens": 14747824,
+          "peerPid": 0
+        },
+        {
+          "at": 4109.33,
+          "phase": "controlled-prose",
+          "generation": 0,
+          "stage": "native-slow",
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "nativeAt": 615384901.453,
+          "beginAt": 615384887.888,
+          "ms": 13.565,
+          "cpuMs": 12.34,
+          "query": 1236,
+          "tag": "SEEN",
+          "tokens": 16184813,
+          "peerPid": 0
+        }
+      ],
+      "exactInsideCpuMs": 36.035
+    },
+    "hiddenCase": {
+      "inputSequence": 139,
+      "inputAt": 17658.497084,
+      "hiddenAt": 17669.151709,
+      "visibleAt": 18669.017417,
+      "strictVisibleAckAt": 18702.280667,
+      "ms": 1043.783583,
+      "exampleHiddenCommit": {
+        "sequence": 141,
+        "nativeHeaderAt": 17926.889334,
+        "ackAt": 17932.763084
+      },
+      "note": "Native rendering and hidden browser commits continue; strict visible endpoint excludes them. Visibility transition precedes the long observation gap; no intentional native suspend was observed."
+    },
+    "visibleSlowOperations": {
+      "timingBoundary": "Only spans inside typing window and outside observed hidden interval; host boundaries use offset estimate. This ranks observed exact/maximum spans, not all individual operations.",
+      "rows": [
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66285,
+          "q": 7,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 36.829,
+          "cpu": 0.008,
+          "begin": 8167.500959038734,
+          "end": 8204.32995903492,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66285,
+          "peer": 0,
+          "q": 7,
+          "tag": "APND",
+          "tokens": 17149563,
+          "wall": 36.606,
+          "cpu": 1.809,
+          "begin": 8167.504958987236,
+          "end": 8204.11095893383,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "fork",
+          "pid": 66117,
+          "peer": 66258,
+          "q": 1319,
+          "tag": "CHLD",
+          "tokens": 17105373,
+          "wall": 34.252,
+          "cpu": 0.429,
+          "begin": 7690.147958993912,
+          "end": 7724.3999589681625,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66539,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766994,
+          "wall": 30.931,
+          "cpu": 24.57,
+          "begin": 13587.749958992004,
+          "end": 13618.680958986282,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66274,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766938,
+          "wall": 24.641,
+          "cpu": 19.924,
+          "begin": 7992.842959046364,
+          "end": 8017.4839589595795,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend-loop",
+          "kind": "input",
+          "pid": 66089,
+          "peer": 66123,
+          "q": 78,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 24.273,
+          "cpu": 0.271,
+          "begin": 7606.493958950043,
+          "end": 7630.76695895195,
+          "source": "native-activity"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66258,
+          "peer": 0,
+          "q": 2,
+          "tag": "SEEN",
+          "tokens": 17105769,
+          "wall": 23.361,
+          "cpu": 1.699,
+          "begin": 7743.193958997726,
+          "end": 7766.554958939552,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66123,
+          "q": 71,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 23.114,
+          "cpu": 0.013,
+          "begin": 7607.64395904541,
+          "end": 7630.757959008217,
+          "source": "native-activity"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66361,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766954,
+          "wall": 22.143,
+          "cpu": 18.569,
+          "begin": 9585.996958971024,
+          "end": 9608.1399589777,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66313,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766945,
+          "wall": 20.891,
+          "cpu": 17.373,
+          "begin": 8697.682958960533,
+          "end": 8718.573958992958,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66117,
+          "q": 1319,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 20.707,
+          "cpu": 0.01,
+          "begin": 7712.784958958626,
+          "end": 7733.491958975792,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66322,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766947,
+          "wall": 20.444,
+          "cpu": 18.171,
+          "begin": 8887.08195900917,
+          "end": 8907.525959014893,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66284,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766939,
+          "wall": 19.922,
+          "cpu": 18.901,
+          "begin": 8113.530959010124,
+          "end": 8133.45295894146,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66547,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766996,
+          "wall": 19.474,
+          "cpu": 18.172,
+          "begin": 13787.564959049225,
+          "end": 13807.038959026337,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66128,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17478921,
+          "wall": 19.104,
+          "cpu": 7.184,
+          "begin": 4278.405959010124,
+          "end": 4297.509958982468,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66348,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766951,
+          "wall": 18.609,
+          "cpu": 17.776,
+          "begin": 9287.64495897293,
+          "end": 9306.253958940506,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66551,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766997,
+          "wall": 18.461,
+          "cpu": 17.869,
+          "begin": 13888.01595902443,
+          "end": 13906.476958990097,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66356,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766953,
+          "wall": 18.272,
+          "cpu": 16.827,
+          "begin": 9487.368958950043,
+          "end": 9505.64095902443,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66303,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766942,
+          "wall": 18.07,
+          "cpu": 17.669,
+          "begin": 8399.80195903778,
+          "end": 8417.871958971024,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66564,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18767000,
+          "wall": 17.94,
+          "cpu": 17.372,
+          "begin": 14184.218958973885,
+          "end": 14202.158959031105,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66352,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766952,
+          "wall": 17.839,
+          "cpu": 17.042,
+          "begin": 9387.23795902729,
+          "end": 9405.076959013939,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66555,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766998,
+          "wall": 17.256,
+          "cpu": 16.733,
+          "begin": 13987.42295897007,
+          "end": 14004.678959012032,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66317,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766946,
+          "wall": 17.08,
+          "cpu": 16.614,
+          "begin": 8786.316959023476,
+          "end": 8803.396958947182,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66371,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766956,
+          "wall": 17.029,
+          "cpu": 16.612,
+          "begin": 9786.711959004402,
+          "end": 9803.740959048271,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66390,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766958,
+          "wall": 16.923,
+          "cpu": 16.561,
+          "begin": 9983.54795897007,
+          "end": 10000.470958948135,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66375,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766957,
+          "wall": 16.881,
+          "cpu": 16.396,
+          "begin": 9885.262959003448,
+          "end": 9902.14395904541,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "peer": 0,
+          "q": 1192,
+          "tag": "APND",
+          "tokens": 14747824,
+          "wall": 16.827,
+          "cpu": 12.374,
+          "begin": 4061.2909590005875,
+          "end": 4078.117959022522,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66330,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766949,
+          "wall": 16.711,
+          "cpu": 16.418,
+          "begin": 9084.11095893383,
+          "end": 9100.821959018707,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66335,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766950,
+          "wall": 16.616,
+          "cpu": 16.323,
+          "begin": 9186.441959023476,
+          "end": 9203.057958960533,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66790,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17263968,
+          "wall": 16.553,
+          "cpu": 6.23,
+          "begin": 20066.30095899105,
+          "end": 20082.853958964348,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66543,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766995,
+          "wall": 16.552,
+          "cpu": 16.245,
+          "begin": 13687.000959038734,
+          "end": 13703.552958965302,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66326,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766948,
+          "wall": 16.472,
+          "cpu": 16.166,
+          "begin": 8988.024958968163,
+          "end": 9004.496958971024,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66367,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766955,
+          "wall": 16.436,
+          "cpu": 16.163,
+          "begin": 9697.660959005356,
+          "end": 9714.096958994865,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66560,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 18766999,
+          "wall": 16.384,
+          "cpu": 16.027,
+          "begin": 14086.747959017754,
+          "end": 14103.131958961487,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66307,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17262151,
+          "wall": 15.986,
+          "cpu": 7.427,
+          "begin": 8589.812958955765,
+          "end": 8605.7989590168,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66747,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17423832,
+          "wall": 15.898,
+          "cpu": 6.894,
+          "begin": 18675.724959015846,
+          "end": 18691.622959017754,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66678,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17263937,
+          "wall": 15.262,
+          "cpu": 4.654,
+          "begin": 16971.51595902443,
+          "end": 16986.777958989143,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66246,
+          "peer": 0,
+          "q": 2,
+          "tag": "SEEN",
+          "tokens": 17478953,
+          "wall": 14.966,
+          "cpu": 3.692,
+          "begin": 7527.375959038734,
+          "end": 7542.341958999634,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66258,
+          "q": 2,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 14.203,
+          "cpu": 0.014,
+          "begin": 7742.133958935738,
+          "end": 7756.336959004402,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66285,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17262147,
+          "wall": 14.11,
+          "cpu": 4.989,
+          "begin": 8210.179958939552,
+          "end": 8224.289958953857,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66308,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17442394,
+          "wall": 14.055,
+          "cpu": 7.997,
+          "begin": 8609.39295899868,
+          "end": 8623.447958946228,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66523,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17263899,
+          "wall": 13.589,
+          "cpu": 5.367,
+          "begin": 13171.244958996773,
+          "end": 13184.833958983421,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "peer": 0,
+          "q": 1236,
+          "tag": "SEEN",
+          "tokens": 16184813,
+          "wall": 13.565,
+          "cpu": 12.34,
+          "begin": 4095.6379590034485,
+          "end": 4109.20295894146,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66858,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17423861,
+          "wall": 13.323,
+          "cpu": 5.312,
+          "begin": 21603.664958953857,
+          "end": 21616.98795902729,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66790,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 12.947,
+          "cpu": 0.011,
+          "begin": 20066.29795897007,
+          "end": 20079.244958996773,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66260,
+          "q": 1,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 12.837,
+          "cpu": 0.022,
+          "begin": 7773.377959012985,
+          "end": 7786.214959025383,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66857,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 12.775,
+          "cpu": 0.01,
+          "begin": 21588.66795897484,
+          "end": 21601.442958950996,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66857,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17262281,
+          "wall": 12.509,
+          "cpu": 4.183,
+          "begin": 21588.67295897007,
+          "end": 21601.181959033012,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66487,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 17267547,
+          "wall": 12.361,
+          "cpu": 1.43,
+          "begin": 12580.280959010124,
+          "end": 12592.64195895195,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "read",
+          "pid": 66123,
+          "peer": 0,
+          "q": 71,
+          "tag": "READ",
+          "tokens": 17105769,
+          "wall": 11.989,
+          "cpu": 0.009,
+          "begin": 7631.339959025383,
+          "end": 7643.32895898819,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66486,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.909,
+          "cpu": 0.014,
+          "begin": 12565.648959040642,
+          "end": 12577.557958960533,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66246,
+          "q": 1,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.644,
+          "cpu": 0.011,
+          "begin": 7514.1949590444565,
+          "end": 7525.838958978653,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66285,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.633,
+          "cpu": 0.017,
+          "begin": 8210.17695903778,
+          "end": 8221.809958934784,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66486,
+          "peer": 0,
+          "q": 39,
+          "tag": "SEEN",
+          "tokens": 17263893,
+          "wall": 11.566,
+          "cpu": 4.433,
+          "begin": 12565.653959035873,
+          "end": 12577.219959020615,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66487,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.555,
+          "cpu": 0.01,
+          "begin": 12580.276958942413,
+          "end": 12591.83195900917,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66117,
+          "peer": 0,
+          "q": 1152,
+          "tag": "APND",
+          "tokens": 13576724,
+          "wall": 11.543,
+          "cpu": 11.321,
+          "begin": 4030.404958963394,
+          "end": 4041.947958946228,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66857,
+          "peer": 0,
+          "q": 4,
+          "tag": "SEEN",
+          "tokens": 17130993,
+          "wall": 11.461,
+          "cpu": 2.59,
+          "begin": 21562.595958948135,
+          "end": 21574.056959033012,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66858,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.406,
+          "cpu": 0.015,
+          "begin": 21603.661958932877,
+          "end": 21615.067958950996,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66678,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.372,
+          "cpu": 0.01,
+          "begin": 16971.467959046364,
+          "end": 16982.839959025383,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66857,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.334,
+          "cpu": 0.01,
+          "begin": 21562.590958952904,
+          "end": 21573.92495894432,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66747,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.161,
+          "cpu": 0.021,
+          "begin": 18675.718958973885,
+          "end": 18686.879958987236,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66246,
+          "q": 1,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.096,
+          "cpu": 0.011,
+          "begin": 7480.055958986282,
+          "end": 7491.151958942413,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66123,
+          "q": 12,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.052,
+          "cpu": 0.017,
+          "begin": 4567.739959001541,
+          "end": 4578.7919590473175,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66246,
+          "q": 1,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.038,
+          "cpu": 0.016,
+          "begin": 7491.239959001541,
+          "end": 7502.277958989143,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66303,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.036,
+          "cpu": 0.009,
+          "begin": 8399.7989590168,
+          "end": 8410.834959030151,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66523,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.034,
+          "cpu": 0.011,
+          "begin": 13171.23695898056,
+          "end": 13182.270959019661,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66551,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.034,
+          "cpu": 0.007,
+          "begin": 13888.011958956718,
+          "end": 13899.04595899582,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66128,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.028,
+          "cpu": 0.014,
+          "begin": 4278.396958947182,
+          "end": 4289.424958944321,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66390,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.028,
+          "cpu": 0.014,
+          "begin": 9983.537958979607,
+          "end": 9994.565958976746,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66547,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.028,
+          "cpu": 0.012,
+          "begin": 13787.560958981514,
+          "end": 13798.588958978653,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66313,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.026,
+          "cpu": 0.01,
+          "begin": 8697.67495894432,
+          "end": 8708.700958967209,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66791,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17423846,
+          "wall": 11.026,
+          "cpu": 5.813,
+          "begin": 20091.027958989143,
+          "end": 20102.05395901203,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66117,
+          "q": 1192,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.025,
+          "cpu": 0.019,
+          "begin": 4061.2769589424133,
+          "end": 4072.3019590377808,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66326,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.023,
+          "cpu": 0.008,
+          "begin": 8988.020959019661,
+          "end": 8999.043959021568,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66361,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.023,
+          "cpu": 0.008,
+          "begin": 9585.993958950043,
+          "end": 9597.01695895195,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66348,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.022,
+          "cpu": 0.007,
+          "begin": 9287.6399589777,
+          "end": 9298.661958932877,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66117,
+          "q": 1236,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.013,
+          "cpu": 0.008,
+          "begin": 4095.5779589414597,
+          "end": 4106.590958952904,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66555,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.013,
+          "cpu": 0.009,
+          "begin": 13987.417958974838,
+          "end": 13998.430958986282,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66543,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.012,
+          "cpu": 0.009,
+          "begin": 13686.994958996773,
+          "end": 13698.006958961487,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66375,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.011,
+          "cpu": 0.009,
+          "begin": 9885.253958940506,
+          "end": 9896.2649589777,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66564,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.011,
+          "cpu": 0.007,
+          "begin": 14184.215958952904,
+          "end": 14195.226958990097,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66335,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.01,
+          "cpu": 0.007,
+          "begin": 9186.438959002495,
+          "end": 9197.448958992958,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66356,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.009,
+          "cpu": 0.008,
+          "begin": 9487.364959001541,
+          "end": 9498.373958945274,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66560,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.009,
+          "cpu": 0.008,
+          "begin": 14086.744958996773,
+          "end": 14097.753958940506,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66367,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.008,
+          "cpu": 0.007,
+          "begin": 9697.653959035873,
+          "end": 9708.661958932877,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66352,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 11.007,
+          "cpu": 0.005,
+          "begin": 9387.23395895958,
+          "end": 9398.240959048271,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66246,
+          "q": 1,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.923,
+          "cpu": 0.012,
+          "begin": 7503.20495903492,
+          "end": 7514.127959012985,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66288,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.916,
+          "cpu": 0.008,
+          "begin": 8239.998958945274,
+          "end": 8250.914958953857,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66330,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.855,
+          "cpu": 0.012,
+          "begin": 9084.106958985329,
+          "end": 9094.961959004402,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66487,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.681,
+          "cpu": 0.017,
+          "begin": 12592.70395898819,
+          "end": 12603.384958982468,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66322,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.675,
+          "cpu": 0.007,
+          "begin": 8887.074959039688,
+          "end": 8897.749958992004,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66191,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.654,
+          "cpu": 0.009,
+          "begin": 5804.874958992004,
+          "end": 5815.528959035873,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66317,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.651,
+          "cpu": 0.007,
+          "begin": 8786.307958960533,
+          "end": 8796.958958983421,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66487,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17479004,
+          "wall": 10.617,
+          "cpu": 7.293,
+          "begin": 12592.716958999634,
+          "end": 12603.333958983421,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66284,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.57,
+          "cpu": 0.007,
+          "begin": 8113.527958989143,
+          "end": 8124.0979590415955,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66274,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.434,
+          "cpu": 0.008,
+          "begin": 7992.834959030151,
+          "end": 8003.26895904541,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66371,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.413,
+          "cpu": 0.004,
+          "begin": 9786.707958936691,
+          "end": 9797.120959043503,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66191,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17478936,
+          "wall": 10.382,
+          "cpu": 8.7,
+          "begin": 5804.877959012985,
+          "end": 5815.259958982468,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66258,
+          "q": 2,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.333,
+          "cpu": 0.012,
+          "begin": 7759.118958950043,
+          "end": 7769.451959013939,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66539,
+          "q": 4,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.297,
+          "cpu": 0.015,
+          "begin": 13587.740959048271,
+          "end": 13598.037958979607,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66117,
+          "q": 1152,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.196,
+          "cpu": 0.007,
+          "begin": 4030.3999589681625,
+          "end": 4040.5959589481354,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66307,
+          "q": 39,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.149,
+          "cpu": 0.014,
+          "begin": 8589.808959007263,
+          "end": 8599.957958936691,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66791,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.111,
+          "cpu": 0.012,
+          "begin": 20091.01295900345,
+          "end": 20101.123958945274,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66308,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.102,
+          "cpu": 0.011,
+          "begin": 8609.385959029198,
+          "end": 8619.48795902729,
+          "source": "native-slow"
+        },
+        {
+          "actor": "worker",
+          "kind": "work",
+          "pid": 66200,
+          "peer": 0,
+          "q": 6,
+          "tag": "SEEN",
+          "tokens": 17478939,
+          "wall": 10.095,
+          "cpu": 8.229,
+          "begin": 6069.8319590091705,
+          "end": 6079.926959037781,
+          "source": "native-slow"
+        },
+        {
+          "actor": "frontend",
+          "kind": "poll",
+          "pid": 66089,
+          "peer": 66200,
+          "q": 6,
+          "tag": "????",
+          "tokens": 0,
+          "wall": 10.072,
+          "cpu": 0.017,
+          "begin": 6069.814959049225,
+          "end": 6079.886958956718,
+          "source": "native-slow"
+        }
+      ]
+    }
+  },
+  "logging": {
+    "rowsByActor": {
+      "frontend-loop": 573,
+      "frontend": 527,
+      "worker": 3871
+    },
+    "reportedDropsByActor": {
+      "frontend-loop": 249,
+      "worker": 0,
+      "frontend": 13
+    },
+    "dropSemantics": "Maximum per actor/PID/window; suppressed slow spans and failed/truncated writes combined, not pure I/O loss.",
+    "forkChildren": 636,
+    "childrenWithoutWorkerAggregate": 201,
+    "terminalWindowLimit": "Harness writes raw JSON before session.dispose(); shutdown flushes are absent. Killed worker unfinished windows may also be absent."
+  },
+  "oldSpikeCpu": [
+    {
+      "artifact": "artifacts/profile-native-followup-long/varied-30-png.json",
+      "start": 7127.514,
+      "end": 7579.96025,
+      "wallMs": 452.44624999999996,
+      "innerSampleWallMs": 403.92900002002716,
+      "outerSampleWallMs": 509.98599994182587,
+      "interior": {
+        "frontendMs": 4.462958,
+        "workersMs": 36.780582
+      },
+      "bracketingObserved": {
+        "frontendMs": 18.114333,
+        "workersMs": 46.754748
+      },
+      "forks": [
+        {
+          "at": 7149.871041,
+          "nativeAt": 612658421.475,
+          "pid": 3636,
+          "parentPid": 3576,
+          "ms": 8.251,
+          "tokens": 17105756,
+          "sampled": true
+        },
+        {
+          "at": 7292.300541,
+          "nativeAt": 612658563.547,
+          "pid": 3638,
+          "parentPid": 3576,
+          "ms": 34.836,
+          "tokens": 17105756,
+          "sampled": true
+        },
+        {
+          "at": 7337.288875,
+          "nativeAt": 612658608.855,
+          "pid": 3639,
+          "parentPid": 3638,
+          "ms": 4.429,
+          "tokens": 17263809,
+          "sampled": false
+        },
+        {
+          "at": 7343.590416,
+          "nativeAt": 612658615.245,
+          "pid": 3640,
+          "parentPid": 3576,
+          "ms": 0.447,
+          "tokens": 17105756,
+          "sampled": true
+        },
+        {
+          "at": 7392.052666,
+          "nativeAt": 612658649.371,
+          "pid": 3641,
+          "parentPid": 3640,
+          "ms": 11.12,
+          "tokens": 17263810,
+          "sampled": true
+        },
+        {
+          "at": 7505.669041,
+          "nativeAt": 612658777.296,
+          "pid": 3642,
+          "parentPid": 3576,
+          "ms": 6.42,
+          "tokens": 17105756,
+          "sampled": false
+        },
+        {
+          "at": 7517.145625,
+          "nativeAt": 612658788.78,
+          "pid": 3643,
+          "parentPid": 3642,
+          "ms": 0.679,
+          "tokens": 17263811,
+          "sampled": false
+        },
+        {
+          "at": 7533.745583,
+          "nativeAt": 612658805.106,
+          "pid": 3644,
+          "parentPid": 3576,
+          "ms": 0.334,
+          "tokens": 17105756,
+          "sampled": true
+        },
+        {
+          "at": 7548.969333,
+          "nativeAt": 612658818.369,
+          "pid": 3645,
+          "parentPid": 3644,
+          "ms": 2.655,
+          "tokens": 17263812,
+          "sampled": true
+        },
+        {
+          "at": 7566.212291,
+          "nativeAt": 612658837.841,
+          "pid": 3646,
+          "parentPid": 3645,
+          "ms": 1.772,
+          "tokens": 17481046,
+          "sampled": true
+        }
+      ],
+      "limitation": "Observed partial CPU totals; missing exited/unsampled children, not utilization."
+    },
+    {
+      "artifact": "artifacts/profile-priority-after/varied-30-png.json",
+      "start": 19493.150625,
+      "end": 19991.595375,
+      "wallMs": 498.4447500000024,
+      "innerSampleWallMs": 397.9839999675751,
+      "outerSampleWallMs": 528.2769999504089,
+      "interior": {
+        "frontendMs": 4.999458,
+        "workersMs": 24.981455999999998
+      },
+      "bracketingObserved": {
+        "frontendMs": 10.172083,
+        "workersMs": 50.319039000000004
+      },
+      "forks": [
+        {
+          "at": 19497.190042,
+          "nativeAt": 611166595.116,
+          "pid": 64162,
+          "parentPid": 63424,
+          "ms": 0.246,
+          "tokens": 17105769,
+          "sampled": true
+        },
+        {
+          "at": 19590.667167,
+          "nativeAt": 611166688.426,
+          "pid": 64163,
+          "parentPid": 64162,
+          "ms": 2.069,
+          "tokens": 17263963,
+          "sampled": false
+        },
+        {
+          "at": 19617.342625,
+          "nativeAt": 611166715.223,
+          "pid": 64175,
+          "parentPid": 63424,
+          "ms": 5.073,
+          "tokens": 17105769,
+          "sampled": true
+        },
+        {
+          "at": 19713.564292,
+          "nativeAt": 611166811.506,
+          "pid": 64176,
+          "parentPid": 63424,
+          "ms": 0.684,
+          "tokens": 17105769,
+          "sampled": true
+        },
+        {
+          "at": 19803.691375,
+          "nativeAt": 611166900.573,
+          "pid": 64177,
+          "parentPid": 64176,
+          "ms": 3.759,
+          "tokens": 17263965,
+          "sampled": true
+        },
+        {
+          "at": 19830.417208,
+          "nativeAt": 611166928.185,
+          "pid": 64179,
+          "parentPid": 63424,
+          "ms": 1.17,
+          "tokens": 17105769,
+          "sampled": true
+        },
+        {
+          "at": 19877.1995,
+          "nativeAt": 611166974.3,
+          "pid": 64180,
+          "parentPid": 64179,
+          "ms": 2.315,
+          "tokens": 17263966,
+          "sampled": false
+        },
+        {
+          "at": 19889.902458,
+          "nativeAt": 611166987.844,
+          "pid": 64181,
+          "parentPid": 64180,
+          "ms": 0.575,
+          "tokens": 17479025,
+          "sampled": false
+        },
+        {
+          "at": 19892.042708,
+          "nativeAt": 611166989.949,
+          "pid": 64182,
+          "parentPid": 64181,
+          "ms": 0.66,
+          "tokens": 17480615,
+          "sampled": false
+        },
+        {
+          "at": 19895.313583,
+          "nativeAt": 611166993.239,
+          "pid": 64183,
+          "parentPid": 63424,
+          "ms": 0.345,
+          "tokens": 17105769,
+          "sampled": true
+        },
+        {
+          "at": 19970.76375,
+          "nativeAt": 611167068.453,
+          "pid": 64184,
+          "parentPid": 64183,
+          "ms": 4.182,
+          "tokens": 17263967,
+          "sampled": true
+        },
+        {
+          "at": 19981.469875,
+          "nativeAt": 611167079.406,
+          "pid": 64186,
+          "parentPid": 64184,
+          "ms": 0.57,
+          "tokens": 17479026,
+          "sampled": true
+        }
+      ],
+      "limitation": "Observed partial CPU totals; missing exited/unsampled children, not utilization."
+    }
+  ],
+  "validation": {
+    "cpuUnits": {
+      "machNumer": 125,
+      "machDenom": 3,
+      "rawDelta": 3600305,
+      "clockCpuMs": 150.013,
+      "getrusageMs": 150.01,
+      "convertedMs": 150.012708
+    },
+    "engineTests": "57/57 passed, parent supplied",
+    "controlledActivityTest": "C02 correlation/default-off/bounded accounting passed, native agent supplied",
+    "compileTests": "passed; production controller byte hash unchanged",
+    "lint": "passed, parent supplied",
+    "externalStackSampling": false,
+    "schedulerProductionChange": false,
+    "independentPageOracle": "No additional independent oracle run in this focused pass; each harness source probe passed."
+  }
+}

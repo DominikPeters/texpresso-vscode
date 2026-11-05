@@ -1,14 +1,18 @@
-import { refineSourceWord } from './source-word';
+import { refineSourceWord, characterFromByteColumn } from './source-word';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
 import { readConfiguration } from './configuration';
+import { resolveEngine } from './engine-selection';
 import { SessionPaths } from './paths';
-import { TexpressoSession } from './session';
+import { TexpressoSession, type SourceRevealOptions } from './session';
 import { ExternalCompiler } from './external-compile';
 import { PreviewControls } from './controls';
 import { PreviewController } from './preview-controller';
+import { TikzEditor } from './tikz-editor';
+import { SourceFollow } from './source-follow';
+import { RecoveryBudget, isRecoverableEngineFailure } from './recovery';
 import { describeFailure } from './failures';
 import { setupReport } from './setup';
 import { renamedPath } from './renames';
@@ -32,6 +36,11 @@ export function activate(context: vscode.ExtensionContext): void {
   let disposeTheme = () => {};
   let pendingRename: TexpressoSession | undefined;
   let lastError = '';
+  const recoveryBudget = new RecoveryBudget();
+  const launched = new WeakSet<TexpressoSession>();
+  const failed = new WeakSet<TexpressoSession>();
+  const sessionRequests = new WeakMap<TexpressoSession, number>();
+  let latestOutput = { out: '', log: '' };
   const output = vscode.window.createOutputChannel('TeXpresso');
   const log = vscode.window.createOutputChannel('TeXpresso Log');
   const debug = vscode.window.createOutputChannel('TeXpresso Engine', { log: true });
@@ -39,9 +48,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const setup = vscode.window.createOutputChannel('TeXpresso Setup');
   const controls = new PreviewControls();
   const compiler = new ExternalCompiler(text => build.append(text));
+  const sourceFollow = new SourceFollow();
   context.subscriptions.push(output, log, debug, build, setup, controls, compiler);
   const running = () => activeSession?.state === 'running' ? activeSession : undefined;
   const settings = (document: vscode.TextDocument) => vscode.workspace.getConfiguration('texpresso', document.uri);
+  const configurationFor = (document: vscode.TextDocument) =>
+    resolveEngine(readConfiguration(settings(document)), context.extensionUri.fsPath);
   const watchGroups = new Map<string, { files: Map<string, Set<Parameters<WatchFile>[1]>>; dispose(): void }>();
   const watchKey = (file: string) => process.platform === 'win32' ? path.resolve(file).toLowerCase() : path.resolve(file);
   const watchFile: WatchFile = (file, changed) => {
@@ -95,24 +107,26 @@ export function activate(context: vscode.ExtensionContext): void {
       !!running() && !!editor && !!running()?.sync.contains(editor.document));
     controls.update(activeSession?.state === 'stopped' ? undefined : activeSession);
     if (activeSession?.embedded && activeSession.state === 'running' && !preview) {
-      const session = activeSession;
-      preview = new PreviewController(vscode, context.extensionUri, session,
-        () => { if (activeSession === session) { void stop(); } }, action => {
-          if (activeSession !== session) { return; }
+      const controller = new PreviewController(vscode, context.extensionUri, activeSession,
+        () => { if (preview === controller) { void stop(); } }, action => {
+          const session = activeSession;
+          if (!session || preview !== controller) { return; }
           if (action === 'restart') { void startDocument(session.document, false); }
           else if (action === 'pause') { session.setPaused(!session.paused); }
           else { output.show(true); }
-        });
+        }, () => { if (activeSession) { sourceFollow.suspend(activeSession); } }, new TikzEditor(vscode));
+      preview = controller;
     }
     preview?.update();
+    updatePrewarm();
   }
 
   async function stop(): Promise<void> {
-    startRequest++;
+    startRequest++; recoveryBudget.reset();
     const previous = activeSession;
     activeSession = undefined;
     pendingRename = undefined;
-    preview?.dispose(); preview = undefined;
+    const previousPreview = preview; preview = undefined; previousPreview?.dispose();
     if (previous) { retiring(previous.dispose()); }
     disposeTheme();
     retiring(compiler.dispose());
@@ -122,23 +136,54 @@ export function activate(context: vscode.ExtensionContext): void {
   deactivateSession = stop;
   context.subscriptions.push({ dispose: stop });
 
-  async function reportError(error: unknown, configuration?: SessionConfiguration): Promise<void> {
+  async function reportError(error: unknown, configuration?: SessionConfiguration, recoveryExhausted = false): Promise<void> {
     const failure = describeFailure(error, configuration);
-    lastError = error instanceof Error ? error.message : String(error);
+    if (recoveryExhausted) { failure.message = 'TeXpresso could not recover after two automatic restarts. ' + failure.message; }
+    lastError = (recoveryExhausted ? 'Automatic recovery exhausted: ' : '') + (error instanceof Error ? error.message : String(error));
     debug.appendLine(lastError);
     const action = await vscode.window.showErrorMessage(
-      failure.message, 'Check Setup', 'Open Settings', 'Show Engine Log');
+      failure.message, ...(process.platform === 'win32' && !configuration?.useWSL ? ['Reopen in WSL'] : []),
+      'Check Setup', 'Open Settings', 'Show Engine Log');
     if (action === 'Open Settings') {
       void vscode.commands.executeCommand('workbench.action.openSettings', failure.setting);
     } else if (action === 'Show Engine Log') {
       debug.show(true);
     } else if (action === 'Check Setup') {
       void checkSetup();
+    } else if (action === 'Reopen in WSL') {
+      void vscode.commands.executeCommand('texpresso.openInWSL');
     }
   }
 
-  async function startDocument(document = vscode.window.activeTextEditor?.document, checkRoot = true): Promise<void> {
+  async function sessionFailed(session: TexpressoSession, error: Error): Promise<void> {
+    if (activeSession !== session || sessionRequests.get(session) !== startRequest || failed.has(session)) { return; }
+    failed.add(session);
+    lastError = error.message;
+    // Record the original failure and bounded compiler output before a new
+    // process can replace it. Never dump source buffers into diagnostics.
+    debug.appendLine('[recovery] ' + error.name + ': ' + error.message);
+    if ('details' in error && typeof error.details === 'string' && error.details) { debug.appendLine(error.details.slice(-8000)); }
+    for (const [target, text] of Object.entries(latestOutput)) {
+      if (text) { debug.appendLine('[recovery ' + target + ']\n' + text.slice(-8000)); }
+    }
+    const safeReplay = session.configuration.streamFiles || session.previewRequestLifecycle;
+    if (!safeReplay || !isRecoverableEngineFailure(error, launched.has(session), latestOutput.out + '\n' + latestOutput.log)) {
+      await reportError(error, session.configuration); return;
+    }
+    if (!recoveryBudget.take()) {
+      debug.appendLine('[recovery] Automatic restart limit reached (two attempts in one minute).');
+      await reportError(error, session.configuration, true); return;
+    }
+    debug.appendLine('[recovery] Restarting the engine from current editor buffers.');
+    sourceFollow.invalidate(session);
+    await startDocument(session.document, false, session);
+  }
+
+  async function startDocument(document = vscode.window.activeTextEditor?.document, checkRoot = true,
+    recoveringFrom?: TexpressoSession): Promise<void> {
+    if (recoveringFrom && activeSession !== recoveringFrom) { return; }
     const request = ++startRequest;
+    if (!recoveringFrom) { recoveryBudget.reset(); }
     pendingRename = undefined;
     if (!document) {
       void vscode.window.showErrorMessage('TeXpresso: Open a LaTeX document first.');
@@ -157,7 +202,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     let temporaryDirectory: tmp.DirResult | undefined;
     try {
-      const configuration = readConfiguration(settings(document));
+      const configuration = configurationFor(document);
       let rootPath = document.fileName;
       if (document.isUntitled) {
         temporaryDirectory = tmp.dirSync({ unsafeCleanup: true });
@@ -170,14 +215,16 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
       const session = new TexpressoSession(document, configuration,
-        new SessionPaths(rootPath, configuration.useWSL), () => vscode.workspace.textDocuments, {
+        new SessionPaths(rootPath, configuration.useWSL, undefined, configuration.wslDistribution), () => vscode.workspace.textDocuments, {
           state: () => {
             if (activeSession === session) {
+              if (session.state === 'running') { launched.add(session); }
               updateContexts();
             }
           },
           output: (target, text) => {
             if (activeSession === session) {
+              latestOutput[target] = text;
               (target === 'out' ? output : log).replace(text);
             }
           },
@@ -186,11 +233,11 @@ export function activate(context: vscode.ExtensionContext): void {
               debug.appendLine(text);
             }
           },
-          synctex: (file, line, column, word) => { void revealSource(session, file, line, column, word); },
+          synctex: (file, line, column, word, options) => { void revealSource(session, file, line, column, word, options); },
           preview: event => { if (activeSession === session) { preview?.handle(event); } },
           rendered: () => {
             if (running() === session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
-              syncForward();
+              syncForward(undefined, false);
             }
           },
           restart: () => {
@@ -205,23 +252,27 @@ export function activate(context: vscode.ExtensionContext): void {
           },
           error: error => {
             if (activeSession === session) {
-              void reportError(error, session.configuration);
+              void sessionFailed(session, error);
             }
           }
         }, temporaryDirectory, undefined, {
-          watchFile, roots: vscode.workspace.workspaceFolders?.map(folder => folder.uri.fsPath)
+          watchFile, roots: vscode.workspace.workspaceFolders?.map(folder => folder.uri.fsPath), recovering: !!recoveringFrom, initialPaused: recoveringFrom?.paused
         });
       temporaryDirectory = undefined;
       const previous = activeSession;
-      preview?.dispose(); preview = undefined;
+      sessionRequests.set(session, request);
       activeSession = session;
+      if (recoveringFrom && preview) {
+        preview.replaceSession(session);
+        sourceFollow.suspend(session);
+      } else {
+        const previousPreview = preview; preview = undefined; previousPreview?.dispose();
+      }
       if (previous) { retiring(previous.dispose()); }
       disposeTheme();
       retiring(compiler.dispose());
-      output.clear();
-      log.clear();
-      debug.clear();
-      lastError = '';
+      output.clear(); log.clear(); latestOutput = { out: '', log: '' };
+      if (!recoveringFrom) { debug.clear(); lastError = ''; }
       updateContexts();
       await session.start();
       if (running() === session && settings(document).get('useEditorTheme', false)) {
@@ -235,26 +286,29 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  async function revealSource(session: TexpressoSession, file: string, line: number, column?: number, word?: string): Promise<void> {
-    if (running() !== session) {
+  async function revealSource(session: TexpressoSession, file: string, line: number, column?: number, word?: string, options?: SourceRevealOptions): Promise<void> {
+    const current = () => running() === session && options?.current?.() !== false;
+    if (!current()) {
       return;
     }
     try {
       const document = session.document.isUntitled && file === session.paths.rootEditorPath
         ? session.document : await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-      if (running() !== session) {
+      if (!current()) {
         return;
       }
       const sourceColumn = session.embedded
         ? vscode.window.visibleTextEditors.find(editor => session.sync.contains(editor.document))?.viewColumn || vscode.ViewColumn.One
         : undefined;
       const editor = await vscode.window.showTextDocument(document, sourceColumn);
-      if (running() !== session) {
+      if (!current()) {
         return;
       }
-      const refined = column === undefined || column <= 0 ? refineSourceWord(document.getText(), line - 1, word) : undefined;
+      const refined = options?.utf8Column || column === undefined || column <= 0 ? refineSourceWord(document.getText(), line - 1, word) : undefined;
+      const character = options?.utf8Column && line > 0 && line <= document.lineCount
+        ? characterFromByteColumn(document.lineAt(line - 1).text, column || 0) : Math.max(0, (column || 1) - 1);
       const position = document.validatePosition(new vscode.Position(refined?.line ?? Math.max(0, line - 1),
-        refined?.character ?? Math.max(0, (column || 1) - 1)));
+        refined?.character ?? character ?? 0));
       editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
       editor.selection = new vscode.Selection(position, position);
     } catch (error) {
@@ -262,10 +316,21 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  function syncForward(editor = vscode.window.activeTextEditor): void {
-    if (editor) {
-      running()?.sync.syncForward(editor.document, editor.selection.active.line);
-    }
+  function updatePrewarm(): void {
+    const editor = vscode.window.activeTextEditor;
+    preview?.prepareEdit(editor?.document, editor?.document.offsetAt(editor.selection.start));
+  }
+
+  function syncForward(editor = vscode.window.activeTextEditor, explicit = true): void {
+    const session = running();
+    if (!editor || !session || !session.sync.contains(editor.document)) { return; }
+    const state = session.previewState;
+    const revision = state?.[2] === session.previewSequence ? state[1] : 0;
+    if (!sourceFollow.request({ session, document: editor.document.uri.toString(), version: editor.document.version,
+      line: editor.selection.active.line, column: editor.selection.active.character, precise: session.previewSynctexPrecision,
+      sequence: session.previewSequence, revision }, explicit)) { return; }
+    preview?.beginSourceFollow(explicit);
+    session.syncForward(editor.document, editor.selection.active.line, editor.selection.active.character);
   }
 
   function register(name: string, callback: (...args: never[]) => unknown): void {
@@ -283,10 +348,23 @@ export function activate(context: vscode.ExtensionContext): void {
   register('stop', stop);
   register('showControls', () => controls.show(activeSession?.state === 'stopped' ? undefined : activeSession));
   register('checkSetup', checkSetup);
+  register('openInWSL', async () => {
+    if (process.platform !== 'win32' || vscode.env.remoteName) {
+      void vscode.window.showInformationMessage('Use this command in a local Windows VS Code window.');
+      return;
+    }
+    const commands = await vscode.commands.getCommands(true);
+    if (commands.includes('remote-wsl.reopenInWSL')) {
+      await vscode.commands.executeCommand('remote-wsl.reopenInWSL');
+    } else {
+      await vscode.commands.executeCommand('extension.open', 'ms-vscode-remote.remote-wsl');
+      void vscode.window.showInformationMessage('Install the WSL extension, then run TeXpresso: Reopen Folder in WSL.');
+    }
+  });
   register('showEngineLog', () => debug.show(true));
   register('showCompilerOutput', () => output.show(true));
   register('openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', 'texpresso'));
-  register('rerunOnce', () => running()?.rerunOnce());
+  register('rerunOnce', () => { const session = running(); if (session) { sourceFollow.invalidate(session); session.rerunOnce(); } });
   register('pause', () => running()?.setPaused(true));
   register('resume', () => running()?.setPaused(false));
   for (const [name, enabled] of [['enableAutoRerun', true], ['disableAutoRerun', false]] as const) {
@@ -332,13 +410,17 @@ export function activate(context: vscode.ExtensionContext): void {
           session.send(['theme', [1, 1, 1], [0, 0, 0]]);
         }
       }
+      if (event.affectsConfiguration('texpresso.syncTeXForwardOnSelection', session.document.uri)) {
+        sourceFollow.invalidate(session);
+        if (settings(session.document).get('syncTeXForwardOnSelection', true)) { syncForward(); }
+      }
       if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
       }
-      const launchKeys = ['command', 'useWSL', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
+      const launchKeys = ['command', 'useWSL', 'wslDistribution', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
         'streamFiles', 'watchDependencies', 'previewLocation'];
       if (launchKeys.some(key => event.affectsConfiguration('texpresso.' + key, session.document.uri)) &&
-          JSON.stringify(readConfiguration(settings(session.document))) !== JSON.stringify(session.configuration)) {
+          JSON.stringify(configurationFor(session.document)) !== JSON.stringify(session.configuration)) {
         void vscode.window.showInformationMessage('TeXpresso settings changed. Restart the preview to apply them.', 'Restart')
           .then(action => {
             if (action === 'Restart' && running() === session) {
@@ -390,13 +472,14 @@ export function activate(context: vscode.ExtensionContext): void {
         }
       });
     }),
-    vscode.workspace.onDidChangeTextDocument(event => running()?.sync.change(event.document, event.contentChanges)),
+    vscode.workspace.onDidChangeTextDocument(event => { running()?.sync.change(event.document, event.contentChanges); updatePrewarm(); }),
     vscode.window.onDidChangeActiveTextEditor(updateContexts),
     vscode.window.onDidChangeTextEditorSelection(event => {
       const session = running();
-      if (session && settings(session.document).get('syncTeXForwardOnSelection', true)) {
-        syncForward(event.textEditor);
+      if (session && event.textEditor === vscode.window.activeTextEditor && settings(session.document).get('syncTeXForwardOnSelection', true)) {
+        syncForward(event.textEditor, false);
       }
+      updatePrewarm();
     }),
     vscode.window.onDidChangeActiveColorTheme(() => {
       const session = running();
@@ -417,8 +500,8 @@ export function activate(context: vscode.ExtensionContext): void {
     setup.appendLine('Checking TeXpresso setup…');
     setup.show(true);
     try {
-      const configuration = readConfiguration(settings(document));
-      const paths = new SessionPaths(session?.paths.rootEditorPath || document.fileName, configuration.useWSL);
+      const configuration = configurationFor(document);
+      const paths = new SessionPaths(session?.paths.rootEditorPath || document.fileName, configuration.useWSL, undefined, configuration.wslDistribution);
       const host = process.platform + ' ' + process.arch + (vscode.env.remoteName ? ' (' + vscode.env.remoteName + ')' : '');
       const report = await setupReport(configuration, paths, host);
       setup.replace(report + (lastError ? '\nLast failure: ' + lastError + '\nSee TeXpresso Engine for engine output.\n' : ''));

@@ -16,3 +16,17 @@ test('word refinement retains line-only navigation for ambiguous, absent, genera
   assert.equal(refineSourceWord('a word\n\ntarget', 0, 'target'), undefined, 'does not cross paragraph boundaries');
   assert.equal(refineSourceWord('target', 0), undefined);
 });
+
+test('UTF-8 native columns and UTF-16 editor columns preserve Unicode boundaries', () => {
+  const { characterFromByteColumn, sourceWordAt } = require('../source-word');
+  const line = 'é😀 office';
+  assert.equal(characterFromByteColumn(line, 8), 4);
+  assert.equal(characterFromByteColumn(line, 4), 1, 'never split a surrogate pair');
+  assert.equal(characterFromByteColumn(line, -1), undefined);
+  assert.equal(characterFromByteColumn(line, 1000), undefined);
+  assert.equal(sourceWordAt(line, 6), 'office');
+  assert.equal(sourceWordAt('\\office{literal}', 3), undefined);
+  assert.equal(sourceWordAt('% office', 5), undefined);
+  assert.equal(sourceWordAt('\\textbf{office}', 10), 'office');
+  assert.equal(sourceWordAt('é'.repeat(129), 2), undefined, 'hints obey the native UTF-8 byte budget');
+});

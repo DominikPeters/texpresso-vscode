@@ -1,12 +1,16 @@
 import type * as vscode from 'vscode';
 import * as path from 'path';
 import { SessionPaths } from './paths';
+import { wslArguments } from './wsl';
 
-export type PackageProvider = 'auto' | 'texlive' | 'tectonic';
+export type PackageProvider = 'texlive' | 'tectonic';
 
 export interface SessionConfiguration {
   command: string;
+  engineSource?: 'bundled' | 'custom' | 'path';
+  engineRevision?: string;
   useWSL: boolean;
+  wslDistribution?: string;
   useChangeRangeMode: boolean;
   packageProvider: PackageProvider;
   includeDirectories: string[];
@@ -25,11 +29,17 @@ export interface LaunchCommand {
 
 // Read settings for the root document on every start, including multi-root workspaces.
 export function readConfiguration(configuration: vscode.WorkspaceConfiguration): SessionConfiguration {
+  const savedProvider = configuration.get<string>('packageProvider', 'texlive');
+  const packageProvider = savedProvider === 'auto' ? 'texlive' : savedProvider;
+  if (packageProvider !== 'texlive' && packageProvider !== 'tectonic') {
+    throw new Error('Select TeX Live or Tectonic in TeXpresso Package Provider settings.');
+  }
   return {
-    command: configuration.get<string>('command', 'texpresso'),
+    command: configuration.get<string>('command', ''),
     useWSL: configuration.get<boolean>('useWSL', false),
+    wslDistribution: configuration.get<string>('wslDistribution', '').trim(),
     useChangeRangeMode: configuration.get<boolean>('useChangeRangeMode', false),
-    packageProvider: configuration.get<PackageProvider>('packageProvider', 'auto'),
+    packageProvider,
     includeDirectories: configuration.get<string[]>('includeDirectories', []),
     arguments: configuration.get<string[]>('arguments', []),
     autoRerun: configuration.get<boolean>('autoRerun', false),
@@ -41,7 +51,6 @@ export function readConfiguration(configuration: vscode.WorkspaceConfiguration):
 
 export function buildLaunchCommand(config: SessionConfiguration, paths: SessionPaths): LaunchCommand {
   const args: string[] = [];
-  const providers = new Set<string>();
   for (let i = 0; i < config.arguments.length; i++) {
     const argument = config.arguments[i];
     if (argument === '-I') {
@@ -55,21 +64,13 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
     } else if (argument === '-stream') {
       throw new Error('Enable Stream Files in TeXpresso Settings instead of adding -stream to arguments.');
     } else if (argument === '-texlive' || argument === '-tectonic') {
-      if (config.packageProvider === 'auto') {
-        providers.add(argument);
-        args.push(argument);
-      }
+      // The dedicated setting takes precedence over legacy provider arguments.
     } else {
       args.push(argument);
     }
   }
-  if (config.packageProvider !== 'auto') {
-    // Dedicated settings take precedence over equivalent legacy arguments.
-    args.push('-' + config.packageProvider);
-  }
-  if (providers.size > 1) {
-    throw new Error('Choose either -texlive or -tectonic in TeXpresso additional arguments.');
-  }
+  // Select explicitly so the shared engine cannot auto-detect a parked provider.
+  args.push('-' + config.packageProvider);
   for (const directory of config.includeDirectories) {
     args.push('-I', paths.includeDirectory(directory));
   }
@@ -82,6 +83,6 @@ export function buildLaunchCommand(config: SessionConfiguration, paths: SessionP
   }
   args.push(paths.rootEnginePath);
   return config.useWSL
-    ? { command: 'wsl', args: ['-e', config.command, ...args] }
+    ? { command: 'wsl', args: wslArguments(config.command, args, config.wslDistribution) }
     : { command: config.command, args, cwd: path.dirname(paths.rootEditorPath) };
 }

@@ -20,6 +20,18 @@
       y: after.top + point.y * after.height - origin.y,
     };
   }
+  // Keep source following still while the target remains comfortably visible.
+  // A small hysteresis band absorbs SyncTeX/rounding noise near the margin.
+  function syncScrollCorrection(point, viewport, fitText = false) {
+    const axis = (value, start, size) => {
+      const margin = Math.min(48, size * .1), tolerance = 4;
+      if (value >= start + margin - tolerance && value <= start + size - margin + tolerance) { return 0; }
+      const delta = value - start - size / 2;
+      return Math.abs(delta) > tolerance ? delta : 0;
+    };
+    const visibleX = point.x >= viewport.left - 4 && point.x <= viewport.left + viewport.width + 4;
+    return { x: fitText && visibleX ? 0 : axis(point.x, viewport.left, viewport.width), y: axis(point.y, viewport.top, viewport.height) };
+  }
   function rasterWidth(bounds, cssWidth, dpr) {
     const w = bounds[2] - bounds[0], h = bounds[3] - bounds[1];
     // Match the engine's bounded raster allocation instead of repeatedly
@@ -65,30 +77,104 @@
   // Compact geometry survives surface eviction. Unknown pages use a stable
   // estimate; no DOM placeholder or render is needed to measure distant pages.
   class PageLayout {
-    constructor() { this.sizes = new Map(); this.fallback = [0, 0, 595.28, 841.89]; this.gap = 8; this.version = 0; this.configure({}); }
+    constructor() {
+      this.sizes = new Map(); this.latestText = new Map(); this.textExtent = undefined; this.maxLearnedPage = -1;
+      this.fallback = [0, 0, 595.28, 841.89]; this.gap = 8; this.version = 0; this.textGutter = 12;
+      this.configure({});
+    }
+    textRange(bounds, textBounds) {
+      if (!Array.isArray(textBounds) || textBounds.length !== 4 || !textBounds.every(Number.isFinite)) { return; }
+      const left = Math.max(bounds[0], textBounds[0]), right = Math.min(bounds[2], textBounds[2]);
+      const top = Math.max(bounds[1], textBounds[1]), bottom = Math.min(bounds[3], textBounds[3]);
+      if (right <= left || bottom <= top) { return; }
+      const center = (bounds[0] + bounds[2]) / 2;
+      return [left - center, right - center];
+    }
+    setTextBounds(page, bounds, textBounds) {
+      if (!Number.isInteger(page) || page < 0 || page > 100000 || !this.validBounds(bounds)) { return false; }
+      const range = this.textRange(bounds, textBounds);
+      if (!range) { this.latestText.delete(page); return false; }
+      this.latestText.set(page, range); this.maxLearnedPage = Math.max(this.maxLearnedPage, page);
+      // Text edits often alter the last glyph by a fraction of a point. Keep a
+      // shared high-water envelope, with the screen gutter absorbing tiny drift.
+      const old = this.textExtent;
+      if (old && range[0] >= old[0] - 2 && range[1] <= old[1] + 2) { return false; }
+      this.textExtent = old ? [Math.min(old[0], range[0]), Math.max(old[1], range[1])] : range.slice();
+      return true;
+    }
+    refitText() {
+      let extent;
+      for (const range of this.latestText.values()) {
+        extent = extent ? [Math.min(extent[0], range[0]), Math.max(extent[1], range[1])] : range.slice();
+      }
+      this.textExtent = extent;
+    }
+    trim(count) {
+      // Frequent complete-state updates must retain the unchanged-layout O(1)
+      // path. Scan only if a shrink/new estimate can actually exceed EOF.
+      if (this.maxLearnedPage < count) { return; }
+      let removed = false, max = -1;
+      for (const entries of [this.sizes, this.latestText]) {
+        for (const page of entries.keys()) {
+          if (page >= count) { entries.delete(page); removed = true; }
+          else { max = Math.max(max, page); }
+        }
+      }
+      this.maxLearnedPage = max;
+      if (removed) { this.version++; this.refitText(); }
+    }
+    validBounds(bounds) {
+      return Array.isArray(bounds) && bounds.length === 4 && bounds.every(Number.isFinite) && bounds[2] > bounds[0] && bounds[3] > bounds[1];
+    }
+    textScale(extent = this.textExtent) {
+      // Match the existing numeric zoom ceiling for isolated glyphs/short labels.
+      return extent ? Math.min(4 * 96 / 72, Math.max(.05, (this.width - 2 * this.textGutter) / (extent[1] - extent[0]))) : undefined;
+    }
+    dimensions(bounds, proposedTextBounds) {
+      const w = bounds[2] - bounds[0], h = bounds[3] - bounds[1];
+      let extent = this.textExtent;
+      const proposed = this.textRange(bounds, proposedTextBounds);
+      if (proposed && (!extent || proposed[0] < extent[0] - 2 || proposed[1] > extent[1] + 2)) { extent = extent ? [Math.min(extent[0], proposed[0]), Math.max(extent[1], proposed[1])] : proposed; }
+      let scale = Number(this.zoom) * 96 / 72;
+      if (this.zoom === 'text' && extent) { scale = this.textScale(extent); }
+      else if (this.zoom === 'width' || this.zoom === 'page' || this.zoom === 'text') {
+        scale = Math.max(.05, this.width / w);
+        if (this.zoom === 'page') { scale = Math.min(scale, Math.max(.05, this.height / h)); }
+      }
+      return { width: w * scale, height: h * scale };
+    }
+    textScroll() {
+      if (this.zoom !== 'text' || !this.textExtent) { return 0; }
+      const center = (this.textExtent[0] + this.textExtent[1]) / 2;
+      return clamp(this.maxWidth / 2 + center * this.textScale() - this.width / 2, 0, this.maxWidth - this.width);
+    }
     configure({ count = 0, complete = false, active = 0, zoom = 'width', width = 800, height = 700 } = {}) {
+      if (complete) { this.trim(Math.max(0, count)); }
       const length = Math.min(100001, complete ? Math.max(1,count) : Math.max(count+1,active+1,1));
       width = Math.max(1,width); height = Math.max(1,height);
-      const key = `${length}:${zoom}:${width}:${height}:${this.version}`;
+      const key = `${length}:${zoom}:${width}:${height}:${this.version}:${zoom === 'text' ? this.textExtent : ''}`;
       if (key === this.key) { return; } this.key = key;
       this.count = length;
       this.zoom = zoom; this.width = width; this.height = height;
       this.offsets = new Float64Array(this.count + 1); this.rects = new Array(this.count); this.maxWidth = this.width;
       for (let page = 0; page < this.count; page++) {
-        const b = this.sizes.get(page) || this.fallback, w = b[2] - b[0], h = b[3] - b[1];
-        let scale = Number(zoom) * 96 / 72;
-        if (zoom === 'width' || zoom === 'page') { scale = Math.max(.05, this.width / w); if (zoom === 'page') { scale = Math.min(scale, Math.max(.05, this.height / h)); } }
-        this.rects[page] = { top: this.offsets[page], width: w * scale, height: h * scale, bounds: b };
-        this.maxWidth = Math.max(this.maxWidth,w*scale);
-        this.offsets[page + 1] = this.offsets[page] + h * scale + (page + 1 < this.count ? this.gap : 0);
+        const b = this.sizes.get(page) || this.fallback, size = this.dimensions(b);
+        this.rects[page] = { top: this.offsets[page], width: size.width, height: size.height, bounds: b };
+        this.maxWidth = Math.max(this.maxWidth, size.width);
+        this.offsets[page + 1] = this.offsets[page] + size.height + (page + 1 < this.count ? this.gap : 0);
+      }
+      if (zoom === 'text' && this.textExtent) {
+        // Leave enough background around the whole sheets to center asymmetric
+        // text, even at the zoom ceiling or when text touches a paper edge.
+        const center = (this.textExtent[0] + this.textExtent[1]) / 2;
+        this.maxWidth = Math.max(this.maxWidth, this.width + 2 * this.textGutter + 2 * Math.abs(center * this.textScale()));
       }
       this.total = this.offsets[this.count];
     }
     setBounds(page, bounds) {
-      if (!Number.isInteger(page) || page < 0 || page > 100000 || !Array.isArray(bounds) || bounds.length !== 4 ||
-          !bounds.every(Number.isFinite) || bounds[2] <= bounds[0] || bounds[3] <= bounds[1]) { return false; }
+      if (!Number.isInteger(page) || page < 0 || page > 100000 || !this.validBounds(bounds)) { return false; }
       const old = this.sizes.get(page); if (old && old.every((n, i) => n === bounds[i])) { return false; }
-      this.sizes.set(page, bounds.slice()); this.version++; return true;
+      this.sizes.set(page, bounds.slice()); this.maxLearnedPage = Math.max(this.maxLearnedPage, page); this.version++; return true;
     }
     pageAt(y) {
       let lo = 0, hi = this.count - 1; y = Math.max(0, y);
@@ -102,5 +188,5 @@
       return { first, last, center, start, end };
     }
   }
-  return { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache, PageLayout };
+  return { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache, PageLayout };
 });

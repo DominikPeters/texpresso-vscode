@@ -1,0 +1,146 @@
+{
+  "engine": "4919c95cc8da0a3baafbf204ef7b87b079074e58",
+  "binarySha256": "706c367f61b09588e7dab2608c1eebd2aaa2801483731392ce799be27db2ce09",
+  "endpoint": "Native preview protocol correctness; not browser timing",
+  "operation": "Queue source target at PDF page25, insert180 blank source lines, observe stale line interpreted under new source sequence as PDFpage7",
+  "nativePagesAreZeroBased": true,
+  "events": [
+    {
+      "at": 50.646667,
+      "event": {
+        "sourceSequence": 1
+      }
+    },
+    {
+      "at": 411.282084,
+      "event": [
+        "preview-invalidated",
+        2,
+        0
+      ]
+    },
+    {
+      "at": 411.313792,
+      "event": [
+        "preview-state",
+        2,
+        1,
+        0,
+        false,
+        0
+      ]
+    },
+    {
+      "at": 435.32,
+      "event": [
+        "preview-state",
+        2,
+        1,
+        1,
+        false,
+        0
+      ]
+    },
+    {
+      "at": 439.1465,
+      "event": {
+        "requestId": 1,
+        "revision": 2,
+        "sequence": 1,
+        "page": 0,
+        "bounds": [
+          0,
+          0,
+          612,
+          792
+        ],
+        "width": 900,
+        "height": 1164,
+        "mime": "image/png",
+        "byteLength": 15093,
+        "exportMs": 3.074,
+        "annotations": {
+          "links": [],
+          "destinations": []
+        }
+      }
+    },
+    {
+      "at": 439.388625,
+      "event": {
+        "sourceSequence": 2
+      }
+    },
+    {
+      "at": 615.493875,
+      "event": [
+        "preview-invalidated",
+        3,
+        1
+      ]
+    },
+    {
+      "at": 615.608625,
+      "event": [
+        "preview-invalidated",
+        4,
+        2
+      ]
+    },
+    {
+      "at": 615.627667,
+      "event": [
+        "preview-state",
+        4,
+        2,
+        0,
+        false,
+        0
+      ]
+    },
+    {
+      "at": 642.214959,
+      "event": [
+        "preview-state",
+        4,
+        2,
+        3,
+        false,
+        0
+      ]
+    },
+    {
+      "at": 647.332459,
+      "event": [
+        "preview-state",
+        4,
+        2,
+        7,
+        false,
+        0
+      ]
+    },
+    {
+      "at": 647.523584,
+      "event": [
+        "preview-forward",
+        4,
+        2,
+        6,
+        171.95517,
+        192.461258
+      ]
+    },
+    {
+      "at": 647.908584,
+      "event": [
+        "preview-state",
+        4,
+        2,
+        7,
+        false,
+        6
+      ]
+    }
+  ]
+}

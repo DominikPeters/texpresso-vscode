@@ -12,6 +12,7 @@ from pathlib import Path
 from common import NATIVE, ROOT, check_source, export_source, load_lock, pinned_engine, run, sha256
 from icu_data import prepare
 from bundle import bundle
+import zlib_ng
 
 
 def shell_flags(values):
@@ -23,9 +24,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mupdf-source', type=Path, required=True)
     parser.add_argument('--icu-prefix', type=Path, required=True)
+    parser.add_argument('--zlib-ng-source', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=NATIVE / '.bundles' / ('darwin-' + platform.machine()))
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 2, 8))
     parser.add_argument('--check', action='store_true', help='validate inputs without compiling')
+    parser.add_argument('--keep-work', action='store_true', help='retain successful build intermediates for debugging')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() not in ('arm64', 'x86_64'):
         parser.error('The initial bundle builder supports native macOS arm64/x86_64 hosts')
@@ -33,13 +36,15 @@ def main():
         parser.error('--jobs must be positive')
     args.mupdf_source = args.mupdf_source.resolve()
     args.icu_prefix = args.icu_prefix.resolve()
+    args.zlib_ng_source = args.zlib_ng_source.resolve()
     args.output = args.output.resolve()
     lock = load_lock()
     engine, revision = pinned_engine()
     check_source(args.mupdf_source, lock['mupdf']['revision'])
+    check_source(args.zlib_ng_source, lock['zlibNg']['revision'])
     for path, sha in lock['mupdf']['submodules'].items():
         check_source(args.mupdf_source / path, sha)
-    for command in ('make', 'pkg-config', 'xcrun', 'otool', 'install_name_tool', 'codesign', 'strip'):
+    for command in ('cmake', 'make', 'pkg-config', 'xcrun', 'otool', 'install_name_tool', 'codesign', 'strip'):
         if not shutil.which(command):
             parser.error(f'Missing build tool: {command}')
     packages = ['freetype2', 'libjpeg', 'libopenjp2', 'libbrotlidec', 'libbrotlienc',
@@ -50,7 +55,8 @@ def main():
         parser.error('Installed ICU does not match dependencies.lock.json')
     if args.check:
         print(json.dumps({'engine': revision, 'mupdf': lock['mupdf']['revision'],
-                          'icu': lock['icu']['version'], 'hostPackages': versions}, indent=2))
+                          'icu': lock['icu']['version'], 'zlibNg': lock['zlibNg'],
+                          'hostPackages': versions}, indent=2))
         return
     if args.output.exists() or args.output.with_suffix('.zip').exists():
         parser.error('Output already exists; choose a new --output directory')
@@ -60,7 +66,9 @@ def main():
     print('Build directory:', work, flush=True)
     txp = work / 'texpresso'
     mupdf = work / 'mupdf'
+    zng_include, zng_library, zng_notice, zng_metadata = zlib_ng.build(args.zlib_ng_source, work / 'zlib-ng', args.jobs)
     export_source(engine, txp)
+    run(['make', 'test-profile'], cwd=txp)
     export_source(args.mupdf_source, mupdf)
     for path in lock['mupdf']['submodules']:
         (mupdf / path).rmdir()  # git archive leaves an empty gitlink directory.
@@ -83,9 +91,9 @@ def main():
     renderer_libraries = shlex.split(run(['pkg-config', '--libs', 'freetype2', 'libjpeg',
                                          'libopenjp2', 'libbrotlidec', 'libbrotlienc', 'sdl2'], capture=True))
     renderer_libraries = [mupdf / 'build/vscode/libmupdf.a', mupdf / 'build/vscode/libmupdf-third.a'] + renderer_libraries
-    renderer_libraries += ['-L' + str(host_prefix / 'lib'), '-ljbig2dec', '-lz', '-lm']
+    renderer_libraries += [zng_library, '-L' + str(host_prefix / 'lib'), '-ljbig2dec', '-lz', '-lm']
     cflags = ['-O2', '-fPIC', '-ffunction-sections', '-fdata-sections', '-I.',
-              '-I' + str(mupdf / 'include')] + include_flags
+              '-I' + str(mupdf / 'include'), '-DTXP_ZLIB_NG', '-I' + str(zng_include)] + include_flags
     (txp / 'Makefile.config').write_text(
         'CFLAGS=' + shell_flags(cflags) + '\nCC=' + shell_flags([compiler]) + ' $(CFLAGS)\n' +
         'LDCC=' + shell_flags([cxx]) + ' $(CFLAGS) -Wl,-dead_strip\nLIBS=' + shell_flags(renderer_libraries) + '\n')
@@ -102,6 +110,7 @@ def main():
          'CSYSFLAGS=' + shell_flags(['-isysroot', sdk, '-DXETEX_MAC',
                                     '-I' + str(args.icu_prefix / 'include'),
                                     '-I' + str(host_prefix / 'include'), '-fno-common'])], cwd=txp)
+    run(['make', 'test-preview-png'], cwd=txp)
     probe = subprocess.run([str(txp / 'build/texpresso'), '-capabilities'], capture_output=True, text=True, timeout=5)
     try:
         capabilities = json.loads(probe.stdout) if probe.returncode == 0 else {}
@@ -109,6 +118,7 @@ def main():
         capabilities = {}
     if not isinstance(capabilities, dict):
         capabilities = {}
+    zlib_ng.verify_capabilities(capabilities)
     metadata = {'schema': 1, 'kind': 'development-host-build', 'platform': 'darwin',
                 'architecture': platform.machine(), 'engineRevision': revision,
                 'mupdfRevision': lock['mupdf']['revision'], 'icu': icu_metadata,
@@ -117,11 +127,15 @@ def main():
                 'hostPackageVersions': versions,
                 'profiles': {p.name: sha256(p) for p in (NATIVE / 'profiles').iterdir()},
                 'features': {'externalWindow': True, 'embeddedPreview': capabilities.get('previewProtocol') == 1},
-                'capabilities': capabilities}
+                'capabilities': capabilities, 'zlibNg': zng_metadata}
     notices = {'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
                'lcms2-LICENSE': mupdf / 'thirdparty/lcms2/LICENSE',
-               'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE'}
+               'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE',
+               'zlib-ng-LICENSE': zng_notice}
     bundle([txp / 'build/texpresso', txp / 'build/texpresso-xetex'], args.output, metadata, notices)
+    if not args.keep_work:
+        shutil.rmtree(work)
+        print('Removed successful build workspace:', work)
 
 
 if __name__ == '__main__':

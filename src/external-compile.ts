@@ -2,6 +2,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { terminate } from './process-lifecycle';
 import * as path from 'path';
 import type { SessionPaths } from './paths';
+import { wslArguments } from './wsl';
 
 function shellQuote(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";
@@ -19,8 +20,8 @@ export class ExternalCompiler {
     // externalCompileCommand is intentionally a shell command, for compatibility
     // with existing user recipes. Document paths are separate from that recipe.
     const child = paths.useWSL
-      ? spawn('wsl', ['-e', 'sh', '-c',
-        'cd ' + shellQuote(paths.engineDirectory) + ' && ' + command + ' ' + shellQuote(paths.rootEnginePath)],
+      ? spawn('wsl', wslArguments('sh', ['-c',
+        'cd ' + shellQuote(paths.engineDirectory) + ' && ' + command + ' ' + shellQuote(paths.rootEnginePath)], paths.wslDistribution),
       { detached: process.platform !== 'win32', windowsHide: true })
       : spawn(command + ' ' + (process.platform === 'win32'
         ? '"' + paths.rootEditorPath + '"' : shellQuote(paths.rootEditorPath)),

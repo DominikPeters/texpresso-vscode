@@ -1,5 +1,10 @@
-name: Native development bundle
+name: Native macOS bundles and VSIX
 on:
+  workflow_call:
+    inputs:
+      notarize:
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       notarize:
@@ -10,7 +15,16 @@ permissions:
   contents: read
 jobs:
   macos:
-    runs-on: macos-latest
+    name: Native bundle / ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 65
     env:
       SDL_VIDEODRIVER: dummy
@@ -34,6 +48,7 @@ jobs:
           lock = json.load(open('native/dependencies.lock.json'))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('mupdf=' + lock['mupdf']['revision'] + '\n')
+              out.write('zlib-ng=' + lock['zlibNg']['revision'] + '\n')
           PY
       - name: Restore local dependency source cache
         uses: actions/cache@v4
@@ -46,6 +61,12 @@ jobs:
           ref: ${{ steps.inputs.outputs.mupdf }}
           path: .native-sources/mupdf
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: zlib-ng/zlib-ng
+          ref: ${{ steps.inputs.outputs.zlib-ng }}
+          path: .native-sources/zlib-ng
+          persist-credentials: false
       - name: Initialize only the required MuPDF submodule
         run: git -C .native-sources/mupdf submodule update --init --depth 1 thirdparty/lcms2
       - name: Cache Homebrew downloads
@@ -54,9 +75,9 @@ jobs:
           path: ~/Library/Caches/Homebrew
           key: native-brew-${{ runner.arch }}-${{ hashFiles('native/dependencies.lock.json', 'native/profiles/*', '.github/workflows/native-build.yml') }}
       - name: Install development build libraries on the runner
-        run: brew install pkgconf freetype jpeg-turbo openjpeg brotli sdl2 harfbuzz graphite2 fontconfig libpng jbig2dec icu4c@78
+        run: brew install cmake pkgconf freetype jpeg-turbo openjpeg brotli sdl2 harfbuzz graphite2 fontconfig libpng jbig2dec icu4c@78
       - name: Build and relocate the native bundle
-        run: python3 native/scripts/build.py --mupdf-source .native-sources/mupdf --icu-prefix "$(brew --prefix icu4c@78)" --output native/.bundles/macos
+        run: python3 native/scripts/build.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix "$(brew --prefix icu4c@78)" --output native/.bundles/macos
       - name: Compare filtered ICU with stock ICU
         run: python3 native/scripts/verify_icu.py --icu-prefix "$(brew --prefix icu4c@78)"
       - uses: actions/setup-node@v4
@@ -64,11 +85,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Collect exact corresponding sources and complete native notices
+        run: |
+          python3 native/scripts/release_sources.py --fetch --bundle native/.bundles/macos --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng
+          python3 native/scripts/verify_sources.py artifacts --target '${{ matrix.target }}'
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
       - name: Install local test provider on the runner
         run: |
           brew install --cask basictex
           sudo /Library/TeX/texbin/tlmgr update --self
-          sudo /Library/TeX/texbin/tlmgr install geometry amsmath hyperref xcolor
+          sudo /Library/TeX/texbin/tlmgr install geometry amsmath hyperref xcolor fontspec
       - name: Test the bundle with TeX Live
         run: |
           export PATH="/Library/TeX/texbin:$PATH"
@@ -99,6 +128,35 @@ jobs:
           export TEXPRESSO_BINARY="$PWD/native/.bundles/macos-signed/bin/texpresso"
           npm run test:engine
         timeout-minutes: 8
+      - name: Package the tested native bundle into its platform VSIX
+        env:
+          NOTARIZED: ${{ inputs.notarize }}
+        run: |
+          bundle=native/.bundles/macos
+          if [ "$NOTARIZED" = true ]; then bundle=native/.bundles/macos-signed; fi
+          npm run package:vsix -- --target '${{ matrix.target }}' --bundle "$bundle" --out 'artifacts/texpresso-${{ matrix.target }}.vsix'
+      - name: Install the VSIX and test its bundled engine in a real webview
+        run: |
+          export PATH="/Library/TeX/texbin:$PATH"
+          npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
+        timeout-minutes: 8
+      - name: Save the matching corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources-${{ matrix.target }}
+          path: artifacts/*sources-${{ matrix.target }}.tar.gz*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Save the accepted platform VSIX and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: |
+            artifacts/texpresso-${{ matrix.target }}.vsix
+            artifacts/texpresso-${{ matrix.target }}.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: Save accepted signed bundle
         if: success() && inputs.notarize
         uses: actions/upload-artifact@v4
@@ -127,9 +185,10 @@ jobs:
         with:
           name: native-macos-${{ runner.arch }}
           path: |
-            native/.bundles/macos.zip
             native/.bundles/macos/build-manifest.json
             native/.bundles/notarization/
             artifacts/
+            !artifacts/*sources-*.tar.gz*
+            !artifacts/*.vsix*
           if-no-files-found: ignore
           retention-days: 14

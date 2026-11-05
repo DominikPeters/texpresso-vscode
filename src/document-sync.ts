@@ -119,6 +119,11 @@ export class DocumentSync {
         this.paths.identity(file) === this.paths.identity(doc.uri.fsPath))) : undefined);
   }
 
+  // Figure metadata may refer only to inputs already registered by the engine.
+  sourceFile(enginePath: string): string | undefined {
+    return this.engineFiles.get(this.paths.absoluteEnginePath(enginePath))?.editorPath;
+  }
+
   hasOverlay(editorPath: string): boolean {
     return [...this.files.values()].some(file => file.document && !file.document.isClosed &&
       this.paths.identity(file.editorPath) === this.paths.identity(editorPath));
@@ -176,12 +181,31 @@ export class DocumentSync {
     return this.find(document) !== undefined;
   }
 
+  sourcePosition(document: vscode.TextDocument, utf16Offset: number): { path: string; offset: number } | undefined {
+    const file = this.find(document);
+    if (!file || document.isClosed || !Number.isSafeInteger(utf16Offset) || utf16Offset < 0) { return; }
+    const text = document.getText();
+    if (utf16Offset > text.length) { return; }
+    const path = [...file.enginePaths][0];
+    return path ? { path, offset: Buffer.byteLength(text.slice(0, utf16Offset), 'utf8') } : undefined;
+  }
+
   syncForward(document: vscode.TextDocument, line: number): void {
     const file = this.find(document);
     if (file) {
       // VS Code lines are zero based; SyncTeX source lines are one based.
       this.send(['synctex-forward', [...file.enginePaths][0], line + 1]);
     }
+  }
+
+  sourceLine(document: vscode.TextDocument, line: number): { path: string; text: string } | undefined {
+    const file = this.find(document);
+    if (!file || !Number.isSafeInteger(line) || line < 0) { return; }
+    const text = typeof document.lineAt === 'function'
+      ? line < document.lineCount ? document.lineAt(line).text : undefined
+      : document.getText().split(/\r?\n/)[line];
+    const path = [...file.enginePaths][0];
+    return path && text !== undefined ? { path, text } : undefined;
   }
 
   refresh(): void {

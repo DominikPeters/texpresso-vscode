@@ -1,0 +1,1235 @@
+{
+  "schema": 1,
+  "date": "2026-10-23",
+  "report": "2026-10-23-latency.md",
+  "clocks": {
+    "hostTimeOrigin": 1792770568729.461,
+    "rule": "Browser-local durations and host-local/round-trip intervals only. timeOrigin values are provenance, not cross-process clock calibration. No one-way transport or compositor latency is inferred."
+  },
+  "matchedControllerComparison": {
+    "before": {
+      "artifact": "artifacts/profile-latency-width-before",
+      "runtime": {
+        "variant": "baseline-2356618",
+        "runtimeSha256": "5404f73a4c21436b18e4337906d29cfe5922908e5fb3c3feadf4cca772cce1f8",
+        "sourceHashes": "c8373ece0bac4025d38e9cccf7070f6c52aeb640cbac065821e8443a3a164d4b",
+        "nativeEngine": "91f7d921d6769d104366b5fb36bd1b2abec2b17e",
+        "frontend": "8cc20d7e803a6e8c593b20131af6377d20a68f4b439f3381da25f44f8ad0ed94",
+        "worker": "5f3cbd59e660b5ac23854134ab600c75cf04eb2aa9ef2b0e3a5d58fccc595bcd"
+      },
+      "phases": [
+        {
+          "name": "controlled-prose",
+          "inputs": 202,
+          "maxInputLatenessMs": 16.11187500000233,
+          "nativeHeaders": 580,
+          "nativeBytes": 89491612,
+          "hostImagePosts": 564,
+          "hostBytes": 58584756,
+          "multiWidthGroups": 181,
+          "firstMultiWidthBytes": 30438568,
+          "allInputCurrentCommit": {
+            "count": 202,
+            "medianMs": 50.59312500000033,
+            "p95Ms": 291.0850410000021,
+            "p99Ms": 849.9792499999985,
+            "maxMs": 1050.9138749999984,
+            "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+          },
+          "sampledVisible": {
+            "count": 190,
+            "medianMs": 49.88683299999957,
+            "p95Ms": 165.0082080000011,
+            "p99Ms": 359.861958999998,
+            "maxMs": 459.7295840000006,
+            "counts": {
+              "sampled-visible": 190,
+              "hidden": 11,
+              "unknown": 1,
+              "unobserved": 0
+            },
+            "maxAllowedObservationGapMs": 150,
+            "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+            "worst": [
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 53.170665999998164,
+                "inputSequence": 194,
+                "inputAt": 23406.965833,
+                "ackAt": 23866.695417,
+                "ms": 459.7295840000006
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 39.71287499999744,
+                "inputSequence": 195,
+                "inputAt": 23506.833458,
+                "ackAt": 23866.695417,
+                "ms": 359.861958999998
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 35.918916000002355,
+                "inputSequence": 179,
+                "inputAt": 21906.476667,
+                "ackAt": 22197.561708,
+                "ms": 291.0850410000021
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 39.71287499999744,
+                "inputSequence": 196,
+                "inputAt": 23606.103333,
+                "ackAt": 23866.695417,
+                "ms": 260.5920839999999
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 26.221457999999984,
+                "inputSequence": 191,
+                "inputAt": 23105.769667,
+                "ackAt": 23299.307875,
+                "ms": 193.53820799999812
+              }
+            ]
+          },
+          "browserReceiveToCommit": {
+            "count": 350,
+            "medianMs": 2.900000035762787,
+            "p95Ms": 5.099999964237213,
+            "p99Ms": 8.300000011920929,
+            "maxMs": 20.399999976158142
+          },
+          "postToAck": {
+            "count": 350,
+            "medianMs": 3.9302920000000086,
+            "p95Ms": 7.544042000001355,
+            "p99Ms": 12.40441600000031,
+            "maxMs": 36.13933399999951
+          },
+          "commitToTwoRaf": {
+            "count": 339,
+            "medianMs": 12.399999976158142,
+            "p95Ms": 15.699999988079071,
+            "p99Ms": 16.400000035762787,
+            "maxMs": 53
+          }
+        },
+        {
+          "name": "repeated-budget-fallback",
+          "inputs": 25,
+          "maxInputLatenessMs": 2.643792000002577,
+          "nativeHeaders": 46,
+          "nativeBytes": 3654278,
+          "hostImagePosts": 45,
+          "hostBytes": 2632486,
+          "multiWidthGroups": 0,
+          "firstMultiWidthBytes": 0,
+          "allInputCurrentCommit": {
+            "count": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "p99Ms": null,
+            "maxMs": null,
+            "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+          },
+          "sampledVisible": {
+            "count": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "p99Ms": null,
+            "maxMs": null,
+            "counts": {
+              "sampled-visible": 0,
+              "hidden": 0,
+              "unknown": 0,
+              "unobserved": 0
+            },
+            "maxAllowedObservationGapMs": 150,
+            "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+            "worst": []
+          },
+          "browserReceiveToCommit": {
+            "count": 5,
+            "medianMs": 0.30000001192092896,
+            "p95Ms": 7.599999964237213,
+            "p99Ms": 7.599999964237213,
+            "maxMs": 7.599999964237213
+          },
+          "postToAck": {
+            "count": 5,
+            "medianMs": 3.7950829999972484,
+            "p95Ms": 9.186707999997452,
+            "p99Ms": 9.186707999997452,
+            "maxMs": 9.186707999997452
+          },
+          "commitToTwoRaf": {
+            "count": 4,
+            "medianMs": 13.300000011920929,
+            "p95Ms": 16,
+            "p99Ms": 16,
+            "maxMs": 16
+          }
+        }
+      ]
+    },
+    "after": {
+      "artifact": "artifacts/profile-latency-width-after",
+      "runtime": {
+        "variant": "page-demand-fixed",
+        "runtimeSha256": "e1a7dc4e764ed9f894f5927a4ef554a18d5df871929d87c1d8cdc363dd245e36",
+        "sourceHashes": "c8373ece0bac4025d38e9cccf7070f6c52aeb640cbac065821e8443a3a164d4b",
+        "nativeEngine": "91f7d921d6769d104366b5fb36bd1b2abec2b17e",
+        "frontend": "8cc20d7e803a6e8c593b20131af6377d20a68f4b439f3381da25f44f8ad0ed94",
+        "worker": "5f3cbd59e660b5ac23854134ab600c75cf04eb2aa9ef2b0e3a5d58fccc595bcd"
+      },
+      "phases": [
+        {
+          "name": "controlled-prose",
+          "inputs": 202,
+          "maxInputLatenessMs": 5.969499999999243,
+          "nativeHeaders": 404,
+          "nativeBytes": 56920634,
+          "hostImagePosts": 393,
+          "hostBytes": 23887899,
+          "multiWidthGroups": 0,
+          "firstMultiWidthBytes": 0,
+          "allInputCurrentCommit": {
+            "count": 202,
+            "medianMs": 41.708833000000595,
+            "p95Ms": 244.61262499999975,
+            "p99Ms": 844.197083,
+            "maxMs": 1042.9745000000003,
+            "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+          },
+          "sampledVisible": {
+            "count": 192,
+            "medianMs": 40.831874999999854,
+            "p95Ms": 84.5015000000003,
+            "p99Ms": 338.5417500000003,
+            "maxMs": 444.29591600000094,
+            "counts": {
+              "sampled-visible": 192,
+              "hidden": 10,
+              "unknown": 0,
+              "unobserved": 0
+            },
+            "maxAllowedObservationGapMs": 150,
+            "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+            "worst": [
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 64.22687499999847,
+                "inputSequence": 62,
+                "inputAt": 9803.392542,
+                "ackAt": 10247.688458,
+                "ms": 444.29591600000094
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 64.22687499999847,
+                "inputSequence": 63,
+                "inputAt": 9909.146708,
+                "ackAt": 10247.688458,
+                "ms": 338.5417500000003
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 64.22687499999847,
+                "inputSequence": 64,
+                "inputAt": 10003.075833,
+                "ackAt": 10247.688458,
+                "ms": 244.61262499999975
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 43.73395799999889,
+                "inputSequence": 53,
+                "inputAt": 8903.586042,
+                "ackAt": 9053.701167,
+                "ms": 150.11512499999844
+              },
+              {
+                "state": "sampled-visible",
+                "maxSampleGapMs": 70.37441600000011,
+                "inputSequence": 2,
+                "inputAt": 3804.48475,
+                "ackAt": 3950.245333,
+                "ms": 145.76058299999977
+              }
+            ]
+          },
+          "browserReceiveToCommit": {
+            "count": 190,
+            "medianMs": 2.800000011920929,
+            "p95Ms": 4.200000047683716,
+            "p99Ms": 9.800000011920929,
+            "maxMs": 21.69999998807907
+          },
+          "postToAck": {
+            "count": 190,
+            "medianMs": 3.6897079999998823,
+            "p95Ms": 5.831125000000611,
+            "p99Ms": 12.259167000000161,
+            "maxMs": 24.72425000000112
+          },
+          "commitToTwoRaf": {
+            "count": 191,
+            "medianMs": 11.800000011920929,
+            "p95Ms": 15.600000023841858,
+            "p99Ms": 17.100000023841858,
+            "maxMs": 68.30000001192093
+          }
+        },
+        {
+          "name": "repeated-budget-fallback",
+          "inputs": 25,
+          "maxInputLatenessMs": 1.0335830000003625,
+          "nativeHeaders": 48,
+          "nativeBytes": 3716555,
+          "hostImagePosts": 48,
+          "hostBytes": 3098085,
+          "multiWidthGroups": 0,
+          "firstMultiWidthBytes": 0,
+          "allInputCurrentCommit": {
+            "count": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "p99Ms": null,
+            "maxMs": null,
+            "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+          },
+          "sampledVisible": {
+            "count": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "p99Ms": null,
+            "maxMs": null,
+            "counts": {
+              "sampled-visible": 0,
+              "hidden": 0,
+              "unknown": 0,
+              "unobserved": 0
+            },
+            "maxAllowedObservationGapMs": 150,
+            "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+            "worst": []
+          },
+          "browserReceiveToCommit": {
+            "count": 3,
+            "medianMs": 0.19999998807907104,
+            "p95Ms": 2.900000035762787,
+            "p99Ms": 2.900000035762787,
+            "maxMs": 2.900000035762787
+          },
+          "postToAck": {
+            "count": 3,
+            "medianMs": 1.3867080000018177,
+            "p95Ms": 3.7607500000012806,
+            "p99Ms": 3.7607500000012806,
+            "maxMs": 3.7607500000012806
+          },
+          "commitToTwoRaf": {
+            "count": 3,
+            "medianMs": 7.099999964237213,
+            "p95Ms": 10.199999988079071,
+            "p99Ms": 10.199999988079071,
+            "maxMs": 10.199999988079071
+          }
+        }
+      ]
+    }
+  },
+  "finalRegression": {
+    "artifact": "artifacts/profile-latency-long-final",
+    "inputCount": 1464,
+    "nativeEngine": "8576d13a041b40ae21de2fba1f262d2ec241ceb2",
+    "frontendSha256": "9141aae5a37249ce9d41c82ad240f056edacdd46a9c3eefb8d412da0f2d6a471",
+    "workerSha256": "5f3cbd59e660b5ac23854134ab600c75cf04eb2aa9ef2b0e3a5d58fccc595bcd",
+    "controllerRuntimeSha256": "e1a7dc4e764ed9f894f5927a4ef554a18d5df871929d87c1d8cdc363dd245e36",
+    "cleanExit": true,
+    "referenceOracle": {
+      "passed": true,
+      "probes": 10,
+      "rounds": 2
+    },
+    "phases": [
+      {
+        "name": "long-early",
+        "inputCount": 276,
+        "strictCommit": {
+          "count": 155,
+          "medianMs": 32.64341699999932,
+          "p95Ms": 80.84100000000035,
+          "p99Ms": 259.56583300000057,
+          "maxMs": 358.5878750000011,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 155,
+          "medianMs": 32.64341699999932,
+          "p95Ms": 80.84100000000035,
+          "p99Ms": 259.56583300000057,
+          "maxMs": 358.5878750000011,
+          "counts": {
+            "sampled-visible": 155,
+            "hidden": 0,
+            "unknown": 0,
+            "unobserved": 1
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 73.27329199999986,
+              "inputSequence": 78,
+              "inputAt": 11586.318791,
+              "ackAt": 11944.906666,
+              "ms": 358.5878750000011
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 73.27329199999986,
+              "inputSequence": 79,
+              "inputAt": 11685.340833,
+              "ackAt": 11944.906666,
+              "ms": 259.56583300000057
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 58.62212500000078,
+              "inputSequence": 28,
+              "inputAt": 6584.913958,
+              "ackAt": 6750.611625,
+              "ms": 165.69766699999946
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 40.88979100000142,
+              "inputSequence": 80,
+              "inputAt": 11784.901666,
+              "ackAt": 11944.906666,
+              "ms": 160.00500000000102
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 48.15716700000121,
+              "inputSequence": 56,
+              "inputAt": 9383.6865,
+              "ackAt": 9522.020833,
+              "ms": 138.3343330000007
+            }
+          ]
+        },
+        "observer": {
+          "count": 155,
+          "medianMs": 47.277750000001106,
+          "p95Ms": 90.61629100000027,
+          "p99Ms": 269.800792,
+          "maxMs": 368.8228340000005,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 78,
+              "inputAt": 11586.318791,
+              "frameSequence": 81,
+              "frameRevision": 161,
+              "page": 1,
+              "observerAt": 11955.141625,
+              "ms": 368.8228340000005
+            },
+            {
+              "inputSequence": 79,
+              "inputAt": 11685.340833,
+              "frameSequence": 81,
+              "frameRevision": 161,
+              "page": 1,
+              "observerAt": 11955.141625,
+              "ms": 269.800792
+            },
+            {
+              "inputSequence": 28,
+              "inputAt": 6584.913958,
+              "frameSequence": 29,
+              "frameRevision": 57,
+              "page": 1,
+              "observerAt": 6759.10975,
+              "ms": 174.19579199999953
+            },
+            {
+              "inputSequence": 80,
+              "inputAt": 11784.901666,
+              "frameSequence": 81,
+              "frameRevision": 161,
+              "page": 1,
+              "observerAt": 11955.141625,
+              "ms": 170.23995900000045
+            },
+            {
+              "inputSequence": 56,
+              "inputAt": 9383.6865,
+              "frameSequence": 57,
+              "frameRevision": 113,
+              "page": 1,
+              "observerAt": 9534.73475,
+              "ms": 151.04824999999983
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-middle",
+        "inputCount": 281,
+        "strictCommit": {
+          "count": 281,
+          "medianMs": 21.00525000000198,
+          "p95Ms": 29.082249999999476,
+          "p99Ms": 55.956583999999566,
+          "maxMs": 59.35562500000378,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 281,
+          "medianMs": 21.00525000000198,
+          "p95Ms": 29.082249999999476,
+          "p99Ms": 55.956583999999566,
+          "maxMs": 59.35562500000378,
+          "counts": {
+            "sampled-visible": 281,
+            "hidden": 0,
+            "unknown": 0,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 73.17083299999649,
+              "inputSequence": 379,
+              "inputAt": 43328.16525,
+              "ackAt": 43387.520875,
+              "ms": 59.35562500000378
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 88.5202500000014,
+              "inputSequence": 420,
+              "inputAt": 47427.393166,
+              "ackAt": 47483.723208,
+              "ms": 56.33004200000141
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 75.21329200000037,
+              "inputSequence": 553,
+              "inputAt": 60728.003416,
+              "ackAt": 60783.96,
+              "ms": 55.956583999999566
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 70.33016700000007,
+              "inputSequence": 483,
+              "inputAt": 53726.527708,
+              "ackAt": 53780.775458,
+              "ms": 54.247749999994994
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 71.12895900000149,
+              "inputSequence": 280,
+              "inputAt": 33428.972791,
+              "ackAt": 33481.67025,
+              "ms": 52.69745900000271
+            }
+          ]
+        },
+        "observer": {
+          "count": 281,
+          "medianMs": 35.09466599999723,
+          "p95Ms": 44.651082999997016,
+          "p99Ms": 68.13279200000397,
+          "maxMs": 69.11387499999546,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 420,
+              "inputAt": 47427.393166,
+              "frameSequence": 420,
+              "frameRevision": 840,
+              "page": 15,
+              "observerAt": 47496.507041,
+              "ms": 69.11387499999546
+            },
+            {
+              "inputSequence": 379,
+              "inputAt": 43328.16525,
+              "frameSequence": 379,
+              "frameRevision": 758,
+              "page": 15,
+              "observerAt": 43396.777875,
+              "ms": 68.61262500000157
+            },
+            {
+              "inputSequence": 553,
+              "inputAt": 60728.003416,
+              "frameSequence": 553,
+              "frameRevision": 1106,
+              "page": 15,
+              "observerAt": 60796.136208,
+              "ms": 68.13279200000397
+            },
+            {
+              "inputSequence": 280,
+              "inputAt": 33428.972791,
+              "frameSequence": 280,
+              "frameRevision": 560,
+              "page": 15,
+              "observerAt": 33497.077875,
+              "ms": 68.10508400000253
+            },
+            {
+              "inputSequence": 483,
+              "inputAt": 53726.527708,
+              "frameSequence": 483,
+              "frameRevision": 966,
+              "page": 15,
+              "observerAt": 53789.04025,
+              "ms": 62.512541999996756
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-included",
+        "inputCount": 304,
+        "strictCommit": {
+          "count": 304,
+          "medianMs": 25.715958000000683,
+          "p95Ms": 34.847165999992285,
+          "p99Ms": 59.516999999999825,
+          "maxMs": 70.80154200000106,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 303,
+          "medianMs": 25.715958000000683,
+          "p95Ms": 34.847165999992285,
+          "p99Ms": 59.516999999999825,
+          "maxMs": 70.80154200000106,
+          "counts": {
+            "sampled-visible": 303,
+            "hidden": 0,
+            "unknown": 1,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 86.6085000000021,
+              "inputSequence": 622,
+              "inputAt": 69374.593291,
+              "ackAt": 69445.394833,
+              "ms": 70.80154200000106
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 68.16066600001068,
+              "inputSequence": 664,
+              "inputAt": 73573.8595,
+              "ackAt": 73636.245916,
+              "ms": 62.386415999993915
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 69.55250000000524,
+              "inputSequence": 754,
+              "inputAt": 82572.254208,
+              "ackAt": 82632.945791,
+              "ms": 60.691583000007086
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 66.23858300000575,
+              "inputSequence": 561,
+              "inputAt": 63274.37275,
+              "ackAt": 63333.88975,
+              "ms": 59.516999999999825
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 70.85454200000095,
+              "inputSequence": 565,
+              "inputAt": 63672.452,
+              "ackAt": 63731.546041,
+              "ms": 59.09404100000393
+            }
+          ]
+        },
+        "observer": {
+          "count": 304,
+          "medianMs": 39.35445799998706,
+          "p95Ms": 49.15620800000033,
+          "p99Ms": 72.49595799999952,
+          "maxMs": 79.6026669999992,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 622,
+              "inputAt": 69374.593291,
+              "frameSequence": 622,
+              "frameRevision": 1244,
+              "page": 15,
+              "observerAt": 69454.195958,
+              "ms": 79.6026669999992
+            },
+            {
+              "inputSequence": 754,
+              "inputAt": 82572.254208,
+              "frameSequence": 754,
+              "frameRevision": 1508,
+              "page": 15,
+              "observerAt": 82645.883291,
+              "ms": 73.62908300000709
+            },
+            {
+              "inputSequence": 565,
+              "inputAt": 63672.452,
+              "frameSequence": 565,
+              "frameRevision": 1130,
+              "page": 15,
+              "observerAt": 63746.047291,
+              "ms": 73.59529100000509
+            },
+            {
+              "inputSequence": 664,
+              "inputAt": 73573.8595,
+              "frameSequence": 664,
+              "frameRevision": 1328,
+              "page": 15,
+              "observerAt": 73646.355458,
+              "ms": 72.49595799999952
+            },
+            {
+              "inputSequence": 561,
+              "inputAt": 63274.37275,
+              "frameSequence": 561,
+              "frameRevision": 1122,
+              "page": 15,
+              "observerAt": 63346.65125,
+              "ms": 72.27850000000035
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-late",
+        "inputCount": 302,
+        "strictCommit": {
+          "count": 212,
+          "medianMs": 24.137833000000683,
+          "p95Ms": 29.591957999989972,
+          "p99Ms": 50.63241600000765,
+          "maxMs": 80.37508399999933,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 212,
+          "medianMs": 24.137833000000683,
+          "p95Ms": 29.591957999989972,
+          "p99Ms": 50.63241600000765,
+          "maxMs": 80.37508399999933,
+          "counts": {
+            "sampled-visible": 212,
+            "hidden": 0,
+            "unknown": 0,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 72.67254100000719,
+              "inputSequence": 953,
+              "inputAt": 104254.179166,
+              "ackAt": 104334.55425,
+              "ms": 80.37508399999933
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 74.28879099999904,
+              "inputSequence": 1130,
+              "inputAt": 121954.017541,
+              "ackAt": 122006.329708,
+              "ms": 52.31216700001096
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 79.39104200000293,
+              "inputSequence": 939,
+              "inputAt": 102854.23375,
+              "ackAt": 102904.866166,
+              "ms": 50.63241600000765
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 77.09983399999328,
+              "inputSequence": 1072,
+              "inputAt": 116153.327916,
+              "ackAt": 116203.958125,
+              "ms": 50.63020900000993
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 72.96641700000328,
+              "inputSequence": 1079,
+              "inputAt": 116854.115583,
+              "ackAt": 116901.139916,
+              "ms": 47.02433299999393
+            }
+          ]
+        },
+        "observer": {
+          "count": 212,
+          "medianMs": 33.96354199999769,
+          "p95Ms": 42.859207999994396,
+          "p99Ms": 66.95708300000115,
+          "maxMs": 92.19000000000233,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 953,
+              "inputAt": 104254.179166,
+              "frameSequence": 953,
+              "frameRevision": 1906,
+              "page": 29,
+              "observerAt": 104346.369166,
+              "ms": 92.19000000000233
+            },
+            {
+              "inputSequence": 1130,
+              "inputAt": 121954.017541,
+              "frameSequence": 1130,
+              "frameRevision": 2260,
+              "page": 29,
+              "observerAt": 122021.080583,
+              "ms": 67.06304200000886
+            },
+            {
+              "inputSequence": 939,
+              "inputAt": 102854.23375,
+              "frameSequence": 939,
+              "frameRevision": 1878,
+              "page": 29,
+              "observerAt": 102921.190833,
+              "ms": 66.95708300000115
+            },
+            {
+              "inputSequence": 1044,
+              "inputAt": 113354.447333,
+              "frameSequence": 1044,
+              "frameRevision": 2088,
+              "page": 29,
+              "observerAt": 113420.318541,
+              "ms": 65.87120799999684
+            },
+            {
+              "inputSequence": 1072,
+              "inputAt": 116153.327916,
+              "frameSequence": 1072,
+              "frameRevision": 2144,
+              "page": 29,
+              "observerAt": 116212.848416,
+              "ms": 59.52049999999872
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-included-return",
+        "inputCount": 297,
+        "strictCommit": {
+          "count": 297,
+          "medianMs": 25.454333000001498,
+          "p95Ms": 37.756750000000466,
+          "p99Ms": 59.39641700001084,
+          "maxMs": 159.9751249999972,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 297,
+          "medianMs": 25.454333000001498,
+          "p95Ms": 37.756750000000466,
+          "p99Ms": 59.39641700001084,
+          "maxMs": 159.9751249999972,
+          "counts": {
+            "sampled-visible": 297,
+            "hidden": 0,
+            "unknown": 0,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 81.20262500000536,
+              "inputSequence": 1390,
+              "inputAt": 149677.516583,
+              "ackAt": 149837.491708,
+              "ms": 159.9751249999972
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 46.51983299999847,
+              "inputSequence": 1389,
+              "inputAt": 149576.863333,
+              "ackAt": 149672.605708,
+              "ms": 95.74237500000163
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 70.68929099998786,
+              "inputSequence": 1383,
+              "inputAt": 148977.605708,
+              "ackAt": 149037.002125,
+              "ms": 59.39641700001084
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 81.20262500000536,
+              "inputSequence": 1391,
+              "inputAt": 149778.445041,
+              "ackAt": 149837.491708,
+              "ms": 59.04666699998779
+            },
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 60.840125000002445,
+              "inputSequence": 1167,
+              "inputAt": 127378.230166,
+              "ackAt": 127435.910833,
+              "ms": 57.680667000007816
+            }
+          ]
+        },
+        "observer": {
+          "count": 297,
+          "medianMs": 35.12550000002375,
+          "p95Ms": 51.43499999999767,
+          "p99Ms": 68.92429200001061,
+          "maxMs": 269.2021670000104,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 1389,
+              "inputAt": 149576.863333,
+              "frameSequence": 1391,
+              "frameRevision": 2782,
+              "page": 15,
+              "observerAt": 149846.0655,
+              "ms": 269.2021670000104
+            },
+            {
+              "inputSequence": 1390,
+              "inputAt": 149677.516583,
+              "frameSequence": 1391,
+              "frameRevision": 2782,
+              "page": 15,
+              "observerAt": 149846.0655,
+              "ms": 168.54891700000735
+            },
+            {
+              "inputSequence": 1383,
+              "inputAt": 148977.605708,
+              "frameSequence": 1383,
+              "frameRevision": 2766,
+              "page": 15,
+              "observerAt": 149046.53,
+              "ms": 68.92429200001061
+            },
+            {
+              "inputSequence": 1274,
+              "inputAt": 138078.734,
+              "frameSequence": 1274,
+              "frameRevision": 2548,
+              "page": 15,
+              "observerAt": 138147.577916,
+              "ms": 68.84391600001254
+            },
+            {
+              "inputSequence": 1371,
+              "inputAt": 147777.19425,
+              "frameSequence": 1371,
+              "frameRevision": 2742,
+              "page": 15,
+              "observerAt": 147845.476125,
+              "ms": 68.28187499998603
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-incomplete-repair",
+        "inputCount": 2,
+        "strictCommit": {
+          "count": 1,
+          "medianMs": 45.37149999997928,
+          "p95Ms": 45.37149999997928,
+          "p99Ms": 45.37149999997928,
+          "maxMs": 45.37149999997928,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 1,
+          "medianMs": 45.37149999997928,
+          "p95Ms": 45.37149999997928,
+          "p99Ms": 45.37149999997928,
+          "maxMs": 45.37149999997928,
+          "counts": {
+            "sampled-visible": 1,
+            "hidden": 0,
+            "unknown": 0,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": [
+            {
+              "state": "sampled-visible",
+              "maxSampleGapMs": 142.02100000000792,
+              "inputSequence": 1464,
+              "inputAt": 160314.760291,
+              "ackAt": 160360.131791,
+              "ms": 45.37149999997928
+            }
+          ]
+        },
+        "observer": {
+          "count": 1,
+          "medianMs": 56.39133399998536,
+          "p95Ms": 56.39133399998536,
+          "p99Ms": 56.39133399998536,
+          "maxMs": 56.39133399998536,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 1464,
+              "inputAt": 160314.760291,
+              "frameSequence": 1464,
+              "frameRevision": 2929,
+              "page": 15,
+              "observerAt": 160371.151625,
+              "ms": 56.39133399998536
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-undo",
+        "inputCount": 1,
+        "strictCommit": {
+          "count": 1,
+          "medianMs": 278.79237499999,
+          "p95Ms": 278.79237499999,
+          "p99Ms": 278.79237499999,
+          "maxMs": 278.79237499999,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 0,
+          "medianMs": null,
+          "p95Ms": null,
+          "p99Ms": null,
+          "maxMs": null,
+          "counts": {
+            "sampled-visible": 0,
+            "hidden": 0,
+            "unknown": 1,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": []
+        },
+        "observer": {
+          "count": 1,
+          "medianMs": 289.6883749999979,
+          "p95Ms": 289.6883749999979,
+          "p99Ms": 289.6883749999979,
+          "maxMs": 289.6883749999979,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 1465,
+              "inputAt": 162227.988833,
+              "frameSequence": 1465,
+              "frameRevision": 2931,
+              "page": 15,
+              "observerAt": 162517.677208,
+              "ms": 289.6883749999979
+            }
+          ]
+        }
+      },
+      {
+        "name": "long-redo",
+        "inputCount": 1,
+        "strictCommit": {
+          "count": 1,
+          "medianMs": 42.218499999988126,
+          "p95Ms": 42.218499999988126,
+          "p99Ms": 42.218499999988126,
+          "maxMs": 42.218499999988126,
+          "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+        },
+        "sampledVisible": {
+          "count": 0,
+          "medianMs": null,
+          "p95Ms": null,
+          "p99Ms": null,
+          "maxMs": null,
+          "counts": {
+            "sampled-visible": 0,
+            "hidden": 0,
+            "unknown": 1,
+            "unobserved": 0
+          },
+          "maxAllowedObservationGapMs": 150,
+          "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+          "worst": []
+        },
+        "observer": {
+          "count": 1,
+          "medianMs": 59.903207999974256,
+          "p95Ms": 59.903207999974256,
+          "p99Ms": 59.903207999974256,
+          "maxMs": 59.903207999974256,
+          "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+          "worst": [
+            {
+              "inputSequence": 1466,
+              "inputAt": 164350.667875,
+              "frameSequence": 1466,
+              "frameRevision": 2933,
+              "page": 15,
+              "observerAt": 164410.571083,
+              "ms": 59.903207999974256
+            }
+          ]
+        }
+      }
+    ],
+    "commitStages": {
+      "browserReceiveToCommitMs": {
+        "count": 1490,
+        "medianMs": 1.300000011920929,
+        "p95Ms": 3.399999976158142,
+        "p99Ms": 9.099999964237213,
+        "maxMs": 13.699999988079071
+      },
+      "postToAckRoundTripMs": {
+        "count": 1490,
+        "medianMs": 2.042250000002241,
+        "p95Ms": 5.081374999997934,
+        "p99Ms": 11.44937499999969,
+        "maxMs": 16.077124999981606
+      },
+      "headerToAckMs": {
+        "count": 1484,
+        "medianMs": 2.1032500000001164,
+        "p95Ms": 4.896583000023384,
+        "p99Ms": 11.184290999997756,
+        "maxMs": 16.398207999998704
+      },
+      "browserRenderMs": {
+        "count": 1490,
+        "medianMs": 1.399999976158142,
+        "p95Ms": 3.5,
+        "p99Ms": 9.199999988079071,
+        "maxMs": 13.800000011920929
+      }
+    },
+    "observerStages": {
+      "inputToHeaderMs": {
+        "count": 1471,
+        "medianMs": 23.50616699999955,
+        "p95Ms": 43.121541000000434,
+        "p99Ms": 825.8294999999925,
+        "maxMs": 11694.115207999974
+      },
+      "headerToObserverReceiptMs": {
+        "count": 1483,
+        "medianMs": 14.299542000000656,
+        "p95Ms": 18.92937499999971,
+        "p99Ms": 24.105584000004455,
+        "maxMs": 37.68670900000143
+      },
+      "headerToPostMs": {
+        "count": 1483,
+        "medianMs": 0.051915999996708706,
+        "p95Ms": 0.13354200000139826,
+        "p99Ms": 0.3049999999930151,
+        "maxMs": 0.5275420000002669
+      },
+      "postToAckRoundTripMs": {
+        "count": 1489,
+        "medianMs": 2.042250000002241,
+        "p95Ms": 5.031332999998995,
+        "p99Ms": 11.44937499999969,
+        "maxMs": 16.077124999981606
+      },
+      "browserReceiveToCommitMs": {
+        "count": 1489,
+        "medianMs": 1.300000011920929,
+        "p95Ms": 3.300000011920929,
+        "p99Ms": 9.099999964237213,
+        "maxMs": 13.699999988079071
+      },
+      "browserCommitToTwoRafMs": {
+        "count": 1489,
+        "medianMs": 11.800000011920929,
+        "p95Ms": 15.899999976158142,
+        "p99Ms": 16.30000001192093,
+        "maxMs": 17
+      },
+      "browserRenderMs": {
+        "count": 1489,
+        "medianMs": 1.399999976158142,
+        "p95Ms": 3.399999976158142,
+        "p99Ms": 9.199999988079071,
+        "maxMs": 13.800000011920929
+      },
+      "nativeExportMs": {
+        "count": 1483,
+        "medianMs": 2.528,
+        "p95Ms": 7.361,
+        "p99Ms": 25.106,
+        "maxMs": 34.913
+      }
+    }
+  },
+  "validation": {
+    "unitTests": 187,
+    "nativeTests": 50,
+    "cSuites": 6,
+    "eslint": true,
+    "productionVsixContent": true,
+    "actualCodePreviewAcceptance": true,
+    "matchedReferenceOracles": {
+      "before": true,
+      "after": true
+    }
+  },
+  "limits": [
+    "One matched controller pair; the longer combined native/controller run is not a matched codec or native-only comparison.",
+    "Visible exposure is sampled; old runs lack immediate visibility-change events. Gaps above150ms are unknown.",
+    "Commit ACK is a host-local upper bound, two-rAF is observation, neither is compositor presentation.",
+    "Remaining source-page versus viewport-page priority changes and large undo replay can still cause latency tails."
+  ]
+}

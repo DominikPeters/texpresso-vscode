@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { windowsToWslSync, wslToWindowsSync } from 'wsl-path';
+import { distributionPaths } from './wsl';
 
 export interface PathConversion {
   toEngine(path: string): string;
@@ -11,9 +12,12 @@ export class SessionPaths {
   readonly rootEnginePath: string;
   readonly engineDirectory: string;
   private identities = new Map<string, string>();
+  private conversion: PathConversion;
 
   constructor(readonly rootEditorPath: string, readonly useWSL: boolean,
-    private conversion: PathConversion = { toEngine: windowsToWslSync, toEditor: wslToWindowsSync }) {
+    conversion?: PathConversion, readonly wslDistribution = '') {
+    this.conversion = conversion || (useWSL && wslDistribution ? distributionPaths(wslDistribution)
+      : { toEngine: windowsToWslSync, toEditor: wslToWindowsSync });
     this.rootEnginePath = this.toEngine(rootEditorPath);
     this.engineDirectory = this.enginePath.dirname(this.rootEnginePath);
   }

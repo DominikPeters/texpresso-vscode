@@ -40,6 +40,8 @@ export class EngineProcess {
         cwd: launch.cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true
       });
       this.child = child;
+      let pipeFailure: Error | undefined;
+      let drainTimer: NodeJS.Timeout | undefined;
       child.once('spawn', () => {
         spawned = true;
         this.cancelStart = undefined;
@@ -52,18 +54,22 @@ export class EngineProcess {
           reject(failure);
           this.events.error(failure);
         } else if (!this.stopping) {
-          this.events.error(processFailure(error, 'connection'));
+          this.events.error(processFailure(error, 'connection', this.stderrTail));
         }
       });
       child.once('exit', () => {
         if (!this.stopping) { void terminate(child).catch(error => this.events.debug(String(error))); }
       });
       child.once('close', (code, signal) => {
+        if (drainTimer) { clearTimeout(drainTimer); }
         this.reader?.close();
         this.child = undefined;
         this.cancelStart = undefined;
         if (!spawned) {
           reject(new Error('TeXpresso exited before starting.'));
+        }
+        if (pipeFailure && !this.stopping) {
+          this.events.error(processFailure(pipeFailure, 'connection', this.stderrTail));
         }
         this.events.exit(code, signal, this.stopping);
       });
@@ -79,7 +85,7 @@ export class EngineProcess {
         };
         this.reader = preview ? readPreviewProtocol(child.stdout, message,
           image => { if (!this.stopping) { this.events.image?.(image); } },
-          error => { if (!this.stopping) { this.events.error(error); } }) : readProtocol(child.stdout, message, (line, error) => {
+          error => { if (!this.stopping) { this.events.error(processFailure(error, 'connection', this.stderrTail)); } }) : readProtocol(child.stdout, message, (line, error) => {
           if (this.stopping) { return; }
           this.events.debug('Invalid protocol message: ' + line.slice(0, 250) + ' (' + String(error) + ')');
         });
@@ -102,17 +108,37 @@ export class EngineProcess {
       });
       child.stdin?.on('error', error => {
         if (!this.stopping) {
-          this.events.error(processFailure(error, 'connection'));
+          if (['EPIPE', 'ECONNRESET', 'ERR_STREAM_DESTROYED'].includes((error as NodeJS.ErrnoException).code || '')) {
+            // A compiler error may already be queued on stderr when Windows
+            // reports the broken stdin pipe. Classify after close drains it.
+            pipeFailure ||= error;
+            if (!drainTimer) {
+              drainTimer = setTimeout(() => {
+                if (!this.stopping && this.child === child) {
+                  void terminate(child).catch(failure => this.events.debug(String(failure))).finally(() => {
+                    // A wrapper can leave inherited pipes open after exiting.
+                    // Still report a bounded failure after owned cleanup.
+                    if (pipeFailure && !this.stopping && this.child === child) {
+                      const failure = pipeFailure; pipeFailure = undefined;
+                      this.events.error(processFailure(failure, 'connection', this.stderrTail));
+                    }
+                  });
+                }
+              }, 100);
+            }
+            return;
+          }
+          this.events.error(processFailure(error, 'connection', this.stderrTail));
         }
       });
       child.stdout?.on('error', error => {
         if (!this.stopping) {
-          this.events.error(processFailure(error, 'connection'));
+          this.events.error(processFailure(error, 'connection', this.stderrTail));
         }
       });
       child.stderr?.on('error', error => {
         if (!this.stopping) {
-          this.events.error(processFailure(error, 'connection'));
+          this.events.error(processFailure(error, 'connection', this.stderrTail));
         }
       });
     });

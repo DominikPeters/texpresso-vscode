@@ -1,6 +1,8 @@
 """Extract and filter the installed ICU package using ICU's own icupkg tool."""
 import json
+import platform
 import re
+import shutil
 import struct
 from pathlib import Path
 from common import NATIVE, run, sha256
@@ -47,7 +49,12 @@ def prepare(prefix, output, version):
     if f'#define U_ICU_VERSION "{version}"' not in installed:
         raise ValueError(f'Expected ICU {version} at {prefix}')
     full = output / f'icudt{major}l.dat'
-    extract_macho_data(prefix / 'lib' / f'libicudata.{major}.dylib', f'_icudt{major}_dat', full)
+    if platform.system() == 'Darwin':
+        extract_macho_data(prefix / 'lib' / f'libicudata.{major}.dylib', f'_icudt{major}_dat', full)
+    else:
+        # Linux ICU is built with --with-data-packaging=archive. Keep the
+        # original .dat so the same filter/profile is used on both platforms.
+        shutil.copyfile(prefix / 'share/icu' / version / full.name, full)
     profile = json.loads((NATIVE / 'profiles/icu-filter.json').read_text())
     icupkg = prefix / 'sbin/icupkg'
     items = run([icupkg, '-l', full], capture=True).splitlines()
@@ -59,9 +66,10 @@ def prepare(prefix, output, version):
     package = filtered / full.name
     # Keep dependency checking enabled: missing bundle parents must fail.
     run([icupkg, '-r', selection, full, package])
-    run([prefix / 'sbin/genccode', '-e', f'icudt{major}', '-a', 'gcc-darwin', '-d', filtered, package])
+    darwin = platform.system() == 'Darwin'
+    run([prefix / 'sbin/genccode', '-e', f'icudt{major}', '-a', 'gcc-darwin' if darwin else 'gcc', '-d', filtered, package])
     obj = filtered / 'icudata.o'
-    run(['xcrun', 'clang', '-c', filtered / f'icudt{major}l_dat.S', '-o', obj])
+    run((['xcrun', 'clang'] if darwin else ['cc']) + ['-fPIC', '-c', filtered / f'icudt{major}l_dat.S', '-o', obj])
     return obj, {'version': version, 'fullDataSha256': sha256(full),
                  'filteredDataSha256': sha256(package), 'fullBytes': full.stat().st_size,
                  'filteredBytes': package.stat().st_size, 'retainedItems': len(items) - len(removed)}

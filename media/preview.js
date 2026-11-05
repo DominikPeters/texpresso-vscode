@@ -6,15 +6,31 @@
   const template = globalElement('sheet').cloneNode(true); globalElement('sheet').remove();
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
-  const { clamp, wheelFactor, scrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
+  const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
   const status = globalElement('status'), zoomSelect = globalElement('zoom'), formatSelect = globalElement('format');
-  let layoutEnd;
+  let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
+  function observeSource(sequence, revision, reset = false) {
+    const valid = value => Number.isSafeInteger(value) && value >= 0;
+    if (!valid(sequence)) { return false; }
+    const nextRevision = valid(revision) ? revision : undefined;
+    if (reset || latestSourceSequence === undefined || sequence > latestSourceSequence) {
+      latestSourceSequence = sequence; latestSourceRevision = nextRevision; sourceGeneration++; revealIntent++; pendingReveal = undefined; return true;
+    }
+    if (sequence === latestSourceSequence && nextRevision !== undefined && (latestSourceRevision === undefined || nextRevision > latestSourceRevision)) {
+      latestSourceRevision = nextRevision; sourceGeneration++; revealIntent++; pendingReveal = undefined; return true;
+    }
+    return false;
+  }
+  const currentSnapshot = header => (latestSourceSequence === undefined || header.sequence === latestSourceSequence) &&
+    (latestSourceRevision === undefined || header.revision === latestSourceRevision);
+  const retireDecodes = () => { revealIntent++; pendingReveal = undefined; for (const view of views.values()) { view.retire(); } };
   let currentPage = Number.isInteger(saved.page) ? clamp(saved.page, 0, 100000) : 0;
-  let zoom = ['width', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
+  let zoom = ['width', 'text', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
+  let textAlign = saved.textAlign !== false;
   let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
   let lensImage = globalElement('lensImage');
-  let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, direction = 1, programmaticTop, customZoomOption;
+  let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, lastLeft = 0, direction = 1, programmaticTop, programmaticLeft, customZoomOption;
   let pinchAnchor, pinchOrigin, lastPinchTime = 0, restoring = true, disposing = false;
   const post = message => vscode.postMessage({ instance, ...message });
   const decoded = new TexpressoImageCache(value => {
@@ -38,7 +54,7 @@
   function diagnostics() { viewport.dataset.shellCount = String(views.size); viewport.dataset.residentBytes = String(decoded.bytes); }
   function save() {
     const rect = geometry.rects[currentPage];
-    vscode.setState({ page: currentPage, zoom, format, left: viewport.scrollLeft, top: viewport.scrollTop,
+    vscode.setState({ page: currentPage, zoom, format, textAlign, left: viewport.scrollLeft, top: viewport.scrollTop,
       point: rect ? Math.max(0, (viewport.scrollTop - rect.top) / rect.height) : 0 });
   }
   function describe() {
@@ -61,7 +77,7 @@
   function anchorAt(origin) {
     const view = viewport.getBoundingClientRect(), y = viewport.scrollTop + origin.y - view.top;
     const index = geometry.pageAt(y), rect = geometry.rects[index], sheet = views.get(index)?.sheet;
-    const left = sheet ? sheet.getBoundingClientRect().left : view.left + Math.max(0, (viewport.clientWidth - rect.width) / 2) - viewport.scrollLeft;
+    const left = sheet ? sheet.getBoundingClientRect().left : view.left + (geometry.maxWidth - rect.width) / 2 - viewport.scrollLeft;
     return { page: index, x: (origin.x - left) / rect.width, y: (y - rect.top) / rect.height, origin };
   }
   function topAnchor() {
@@ -81,7 +97,12 @@
       if (Math.abs(viewport.scrollLeft-left) > 1) { anchor.x = (anchor.origin.x-sheet.getBoundingClientRect().left)/rect.width; }
     }
     if (Math.abs(viewport.scrollTop-top) > 1) { anchor.y = (viewport.scrollTop+anchor.origin.y-view.top-rect.top)/rect.height; }
-    programmaticTop = viewport.scrollTop;
+    programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
+  }
+  function alignText() {
+    if (zoom === 'text' && textAlign) {
+      viewport.scrollLeft = geometry.textScroll(); programmaticLeft = viewport.scrollLeft;
+    }
   }
 
   function configure() {
@@ -122,11 +143,18 @@
     // sharpen the active page independently of these bounded whole-page bases.
     return visible ? 4000000 * (index === currentPage ? 2 : 1) / (visibleCount()+1) : 750000;
   }
-  function pageDimensions(bounds) {
-    const width=bounds[2]-bounds[0], height=bounds[3]-bounds[1];
-    let scale=Number(zoom)*96/72;
-    if(zoom==='width'||zoom==='page') { scale=Math.max(.05,viewport.clientWidth/width); if(zoom==='page'){scale=Math.min(scale,Math.max(.05,viewport.clientHeight/height));} }
-    return {width:width*scale,height:height*scale};
+  function pageDimensions(bounds, textBounds) {
+    return geometry.dimensions(bounds, textBounds);
+  }
+  function allocation(index, bounds = geometry.rects[index]?.bounds) {
+    if (!bounds) { return ''; }
+    const rect = pageDimensions(bounds);
+    return `${Math.ceil(rect.width*devicePixelRatio)}:${Math.ceil(rect.height*devicePixelRatio)}:${Math.floor(surfaceAllowance(index))}`;
+  }
+  function reportBudget(index, header, required, pixels) {
+    post({ type: 'rasterize', page: index, id: header.requestId, reason: 'budget',
+      allocation: allocation(index, header.bounds),
+      budget: { available: surfaceAllowance(index), required, pixels } });
   }
   function desiredWidth(index, bounds, cssWidth) {
     const desired = rasterWidth(bounds, cssWidth, devicePixelRatio);
@@ -139,8 +167,9 @@
   }
   function layoutDocument(request = true, immediate = false, anchor) {
     anchor ||= topAnchor();
-    for (const [index, view] of views) { const header = view.header(); if (header) { geometry.setBounds(index, header.bounds); } }
-    configure(); mountWindow(); restoreAnchor(anchor); mountWindow(); observeActive();
+    // Only current frame commits teach geometry; retained visual-only headers
+    // must not overwrite it during a later resize or state update.
+    configure(); mountWindow(); restoreAnchor(anchor); alignText(); mountWindow(); observeActive();
     for (const view of views.values()) { view.recost(); }
     let option = [...zoomSelect.options].find(option => option.value === String(zoom));
     if (!option) { if (!customZoomOption) { customZoomOption = document.createElement('option'); zoomSelect.appendChild(customZoomOption); } customZoomOption.value = String(zoom); customZoomOption.textContent = `${Math.round(Number(zoom)*100)}%`; }
@@ -152,32 +181,57 @@
     if (disposing) { return; }
     const window = mountWindow(), visible = [];
     for (let index = window.first; index <= window.last && visible.length < 12; index++) {
-      if (views.has(index)) { visible.push({ page: index, width: views.get(index).width() }); }
+      if (views.has(index)) { visible.push({ page: index, width: views.get(index).width(), allocation: allocation(index) }); }
     }
-    if (!visible.some(entry => entry.page === currentPage)) { visible.unshift({ page: currentPage, width: views.get(currentPage)?.width() || 1200 }); visible.splice(12); }
+    if (!visible.some(entry => entry.page === currentPage)) { visible.unshift({ page: currentPage, width: views.get(currentPage)?.width() || 1200, allocation: allocation(currentPage) }); visible.splice(12); }
     const order = direction > 0 ? [window.last + 1, window.first - 1] : [window.first - 1, window.last + 1];
-    const nearby = order.filter(index => index >= 0 && index < geometry.count && !visible.some(entry=>entry.page===index)).map(index => ({ page: index, width: views.get(index)?.width() || desiredWidth(index,geometry.rects[index].bounds,geometry.rects[index].width) }));
-    const snapshot = { page: currentPage, width: views.get(currentPage)?.width() || 1200, format, continuous: true, visible, nearby, resident: resident(), epoch };
+    const nearby = order.filter(index => index >= 0 && index < geometry.count && !visible.some(entry=>entry.page===index)).map(index => ({ page: index, width: views.get(index)?.width() || desiredWidth(index,geometry.rects[index].bounds,geometry.rects[index].width), allocation: allocation(index) }));
+    const snapshot = { page: currentPage, allocation: allocation(currentPage), width: views.get(currentPage)?.width() || 1200, format, continuous: true, visible, nearby, resident: resident(), epoch };
     const key = JSON.stringify(snapshot);
     if (ready || jump || scroll || key !== lastSnapshot) { lastSnapshot = key; post({ type: ready ? 'ready' : 'viewport', ...snapshot, ...(scroll ? { scroll: true } : {}), ...(jump ? { jump: true } : {}), ...(ready ? { svgDom: true, pngCanvas: true } : {}) }); }
   }
   function navigate(value, notify = true) {
-    closeLens(); currentPage = clamp(value, 0, complete && count ? count - 1 : 100000); epoch++;
-    configure(); viewport.scrollTop = geometry.rects[currentPage].top; viewport.scrollLeft = 0; programmaticTop = viewport.scrollTop;
-    mountWindow(); describe(); save(); if (notify) { requestViewport(false, true); }
+    const previousLeft = viewport.scrollLeft;
+    retireDecodes(); closeLens(); currentPage = clamp(value, 0, complete && count ? count - 1 : 100000); epoch++;
+    configure(); viewport.scrollTop = geometry.rects[currentPage].top; viewport.scrollLeft = zoom === 'text' && !textAlign ? previousLeft : 0;
+    programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
+    mountWindow(); alignText(); describe(); save(); if (notify) { requestViewport(false, true); }
   }
   function closeLens() { lensOwner?.closeLens(); }
   function setMagnify(value) { magnify = value; closeLens(); viewport.classList.toggle('magnify', magnify); globalElement('magnify').setAttribute('aria-pressed', String(magnify)); }
   function changeZoom(value, origin, anchor) {
-    closeLens(); const rect = viewport.getBoundingClientRect(); origin ||= { x: rect.left + viewport.clientWidth / 2, y: rect.top + viewport.clientHeight / 2 };
-    anchor ||= anchorAt(origin); zoom = value; layoutDocument(true, false, anchor); save();
+    retireDecodes(); closeLens(); const rect = viewport.getBoundingClientRect(); origin ||= { x: rect.left + viewport.clientWidth / 2, y: rect.top + viewport.clientHeight / 2 };
+    anchor ||= anchorAt(origin);
+    if (value === 'text' && zoom !== 'text') { geometry.refitText(); textAlign = true; }
+    zoom = value; layoutDocument(true, false, anchor); save();
   }
   function stepZoom(factor, origin, anchor) {
     if (factor === 1) { return; }
     const rect = geometry.rects[currentPage], effective = Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96;
     const next = clamp(effective * factor, .25, 4); if (next !== effective) { changeZoom(next, origin, anchor); }
   }
-  function target(target) { navigate(target.page, false); views.get(target.page)?.highlight(target); requestViewport(false); }
+  function revealTarget(target) {
+    const sheet = views.get(target.page)?.sheet, page = geometry.rects[target.page];
+    if (!sheet || !page) { return; }
+    const rect = sheet.getBoundingClientRect(), clip = viewport.getBoundingClientRect(), b = page.bounds;
+    const delta = syncScrollCorrection({
+      x: rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
+      y: rect.top + (target.y - b[1]) / (b[3] - b[1]) * rect.height
+    }, { left: clip.left + viewport.clientLeft, top: clip.top + viewport.clientTop,
+      width: viewport.clientWidth, height: viewport.clientHeight }, zoom === 'text');
+    const left = clamp(viewport.scrollLeft + delta.x, 0, Math.max(0, viewport.scrollWidth - viewport.clientWidth));
+    const top = clamp(viewport.scrollTop + delta.y, 0, Math.max(0, viewport.scrollHeight - viewport.clientHeight));
+    // Check the clamped correction too: a page boundary may prevent centering.
+    const horizontal = Math.abs(left - viewport.scrollLeft) > 4, vertical = Math.abs(top - viewport.scrollTop) > 4;
+    if (horizontal) { viewport.scrollLeft = left; }
+    if (vertical) { viewport.scrollTop = top; }
+    if (horizontal || vertical) { programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft; }
+  }
+  function target(target) {
+    pendingReveal = { target, intent: ++revealIntent }; closeLens(); currentPage = clamp(target.page, 0, complete && count ? count - 1 : 100000);
+    configure(); mountWindow(); revealTarget(target); mountWindow(); observeActive();
+    if (views.get(target.page)?.highlight(target)) { pendingReveal = undefined; } describe(); save(); requestViewport(false);
+  }
 
   function createPage(page) {
     const sheet = template.cloneNode(true); sheet.hidden = false; sheet.className = 'page-sheet waiting'; sheet.dataset.page = String(page);
@@ -187,7 +241,7 @@
     let image = element('image'), bounds = geometry.rects[page]?.bounds || [0,0,595.28,841.89];
     image.hidden = true;
     const vector = element('vector'), raster = element('raster'), lensVector = globalElement('lensVector'), lensCanvas = globalElement('lensCanvas');
-    let svgPage, pngPage, imageId, header, objectUrl, stale = true, generation = 0, highlightTimer;
+    let svgPage, pngPage, imageId, header, objectUrl, stale = true, generation = 0, visualSnapshot, highlightTimer;
     const surface = () => svgPage ? vector : pngPage ? raster : image;
     let view, rasterizedAt;
     const cacheKey = id => `${page}:${id}`;
@@ -200,15 +254,41 @@
         const result = decoded.put(cacheKey(id), { ...value, owner: view, id }, cost); diagnostics(); return result;
       }
     };
-    const acknowledge = (id, renderMs) => post({ type: 'decoded', id, page, cached: inventory(), svg: svgPage?.contentId, png: pngPage?.contentId, renderMs });
+    const acknowledge = (id, renderMs, displayed = true) => post({ type: 'decoded', id, page, cached: inventory(), svg: svgPage?.contentId, png: pngPage?.contentId, renderMs, displayed, stale: displayed ? stale : true });
     function layout(request = true, immediate = false) { layoutDocument(request, immediate); }
     const width = () => desiredWidth(page,bounds,sheet.getBoundingClientRect().width);
     function highlight(target) {
       if (!header || stale || target.page !== page) { return; }
-      const mark = element('highlight'); mark.style.left = `${100*(target.x-bounds[0])/(bounds[2]-bounds[0])}%`; mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
-      clearTimeout(highlightTimer); mark.hidden = true; void mark.offsetWidth; mark.hidden = false;
-      highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
-      requestAnimationFrame(() => { if (sheet.isConnected) { mark.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); programmaticTop = viewport.scrollTop; } });
+      const mark = element('highlight');
+      clearTimeout(highlightTimer); mark.hidden = true;
+      mark.replaceChildren(); mark.classList.remove('source-boxes');
+      // Geometry belongs to this source epoch, never to the reused image alone.
+      // Without native boxes retain the honest line-level margin cue.
+      if (target.highlight === true) {
+        const rectangles = (target.rectangles || []).slice(0,128).filter(b =>
+          Array.isArray(b) && b.length === 4 && b.every(Number.isFinite)).map(b =>
+          [Math.max(bounds[0],b[0]),Math.max(bounds[1],b[1]),Math.min(bounds[2],b[2]),Math.min(bounds[3],b[3])])
+          .filter(b => b[2]>b[0] && b[3]>b[1]);
+        if (rectangles.length) {
+          mark.classList.add('source-boxes'); mark.style.left = '0'; mark.style.top = '0';
+          for (const b of rectangles) {
+            const box = document.createElement('div'); box.className = 'source-highlight-box';
+            Object.assign(box.style, {left:`${100*(b[0]-bounds[0])/(bounds[2]-bounds[0])}%`,top:`${100*(b[1]-bounds[1])/(bounds[3]-bounds[1])}%`,
+              width:`${100*(b[2]-b[0])/(bounds[2]-bounds[0])}%`,height:`${100*(b[3]-b[1])/(bounds[3]-bounds[1])}%`});
+            mark.append(box);
+          }
+        } else {
+          const textLeft = header.textBounds?.[0] ?? bounds[0];
+          const left = 100*(textLeft-bounds[0])/(bounds[2]-bounds[0]);
+          mark.style.left = `max(4px, calc(${left}% - 10px))`;
+          mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
+        }
+        void mark.offsetWidth; mark.hidden = false;
+        highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
+      }
+      const token = generation, revealToken = revealIntent;
+      requestAnimationFrame(() => { if (sheet.isConnected && !stale && generation === token && revealToken === revealIntent) { revealTarget(target); } });
+      return true;
     }
   let detailImage = element('detail'), detailUrl, detailTimer, detailFailed = false, autoRefining = false;
   const detailCache = new DetailCache();
@@ -336,8 +416,61 @@
       x: bounds[0] + (event.clientX - rect.left) / rect.width * (bounds[2] - bounds[0]),
       y: bounds[1] + (event.clientY - rect.top) / rect.height * (bounds[3] - bounds[1]) });
   }
+  const tikzButton = element('tikzAction'), tikzHighlight = element('tikzHighlight');
+  let tikzIndices = [], hoveredFigure = -1, figureTimer, figureLeaveTimer;
+  function hideFigure() {
+    clearTimeout(figureTimer); clearTimeout(figureLeaveTimer); hoveredFigure = -1;
+    tikzButton.hidden = true; tikzHighlight.hidden = true;
+  }
+  function showFigure(index) {
+    if (stale || !header || !currentSnapshot(header) || magnify || !tikzIndices.includes(index)) { hideFigure(); return; }
+    const figure = header.annotations?.figures?.[index]; if (!figure) { return; }
+    const b = figure.bounds, rect = surface().getBoundingClientRect(), sheetRect = sheet.getBoundingClientRect();
+    const visible = viewport.getBoundingClientRect();
+    const left = Math.max(rect.left, visible.left) + 4, right = Math.min(rect.right, visible.right) - 4;
+    const top = Math.max(rect.top, visible.top) + 4, bottom = Math.min(rect.bottom, visible.bottom) - 4;
+    const x = rect.left + (b[0]-bounds[0])/(bounds[2]-bounds[0])*rect.width;
+    const y = rect.top + (b[1]-bounds[1])/(bounds[3]-bounds[1])*rect.height;
+    const w = (b[2]-b[0])/(bounds[2]-bounds[0])*rect.width, h = (b[3]-b[1])/(bounds[3]-bounds[1])*rect.height;
+    if (right <= left || bottom <= top || x+w < left || x > right || y+h < top || y > bottom) { hideFigure(); return; }
+    tikzButton.hidden = false; tikzButton.style.visibility = 'hidden';
+    const size = tikzButton.getBoundingClientRect();
+    let by = y-size.height-4;
+    if (by < top) { by = y+h+4; if (by+size.height > bottom) { by = Math.max(y+4, top); } }
+    tikzButton.style.left = `${clamp(x+w-size.width,left,Math.max(left,right-size.width))-sheetRect.left}px`;
+    tikzButton.style.top = `${clamp(by,top,Math.max(top,bottom-size.height))-sheetRect.top}px`;
+    tikzButton.style.visibility = '';
+    Object.assign(tikzHighlight.style, { left:`${x-sheetRect.left}px`, top:`${y-sheetRect.top}px`, width:`${w}px`, height:`${h}px` });
+    tikzHighlight.hidden = false; hoveredFigure = index;
+  }
+  const leaveFigure = () => { clearTimeout(figureLeaveTimer); figureLeaveTimer = setTimeout(() => { if (!tikzButton.matches(':hover,:focus')) { hideFigure(); } },150); };
+  sheet.addEventListener('pointermove', event => {
+    if (event.target.closest('.tikz-action')) { clearTimeout(figureLeaveTimer); return; }
+    if (stale || !header || magnify || event.ctrlKey || event.metaKey) { hideFigure(); return; }
+    const r = surface().getBoundingClientRect();
+    const x = bounds[0]+(event.clientX-r.left)/r.width*(bounds[2]-bounds[0]);
+    const y = bounds[1]+(event.clientY-r.top)/r.height*(bounds[3]-bounds[1]);
+    const index = tikzIndices.find(i => { const b = header.annotations?.figures?.[i]?.bounds; return b && x>=b[0] && x<=b[2] && y>=b[1] && y<=b[3]; });
+    if (index === undefined) { leaveFigure(); return; }
+    clearTimeout(figureLeaveTimer);
+    if (index !== hoveredFigure) { hideFigure(); hoveredFigure = index; figureTimer = setTimeout(() => showFigure(index),350); }
+  });
+  sheet.addEventListener('pointerleave', leaveFigure);
+  tikzButton.addEventListener('pointerenter', () => clearTimeout(figureLeaveTimer));
+  tikzButton.addEventListener('pointerleave', leaveFigure);
+  tikzButton.addEventListener('pointerdown', event => { event.stopPropagation(); event.preventDefault(); });
+  tikzButton.onclick = event => {
+    event.preventDefault(); event.stopPropagation();
+    if (event.ctrlKey || event.metaKey) { inverseAt(event); return; }
+    if (!stale && header && currentSnapshot(header) && hoveredFigure >= 0) {
+      const index = hoveredFigure; hideFigure();
+      post({ type:'tikz-open', revision:header.revision, sequence:header.sequence, page:header.page, index });
+    }
+  };
+  sheet.addEventListener('keydown', event => { if (event.key === 'Escape') { hideFigure(); } });
   function renderLinks() {
     const layer = element('links'); layer.replaceChildren();
+    if (stale || !header) { return; }
     (header.annotations?.links || []).forEach((link, index) => {
       if (!link.uri.startsWith('#') && !/^(https?:|mailto:)/i.test(link.uri)) { return; }
       const b = link.bounds, button = document.createElement('button');
@@ -357,14 +490,14 @@
   }
   sheet.addEventListener('click', event => { if ((event.ctrlKey || event.metaKey) && !event.target.closest('.page-link')) { inverseAt(event); } });
 
-    view = { sheet, page, currentId:()=>imageId, header: () => header, width, highlight, closeLens, clearDetail, scheduleDetail,
+    view = { sheet, page, hideFigure, currentId:()=>imageId, header: () => header, width, highlight, closeLens, clearDetail, scheduleDetail,
       recost() {
         if (!header || !imageId || header.mime !== 'image/svg+xml') { return; }
         const entry = decoded.entries.get(cacheKey(imageId)); if (!entry) { return; }
         const rect = sheet.getBoundingClientRect(), cost = header.byteLength + Math.ceil(rect.width*devicePixelRatio)*Math.ceil(rect.height*devicePixelRatio)*4 + (svgPage ? svgPage.count*160 : 0);
-        const key = `${Math.round(rect.width)}:${Math.round(rect.height)}:${devicePixelRatio}:${visibleCount()}`;
+        const key = allocation(page, header.bounds);
         if (cost > surfaceAllowance(page)) {
-          if (rasterizedAt !== key) { rasterizedAt = key; post({ type:'rasterize',page,id:header.requestId }); }
+          if (rasterizedAt !== key) { rasterizedAt = key; reportBudget(page, header, cost, Math.ceil(rect.width*devicePixelRatio)*Math.ceil(rect.height*devicePixelRatio)*4); }
           return;
         }
         // Updating accounting must not dispose the currently mounted object.
@@ -372,17 +505,23 @@
       },
       resident: () => !!header && !stale && !!imageId && images.has(imageId),
       touch: () => imageId && images.get(imageId),
-      invalidate() { generation++; stale = true; element('links').replaceChildren(); element('highlight').hidden = true; closeLens(); clearDetail(); },
+      retire() { generation++; },
+      invalidate(retire = false, reset = false) { if (retire) { generation++; } if (reset) { visualSnapshot = undefined; } stale = true; hideFigure(); element('links').replaceChildren(); element('highlight').hidden = true; closeLens(); clearDetail(); },
       evicted(id) {
         if (id !== imageId) { return; }
         closeLens(); clearDetail();
         svgPage = undefined; pngPage = undefined; objectUrl = undefined; imageId = undefined;
-        stale = true; image.hidden = true; vector.hidden = true; raster.hidden = true; element('links').replaceChildren();
+        stale = true; hideFigure(); image.hidden = true; vector.hidden = true; raster.hidden = true; element('links').replaceChildren();
         sheet.classList.add('waiting'); generation++; diagnostics();
         if (!disposing) { post({ type: 'evicted', page, contentId: id, cached: inventory() }); }
       },
       async receive(m) {
         switch (m.type) {
+      case 'tikz-targets':
+        if (!stale && header && currentSnapshot(header) && m.id === header.requestId && m.revision === header.revision && m.sequence === header.sequence) {
+          hideFigure(); tikzIndices = (m.indices || []).filter(i => Number.isSafeInteger(i) && i >= 0 && header.annotations?.figures?.[i]);
+        }
+        break;
       case 'region-error':
         if (m.purpose === 'detail') { detailCache.reset(); detailFailed = true; } else { closeLens(); }
         break;
@@ -410,17 +549,23 @@
         requestLens(); break;
       }
       case 'image': {
+        if (visualSnapshot && (m.header.sequence < visualSnapshot.sequence ||
+            (m.header.sequence === visualSnapshot.sequence && m.header.revision < visualSnapshot.revision))) {
+          acknowledge(m.header.requestId, undefined, false); break;
+        }
         // Check a patch before mutating its acknowledged root. Full SVG roots
         // are detached until actual node/pixel accounting admits them below.
-        const proposedRect = pageDimensions(m.header.bounds);
+        const proposedRect = pageDimensions(m.header.bounds, m.visualOnly === true || !currentSnapshot(m.header) ? undefined : m.header.textBounds);
         const proposedHeight = proposedRect.height;
-        if (m.svgPatch && m.header.byteLength + Math.ceil(proposedRect.width*devicePixelRatio)*Math.ceil(proposedHeight*devicePixelRatio)*4 + Math.min(20000,(svgPage?.count||0)+256)*160 > surfaceAllowance(page)) {
-          post({ type: 'rasterize', page, id: m.header.requestId }); return;
+        const proposedPixelBytes = Math.ceil(proposedRect.width*devicePixelRatio)*Math.ceil(proposedHeight*devicePixelRatio)*4;
+        const proposedCost = m.header.byteLength + proposedPixelBytes + Math.min(20000,(svgPage?.count||0)+256)*160;
+        if (m.svgPatch && proposedCost > surfaceAllowance(page)) {
+          reportBudget(page, m.header, proposedCost, proposedPixelBytes); return;
         }
         const renderStart = performance.now();
         autoRefining = m.refining === true;
         closeLens(); clearDetail();
-        const token = ++generation;
+        const token = ++generation, sourceToken = sourceGeneration, revealToken = revealIntent;
         const cached = images.get(m.contentId);
         if (cached) { cached.owner = view; }
         if (!cached && !m.bytes && !m.svgPatch && !m.rasterPatch) { post({ type: 'cache-miss', page, id: m.header.requestId }); break; }
@@ -445,14 +590,14 @@
           }
           if (token !== generation) { if (url && !cached) { URL.revokeObjectURL(url); }
             if (nextRaster && nextRaster !== pngPage && !cached) { nextRaster.canvas.width = 0; }
-            acknowledge(m.header.requestId); break; }
+            acknowledge(m.header.requestId, undefined, false); break; }
           const surfaceRect = proposedRect;
           const candidateHeight = proposedHeight;
           const candidatePixels = m.header.mime === 'image/png' ? m.header.width*m.header.height : Math.ceil(surfaceRect.width*devicePixelRatio)*Math.ceil(candidateHeight*devicePixelRatio);
           const candidateCost = m.header.byteLength + candidatePixels*4 + (nextVector ? nextVector.count*160 : 0);
           if (m.header.mime === 'image/svg+xml' && candidateCost > surfaceAllowance(page)) {
             if (url && !cached) { URL.revokeObjectURL(url); }
-            post({ type: 'rasterize', page, id: m.header.requestId }); return;
+            reportBudget(page, m.header, candidateCost, candidatePixels*4); return;
           }
           if (commitRaster) {
             images.take(pngPage.contentId); commitRaster(); nextRaster.contentId = m.contentId;
@@ -475,7 +620,7 @@
           }
           if (!cached || m.svgPatch || commitRaster) {
             if (!images.put(m.contentId, nextVector ? { vector: nextVector } : nextRaster ? { raster: nextRaster } : { url, image: candidate }, candidateCost)) {
-              if (m.header.mime === 'image/svg+xml') { post({ type: 'rasterize', page, id: m.header.requestId }); return; }
+              if (m.header.mime === 'image/svg+xml') { reportBudget(page, m.header, candidateCost, candidatePixels*4); return; }
               throw Error('Decoded page exceeds the shared memory budget');
             }
           } else { const entry = decoded.entries.get(cacheKey(m.contentId)); if (entry) { decoded.bytes += candidateCost-entry.cost;entry.cost=candidateCost;trimDecoded(); } }
@@ -501,19 +646,27 @@
             if (candidate !== image) { image.replaceWith(candidate); image = candidate; }
           }
           image.hidden = !!svgPage || !!pngPage;
-          objectUrl = url; header = m.header; bounds = header.bounds;
-          problem = ''; stale = false; sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
+          hideFigure(); tikzIndices = []; objectUrl = url; header = m.header; bounds = header.bounds;
+          visualSnapshot = { sequence: header.sequence, revision: header.revision };
+          problem = ''; stale = m.visualOnly === true || sourceToken !== sourceGeneration || !currentSnapshot(header);
+          sheet.dataset.stale = String(stale); sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
-          layout(); describe(); renderLinks();
+          if (!stale) {
+            geometry.setBounds(page, header.bounds); geometry.setTextBounds(page, header.bounds, header.textBounds);
+            layout();
+          } describe(); renderLinks();
           if (previous && previous !== url && !images.has(previousId)) { URL.revokeObjectURL(previous); }
-          if (m.target) { highlight(m.target); }
-          if (m.destination) {
+          if (!stale && pendingReveal?.intent === revealIntent && pendingReveal.target.page === page &&
+              pendingReveal.target.sequence === header.sequence && pendingReveal.target.revision === header.revision) {
+            highlight(pendingReveal.target); pendingReveal = undefined;
+          } else if (!stale && revealToken === revealIntent && m.target) { highlight(m.target); }
+          if (!stale && revealToken === revealIntent && m.destination) {
             const dest = header.annotations?.destinations.find(d => d.name === m.destination);
             if (dest) {
               const rect = surface().getBoundingClientRect();
               viewport.scrollLeft += rect.left + (dest.x - bounds[0]) / (bounds[2] - bounds[0]) * rect.width - viewport.getBoundingClientRect().left - 12;
               viewport.scrollTop += rect.top + (dest.y - bounds[1]) / (bounds[3] - bounds[1]) * rect.height - viewport.getBoundingClientRect().top - 12;
-              programmaticTop = viewport.scrollTop;
+              programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
             }
           }
           vector.setAttribute('aria-label', image.alt);
@@ -521,12 +674,20 @@
           acknowledge(header.requestId, performance.now() - renderStart);
           requestViewport(false);
         } catch (error) {
+          // Browsers may reject decode() when an in-flight image is retired.
+          // Release its render credit without reporting a codec failure for
+          // pixels that no longer belong to the current view.
+          if (token !== generation) {
+            if (url && !cached) { URL.revokeObjectURL(url); }
+            if (nextRaster && nextRaster !== pngPage && !cached) { nextRaster.canvas.width = 0; }
+            acknowledge(m.header.requestId, undefined, false); break;
+          }
           console.warn('TeXpresso preview image update failed', error);
           if (m.rasterPatch || m.inlinePng) { stale = true; describe(); post({ type: 'cache-miss', page, id: m.header.requestId, pngUnsupported: !m.rasterPatch }); }
           else if (m.svgPatch) { images.forget(m.svgPatch.base); stale = true; describe(); post({ type: 'cache-miss', page, id: m.header.requestId }); }
           else {
             if (cached) { images.forget(m.contentId); } else if (url) { URL.revokeObjectURL(url); }
-            post({ type: 'decode-error', page, id: m.header.requestId });
+            post({ type: 'decode-error', page, id: m.header.requestId, reason: 'decode' });
           }
         }
         break;
@@ -535,7 +696,7 @@
         }
       },
       dispose() {
-        generation++; closeLens(); clearDetail(); clearTimeout(highlightTimer);
+        generation++; hideFigure(); closeLens(); clearDetail(); clearTimeout(highlightTimer);
         // Retain bounded decoded content for a quick return, but unmount its DOM.
         sheet.remove(); if (svgPage?.layer) { svgPage.layer.remove(); } if (pngPage) { pngPage.canvas.remove(); }
       }
@@ -543,11 +704,14 @@
     return view;
   }
 
+  window.addEventListener('resize', () => { for (const view of views.values()) { view.hideFigure(); } });
+  viewport.addEventListener('wheel', () => { for (const view of views.values()) { view.hideFigure(); } }, {passive:true});
   window.addEventListener('message', async event => {
     const m = event.data; if (!m || m.instance !== instance) { return; }
     switch (m.type) {
       case 'ping': requestViewport(false, false, true); break;
       case 'state': {
+        if (observeSource(m.sequence, m.revision)) { for (const view of views.values()) { view.invalidate(); } }
         const anchor = topAnchor(); if (m.phase === 'starting' && phase !== 'starting') { problem = ''; }
         const available = Number.isInteger(m.count) ? clamp(m.count,0,100001) : count;
         complete = m.complete === true;
@@ -561,8 +725,10 @@
         if (complete) { currentPage = count === 0 ? 0 : Math.min(currentPage,count-1); }
         layoutDocument(true, false, anchor); describe(); break;
       }
-      case 'jump': navigate(m.page, false); if (m.target) { target(m.target); } requestViewport(false); break;
-      case 'invalidate': problem = ''; for (const view of views.values()) { view.invalidate(); } describe(); requestViewport(false); break;
+      case 'jump': if (m.target) { target(m.target); } else { navigate(m.page, false); requestViewport(false); } break;
+      case 'invalidate':
+        if (!observeSource(m.sequence, m.revision, m.reset === true)) { sourceGeneration++; revealIntent++; pendingReveal = undefined; }
+        problem = ''; for (const view of views.values()) { view.invalidate(m.retire === true, m.reset === true); } describe(); requestViewport(false); break;
       case 'error': problem = m.text; if (Number.isInteger(m.page)) { views.get(m.page)?.invalidate(); } else { for (const view of views.values()) { view.invalidate(); } } describe(); break;
       case 'link-error': problem = m.text; describe(); break;
       case 'target': target(m); break;
@@ -571,7 +737,7 @@
         let view = views.get(index);
         // Background results may be cached without introducing a distant sheet.
         if (!view && m.header && ['image','region','detail'].includes(m.type)) {
-          post({ type: 'decoded', id: m.header.requestId, page: index, cached: inventory() }); break;
+          post({ type: 'decoded', id: m.header.requestId, page: index, cached: inventory(), displayed: false, stale: true }); break;
         }
         if (view) { await view.receive(m); diagnostics(); }
       }
@@ -582,16 +748,20 @@
   globalElement('page').onchange = event => { const value = Number(event.target.value); if (Number.isInteger(value) && value > 0) { navigate(value-1); } };
   globalElement('zoomIn').onclick = () => stepZoom(1.25); globalElement('zoomOut').onclick = () => stepZoom(.8);
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
-  formatSelect.onchange = () => { format = formatSelect.value; closeLens(); epoch++; lastSnapshot = ''; layoutDocument(true,true); };
+  formatSelect.onchange = () => { retireDecodes(); format = formatSelect.value; closeLens(); epoch++; lastSnapshot = ''; layoutDocument(true,true); };
   globalElement('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   for (const id of ['restart','pause','output']) { globalElement(id).onclick = () => post({ type: id }); }
   viewport.addEventListener('scroll', () => {
+    for (const view of views.values()) { view.hideFigure(); }
     closeLens(); cancelAnimationFrame(scrollFrame);
     scrollFrame = requestAnimationFrame(() => {
-      const top = viewport.scrollTop, user = programmaticTop === undefined || Math.abs(top - programmaticTop) > 1;
-      programmaticTop = undefined; direction = top >= lastTop ? 1 : -1; lastTop = top;
+      const top = viewport.scrollTop, left = viewport.scrollLeft;
+      const horizontalUser = Math.abs(left - lastLeft) > .01 && (programmaticLeft === undefined || Math.abs(left - programmaticLeft) > 1);
+      const user = horizontalUser || programmaticTop === undefined || Math.abs(top - programmaticTop) > 1;
+      if (zoom === 'text' && horizontalUser) { textAlign = false; }
+      programmaticTop = programmaticLeft = undefined; direction = top >= lastTop ? 1 : -1; lastTop = top; lastLeft = left;
       mountWindow(); observeActive();
-      if (user) { epoch++; } for(const view of views.values()){view.recost();} describe(); save(); views.get(currentPage)?.scheduleDetail(); requestViewport(user);
+      if (user) { retireDecodes(); epoch++; } for(const view of views.values()){view.recost();} describe(); save(); views.get(currentPage)?.scheduleDetail(); requestViewport(user);
     });
   }, { passive: true });
   viewport.addEventListener('wheel', event => {
@@ -612,14 +782,15 @@
   viewport.addEventListener('pointerdown',()=>post({type:'interaction',active:true}),{passive:true});
   for(const name of ['pointerup','pointercancel','blur']) { window.addEventListener(name,()=>{post({type:'interaction',active:false});if(name==='blur'){closeLens();}},{passive:true}); }
   for(const name of ['pointermove','wheel','scroll','keydown']) { viewport.addEventListener(name,interaction,{passive:true}); }
-  const resize=()=>{closeLens();layoutDocument();}; let resizeFrame;
+  const resize=()=>{retireDecodes();closeLens();layoutDocument();}; let resizeFrame;
   window.addEventListener('resize',resize);
   const observer=new ResizeObserver(()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(resize);});observer.observe(viewport);
   let resolution;
   function watchResolution(){resolution?.removeEventListener('change',densityChanged);resolution=matchMedia(`(resolution: ${devicePixelRatio}dppx)`);resolution.addEventListener('change',densityChanged);}
   function densityChanged(){watchResolution();resize();}watchResolution();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { retireDecodes(); } });
   window.addEventListener('pagehide',()=>{disposing=true;closeLens();observer.disconnect();cancelAnimationFrame(resizeFrame);cancelAnimationFrame(scrollFrame);resolution?.removeEventListener('change',densityChanged);clearTimeout(timer);for(const view of views.values()){view.dispose();}decoded.clear();});
   configure(); mountWindow();
-  if (restoring) { viewport.scrollTop = geometry.rects[currentPage].top + (Number(saved.point)||0)*geometry.rects[currentPage].height; viewport.scrollLeft=Number(saved.left)||0; programmaticTop=viewport.scrollTop;restoring=false; }
+  if (restoring) { viewport.scrollTop = geometry.rects[currentPage].top + (Number(saved.point)||0)*geometry.rects[currentPage].height; viewport.scrollLeft=Number(saved.left)||0; programmaticTop=viewport.scrollTop;programmaticLeft=viewport.scrollLeft;lastLeft=viewport.scrollLeft;restoring=false; }
   describe();requestViewport(false,false,true);
 })();

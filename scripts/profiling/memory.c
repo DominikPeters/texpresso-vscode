@@ -3,6 +3,7 @@
 #include <libproc.h>
 #include <mach/mach_time.h>
 #include <sys/proc_info.h>
+#include <sys/proc.h>
 #include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
@@ -27,7 +28,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < n; i++) {
       struct rusage_info_v4 usage;
       if (!pids[i] || proc_pid_rusage(pids[i], RUSAGE_INFO_V4, (rusage_info_t *)&usage)) continue;
-      printf("%s{\"pid\":%d,\"rss\":%llu,\"footprint\":%llu,\"peakFootprint\":%llu,\"cpuNs\":%llu,\"cpuTicks\":%llu}", count++ ? "," : "", pids[i],
+      struct proc_bsdinfo info = {0};
+      int have_info = proc_pidinfo(pids[i], PROC_PIDTBSDINFO, 0, &info, sizeof info) == sizeof info;
+      printf("%s{\"pid\":%d,\"ppid\":%u,\"status\":%u,\"zombie\":%s,\"rss\":%llu,\"footprint\":%llu,\"peakFootprint\":%llu,\"cpuNs\":%llu,\"cpuTicks\":%llu}", count++ ? "," : "", pids[i],
+             have_info ? info.pbi_ppid : 0, have_info ? info.pbi_status : 0,
+             have_info && info.pbi_status == SZOMB ? "true" : "false",
              usage.ri_resident_size, usage.ri_phys_footprint, usage.ri_lifetime_max_phys_footprint, (unsigned long long)((__uint128_t)(usage.ri_user_time + usage.ri_system_time) * timebase.numer / timebase.denom), usage.ri_user_time + usage.ri_system_time);
     }
     puts("]}"); fflush(stdout);

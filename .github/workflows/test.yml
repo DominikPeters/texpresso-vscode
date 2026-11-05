@@ -1,14 +1,24 @@
 name: Tests
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_candidate:
+        description: Also validate the complete release-candidate workflow (never publishes)
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  release-candidate:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_candidate
+    uses: ./.github/workflows/release-build.yml
+    secrets: inherit
   test:
     name: Extension / ${{ matrix.os }} / VS Code ${{ matrix.vscode }}
     strategy:
@@ -62,8 +72,14 @@ jobs:
           cache: npm
       - run: npm ci
         timeout-minutes: 4
-      - name: Install pinned packaging tool
-        run: npm install --global @vscode/vsce@3.7.1
+      - name: Verify universal corresponding-source collection
+        run: |
+          python3 native/scripts/release_sources.py --fetch
+          python3 native/scripts/verify_sources.py artifacts --target universal
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
         timeout-minutes: 3
       - name: Package, inspect, install, and test the VSIX
         run: xvfb-run -a npm run test:package
@@ -79,7 +95,7 @@ jobs:
   engine:
     name: Pinned TeXpresso / TeX Live
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       TEXPRESSO_BINARY: ${{ github.workspace }}/.engine/build/texpresso
       TEXPRESSO_TEST_ARTIFACTS: ${{ github.workspace }}/artifacts/engine
@@ -109,13 +125,22 @@ jobs:
             build-essential libsdl2-dev libmupdf-dev libmujs-dev \
             libfreetype-dev libgumbo-dev libjbig2dec0-dev libjpeg-dev \
             libopenjp2-7-dev libfontconfig-dev libharfbuzz-dev \
-            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev libtesseract-dev texlive-xetex
+            libgraphite2-dev libicu-dev libpng-dev libleptonica-dev libtesseract-dev texlive-xetex texlive-pictures
         timeout-minutes: 8
       - name: Build pinned engine
         run: |
           make -C .engine -j2 all test-synctex
-          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes
+          make -C .engine test-preview-svg test-preview-png test-texlive-provider test-dvi-annotations test-dvi-strokes test-protocol-numbers test-checkpoint-selection test-activity test-parent-watch test-checkpoint-cleanup
         timeout-minutes: 4
+      - name: Test real checkpoint shutdown and recovery after a worker exits
+        run: python3 .engine/test/test-checkpoint-cleanup.py .engine/build/texpresso
+        timeout-minutes: 3
+      - name: Check shared TikZ metadata preserves rendered pixels
+        run: python3 .engine/test/test-tikz-figures.py .engine/build/texpresso
+        timeout-minutes: 3
+      - name: Test idle pagination after an external full build
+        run: python3 .engine/test/test-idle-rerun.py .engine/build/texpresso
+        timeout-minutes: 3
       - name: Test native synchronization, controls, and dependencies
         run: npm run test:engine
         timeout-minutes: 4
@@ -133,7 +158,7 @@ jobs:
   wsl:
     name: Windows VS Code / real TeXpresso in WSL 2
     runs-on: windows-2022
-    timeout-minutes: 40
+    timeout-minutes: 55
     env:
       TEXPRESSO_BINARY: /opt/texpresso/build/texpresso
     steps:
@@ -163,23 +188,15 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/texpresso-wsl.tar
-          key: wsl2-windows2022-ubuntu2404-v1-${{ hashFiles('.github/workflows/test.yml', 'scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
+          key: wsl2-windows2022-ubuntu2404-v2-${{ hashFiles('scripts/ci/wsl-environment.cjs', 'scripts/ci/wsl-packages.txt') }}
       - name: Import cached WSL distribution
         if: steps.wsl-cache.outputs.cache-hit == 'true'
         run: node scripts/ci/wsl-environment.cjs import
         timeout-minutes: 8
       - name: Install Ubuntu, native build dependencies, and TeX Live in WSL
         if: steps.wsl-cache.outputs.cache-hit != 'true'
-        uses: Vampire/setup-wsl@3b46b44374d5d0ae94654c45d114a3ed7a0e07a8 # v5.0.1
-        timeout-minutes: 20
-        with:
-          distribution: Ubuntu-24.04
-          wsl-version: 2
-          set-as-default: 'true'
-          wsl-conf: |
-            [boot]
-            systemd=false
-          additional-packages: ${{ steps.wsl-config.outputs.packages }}
+        run: node scripts/ci/wsl-environment.cjs install
+        timeout-minutes: 40
       - name: Export prepared distribution before adding source checkouts
         if: steps.wsl-cache.outputs.cache-hit != 'true'
         run: node scripts/ci/wsl-environment.cjs export

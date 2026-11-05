@@ -1,7 +1,7 @@
 # Native engine builds
 
 `texpresso/` is a submodule of `DominikPeters/texpresso`, on the maintained
-`vscode` branch. The extension's Git commit records the exact engine commit.
+`codex/unified-engine` branch shared with TeXstudio. The extension's Git commit records the exact engine commit.
 The old `web-wrapper-version` branch is independent historical work; new
 embedding work starts from current upstream and is implemented afresh.
 
@@ -19,30 +19,31 @@ Initialize the engine only when doing native work:
 
 ```sh
 git submodule update --init native/texpresso
-git -C native/texpresso switch vscode
+git -C native/texpresso switch codex/unified-engine
 git -C native/texpresso remote add upstream https://github.com/let-def/texpresso.git
 ```
 
 `submodule update` checks out the recorded commit, initially detached. If a
-local `vscode` branch does not exist, create it from `origin/vscode`. Add the
+local `codex/unified-engine` branch does not exist, create it from `origin/codex/unified-engine`. Add the
 `upstream` remote only once. Ordinary extension tests do not need a submodule
 checkout or native build dependencies.
 
 Maintain the fork's `main` as an upstream mirror and merge selected upstream
-updates into `vscode`. Preserve published `vscode` commits: extension releases
-refer to those SHAs. Use feature branches for engine changes; prefer small,
+updates into `codex/unified-engine`. Preserve published engine commits: extension releases
+refer to those SHAs. Keep editor integrations on this shared history instead of
+advancing separate VS Code and TeXstudio engine branches. Use feature branches for engine changes; prefer small,
 upstreamable changes for protocol/capability and rendering transport support.
 
 After testing an engine change, push it to the fork **before** committing the
 updated submodule pointer in the extension:
 
 ```sh
-git -C native/texpresso push origin vscode
+git -C native/texpresso push origin codex/unified-engine
 git add native/texpresso
 git commit -m "Update bundled TeXpresso engine"
 ```
 
-CI builds the committed pointer, never a moving branch tip. MuPDF and ICU
+CI builds the committed pointer, never a moving branch tip. MuPDF, ICU, and zlib-ng
 versions live in `dependencies.lock.json`; their build profiles live here.
 Large dependency trees and compiled artifacts are not committed to Git.
 
@@ -57,24 +58,37 @@ dependencies; it records their actual versions in the build manifest.
 Supply a local MuPDF checkout at the locked revision with its locked
 `thirdparty/lcms2` submodule initialized, and an ICU 78.3 installation containing
 the headers, static `libicuuc.a`, shared data library, `icupkg`, and `genccode`.
-No build command automatically downloads sources or packages.
+Supply a clean zlib-ng checkout at the locked revision as well. Its native API is
+statically linked at level 2 for live PNG encoding, independently of system zlib
+used by other libraries. The builder verifies the reported backend/version/level
+and includes its license. No build command automatically downloads sources or packages.
 
 ```sh
 python3 native/scripts/build.py --check \
-  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu
+  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu \
+  --zlib-ng-source /path/to/zlib-ng
 python3 native/scripts/build.py \
-  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu
+  --mupdf-source /path/to/mupdf --icu-prefix /path/to/icu \
+  --zlib-ng-source /path/to/zlib-ng
 ```
 
-Homebrew prerequisites for a fresh build host are `pkgconf`, `freetype`,
+Homebrew prerequisites for a fresh build host are `cmake`, `pkgconf`, `freetype`,
 `jpeg-turbo`, `openjpeg`, `brotli`, `sdl2`, `harfbuzz`, `graphite2`, `fontconfig`,
 `libpng`, `jbig2dec`, and `icu4c@78`. Installation is a separate, explicit step.
 There is no Tectonic requirement.
 
 The result is `native/.bundles/darwin-<architecture>/` and a neighboring ZIP.
 Use `--output /new/path` for another build; existing bundles are never replaced.
-Work files are retained in `native/.work/` for diagnostics and may be deleted
-after the build. Run the result as `.../bin/texpresso -texlive /path/to/main.tex`.
+Successful builds remove their `native/.work/` intermediates automatically.
+Use `--keep-work` for debugging; failed builds retain their workspace for diagnosis.
+Run the result as `.../bin/texpresso -texlive /path/to/main.tex`.
+
+Preview old generated files with `npm run clean:generated`; add `-- --apply` to
+remove outputs older than seven days, or `-- --days 1 --apply` after summarized
+work when space is tight. Stop builds and profilers before cleanup. A `.keep`
+file inside an output directory, or a sibling `filename.keep` for a file, pins
+it. Cleanup preserves canonical local bundles and the latest VSIX per target.
+Large native builds and release artifacts normally stay on GitHub.
 
 The bundle includes both executables, recursively collected non-system dynamic
 libraries, collected dependency notices, and `build-manifest.json`. Mach-O
@@ -103,14 +117,17 @@ Engine tests use local TeX Live by default. Leave `TEXPRESSO_TEST_TECTONIC`
 unset. The ICU comparison checks 12 line-breaking locales, bidirectional text,
 legacy encodings, normalization, and script properties against stock ICU.
 
-`native-build.yml` is an explicitly dispatched macOS development build. Source
+`native-build.yml` is an explicitly dispatched macOS build matrix for Apple
+Silicon (`macos-15`) and Intel (`macos-15-intel`). Source
 and package downloads occur on the GitHub runner, with the large source/build
-inputs cached. It does not publish a release or modify the extension's default
-engine selection.
+inputs cached. It does not publish a release. It packages the tested bundle into
+a platform VSIX and installs it into an isolated VS Code profile to test the
+bundled engine with no executable-path override. Accepted VSIXs and checksums
+are uploaded separately from native archives and diagnostics.
 
 ## Developer ID signing and notarization
 
-The manual **Native development bundle** workflow signs and notarizes by default.
+The manual **Native macOS bundles and VSIX** workflow signs and notarizes by default.
 It tests the ad-hoc bundle first, then signs a separate copy of both executables
 and every bundled dylib using Developer ID Application, hardened runtime, and
 secure timestamps. All signatures must have the same Team ID. It refreshes the
@@ -151,13 +168,106 @@ python3 native/scripts/notarize.py --bundle /path/to/adhoc-bundle \
   --output /path/to/new-signed-bundle --reports /path/to/notarization-reports
 ```
 
-Signing does not publish a release or add native files to the VSIX.
+Signing does not publish a release. The workflow packages the signed bundle into
+the VSIX without modifying its native files, then runs installed-VSIX acceptance.
 
-## Before distributing bundled builds
+## Platform VSIX packaging
 
-The initial host build records system dependency versions but is not yet a
-fully pinned toolchain. Release work includes pinning the remaining codec/font
-dependencies and build SDKs, completing notice/source-distribution review,
-building Linux and other supported targets, and testing on clean machines.
-Native archives stay outside the ordinary VSIX until runtime selection and
-platform-specific packaging have been implemented and tested together.
+After building a bundle whose engine revision matches the recorded submodule pin:
+
+```sh
+npm run package:vsix -- --target darwin-arm64 --bundle native/.bundles/darwin-arm64
+VSCODE_EXECUTABLE='/path/to/Code' npm run test:package:preview -- \
+  --vsix artifacts/texpresso-2.0.0-darwin-arm64.vsix
+```
+
+Use the current `package.json` version in the VSIX filename, or pass `--out` to
+choose a stable artifact name. The package script builds JavaScript, stages only
+production files, checks bundle hashes and architecture, and preserves executable
+permissions. It checks the finished archive and writes a SHA-256 sidecar. Both
+executables, libraries, notices, and the native build manifest live under
+`runtime/<target>/`. Packaging never changes the input bundle or its signatures.
+Run Unix-target packaging on Linux or macOS. Explicit `texpresso.command` settings
+override the bundle; an incomplete bundle produces a setup error rather than
+silently selecting another engine.
+
+Without `--target` and `--bundle`, `package:vsix` still creates the universal,
+external-engine VSIX at `artifacts/texpresso.vsix`.
+
+## Linux builds on GitHub
+
+`linux-build.yml` builds x64 and ARM64 on GitHub in AlmaLinux 8 containers
+with GCC 13, a glibc 2.28 baseline and explicit x86-64/Armv8 CPU flags. Local
+Docker is not required. ICU and zlib-ng use locked sources; MuPDF supplies pinned
+LCMS, JBIG2 and modern HarfBuzz sources. Runtime-dispatched SIMD stays enabled.
+
+ELF dependencies are recursively collected, relocated using `$ORIGIN` paths,
+and audited against glibc 2.28. glibc and its loader remain supplied by the OS,
+as do graphics drivers and fonts. Matching signed source RPMs, their build
+recipes and license texts are collected for every bundled library and the
+statically linked GCC runtime inputs. The verifier also requires every pinned
+MuPDF submodule used by the build.
+
+Both architectures must pass baseline CPU startup, real compilation/rendering/
+SyncTeX checks on glibc 2.28, full native tests on a modern host, and a moved
+bundle's installed platform VSIX through a real VS Code webview. The old-glibc
+runtime uses AlmaLinux's `kpsewhich` with the host's matching modern TeX data.
+Only accepted VSIXs, checksums and verified corresponding sources are uploaded.
+Downloads, caches and all substantial builds stay on GitHub.
+
+## Release and Marketplace publishing
+
+The extension's own code remains MIT. Platform distributions also contain an
+AGPL-covered renderer, a GPL-covered XeTeX helper and libraries with additional
+licenses. `THIRD-PARTY-NOTICES.txt` explains the scope of those grants; the
+Marketplace license asset includes that explanation alongside the original MIT
+text. Full license texts, source/header attributions and a per-target component
+inventory are included and hashed in each native bundle.
+
+After building, CI runs `native/scripts/release_sources.py --fetch` on the
+runner. This explicit network step is separate from the offline builders. It
+archives sanitized single-commit Git snapshots for the extension, engine,
+MuPDF, LCMS and zlib-ng; lockfile-verified npm tarballs; exact signed RPM (or legacy Debian/Ubuntu) source
+packages or installed Homebrew recipes with their source/resource/patch
+downloads; and the ICU inputs. `SOURCE-BUILDING.txt` supplies rebuilding and
+LGPL library-replacement instructions, including local macOS re-signing without
+the release's private keys. Source archive checksums and permanent URLs are
+bound to the native build manifest before signing. Archive verification checks
+file inventories, identities and runtime-library source coverage without
+extracting the large archives.
+
+`sources-<target>` CI artifacts are temporary staging. The manual publish job
+verifies the complete source/binary set, creates a GitHub release, uploads and
+checks the exact reviewed assets, then makes it public and checks public source
+downloads before Marketplace promotion. A retry may reuse identical public
+assets, but never replaces a published version's sources or binaries. Source
+assets must remain available with the release; do not treat CI retention as
+the corresponding-source distribution mechanism.
+
+Dispatch **Release candidate artifacts** (`release-build.yml`) for a candidate
+commit. It builds and tests both signed/notarized macOS targets, both Linux
+targets, and the universal fallback. Inspect that run and its artifacts first.
+Before that new workflow reaches the default branch, its complete reusable
+workflow can also be validated with `gh workflow run test.yml --ref BRANCH
+-f release_candidate=true`. This validation does not publish; the publish job
+still accepts only successful direct manual `release-build.yml` runs.
+
+Then dispatch **Publish reviewed release artifacts** (`publish.yml`) with that
+successful build run's numeric ID. It downloads the exact artifacts without
+rebuilding and checks their complete target set, checksums, extension identity,
+stable v2 version, pinned engine, executable permissions, and Mac signing
+metadata. The originating build must have passed notarization and installed-VSIX
+acceptance. It publishes through GitHub OIDC trusted publishing, with no PAT.
+The Marketplace trusted-publishing policy must name `publish.yml` and this
+repository; no GitHub environment is used. Both jobs install the latest stable
+`vsce` and log its version. Publishing is manual and never runs on PRs.
+
+## Remaining release checks
+
+The host builds record dependency versions and archive exact dependency sources
+and packaging recipes, but are not yet a fully pinned compiler/SDK toolchain.
+Keep the license inventory current when dependencies change, and test target
+VSIXs without the development libraries from their build environments.
+The universal VSIX excludes native archives. Platform VSIXs include only the
+selected bundle. Local ad-hoc signed candidates are for development; distribution
+requires the signed/notarized CI artifacts and platform acceptance results.

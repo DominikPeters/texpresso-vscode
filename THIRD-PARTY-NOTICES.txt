@@ -1,0 +1,77 @@
+TeXpresso for Visual Studio Code — licensing and corresponding source
+
+The extension's own code is licensed under MIT; see LICENSE. This grant does
+not replace the licenses of bundled third-party software. Platform VSIXs are
+mixed-license distributions containing separately identified native programs,
+libraries, and resources. The universal VSIX contains no native engine.
+
+JavaScript dependencies included in dist/extension.js:
+  tmp 0.2.3 — MIT — Copyright (c) 2014 KARASZI István
+    Full text: licenses/tmp-MIT.txt
+  wsl-path 4.0.0 — MIT — Copyright (c) 2018 Jannis Moßhammer
+    Full text: licenses/wsl-path-MIT.txt
+
+The selected Microsoft VS Code Codicons are licensed under CC BY 4.0.
+Their attribution and complete license are in media/codicons-LICENSE.
+
+Native components (platform VSIXs only):
+  Original TeXpresso source: MIT — Copyright (c) 2023 Frédéric Bour.
+  The original MIT grant is preserved in licenses/texpresso-MIT.txt.
+  texpresso links MuPDF and jbig2dec. The distributed linked renderer is
+  covered by GNU AGPL v3 terms. MIT grants on the original TeXpresso source
+  and our contributions remain in force for that source.
+  texpresso-xetex contains Tectonic/XeTeX MIT code and dvipdfmx code under
+  GPL v2 or later. We distribute the combined helper under GPL v3 or later,
+  retaining the original grants and copyright notices of its components.
+  Additional libraries have their own terms, including LGPL and permissive
+  licenses. The per-target inventory, complete notices, license texts and
+  source details are in runtime/<target>/notices/ and build-manifest.json.
+
+This product uses FreeType. Portions of this software are copyright © 2026
+The FreeType Project (https://freetype.org/). All rights reserved. Its FreeType
+License and notices are included with the native library. Where offered as
+alternatives, we select the FreeType License for FreeType and MIT for Graphite2.
+
+Corresponding source for each published version is available at no charge:
+  https://github.com/DominikPeters/texpresso-vscode/releases
+Select the release tag matching this extension's version, v<VERSION>, then
+download texpresso-<VERSION>-sources-<target>.tar.gz and its SHA-256 checksum.
+Targets are darwin-arm64, darwin-x64, linux-x64, linux-arm64 and universal.
+The native build manifest records the exact source archive URL and checksum.
+Source archives include the extension and engine revisions, dependency sources,
+applicable patches/recipes, original notices, and build/replacement instructions.
+Sources are published before the corresponding Marketplace packages. They
+remain available as release assets, independently of temporary CI artifacts.
+
+The software is provided without warranty, subject to the included licenses.
+These licenses permit redistribution and modification under their respective
+conditions. Merely processing a user's document does not license that document
+under the software's licenses.
+
+MIT license for the extension's own code
+=======================================
+Copyright (c) 2024 Dominik Peters
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+TikZ Editor application icon
+----------------------------
+Source: https://github.com/DominikPeters/tikz-editor
+Copyright (c) 2026 Dominik Peters. MIT License.
+License text: media/tikz-editor-LICENSE

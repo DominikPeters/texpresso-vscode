@@ -11,6 +11,18 @@ let paused = false;
 readline.createInterface({ input: process.stdin }).on('line', line => {
   const command = JSON.parse(line);
   trace({ type: 'command', pid: process.pid, command });
+  const exitFile = path.join(path.dirname(root), '.texpresso-test-exit');
+  if (fs.existsSync(exitFile)) {
+    const exit = JSON.parse(fs.readFileSync(exitFile, 'utf8'));
+    // A queued watcher/initialization command must not crash the fixture before
+    // the test's editor update has actually reached the engine.
+    if (!exit.afterText || (['open', 'change', 'change-range'].includes(command[0]) &&
+      typeof command.at(-1) === 'string' && command.at(-1).includes(exit.afterText))) {
+      fs.unlinkSync(exitFile);
+      if (exit.error) { fs.writeSync(2, exit.error); }
+      trace({ type: 'exit', pid: process.pid, code: exit.code }); process.exit(exit.code);
+    }
+  }
   if (command[0] === 'open' && !opened) {
     opened = true;
     send(['input-file', 1, path.join(path.dirname(root), 'chapter.tex')]);

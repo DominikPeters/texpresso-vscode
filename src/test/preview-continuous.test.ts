@@ -7,6 +7,11 @@ interface Geometry {
   rects: { top: number; width: number; height: number; bounds: Bounds }[];
   configure(options: { count?: number; complete?: boolean; active?: number; zoom?: string | number; width?: number; height?: number }): void;
   setBounds(page: number, bounds: number[]): boolean;
+  latestText: Map<number, number[]>; textExtent?: number[];
+  setTextBounds(page: number, bounds: number[], textBounds?: number[]): boolean;
+  refitText(): void;
+  dimensions(bounds: number[], proposedTextBounds?: number[]): { width: number; height: number };
+  textScroll(): number;
   pageAt(y: number): number;
   window(top: number, height: number, limit?: number): { first: number; last: number; center: number; start: number; end: number };
 }
@@ -97,4 +102,111 @@ test('wide neighboring paper determines one stable horizontal extent across virt
   assert.equal(layout.maxWidth,2400,'window selection cannot shift narrower paper horizontally');
   layout.configure({ count:100,complete:true,zoom:'width',width:800,height:700 });
   assert.ok(Math.abs(layout.maxWidth-800)<1e-9,'fit width uses a shared viewport extent');
+});
+
+const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} ≈ ${expected}`);
+const projectedText = (layout: Geometry, page: number, x: number) => {
+  const rect = layout.rects[page], scale = rect.width / (rect.bounds[2] - rect.bounds[0]);
+  return (layout.maxWidth - rect.width) / 2 + (x - rect.bounds[0]) * scale - layout.textScroll();
+};
+
+test('text fit centers asymmetric text with nonzero paper origins while keeping the full paper scrollable', () => {
+  const layout = new PageLayout(), paper = [10, 20, 610, 820];
+  layout.setBounds(0, paper); layout.setTextBounds(0, paper, [70, 100, 490, 700]);
+  layout.configure({ count: 1, complete: true, zoom: 'text', width: 900, height: 700 });
+  near(layout.rects[0].width, 600 * 876 / 420);
+  near(projectedText(layout, 0, 70), 12); near(projectedText(layout, 0, 490), 888);
+  assert.ok(layout.maxWidth > 900 && layout.textScroll() > 0);
+  assert.deepEqual(layout.rects[0].bounds, paper, 'text fit does not crop page coordinates or paper');
+});
+
+test('shared centered text extents preserve one physical scale across mixed paper and blank pages', () => {
+  const layout = new PageLayout(), portrait = [0, 0, 600, 800], landscape = [-50, -20, 950, 580];
+  layout.setBounds(0, portrait); layout.setBounds(1, landscape); layout.setBounds(2, portrait);
+  layout.configure({ count: 3, complete: true, zoom: 'text', width: 900 });
+  assert.equal(layout.rects[0].width, 900, 'older engines and fresh blank documents use normal paper fit');
+  layout.setTextBounds(0, portrait, [100, 100, 500, 700]);
+  layout.setTextBounds(1, landscape, [250, 40, 650, 500]);
+  layout.configure({ count: 3, complete: true, zoom: 'text', width: 900 });
+  const scale = layout.rects[0].width / 600;
+  near(scale, 876 / 400); near(layout.rects[1].width / 1000, scale); near(layout.rects[2].width / 600, scale);
+  near(projectedText(layout, 0, 100), 12); near(projectedText(layout, 1, 250), 12);
+  near(projectedText(layout, 0, 500), 888); near(projectedText(layout, 1, 650), 888);
+});
+
+test('text fitting keeps a high-water envelope during edits and explicitly refits latest retained geometry', () => {
+  const layout = new PageLayout(), paper = [0, 0, 600, 800];
+  for (const page of [0, 1]) { layout.setBounds(page, paper); }
+  layout.setTextBounds(0, paper, [100, 50, 500, 750]); layout.setTextBounds(1, paper, [50, 50, 550, 750]);
+  layout.configure({ count: 2, complete: true, zoom: 'text', width: 900 });
+  const before = layout.rects;
+  layout.setTextBounds(0, paper, [180, 50, 420, 750]); layout.setTextBounds(1, paper, [200, 50, 400, 750]);
+  layout.configure({ count: 2, complete: true, zoom: 'text', width: 900 });
+  assert.equal(layout.rects, before, 'narrower edits do not resize paper or rebuild geometry');
+  layout.setTextBounds(0, paper, [179, 50, 421, 750]);
+  assert.equal(layout.latestText.size, 2, 'per-page estimates are independent of surface/DOM eviction');
+  layout.refitText(); layout.configure({ count: 2, complete: true, zoom: 'text', width: 900 });
+  near(layout.rects[0].width / 600, 876 / 242);
+  assert.ok(layout.rects[0].width > before[0].width, 're-entering text mode can fit a deliberate narrower layout');
+  const refitted = layout.rects;
+  layout.setTextBounds(0, paper, [178, 50, 422, 750]); layout.configure({ count: 2, complete: true, zoom: 'text', width: 900 });
+  assert.equal(layout.rects, refitted, 'subtle glyph-bound drift is absorbed by the screen gutter');
+});
+
+test('only confirmed EOF trims learned text and paper; incomplete prefixes retain distant estimates', () => {
+  const layout = new PageLayout(), paper = [0, 0, 600, 800];
+  layout.setBounds(0, paper); layout.setTextBounds(0, paper, [100, 50, 500, 750]);
+  layout.setBounds(20, paper); layout.setTextBounds(20, paper, [20, 50, 580, 750]);
+  layout.configure({ count: 30, complete: true, zoom: 'text', width: 900 });
+  const wide = layout.rects[0].width;
+  layout.configure({ count: 2, complete: false, zoom: 'text', width: 900 });
+  assert.ok(layout.latestText.has(20)); near(layout.rects[0].width, wide);
+  layout.configure({ count: 2, complete: true, zoom: 'text', width: 900 });
+  assert.ok(!layout.latestText.has(20) && !layout.sizes.has(20)); near(layout.rects[0].width, 600 * 876 / 400);
+  layout.configure({ count: 0, complete: true, zoom: 'text', width: 900 });
+  assert.equal(layout.latestText.size, 0); assert.equal(layout.textExtent, undefined); assert.equal(layout.rects[0].width, 900);
+});
+
+test('text geometry clips to paper and narrow labels obey the existing zoom ceiling', () => {
+  const layout = new PageLayout(), paper = [10, 20, 610, 820]; layout.setBounds(0, paper);
+  for (const bad of [[0, 0, NaN, 10], [0, 0, 10, 10], [700, 50, 800, 100]]) { assert.equal(layout.setTextBounds(0, paper, bad), false); }
+  assert.equal(layout.setTextBounds(100001, paper, [20, 30, 40, 50]), false);
+  layout.setTextBounds(0, paper, [-100, 10, 700, 900]); layout.configure({ count: 1, complete: true, zoom: 'text', width: 900 });
+  near(layout.rects[0].width, 876);
+  layout.setTextBounds(0, paper, [20, 40, 25, 80]); layout.refitText();
+  layout.configure({ count: 1, complete: true, zoom: 'text', width: 900 });
+  near(layout.rects[0].width / 600, 4 * 96 / 72);
+  near((projectedText(layout, 0, 20) + projectedText(layout, 0, 25)) / 2, 450);
+  layout.configure({ count: 100000, complete: false, zoom: 'text', width: 900 });
+  const window = layout.window(layout.rects[50000].top, 700);
+  assert.ok(window.end - window.start + 1 <= 12); assert.equal(layout.latestText.size, 1, 'text fit learns only pages that actually arrive');
+});
+
+test('proposed text-fit surface budgets match committed geometry including learning hysteresis', () => {
+  const layout = new PageLayout(), paper = [0, 0, 600, 800];
+  layout.setBounds(0, paper); layout.configure({ count: 1, complete: true, zoom: 'text', width: 900, height: 700 });
+  for (const text of [[100, 50, 500, 750], [99, 50, 501, 750], [98, 50, 502, 750],
+    [80, 50, 520, 750], [180, 50, 420, 750], [-100, 50, 700, 750]]) {
+    const proposed = layout.dimensions(paper, text);
+    layout.setTextBounds(0, paper, text); layout.configure({ count: 1, complete: true, zoom: 'text', width: 900, height: 700 });
+    near(proposed.width, layout.rects[0].width); near(proposed.height, layout.rects[0].height);
+  }
+});
+
+test('unchanged EOF skips catalogue scans but newly learned out-of-range estimates are pruned', () => {
+  const layout = new PageLayout(), paper = [0, 0, 600, 800];
+  layout.setBounds(0, paper); layout.setTextBounds(0, paper, [100, 50, 500, 750]);
+  layout.configure({ count: 10, complete: true, zoom: 'text' });
+  let scans = 0;
+  for (const entries of [layout.sizes, layout.latestText]) {
+    const keys = entries.keys.bind(entries);
+    entries.keys = () => { scans++; return keys(); };
+  }
+  for (let active = 0; active < 10; active++) { layout.configure({ count: 10, complete: true, active, zoom: 'text' }); }
+  assert.equal(scans, 0, 'native-current-page updates keep the cheap unchanged-layout path');
+  layout.setBounds(20, paper); layout.setTextBounds(20, paper, [20, 50, 580, 750]);
+  layout.configure({ count: 10, complete: true, zoom: 'text' });
+  assert.equal(scans, 2); assert.ok(!layout.sizes.has(20) && !layout.latestText.has(20));
+  layout.configure({ count: 10, complete: true, active: 9, zoom: 'text' });
+  assert.equal(scans, 2, 'the retained EOF bound becomes cheap again after pruning');
 });

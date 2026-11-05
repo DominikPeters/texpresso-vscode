@@ -1,0 +1,1613 @@
+{
+  "schema": 1,
+  "date": "2026-10-23",
+  "report": "2026-10-23-native-followup.md",
+  "artifact": "artifacts/profile-native-followup-long/varied-30-png.json",
+  "oracleArtifact": "artifacts/oracle-native-followup-long/result.json",
+  "scope": "One combined 1464-input PNG regression and attribution check, not a matched native-only speedup comparison.",
+  "runtime": {
+    "native": "2010b9fec2c2450b4d06013544d5968d8605922b",
+    "sourceDirty": false,
+    "manifestSourceSha256": "b513b25af25f65ab572163c0fd9d28d92f4eb112c46e1bde9f70ecea7c99275c",
+    "frontendSha256": "40d905780d70145eba44486059f5a85010b64ac67ac1549078e31a26213a049d",
+    "workerSha256": "5f3cbd59e660b5ac23854134ab600c75cf04eb2aa9ef2b0e3a5d58fccc595bcd",
+    "controllerRuntimeSha256": "f5f566587ef1003fd0c18916c38c9e434a4e66b73ee0c3e252fee1dad4ebfacd"
+  },
+  "focusedAnchors": {
+    "usefulPrefix": 12984533,
+    "baselineRepairResume": 1971923,
+    "candidateRepairResume": 12984533,
+    "candidateUndoResume": 12984532,
+    "baselinePruneSurvivors": [
+      3,
+      4
+    ],
+    "candidatePruneSurvivors": [
+      5,
+      6,
+      6
+    ],
+    "policy": {
+      "hotSites": 2,
+      "maxProtectedExistingSnapshots": 4,
+      "retainedTableEntries": 32,
+      "extraEagerForks": 0,
+      "limit": "Retained table bound; pre-existing transient fork before Q_CHLD pruning means this is not a hard total PID or RAM cap."
+    },
+    "cleanPngAndInvalidationChecksPass": true,
+    "baselineLog": "/private/tmp/txp-edit-anchors-baseline.log",
+    "combinedLog": "/private/tmp/txp-priority-combined-engine-suite.log"
+  },
+  "validation": {
+    "inputs": 1464,
+    "missingPhases": [],
+    "profileError": null,
+    "timelineOverflow": 0,
+    "nativeCombinedCandidate": {
+      "tests": 57,
+      "failures": 0,
+      "skips": 0,
+      "cSuites": 7
+    },
+    "finalCleanupRecheck": {
+      "controlledWorkerStartupTests": 6
+    },
+    "actualCodePreview": true,
+    "fullLint": true,
+    "productionVsixContent": true,
+    "oracle": [
+      {
+        "round": "initial",
+        "passed": true,
+        "count": 5
+      },
+      {
+        "round": "settled",
+        "passed": true,
+        "count": 5
+      }
+    ]
+  },
+  "phases": [
+    {
+      "name": "long-early",
+      "inputCount": 276,
+      "validCadence": true,
+      "maxInputLatenessMs": 7.001000000000204,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 156,
+        "medianMs": 30.908458999998402,
+        "p95Ms": 80.70466600000145,
+        "p99Ms": 352.39787499999966,
+        "maxMs": 452.44624999999996,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 155,
+        "medianMs": 30.908458999998402,
+        "p95Ms": 70.41662499999984,
+        "p99Ms": 352.39787499999966,
+        "maxMs": 452.44624999999996,
+        "counts": {
+          "sampled-visible": 155,
+          "hidden": 0,
+          "unknown": 1,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 140.97229100000004,
+            "inputSequence": 17,
+            "inputAt": 7127.514,
+            "ackAt": 7579.96025,
+            "ms": 452.44624999999996
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 140.97229100000004,
+            "inputSequence": 18,
+            "inputAt": 7227.562375,
+            "ackAt": 7579.96025,
+            "ms": 352.39787499999966
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 137.59683300000052,
+            "inputSequence": 19,
+            "inputAt": 7332.159833,
+            "ackAt": 7579.96025,
+            "ms": 247.80041700000038
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 137.59683300000052,
+            "inputSequence": 20,
+            "inputAt": 7433.547291,
+            "ackAt": 7579.96025,
+            "ms": 146.41295900000023
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 49.658707999999024,
+            "inputSequence": 215,
+            "inputAt": 26927.213666,
+            "ackAt": 27072.52725,
+            "ms": 145.31358399999954
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 156,
+        "medianMs": 41.33675000000039,
+        "p95Ms": 83.18787499999962,
+        "p99Ms": 364.98370799999975,
+        "maxMs": 465.03208300000006,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 17,
+            "inputAt": 7127.514,
+            "frameSequence": 21,
+            "frameRevision": 40,
+            "page": 1,
+            "observerAt": 7592.546083,
+            "ms": 465.03208300000006
+          },
+          {
+            "inputSequence": 18,
+            "inputAt": 7227.562375,
+            "frameSequence": 21,
+            "frameRevision": 40,
+            "page": 1,
+            "observerAt": 7592.546083,
+            "ms": 364.98370799999975
+          },
+          {
+            "inputSequence": 19,
+            "inputAt": 7332.159833,
+            "frameSequence": 21,
+            "frameRevision": 40,
+            "page": 1,
+            "observerAt": 7592.546083,
+            "ms": 260.3862500000005
+          },
+          {
+            "inputSequence": 215,
+            "inputAt": 26927.213666,
+            "frameSequence": 216,
+            "frameRevision": 430,
+            "page": 1,
+            "observerAt": 27088.239583,
+            "ms": 161.02591699999903
+          },
+          {
+            "inputSequence": 20,
+            "inputAt": 7433.547291,
+            "frameSequence": 21,
+            "frameRevision": 40,
+            "page": 1,
+            "observerAt": 7592.546083,
+            "ms": 158.99879200000032
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 5833.04575,
+          "tokens": 17478432,
+          "resumeTokens": 17100159,
+          "changedTrace": 478,
+          "resumeTrace": 475
+        }
+      ]
+    },
+    {
+      "name": "long-middle",
+      "inputCount": 281,
+      "validCadence": false,
+      "maxInputLatenessMs": 20.83233299999847,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 281,
+        "medianMs": 19.991416000004392,
+        "p95Ms": 44.061125000000175,
+        "p99Ms": 68.11095799999748,
+        "maxMs": 153.91787499999919,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 281,
+        "medianMs": 19.991416000004392,
+        "p95Ms": 44.061125000000175,
+        "p99Ms": 68.11095799999748,
+        "maxMs": 153.91787499999919,
+        "counts": {
+          "sampled-visible": 281,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 56.9106249999968,
+            "inputSequence": 441,
+            "inputAt": 51179.057541,
+            "ackAt": 51332.975416,
+            "ms": 153.91787499999919
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 85.39520799999445,
+            "inputSequence": 504,
+            "inputAt": 57457.736833,
+            "ackAt": 57592.722958,
+            "ms": 134.9861249999958
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 84.06025000000227,
+            "inputSequence": 440,
+            "inputAt": 51062.550958,
+            "ackAt": 51130.661916,
+            "ms": 68.11095799999748
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 41.35462499999994,
+            "inputSequence": 442,
+            "inputAt": 51266.18875,
+            "ackAt": 51332.975416,
+            "ms": 66.78666599999997
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 77.91116599999805,
+            "inputSequence": 483,
+            "inputAt": 55358.385916,
+            "ackAt": 55423.029791,
+            "ms": 64.64387500000157
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 281,
+        "medianMs": 30.211582999996608,
+        "p95Ms": 57.70883299999696,
+        "p99Ms": 146.77858299999934,
+        "maxMs": 167.7366669999974,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 497,
+            "inputAt": 56759.902916,
+            "frameSequence": 498,
+            "frameRevision": 995,
+            "page": 15,
+            "observerAt": 56927.639583,
+            "ms": 167.7366669999974
+          },
+          {
+            "inputSequence": 441,
+            "inputAt": 51179.057541,
+            "frameSequence": 442,
+            "frameRevision": 883,
+            "page": 15,
+            "observerAt": 51346.706541,
+            "ms": 167.6489999999976
+          },
+          {
+            "inputSequence": 504,
+            "inputAt": 57457.736833,
+            "frameSequence": 505,
+            "frameRevision": 1009,
+            "page": 15,
+            "observerAt": 57604.515416,
+            "ms": 146.77858299999934
+          },
+          {
+            "inputSequence": 483,
+            "inputAt": 55358.385916,
+            "frameSequence": 483,
+            "frameRevision": 965,
+            "page": 15,
+            "observerAt": 55439.665458,
+            "ms": 81.27954200000386
+          },
+          {
+            "inputSequence": 442,
+            "inputAt": 51266.18875,
+            "frameSequence": 442,
+            "frameRevision": 883,
+            "page": 15,
+            "observerAt": 51346.706541,
+            "ms": 80.5177909999984
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 34966.185375,
+          "tokens": 31346757,
+          "resumeTokens": 25980711,
+          "changedTrace": 514,
+          "resumeTrace": 514
+        }
+      ]
+    },
+    {
+      "name": "long-included",
+      "inputCount": 304,
+      "validCadence": true,
+      "maxInputLatenessMs": 8.76912500000617,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 304,
+        "medianMs": 25.414790999988327,
+        "p95Ms": 45.83008300000802,
+        "p99Ms": 62.80845799999952,
+        "maxMs": 74.06637499999488,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 304,
+        "medianMs": 25.414790999988327,
+        "p95Ms": 45.83008300000802,
+        "p99Ms": 62.80845799999952,
+        "maxMs": 74.06637499999488,
+        "counts": {
+          "sampled-visible": 304,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 31.53074999999808,
+            "inputSequence": 561,
+            "inputAt": 64879.035833,
+            "ackAt": 64953.102208,
+            "ms": 74.06637499999488
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 65.03933299999335,
+            "inputSequence": 592,
+            "inputAt": 67980.010541,
+            "ackAt": 68048.600333,
+            "ms": 68.58979199999885
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 78.49129199999152,
+            "inputSequence": 761,
+            "inputAt": 84878.956666,
+            "ackAt": 84945.406541,
+            "ms": 66.4498750000057
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 32.69108299999789,
+            "inputSequence": 560,
+            "inputAt": 64780.192708,
+            "ackAt": 64843.001166,
+            "ms": 62.80845799999952
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 70.2299170000042,
+            "inputSequence": 836,
+            "inputAt": 92379.554458,
+            "ackAt": 92440.751958,
+            "ms": 61.19749999999476
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 304,
+        "medianMs": 37.12262500000361,
+        "p95Ms": 56.92233300000953,
+        "p99Ms": 74.2399579999983,
+        "maxMs": 83.88208299999678,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 561,
+            "inputAt": 64879.035833,
+            "frameSequence": 561,
+            "frameRevision": 1121,
+            "page": 15,
+            "observerAt": 64962.917916,
+            "ms": 83.88208299999678
+          },
+          {
+            "inputSequence": 592,
+            "inputAt": 67980.010541,
+            "frameSequence": 592,
+            "frameRevision": 1183,
+            "page": 15,
+            "observerAt": 68062.766583,
+            "ms": 82.75604200000816
+          },
+          {
+            "inputSequence": 761,
+            "inputAt": 84878.956666,
+            "frameSequence": 761,
+            "frameRevision": 1521,
+            "page": 15,
+            "observerAt": 84957.529875,
+            "ms": 78.57320899999468
+          },
+          {
+            "inputSequence": 560,
+            "inputAt": 64780.192708,
+            "frameSequence": 560,
+            "frameRevision": 1119,
+            "page": 15,
+            "observerAt": 64854.432666,
+            "ms": 74.2399579999983
+          },
+          {
+            "inputSequence": 611,
+            "inputAt": 69878.944583,
+            "frameSequence": 611,
+            "frameRevision": 1221,
+            "page": 15,
+            "observerAt": 69950.149208,
+            "ms": 71.20462499999849
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 64783.603958,
+          "tokens": 26514590,
+          "resumeTokens": 25862703,
+          "changedTrace": 513,
+          "resumeTrace": 513
+        }
+      ]
+    },
+    {
+      "name": "long-late",
+      "inputCount": 302,
+      "validCadence": true,
+      "maxInputLatenessMs": 2.4842500000086147,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 212,
+        "medianMs": 24.239832999999635,
+        "p95Ms": 45.43062500000815,
+        "p99Ms": 64.73445899999933,
+        "maxMs": 165.26908399999957,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 212,
+        "medianMs": 24.239832999999635,
+        "p95Ms": 45.43062500000815,
+        "p99Ms": 64.73445899999933,
+        "maxMs": 165.26908399999957,
+        "counts": {
+          "sampled-visible": 212,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 67.95749999998952,
+            "inputSequence": 902,
+            "inputAt": 100727.008541,
+            "ackAt": 100892.277625,
+            "ms": 165.26908399999957
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 36.60170800000196,
+            "inputSequence": 904,
+            "inputAt": 100927.288833,
+            "ackAt": 101006.856625,
+            "ms": 79.56779200000165
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 20.490417000008165,
+            "inputSequence": 903,
+            "inputAt": 100827.543166,
+            "ackAt": 100892.277625,
+            "ms": 64.73445899999933
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 64.92141699999047,
+            "inputSequence": 906,
+            "inputAt": 101126.743041,
+            "ackAt": 101184.994208,
+            "ms": 58.251167000009445
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 73.44941600000311,
+            "inputSequence": 886,
+            "inputAt": 99126.849,
+            "ackAt": 99182.838333,
+            "ms": 55.98933300000499
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 212,
+        "medianMs": 35.812916000009864,
+        "p95Ms": 55.072374999988824,
+        "p99Ms": 80.49087500000314,
+        "maxMs": 181.02550000000338,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 902,
+            "inputAt": 100727.008541,
+            "frameSequence": 903,
+            "frameRevision": 1805,
+            "page": 29,
+            "observerAt": 100908.034041,
+            "ms": 181.02550000000338
+          },
+          {
+            "inputSequence": 904,
+            "inputAt": 100927.288833,
+            "frameSequence": 904,
+            "frameRevision": 1807,
+            "page": 29,
+            "observerAt": 101016.896791,
+            "ms": 89.60795800000778
+          },
+          {
+            "inputSequence": 903,
+            "inputAt": 100827.543166,
+            "frameSequence": 903,
+            "frameRevision": 1805,
+            "page": 29,
+            "observerAt": 100908.034041,
+            "ms": 80.49087500000314
+          },
+          {
+            "inputSequence": 906,
+            "inputAt": 101126.743041,
+            "frameSequence": 906,
+            "frameRevision": 1811,
+            "page": 29,
+            "observerAt": 101204.544958,
+            "ms": 77.80191700000432
+          },
+          {
+            "inputSequence": 1120,
+            "inputAt": 122526.314458,
+            "frameSequence": 1120,
+            "frameRevision": 2239,
+            "page": 29,
+            "observerAt": 122595.360916,
+            "ms": 69.04645800001163
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 96930.1965,
+          "tokens": 33856679,
+          "resumeTokens": 33524846,
+          "changedTrace": 545,
+          "resumeTrace": 545
+        }
+      ]
+    },
+    {
+      "name": "long-included-return",
+      "inputCount": 297,
+      "validCadence": true,
+      "maxInputLatenessMs": 5.086917000007816,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 297,
+        "medianMs": 26.31629200000316,
+        "p95Ms": 51.23700000002282,
+        "p99Ms": 63.37904100000742,
+        "maxMs": 93.57775000002584,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 297,
+        "medianMs": 26.31629200000316,
+        "p95Ms": 51.23700000002282,
+        "p99Ms": 63.37904100000742,
+        "maxMs": 93.57775000002584,
+        "counts": {
+          "sampled-visible": 297,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 63.88491699998849,
+            "inputSequence": 1284,
+            "inputAt": 140654.085416,
+            "ackAt": 140747.663166,
+            "ms": 93.57775000002584
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 73.29129200000898,
+            "inputSequence": 1383,
+            "inputAt": 150554.271666,
+            "ackAt": 150620.192375,
+            "ms": 65.92070900002727
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 67.19966700000805,
+            "inputSequence": 1324,
+            "inputAt": 144654.890375,
+            "ackAt": 144718.269416,
+            "ms": 63.37904100000742
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 55.45283300000301,
+            "inputSequence": 1167,
+            "inputAt": 128953.929416,
+            "ackAt": 129016.296208,
+            "ms": 62.366792000000714
+          },
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 82.12674999999581,
+            "inputSequence": 1360,
+            "inputAt": 148254.020458,
+            "ackAt": 148313.740541,
+            "ms": 59.72008299999288
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 297,
+        "medianMs": 39.92637500001001,
+        "p95Ms": 61.578917000006186,
+        "p99Ms": 74.35466700000688,
+        "maxMs": 136.96675000002142,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 1284,
+            "inputAt": 140654.085416,
+            "frameSequence": 1285,
+            "frameRevision": 2569,
+            "page": 15,
+            "observerAt": 140791.052166,
+            "ms": 136.96675000002142
+          },
+          {
+            "inputSequence": 1360,
+            "inputAt": 148254.020458,
+            "frameSequence": 1360,
+            "frameRevision": 2719,
+            "page": 15,
+            "observerAt": 148328.399958,
+            "ms": 74.37949999998091
+          },
+          {
+            "inputSequence": 1383,
+            "inputAt": 150554.271666,
+            "frameSequence": 1383,
+            "frameRevision": 2765,
+            "page": 15,
+            "observerAt": 150628.626333,
+            "ms": 74.35466700000688
+          },
+          {
+            "inputSequence": 1324,
+            "inputAt": 144654.890375,
+            "frameSequence": 1324,
+            "frameRevision": 2647,
+            "page": 15,
+            "observerAt": 144728.685291,
+            "ms": 73.79491600001347
+          },
+          {
+            "inputSequence": 1167,
+            "inputAt": 128953.929416,
+            "frameSequence": 1167,
+            "frameRevision": 2333,
+            "page": 15,
+            "observerAt": 129027.505875,
+            "ms": 73.57645900000352
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 128867.053666,
+          "tokens": 33676952,
+          "resumeTokens": 25918280,
+          "changedTrace": 513,
+          "resumeTrace": 513
+        }
+      ]
+    },
+    {
+      "name": "long-incomplete-repair",
+      "inputCount": 2,
+      "validCadence": true,
+      "maxInputLatenessMs": 1.290791999985231,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 1,
+        "medianMs": 29.16029199998593,
+        "p95Ms": 29.16029199998593,
+        "p99Ms": 29.16029199998593,
+        "maxMs": 29.16029199998593,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 1,
+        "medianMs": 29.16029199998593,
+        "p95Ms": 29.16029199998593,
+        "p99Ms": 29.16029199998593,
+        "maxMs": 29.16029199998593,
+        "counts": {
+          "sampled-visible": 1,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 70.44587500000489,
+            "inputSequence": 1464,
+            "inputAt": 161822.673291,
+            "ackAt": 161851.833583,
+            "ms": 29.16029199998593
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 1,
+        "medianMs": 42.47604199999478,
+        "p95Ms": 42.47604199999478,
+        "p99Ms": 42.47604199999478,
+        "maxMs": 42.47604199999478,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 1464,
+            "inputAt": 161822.673291,
+            "frameSequence": 1464,
+            "frameRevision": 2928,
+            "page": 15,
+            "observerAt": 161865.149333,
+            "ms": 42.47604199999478
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 160325.68125,
+          "tokens": 26363251,
+          "resumeTokens": 25919298,
+          "changedTrace": 513,
+          "resumeTrace": 513
+        }
+      ]
+    },
+    {
+      "name": "long-undo",
+      "inputCount": 1,
+      "validCadence": true,
+      "maxInputLatenessMs": 1.2392080000136048,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 1,
+        "medianMs": 32.8640000000014,
+        "p95Ms": 32.8640000000014,
+        "p99Ms": 32.8640000000014,
+        "maxMs": 32.8640000000014,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 1,
+        "medianMs": 32.8640000000014,
+        "p95Ms": 32.8640000000014,
+        "p99Ms": 32.8640000000014,
+        "maxMs": 32.8640000000014,
+        "counts": {
+          "sampled-visible": 1,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 46.55812500001048,
+            "inputSequence": 1465,
+            "inputAt": 163706.108791,
+            "ackAt": 163738.972791,
+            "ms": 32.8640000000014
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 1,
+        "medianMs": 43.10191699999268,
+        "p95Ms": 43.10191699999268,
+        "p99Ms": 43.10191699999268,
+        "maxMs": 43.10191699999268,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 1465,
+            "inputAt": 163706.108791,
+            "frameSequence": 1465,
+            "frameRevision": 2930,
+            "page": 15,
+            "observerAt": 163749.210708,
+            "ms": 43.10191699999268
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 163709.960083,
+          "tokens": 26545016,
+          "resumeTokens": 25862703,
+          "changedTrace": 512,
+          "resumeTrace": 512
+        }
+      ]
+    },
+    {
+      "name": "long-redo",
+      "inputCount": 1,
+      "validCadence": true,
+      "maxInputLatenessMs": 1.2564999999885913,
+      "rootRollbacks": 0,
+      "strictCommit": {
+        "count": 1,
+        "medianMs": 39.63191700002062,
+        "p95Ms": 39.63191700002062,
+        "p99Ms": 39.63191700002062,
+        "maxMs": 39.63191700002062,
+        "endpoint": "Host receipt of an owning browser commit ACK that is current both in the browser and against the host source sequence/compiler revision at receipt. Requires geometric visibility and a visible document at commit. An input-to-commit upper bound, independent of rAF; unavailable without host epoch fields."
+      },
+      "sampledVisible": {
+        "count": 1,
+        "medianMs": 39.63191700002062,
+        "p95Ms": 39.63191700002062,
+        "p99Ms": 39.63191700002062,
+        "maxMs": 39.63191700002062,
+        "counts": {
+          "sampled-visible": 1,
+          "hidden": 0,
+          "unknown": 0,
+          "unobserved": 0
+        },
+        "maxAllowedObservationGapMs": 150,
+        "endpoint": "Strict current visible commit ACK latency restricted to inputs preceded by a visible sample, with no hidden sample through ACK receipt and no observation gap above 150 ms. Sampled exposure cannot exclude brief hidden intervals between observations.",
+        "worst": [
+          {
+            "state": "sampled-visible",
+            "maxSampleGapMs": 80.32683299999917,
+            "inputSequence": 1466,
+            "inputAt": 165565.636083,
+            "ackAt": 165605.268,
+            "ms": 39.63191700002062
+          }
+        ]
+      },
+      "twoFrameObserver": {
+        "count": 1,
+        "medianMs": 50.116500000003725,
+        "p95Ms": 50.116500000003725,
+        "p99Ms": 50.116500000003725,
+        "maxMs": 50.116500000003725,
+        "endpoint": "Owning visible source-page frame whose sequence and revision equal latestSequence/latestRevision at host observer receipt. Unavailable for traces without latestRevision; still not compositor presentation.",
+        "worst": [
+          {
+            "inputSequence": 1466,
+            "inputAt": 165565.636083,
+            "frameSequence": 1466,
+            "frameRevision": 2932,
+            "page": 15,
+            "observerAt": 165615.752583,
+            "ms": 50.116500000003725
+          }
+        ]
+      },
+      "rollbacks": [
+        {
+          "at": 165568.239083,
+          "tokens": 26425562,
+          "resumeTokens": 25919298,
+          "changedTrace": 513,
+          "resumeTrace": 513
+        },
+        {
+          "at": 165963.149708,
+          "tokens": 26447154,
+          "resumeTokens": 25919298,
+          "changedTrace": 521,
+          "resumeTrace": 513
+        }
+      ]
+    }
+  ],
+  "stages": {
+    "inputToHeaderMs": {
+      "count": 1469,
+      "medianMs": 23.457833000007668,
+      "p95Ms": 48.59520899999916,
+      "p99Ms": 810.840750000003,
+      "maxMs": 11702.951208000013
+    },
+    "headerToObserverReceiptMs": {
+      "count": 1481,
+      "medianMs": 14.009125000011409,
+      "p95Ms": 18.975917000003392,
+      "p99Ms": 24.639416999998502,
+      "maxMs": 91.2534169999999
+    },
+    "headerToPostMs": {
+      "count": 1481,
+      "medianMs": 0.05475000001024455,
+      "p95Ms": 0.09850000000733417,
+      "p99Ms": 0.3162080000038259,
+      "maxMs": 0.6459580000000642
+    },
+    "postToAckRoundTripMs": {
+      "count": 1487,
+      "medianMs": 2.132333000015933,
+      "p95Ms": 4.628916999994544,
+      "p99Ms": 11.305792000006477,
+      "maxMs": 18.859708000003593
+    },
+    "browserReceiveToCommitMs": {
+      "count": 1487,
+      "medianMs": 1.399999976158142,
+      "p95Ms": 2.400000035762787,
+      "p99Ms": 9.100000023841858,
+      "maxMs": 17.100000023841858
+    },
+    "browserCommitToTwoRafMs": {
+      "count": 1487,
+      "medianMs": 11.400000035762787,
+      "p95Ms": 15.800000011920929,
+      "p99Ms": 16.600000023841858,
+      "maxMs": 85.60000002384186
+    },
+    "browserRenderMs": {
+      "count": 1487,
+      "medianMs": 1.4000000357627869,
+      "p95Ms": 2.5,
+      "p99Ms": 9.199999988079071,
+      "maxMs": 17.100000023841858
+    },
+    "nativeExportMs": {
+      "count": 1481,
+      "medianMs": 2.547,
+      "p95Ms": 5.534,
+      "p99Ms": 25.905,
+      "maxMs": 68.76
+    }
+  },
+  "commitStages": {
+    "browserReceiveToCommitMs": {
+      "count": 1486,
+      "medianMs": 1.399999976158142,
+      "p95Ms": 2.400000035762787,
+      "p99Ms": 9.100000023841858,
+      "maxMs": 17.100000023841858
+    },
+    "postToAckRoundTripMs": {
+      "count": 1486,
+      "medianMs": 2.132333000015933,
+      "p95Ms": 4.628916999994544,
+      "p99Ms": 11.305792000006477,
+      "maxMs": 18.859708000003593
+    },
+    "headerToAckMs": {
+      "count": 1480,
+      "medianMs": 2.19016699999338,
+      "p95Ms": 4.3254999999917345,
+      "p99Ms": 11.271749999999884,
+      "maxMs": 19.1831250000032
+    },
+    "browserRenderMs": {
+      "count": 1486,
+      "medianMs": 1.4000000357627869,
+      "p95Ms": 2.5,
+      "p99Ms": 9.199999988079071,
+      "maxMs": 17.100000023841858
+    }
+  },
+  "handshakes": [
+    {
+      "at": 4304.834291,
+      "phase": "initial",
+      "generation": 0,
+      "stage": "compiler-handshake",
+      "ms": 1406.778,
+      "nativeAt": 612655576.44,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "pid": 3547,
+      "reason": "demand",
+      "outcome": "ready"
+    },
+    {
+      "at": 5353.196791,
+      "phase": "long-early",
+      "generation": 0,
+      "stage": "compiler-handshake",
+      "ms": 173.417,
+      "nativeAt": 612656624.831,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "pid": 3570,
+      "reason": "prewarm",
+      "outcome": "ready"
+    },
+    {
+      "at": 168133.520375,
+      "phase": "webview-recovery",
+      "generation": 0,
+      "stage": "compiler-handshake",
+      "ms": 172.783,
+      "nativeAt": 612819404.796,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "pid": 9635,
+      "reason": "convergence-changed",
+      "outcome": "ready"
+    },
+    {
+      "at": 178293.201,
+      "phase": "engine-recovery",
+      "generation": 1,
+      "stage": "compiler-handshake",
+      "ms": 158.541,
+      "nativeAt": 612829564.44,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "pid": 9790,
+      "reason": "demand",
+      "outcome": "ready"
+    },
+    {
+      "at": 181680.408166,
+      "phase": "oracle-convergence",
+      "generation": 1,
+      "stage": "compiler-handshake",
+      "ms": 188.795,
+      "nativeAt": 612832951.618,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "pid": 9888,
+      "reason": "convergence-changed",
+      "outcome": "ready"
+    }
+  ],
+  "decimation": [
+    {
+      "at": 34741.219541,
+      "phase": "long-middle",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612686010.417,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 6,
+      "taggedAnchors": 2,
+      "reservedAnchors": 2,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 96764.231875,
+      "phase": "long-late",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612748035.669,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 7,
+      "taggedAnchors": 3,
+      "reservedAnchors": 4,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 161689.377833,
+      "phase": "long-incomplete-repair",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612812960.617,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 7,
+      "taggedAnchors": 3,
+      "reservedAnchors": 4,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 167889.546833,
+      "phase": "webview-recovery",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612819160.817,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 6,
+      "taggedAnchors": 3,
+      "reservedAnchors": 4,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 169259.632125,
+      "phase": "webview-recovery",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612820530.909,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 5,
+      "taggedAnchors": 0,
+      "reservedAnchors": 0,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 169470.225416,
+      "phase": "webview-recovery",
+      "generation": 0,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612820741.496,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 6,
+      "taggedAnchors": 0,
+      "reservedAnchors": 0,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 179582.358333,
+      "phase": "engine-recovery",
+      "generation": 1,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612830853.475,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 6,
+      "taggedAnchors": 0,
+      "reservedAnchors": 0,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 180529.43225,
+      "phase": "engine-recovery",
+      "generation": 1,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612831800.665,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 7,
+      "taggedAnchors": 1,
+      "reservedAnchors": 2,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 182264.726875,
+      "phase": "oracle-convergence",
+      "generation": 1,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612833535.962,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 5,
+      "taggedAnchors": 0,
+      "reservedAnchors": 0,
+      "evictedAnchors": 0
+    },
+    {
+      "at": 193370.051583,
+      "phase": "oracle-convergence",
+      "generation": 1,
+      "stage": "compiler-decimation",
+      "ms": 0,
+      "nativeAt": 612844641.201,
+      "request": -1,
+      "page": -1,
+      "bytes": 0,
+      "before": 32,
+      "after": 7,
+      "taggedAnchors": 1,
+      "reservedAnchors": 2,
+      "evictedAnchors": 0
+    }
+  ],
+  "recovery": [
+    {
+      "type": "webview-load",
+      "at": 2577.48725,
+      "generation": 0,
+      "load": 1
+    },
+    {
+      "type": "dropped-ack",
+      "at": 167178.242625,
+      "generation": 0,
+      "requestId": 1845
+    },
+    {
+      "type": "webview-load",
+      "at": 177175.112958,
+      "generation": 0,
+      "load": 2
+    },
+    {
+      "type": "webview-recovered",
+      "at": 177302.410625,
+      "elapsedMs": 10283.536957999982,
+      "generation": 0
+    },
+    {
+      "type": "engine-replaced-explicitly",
+      "generation": 1,
+      "elapsedMs": 1366.1382079999894,
+      "failure": "TeXpresso exited with SIGKILL",
+      "automaticPolicy": false,
+      "overlayCount": 2
+    }
+  ],
+  "sourceReplays": [
+    {
+      "at": 2575.432458,
+      "phase": "initial",
+      "generation": 0,
+      "command": "open",
+      "path": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-native-followup-long/varied-30-png/varied.tex",
+      "bytes": 63241,
+      "sha256": "195a1ecf36fa3ba21c8fd2325f7da8bc968acb576cdf51c56215abe0677763ef",
+      "editor": {
+        "file": "varied.tex",
+        "version": 1,
+        "dirty": false,
+        "bytes": 63241,
+        "sha256": "195a1ecf36fa3ba21c8fd2325f7da8bc968acb576cdf51c56215abe0677763ef"
+      }
+    },
+    {
+      "at": 2576.019291,
+      "phase": "initial",
+      "generation": 0,
+      "command": "open",
+      "path": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-native-followup-long/varied-30-png/chapter.tex",
+      "bytes": 530,
+      "sha256": "f95bcb234fb0d94e9f92a041b0cdcf4d8283f3540bd6b1f9d83525647a4d01c5",
+      "editor": {
+        "file": "chapter.tex",
+        "version": 1,
+        "dirty": false,
+        "bytes": 530,
+        "sha256": "f95bcb234fb0d94e9f92a041b0cdcf4d8283f3540bd6b1f9d83525647a4d01c5"
+      }
+    },
+    {
+      "at": 177954.628666,
+      "phase": "engine-recovery",
+      "generation": 1,
+      "command": "open",
+      "path": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-native-followup-long/varied-30-png/varied.tex",
+      "bytes": 64100,
+      "sha256": "9b368eec4f5239ff25a880a4596940485e29602b988f7ed0836d2109e22c1214",
+      "editor": {
+        "file": "varied.tex",
+        "version": 860,
+        "dirty": true,
+        "bytes": 64100,
+        "sha256": "9b368eec4f5239ff25a880a4596940485e29602b988f7ed0836d2109e22c1214"
+      }
+    },
+    {
+      "at": 177955.366833,
+      "phase": "engine-recovery",
+      "generation": 1,
+      "command": "open",
+      "path": "/Users/dominik/GitHub/texpresso-vscode/artifacts/profile-native-followup-long/varied-30-png/chapter.tex",
+      "bytes": 1384,
+      "sha256": "60e794ff52408f64259469d79e86f808db59216e2267f4cfc845acce01c82202",
+      "editor": {
+        "file": "chapter.tex",
+        "version": 606,
+        "dirty": true,
+        "bytes": 1384,
+        "sha256": "60e794ff52408f64259469d79e86f808db59216e2267f4cfc845acce01c82202"
+      }
+    }
+  ],
+  "checkpointMemory": [
+    {
+      "name": "initial-settled",
+      "native": {
+        "tasks": 3,
+        "statusAvailable": true,
+        "liveTasks": 3,
+        "zombies": 0,
+        "adoptedByInit": 0,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 72237056,
+        "liveFootprintSum": 71568576,
+        "rssSum": 72237056,
+        "footprintSum": 71568576
+      }
+    },
+    {
+      "name": "long-early",
+      "native": {
+        "tasks": 10,
+        "statusAvailable": true,
+        "liveTasks": 10,
+        "zombies": 0,
+        "adoptedByInit": 0,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 146456576,
+        "liveFootprintSum": 302545344,
+        "rssSum": 146456576,
+        "footprintSum": 302545344
+      }
+    },
+    {
+      "name": "long-middle",
+      "native": {
+        "tasks": 11,
+        "statusAvailable": true,
+        "liveTasks": 11,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 135462912,
+        "liveFootprintSum": 323043328,
+        "rssSum": 135462912,
+        "footprintSum": 323043328
+      }
+    },
+    {
+      "name": "long-included",
+      "native": {
+        "tasks": 11,
+        "statusAvailable": true,
+        "liveTasks": 11,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 87572480,
+        "liveFootprintSum": 312901568,
+        "rssSum": 87572480,
+        "footprintSum": 312901568
+      }
+    },
+    {
+      "name": "long-late",
+      "native": {
+        "tasks": 16,
+        "statusAvailable": true,
+        "liveTasks": 16,
+        "zombies": 0,
+        "adoptedByInit": 2,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 135626752,
+        "liveFootprintSum": 367189376,
+        "rssSum": 135626752,
+        "footprintSum": 367189376
+      }
+    },
+    {
+      "name": "long-included-return",
+      "native": {
+        "tasks": 11,
+        "statusAvailable": true,
+        "liveTasks": 11,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 128008192,
+        "liveFootprintSum": 340918976,
+        "rssSum": 128008192,
+        "footprintSum": 340918976
+      }
+    },
+    {
+      "name": "long-incomplete-repair",
+      "native": {
+        "tasks": 10,
+        "statusAvailable": true,
+        "liveTasks": 10,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 123371520,
+        "liveFootprintSum": 320011712,
+        "rssSum": 123371520,
+        "footprintSum": 320011712
+      }
+    },
+    {
+      "name": "long-undo",
+      "native": {
+        "tasks": 10,
+        "statusAvailable": true,
+        "liveTasks": 10,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 107118592,
+        "liveFootprintSum": 314949056,
+        "rssSum": 107118592,
+        "footprintSum": 314949056
+      }
+    },
+    {
+      "name": "long-redo",
+      "native": {
+        "tasks": 8,
+        "statusAvailable": true,
+        "liveTasks": 8,
+        "zombies": 0,
+        "adoptedByInit": 1,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 127778816,
+        "liveFootprintSum": 308392384,
+        "rssSum": 127778816,
+        "footprintSum": 308392384
+      }
+    },
+    {
+      "name": "after-webview-recovery",
+      "native": {
+        "tasks": 6,
+        "statusAvailable": true,
+        "liveTasks": 6,
+        "zombies": 0,
+        "adoptedByInit": 0,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 88752128,
+        "liveFootprintSum": 310993536,
+        "rssSum": 88752128,
+        "footprintSum": 310993536
+      }
+    },
+    {
+      "name": "after-explicit-engine-replacement",
+      "native": {
+        "tasks": 5,
+        "statusAvailable": true,
+        "liveTasks": 5,
+        "zombies": 0,
+        "adoptedByInit": 0,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 165330944,
+        "liveFootprintSum": 246619904,
+        "rssSum": 165330944,
+        "footprintSum": 246619904
+      }
+    },
+    {
+      "name": "final-settled",
+      "native": {
+        "tasks": 8,
+        "statusAvailable": true,
+        "liveTasks": 8,
+        "zombies": 0,
+        "adoptedByInit": 2,
+        "unknownStatusTasks": 0,
+        "liveRssSum": 103890944,
+        "liveFootprintSum": 281554112,
+        "rssSum": 103890944,
+        "footprintSum": 281554112
+      }
+    }
+  ],
+  "memoryLimits": "Task RSS/footprint sums include shared and COW pages; they are not unique RAM or PSS. Finite checkpoints do not establish hours-long stability.",
+  "convergence": [
+    {
+      "round": "settled",
+      "verified": false,
+      "waitedMs": 12011.149875000003,
+      "criterion": "Current source complete and native revision unchanged for 1200 ms, bounded 12 s; not an aux-protocol guarantee",
+      "generation": 1,
+      "sequence": 3,
+      "state": [
+        "preview-state",
+        5,
+        3,
+        16,
+        false,
+        15
+      ]
+    }
+  ],
+  "convergenceLimit": "The on-demand 16-page incomplete prefix after the 12-second observation is not a new reference-oracle failure.",
+  "remainingTail": {
+    "inputSequence": 17,
+    "inputAt": 7127.514,
+    "frameSequence": 21,
+    "nativeHeaderAt": 7576.87225,
+    "exportMs": 8.188,
+    "ackAt": 7579.96025,
+    "observerAt": 7592.546083,
+    "browserReceiveToCommitMs": 2.1,
+    "checkpointForkMs": 34.836,
+    "noHandshakeOrConvergence": true
+  },
+  "crossClientValidation": {
+    "client": "TeXstudio",
+    "engineRevision": "2010b9fec2c2450b4d06013544d5968d8605922b",
+    "qtSuitesPassed": 15,
+    "applicationChecksPassed": 1613,
+    "sustainedTargetPages": [
+      30,
+      100
+    ],
+    "sustainedEdits": 1464,
+    "independentSourcePageProbes": 6,
+    "scope": "Correctness checks including gated startup edits/Pause, Stop/reaping and timeout/Restart; no production host API change; not a latency comparison."
+  }
+}

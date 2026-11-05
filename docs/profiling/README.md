@@ -38,6 +38,9 @@ values. Observations from repeated edits within one process are correlated; the
 five fresh-process startup samples are a small sample, not a population estimate.
 Generated fixtures, exported images and memory traces stay under ignored
 `artifacts/`. The compact committed results/report identify the measured inputs.
+After saving the compact report and reproduction command, remove old raw runs
+with `npm run clean:generated -- --days 1 --apply`. Keep only an active run or
+one comparison pair locally; a `.keep` file pins a run until its analysis ends.
 `--exports N --exports-only 1` restricts work to startup and retained-list export
 for resolution/encoder microbenchmarks.
 
@@ -130,3 +133,34 @@ The current pass also covers [compiler checkpoints](2026-10-22-checkpoints.md),
 and the [richer demo and dashed-stroke fix](2026-10-22-demo.md).
 
 [Rich-demo typing and continuous-preview acceptance](2026-10-22-rich-demo.md) separates the first cold edit, warm typing, and auxiliary-convergence repaint costs, with actual VS Code measurements and source-version checks.
+
+[Cursor checkpoint prewarming](2026-10-22-prewarm.md) measures nineteen characters
+of ordinary 100 ms typing with a cold cursor, a prepared cursor and interrupted
+preparation, using actual VS Code and the production renderers.
+
+[Sustained editing and natural reflow](2026-10-22-sustained-editing.md) uses shared
+30-page and opt-in 100-page varied documents with long prose/math/theorem typing,
+page navigation, incomplete paste/repair and undo.
+
+[Reference retention while typing](2026-10-22-reference-retention.md) reproduces
+resolved labels reverting to `??` and verifies retaining auxiliary input across
+source rollbacks without freezing real reference changes.
+
+[Long-session reliability and controlled rendering](2026-10-23-reliability.md)
+adds unsaved includes, redo, bounded engine/webview recovery and process-status
+accounting. It retains failed diagnostics and separates the same-binary SVG
+allocation fix from unresolved compiler starvation and source-target validation.
+
+[Latency attribution and scheduling](2026-10-23-latency.md) separates browser commits from delayed paint observations, measures duplicate-resolution rendering, and validates a tighter native compiler work budget.
+
+[Source-follow page priority (23 October)](2026-10-23-source-priority.md) compares the same 202-input PNG workload and native bundle before and after keeping the edited visible page ahead of the viewport center. It records request routing, PNG keyframes/patches, visible commit latency and the remaining compiler-side tail. [Compact results](2026-10-23-source-priority.json).
+
+[Native edit anchors and responsive startup (23 October)](2026-10-23-native-followup.md) records bounded retention for repair/undo, incremental worker greetings, six controlled-worker checks and a complete 1,464-input PNG regression with ten passing reference checks. It retains the middle-phase cadence miss, a remaining 452 ms compiler tail and the distinction between responsive startup and faster bootstrap. [Compact results](2026-10-23-native-followup.json).
+
+[Worker CPU, protocol waits and interrupted page publication (23 October)](2026-10-23-worker-waits.md) diagnoses a visible multi-keystroke gap with opt-in per-operation CPU/wall timing, preserves hidden and incomplete accounting cases, and identifies an untested page-publication scheduling opportunity. [Compact evidence](2026-10-23-worker-waits.json).
+
+## Retex compiler comparison
+
+[The 29 October compiler benchmark](2026-10-29-retex-xetex.md) compares retex with its own checkpoints disabled against XeTeX XDV and PDF output, including body timing, native-macro/cache ablations, memory and LuaLaTeX output checks. It measures complete compiler passes rather than integrated preview latency.
+
+[Updated PNG/SVG/Auto comparison (1 November)](2026-11-01-codecs.md) compares matched system-zlib and zlib-ng builds through actual VS Code, including continuous navigation, zoom/lens, rapid input, and a cursor-prewarming control. It records 188 sessions and 252 lossless-validated native PNG exports. [Compact evidence](2026-11-01-codecs.json).

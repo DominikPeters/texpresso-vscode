@@ -1,0 +1,193 @@
+name: Native Linux bundles and VSIX
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'src/engine-selection.ts'
+      - 'scripts/*vsix*'
+      - '.github/workflows/linux-build.yml'
+permissions:
+  contents: read
+concurrency:
+  group: linux-bundles-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux:
+    name: Native bundle / ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+            architecture: x86_64
+            qemu: x86_64
+            cpu: qemu64,-sse3,-cx16,-lahf_lm
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+            architecture: arm64
+            qemu: aarch64
+            cpu: cortex-a53
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    env:
+      SDL_VIDEODRIVER: dummy
+      TEXPRESSO_TEST_PREVIEW: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install host acceptance tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-xetex xvfb xauth libgtk-3-0t64 libnss3 libgbm1 libasound2t64 libgl1-mesa-dri qemu-user-static
+          npm ci
+          mkdir -p artifacts/glibc228 native/.bundles
+      - name: Prepare maintained glibc 2.28 builder on GitHub
+        run: |
+          docker build --pull -t texpresso-glibc228 -f native/containers/glibc228.Dockerfile native/containers
+          docker image inspect texpresso-glibc228 > artifacts/glibc228/builder-image.json
+          docker run --rm texpresso-glibc228 bash -c 'ldd --version; gcc --version; python3 --version; rpm -qa' > artifacts/glibc228/builder-packages.txt
+      - uses: actions/cache/restore@v4
+        id: icu-cache
+        with:
+          path: native/.icu
+          key: icu-alma8-gcc13-${{ matrix.architecture }}-${{ hashFiles('native/dependencies.lock.json', 'native/scripts/build_icu.py', 'native/containers/glibc228.Dockerfile') }}
+      - name: Fetch only locked native inputs
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          lock = json.load(open('native/dependencies.lock.json'))
+          inputs = pathlib.Path('.native-sources'); inputs.mkdir(exist_ok=True)
+          for name, key in [('mupdf', 'mupdf'), ('zlib-ng', 'zlibNg')]:
+              value = lock[key]
+              subprocess.run(['git', 'clone', '--filter=blob:none', '--no-checkout', value['repository'], str(inputs/name)], check=True)
+              subprocess.run(['git', '-C', str(inputs/name), 'checkout', value['revision']], check=True)
+          subprocess.run(['git', '-C', str(inputs/'mupdf'), 'submodule', 'update', '--init', '--depth', '1', 'thirdparty/lcms2', 'thirdparty/jbig2dec', 'thirdparty/harfbuzz'], check=True)
+          if '${{ steps.icu-cache.outputs.cache-hit }}' != 'true':
+              archive = inputs/'icu.tgz'
+              subprocess.run(['curl', '--fail', '--location', '--retry', '5', '--retry-all-errors', '--connect-timeout', '20', '--max-time', '300', '--output', str(archive), lock['icu']['sourceUrl']], check=True)
+              assert hashlib.sha256(archive.read_bytes()).hexdigest() == lock['icu']['sourceSha256']
+          PY
+      - name: Build baseline ICU without retaining successful intermediates
+        if: steps.icu-cache.outputs.cache-hit != 'true'
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" texpresso-glibc228 \
+            python3 native/scripts/build_icu.py --archive .native-sources/icu.tgz --output native/.icu
+          sudo chown -R "$(id -u):$(id -g)" native/.icu
+      - uses: actions/cache/save@v4
+        if: steps.icu-cache.outputs.cache-hit != 'true'
+        with:
+          path: native/.icu
+          key: ${{ steps.icu-cache.outputs.cache-primary-key }}
+      - name: Build and audit the complete glibc 2.28 dependency closure
+        id: bundle
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" texpresso-glibc228 bash -euxc '
+            for source in "$PWD" "$PWD/native/texpresso" "$PWD/.native-sources/mupdf" "$PWD/.native-sources/mupdf/thirdparty/lcms2" "$PWD/.native-sources/mupdf/thirdparty/jbig2dec" "$PWD/.native-sources/mupdf/thirdparty/harfbuzz" "$PWD/.native-sources/zlib-ng"; do
+              git config --global --add safe.directory "$source"
+            done
+            python3 -m unittest discover -s native/tests
+            python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/glibc228 --maximum-glibc 2.28 --bundled-jbig2dec --bundled-harfbuzz
+          '
+          sudo chown -R "$(id -u):$(id -g)" native/.bundles/glibc228
+          python3 native/scripts/audit_linux.py native/.bundles/glibc228 --maximum-glibc 2.28 --architecture '${{ matrix.architecture }}' --output artifacts/glibc228/elf-audit.json
+          cp native/.bundles/glibc228/build-manifest.json artifacts/glibc228/
+          python3 - <<'PYREPORT'
+          import json
+          report = json.load(open('artifacts/glibc228/elf-audit.json'))
+          print(f"Audited {len(report['files'])} ELF files: GLIBC_{report['requiredGlibc']}, CPU {report['cpuBaseline']}")
+          PYREPORT
+      - name: Collect exact RPM sources and all linked native inputs
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" texpresso-glibc228 bash -euxc '
+            for source in "$PWD" "$PWD/native/texpresso" "$PWD/.native-sources/mupdf" "$PWD/.native-sources/mupdf/thirdparty/lcms2" "$PWD/.native-sources/mupdf/thirdparty/jbig2dec" "$PWD/.native-sources/mupdf/thirdparty/harfbuzz" "$PWD/.native-sources/zlib-ng"; do
+              git config --global --add safe.directory "$source"
+            done
+            python3 native/scripts/release_sources.py --fetch --bundle native/.bundles/glibc228 --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng
+            python3 native/scripts/verify_sources.py artifacts --target "${{ matrix.target }}"
+          '
+          sudo chown -R "$(id -u):$(id -g)" artifacts native/.bundles/glibc228
+      - name: Check a baseline CPU in a fresh glibc 2.28 runtime
+        run: |
+          docker run --rm --network none --read-only --tmpfs /tmp -w /tmp \
+            -v "$PWD/native/.bundles/glibc228:/opt/texpresso:ro" \
+            -v '/usr/bin/qemu-${{ matrix.qemu }}-static:/qemu:ro' \
+            -e SDL_VIDEODRIVER=dummy -e LD_BIND_NOW=1 almalinux:8 \
+            /qemu -cpu '${{ matrix.cpu }}' /opt/texpresso/bin/texpresso -capabilities
+      - name: Real compilation and precision checks on the oldest supported glibc
+        run: |
+          npm run compile-tests
+          node_binary="$(command -v node)"
+          docker build --pull -t texpresso-glibc228-runtime -f native/containers/glibc228-runtime.Dockerfile native/containers
+          # Reuse the exact same TeX macro/font data as the modern-host checks.
+          # This isolates the glibc change from TeX Live 2017's legacy SyncTeX
+          # attribution differences; kpsewhich itself still runs on glibc 2.28.
+          kpsewhich --version > artifacts/glibc228/tex-data-provider.txt
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" \
+            -v "$node_binary:/usr/local/bin/node:ro" \
+            -v /usr/share/texlive:/usr/share/texlive:ro -v /usr/share/texmf:/usr/share/texmf:ro \
+            -v /etc/texmf:/etc/texmf:ro -v /var/lib/texmf:/var/lib/texmf:ro \
+            -e TEXPRESSO_BINARY="$GITHUB_WORKSPACE/native/.bundles/glibc228/bin/texpresso" \
+            -e TEXPRESSO_TEST_PREVIEW=1 -e SDL_VIDEODRIVER=dummy -e LD_BIND_NOW=1 \
+            -e TEXMFDBS=/var/lib/texmf:/usr/share/texmf:/usr/share/texlive/texmf-dist \
+            -e TEXPRESSO_TEST_ARTIFACTS="$GITHUB_WORKSPACE/artifacts/glibc228-runtime-failures" \
+            texpresso-glibc228-runtime bash -euxc '
+              ldd --version
+              kpsewhich --version
+              kpsewhich --all -engine=xetex ls-R
+              mkdir -p "$TEXPRESSO_TEST_ARTIFACTS"
+              if ! node --test --test-concurrency=1 out/test/engine/synctex-precision.test.js out/test/engine/preview.test.js; then
+                find "$TEXPRESSO_TEST_ARTIFACTS" -name engine.txt -exec cat {} +
+                find "$TEXPRESSO_TEST_ARTIFACTS" -name compiler.txt -exec cat {} +
+                exit 1
+              fi
+            '
+      - name: Test the relocated bundle on a modern distribution
+        run: |
+          mv native/.bundles/glibc228 'native/.bundles/relocated Linux bundle'
+          export TEXPRESSO_BINARY="$PWD/native/.bundles/relocated Linux bundle/bin/texpresso"
+          # SDL 2.0.10 cannot satisfy vsync on its dummy software renderer.
+          # Exercise real native-window startup on the isolated Xvfb display;
+          # embedded-preview cases independently require headless operation.
+          TEXPRESSO_TEST_NATIVE_WINDOW=1 SDL_VIDEODRIVER=x11 SDL_RENDER_DRIVER=software xvfb-run -a npm run test:engine
+      - name: Install latest stable packaging tool
+        run: |
+          npm install --global @vscode/vsce@latest
+          vsce --version
+      - name: Package and test the installed platform VSIX
+        run: |
+          npm run package:vsix -- --target '${{ matrix.target }}' --bundle 'native/.bundles/relocated Linux bundle' --out 'artifacts/texpresso-${{ matrix.target }}.vsix'
+          xvfb-run -a npm run test:package:preview -- --vsix 'artifacts/texpresso-${{ matrix.target }}.vsix'
+        timeout-minutes: 8
+      - name: Save the matching corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources-${{ matrix.target }}
+          path: artifacts/*sources-${{ matrix.target }}.tar.gz*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Save the accepted platform VSIX and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: |
+            artifacts/texpresso-${{ matrix.target }}.vsix
+            artifacts/texpresso-${{ matrix.target }}.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save compact compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glibc228-evidence-${{ matrix.target }}
+          path: artifacts/glibc228/
+          retention-days: 7

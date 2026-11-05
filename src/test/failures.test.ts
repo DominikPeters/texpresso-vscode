@@ -33,7 +33,7 @@ test('setup checks a spaced executable path without launching it and reports inv
     const paths = new SessionPaths(path.join(root, 'paper.tex'), false);
     const report = await setupReport({ ...config, command: binary }, paths, 'test host');
     assert.ok(report.includes('Executable found: ' + binary));
-    assert.ok(report.includes(JSON.stringify([binary, '-json', '-lines', paths.rootEnginePath], null, 2)));
+    assert.ok(report.includes(JSON.stringify([binary, '-texlive', '-json', '-lines', paths.rootEnginePath], null, 2)));
     const missing = await setupReport({ ...config, command: path.join(root, 'missing') }, paths, 'test host');
     assert.match(missing, /Executable NOT FOUND/);
     const invalid = await setupReport({ ...config, arguments: ['-I'] }, paths, 'test host');

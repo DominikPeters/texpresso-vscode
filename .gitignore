@@ -134,6 +134,7 @@ dist
 
 # Native source/build caches and local bundles
 /native/.work/
+/native/.icu/
 /native/.bundles/
 /.native-sources/
 /native/**/__pycache__/

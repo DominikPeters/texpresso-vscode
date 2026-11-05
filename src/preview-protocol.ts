@@ -2,14 +2,20 @@ import type { Readable } from 'stream';
 import { validateMessage, type Message } from './protocol';
 
 export const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
+export interface PreviewFigure {
+  bounds: [number, number, number, number]; file: string; line: number; endLine: number;
+}
 export interface PreviewAnnotations {
   links: { bounds: [number, number, number, number]; uri: string }[];
   destinations: { name: string; x: number; y: number }[];
+  figures?: PreviewFigure[];
 }
 export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
   bounds: [number, number, number, number]; width: number; height: number;
   mime: 'image/png' | 'image/svg+xml'; byteLength: number;
+  /** Full-page text extent in page coordinates, including on raster patches. */
+  textBounds?: [number, number, number, number];
   rasterId?: number; patch?: { base: number; rect: [number, number, number, number] };
   svgEligible?: boolean; vectorCost?: number;
   /** Native export wall time, excluding compilation and pipe transfer. */
@@ -17,20 +23,36 @@ export interface PreviewImageHeader {
   fallback?: string; annotations?: PreviewAnnotations;
 }
 export interface PreviewImage { header: PreviewImageHeader; bytes: Buffer }
+export type SourceRect = [number, number, number, number];
+export interface InverseLocation { file: string; line: number; column: number; word: string }
 export type PreviewMessage =
   | ['preview-state', number, number, number, boolean, number]
   | ['preview-invalidated', number, number]
-  | ['preview-forward', number, number, number, number, number]
+  | ['preview-forward', number, number, number, number, number, SourceRect[]?]
   | ['preview-destination', number, number, string, number]
+  | ['preview-prepared', number, number, number, 'ready' | 'cached' | 'skipped' | 'cancelled']
   | ['preview-retry', number]
+  | ['preview-cancelled', number]
+  | ['preview-source', number, number, number, number, number, number]
+  | ['preview-source-precise', number, number, number, number, number, number, SourceRect[]]
+  | ['preview-inverse-result', number, number, number, number, InverseLocation | null]
   | ['preview-error', number, string];
 
 const count = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) >= 0 && (n as number) <= 2147483647;
-const previewNotifications = new Set(['preview-state', 'preview-invalidated', 'preview-forward', 'preview-retry', 'preview-error', 'preview-destination']);
+const previewNotifications = new Set(['preview-state', 'preview-invalidated', 'preview-forward', 'preview-retry', 'preview-error', 'preview-destination', 'preview-prepared', 'preview-cancelled', 'preview-source', 'preview-source-precise', 'preview-inverse-result']);
 const coordinate = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e9;
 const name = (s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 4096;
 function rectangle(b: unknown): boolean {
   return Array.isArray(b) && b.length === 4 && b.every(coordinate) && b[2] > b[0] && b[3] > b[1];
+}
+function sourceRectangles(value: unknown): boolean {
+  return Array.isArray(value) && value.length <= 128 && value.every(rectangle);
+}
+function inverseLocation(value: unknown): boolean {
+  if (value === null) { return true; }
+  const v = value as InverseLocation;
+  return !!v && name(v.file) && !/[\x00-\x1f\x7f]/.test(v.file) && count(v.line) && v.line > 0 &&
+    (v.column === -1 || count(v.column)) && typeof v.word === 'string' && Buffer.byteLength(v.word) <= 256 && !v.word.includes('\0');
 }
 function annotations(a: unknown): boolean {
   if (!a || typeof a !== 'object') { return false; }
@@ -38,7 +60,10 @@ function annotations(a: unknown): boolean {
   return Array.isArray(value.links) && value.links.length <= 4096 && value.links.every(link =>
     link && rectangle(link.bounds) && name(link.uri)) &&
     Array.isArray(value.destinations) && value.destinations.length <= 4096 && value.destinations.every(dest =>
-      dest && name(dest.name) && coordinate(dest.x) && coordinate(dest.y));
+      dest && name(dest.name) && coordinate(dest.x) && coordinate(dest.y)) &&
+    (value.figures === undefined || (Array.isArray(value.figures) && value.figures.length <= 1024 &&
+      value.figures.every(f => f && rectangle(f.bounds) && name(f.file) && !/[\x00-\x1f\x7f]/.test(f.file) &&
+        count(f.line) && f.line > 0 && count(f.endLine) && f.endLine > f.line)));
 }
 function rasterPatch(h: PreviewImageHeader): boolean {
   if (h.rasterId !== undefined && (!count(h.rasterId) || h.rasterId < 1 || h.mime !== 'image/png')) { return false; }
@@ -56,6 +81,7 @@ export function isImageHeader(value: unknown): value is PreviewImageHeader {
     h.width > 0 && h.height > 0 && h.width <= 8192 && h.height <= 8192 &&
     h.width * h.height <= 4000000 && rasterPatch(h) && h.byteLength <= MAX_IMAGE_BYTES &&
     (h.mime === 'image/png' || h.mime === 'image/svg+xml') && rectangle(h.bounds) &&
+    (h.textBounds === undefined || rectangle(h.textBounds)) &&
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
     (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
     (h.vectorCost === undefined || count(h.vectorCost)) &&
@@ -68,10 +94,17 @@ export function isPreviewMessage(value: unknown): value is PreviewMessage {
   switch (value[0]) {
     case 'preview-state': return value.length === 6 && [value[1], value[2], value[3], value[5]].every(count) && typeof value[4] === 'boolean';
     case 'preview-invalidated': return value.length === 3 && value.slice(1).every(count);
-    case 'preview-forward': return value.length === 6 && value.slice(1, 4).every(count) &&
-      value.slice(4).every(n => typeof n === 'number' && Number.isFinite(n));
+    case 'preview-forward': return (value.length === 6 || value.length === 7) && value.slice(1, 4).every(count) &&
+      value.slice(4, 6).every(coordinate) && (value.length === 6 || sourceRectangles(value[6]));
     case 'preview-destination': return value.length === 5 && count(value[1]) && count(value[2]) && name(value[3]) &&
       Number.isInteger(value[4]) && value[4] >= -1 && value[4] <= 100000;
+    case 'preview-prepared': return value.length === 5 && value.slice(1, 4).every(count) &&
+      ['ready', 'cached', 'skipped', 'cancelled'].includes(value[4]);
+    case 'preview-source': return value.length === 7 && value.slice(1, 5).every(count) && value[1] > 0 && value.slice(5).every(coordinate);
+    case 'preview-source-precise': return value.length === 8 && value.slice(1, 5).every(count) && value[1] > 0 && value[4] <= 100000 &&
+      value.slice(5, 7).every(coordinate) && sourceRectangles(value[7]);
+    case 'preview-inverse-result': return value.length === 6 && value.slice(1, 5).every(count) && value[1] > 0 && value[4] <= 100000 && inverseLocation(value[5]);
+    case 'preview-cancelled': return value.length === 2 && count(value[1]) && value[1] > 0;
     case 'preview-retry': return value.length === 2 && count(value[1]);
     case 'preview-error': return value.length === 3 && count(value[1]) && typeof value[2] === 'string';
     default: return false;

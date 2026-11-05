@@ -8,8 +8,8 @@ export class EngineFailure extends Error {
   }
 }
 
-export function processFailure(error: Error, phase: 'launch' | 'connection'): EngineFailure {
-  return new EngineFailure(phase, error.message, (error as NodeJS.ErrnoException).code);
+export function processFailure(error: Error, phase: 'launch' | 'connection', details = ''): EngineFailure {
+  return new EngineFailure(phase, error.message, (error as NodeJS.ErrnoException).code, details.slice(-8000));
 }
 
 export function describeFailure(error: unknown, configuration?: SessionConfiguration): {
@@ -17,6 +17,9 @@ export function describeFailure(error: unknown, configuration?: SessionConfigura
 } {
   const failure = error instanceof EngineFailure ? error : undefined;
   const detail = error instanceof Error ? error.message : String(error);
+  if (failure?.code === 'BUNDLE_INVALID') {
+    return { message: detail, setting: 'texpresso.command' };
+  }
   if (failure?.code === 'PREVIEW_UNSUPPORTED') {
     return { message: detail, setting: 'texpresso.previewLocation' };
   }

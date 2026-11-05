@@ -12,7 +12,8 @@ import { config, document } from '../helpers';
 
 const binary = process.env.TEXPRESSO_BINARY;
 for (const format of ['png', 'svg', 'auto'] as const) {
-test('real controller revisits cached pages without native work and prepares the correct page for inverse SyncTeX (' + format + ')',
+for (const legacy of [false, true]) {
+test('real controller revisits cached pages and inverses the correct source (' + format + (legacy ? ', legacy' : ', negotiated') + ')',
   { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 90000 }, async () => {
     const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'texpresso-page-cache-')));
     const main = document(path.join(root, 'main.tex'), '\\documentclass{article}\n\\begin{document}\nFirst page target.\\par\n\\newpage\nSecond page target.\\par\n\\end{document}\n');
@@ -44,6 +45,7 @@ test('real controller revisits cached pages without native work and prepares the
     };
     try {
       await session.start();
+      if (legacy) { session.previewSynctexPrecision = false; }
       controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri, session, () => {}, () => {});
       const instance = panel.webview.html.match(/data-instance="([^"]+)"/)![1];
       const send = (message: object) => receive({ instance, ...message });
@@ -52,7 +54,8 @@ test('real controller revisits cached pages without native work and prepares the
       const first = messages.filter(m => m.type === 'image').at(-1)!;
       if (format !== 'png') { assert.equal(first.inlineSvg, true); }
       send({ type: 'decoded', id: first.header.requestId, svg: first.inlineSvg ? first.contentId : undefined, cached: [first.contentId] });
-      session.sync.syncForward(main, 2); await until(() => targets.length > 0);
+      if (session.previewSynctexPrecision) { session.syncForward(main, 2, 2); } else { session.sync.syncForward(main, 2); }
+      await until(() => targets.length > 0);
       const point = targets[0];
       send({ type: 'viewport', page: 1, width: 1200, format });
       await until(() => messages.filter(m => m.type === 'image').length >= 2);
@@ -66,10 +69,13 @@ test('real controller revisits cached pages without native work and prepares the
       send({ type: 'decoded', id: cached.header.requestId, svg: cached.inlineSvg ? cached.contentId : undefined, cached: [first.contentId, second.contentId] });
       send({ type: 'inverse', revision: cached.header.revision, sequence: cached.header.sequence, page: 0, x: point[3], y: point[4] });
       await until(() => sources.length > 0);
-      assert.equal(nativeRenders(), before + 1, 'only inverse search requests native page preparation');
+      assert.equal(nativeRenders(), before + (session.previewSynctexPrecision ? 0 : 1),
+        session.previewSynctexPrecision ? 'precise inverse reuses cached text without an image' : 'legacy inverse prepares the native page');
       assert.equal(sources[0].line, 3); assert.match(sources[0].word || '', /First|page|target/);
       assert.doesNotMatch(debug, /\[fatal\]/);
     } finally { controller?.dispose(); await session.dispose(); await fs.rm(root, { recursive: true, force: true }); }
   });
+
+}
 
 }

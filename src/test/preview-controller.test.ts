@@ -4,8 +4,9 @@ import type * as vscode from 'vscode';
 import type { TexpressoSession } from '../session';
 import type { Command } from '../protocol';
 import { PreviewController } from '../preview-controller';
+import type { TikzActions } from '../tikz-editor';
 
-function fixture() {
+function fixture(tikz?: TikzActions) {
   let receive!: (value: unknown) => void, view!: () => void, closed!: () => void;
   let stops = 0;
   const messages: Record<string, any>[] = [], commands: Command[] = [], opened: string[] = [];
@@ -19,10 +20,10 @@ function fixture() {
   const session = { embedded: true, state: 'running', paused: false, previewSequence: 0,
     document: { fileName: '/work/main.tex' }, send: (command: Command) => commands.push(command) };
   const controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri,
-    session as unknown as TexpressoSession, () => { stops++; }, () => {});
-  const instance = panel.webview.html.match(/data-instance="([^"]+)"/)![1];
+    session as unknown as TexpressoSession, () => { stops++; }, () => {}, undefined, tikz);
+  const instance = () => panel.webview.html.match(/data-instance="([^"]+)"/)![1];
   return { controller, panel, session, messages, commands, opened, stops: () => stops,
-    send: (m: object) => receive({ instance, ...m }), view: () => view() };
+    send: (m: object) => receive({ instance: instance(), ...m }), view: () => view() };
 }
 
 test('preview admits one frame until decode acknowledgment and ignores messages from another webview', () => {
@@ -51,7 +52,7 @@ test('preview admits one frame until decode acknowledgment and ignores messages 
   assert.equal(f.stops(), 0, 'programmatic disposal does not stop a replacement session');
 });
 
-test('preview rejects stale source images and coordinates, and restores a hidden panel with a fresh request', () => {
+test('preview shows completed foreground progress as stale, rejects its interactions and restores a hidden panel', () => {
   const f = fixture();
   try {
     f.controller.handle(['preview-state', 1, 0, 1, false, 0]);
@@ -60,9 +61,13 @@ test('preview rejects stale source images and coordinates, and restores a hidden
     f.controller.handle({ sourceSequence: 1 });
     f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
       bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
-    assert.equal(f.messages.filter(m => m.type === 'image').length, 0);
-    assert.equal(f.commands.length, 1, 'wait for the engine to acknowledge new source');
+    const progress = f.messages.filter(m => m.type === 'image');
+    assert.equal(progress.length, 1); assert.equal(progress[0].visualOnly, true);
+    assert.equal(progress[0].target, undefined); assert.equal(progress[0].destination, undefined);
+    assert.equal(f.commands.length, 1, 'wait for current source and return the old frame decode credit');
     f.controller.handle(['preview-state', 3, 1, 1, false, 0]);
+    assert.equal(f.commands.length, 1, 'completed old frame keeps the one browser decode credit');
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: true });
     assert.equal(f.commands.length, 2); assert.equal(f.commands[1][4], 3); assert.equal(f.commands[1][5], 1);
     f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 10, y: 20 });
     assert.equal(f.commands.length, 2);
@@ -110,6 +115,25 @@ test('forward targets are consumed once so later zooming does not revive a highl
     f.send({ type: 'viewport', page: 0, width: 1400 });
     f.controller.handle(frame(3));
     assert.equal(f.messages.filter(m => m.type === 'image').at(-1)?.target, undefined);
+  } finally { f.controller.dispose(); }
+});
+
+test('automatic source following stays quiet and explicit jump markers do not leak into later follows', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(['preview-forward', 1, 0, 0, 100, 100]);
+    f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    assert.equal(f.messages.find(m => m.type === 'image')?.target.highlight, false);
+    f.send({ type: 'decoded', id: 1 });
+    f.controller.beginSourceFollow(true);
+    f.controller.handle(['preview-forward', 1, 0, 0, 150, 200]);
+    assert.equal(f.messages.at(-1)?.highlight, true);
+    f.controller.beginSourceFollow(false);
+    f.controller.handle(['preview-forward', 1, 0, 0, 180, 220]);
+    assert.equal(f.messages.at(-1)?.highlight, false);
   } finally { f.controller.dispose(); }
 });
 
@@ -648,6 +672,150 @@ test('continuous viewport serves visible neighbors without turning native page o
   } finally {f.controller.dispose();}
 });
 
+test('source following renders a visible neighbor at its own width before the viewport catches up', () => {
+  const f = fixture();
+  const visible = [{ page: 0, width: 1078 }, { page: 1, width: 970 }];
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1078, format: 'png', continuous: true,
+      visible, nearby: [], resident: [0, 1], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.beginSourceFollow();
+    f.controller.handle(['preview-forward', 1, 0, 1, 100, 100]);
+    assert.equal(f.commands.length, 1, 'source following preserves the shared decode credit');
+    f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+    f.send({ type: 'decoded', id: first[1], page: 0 });
+    const neighbor = f.commands.at(-1)!;
+    assert.equal(neighbor[2], 1);
+    assert.equal(neighbor[3], 970, 'the target page must not inherit the old toolbar page width');
+    f.send({ type: 'viewport', page: 1, width: 970, format: 'png', continuous: true,
+      visible, nearby: [], resident: [0, 1], epoch: 0 });
+    f.controller.handle(continuousFrame(neighbor, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: neighbor[1], page: 1 });
+    assert.equal(f.commands.length, 2, 'the confirming viewport needs no replacement resize keyframe');
+    assert.equal(f.messages.filter(m => m.type === 'image' && m.header.page === 1).length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+function sourcePriorityFixture() {
+  const f = fixture();
+  const viewport = { page: 0, width: 1078, format: 'png', continuous: true,
+    visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 970, allocation: 'page-one' }],
+    nearby: [], resident: [0, 1], epoch: 0 };
+  f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+  f.send({ type: 'ready', ...viewport });
+  const first = f.commands.at(-1)!;
+  f.controller.beginSourceFollow(); f.controller.handle(['preview-forward', 1, 0, 1, 100, 100]);
+  f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+  f.send({ type: 'decoded', id: first[1], page: 0 });
+  const request = f.commands.at(-1)!;
+  assert.equal(request[2], 1); assert.equal(request[3], 970);
+  return { ...f, viewport, request };
+}
+
+test('passive viewport center reports preserve source-page priority across edits and stale visual progress', () => {
+  const f = sourcePriorityFixture(); Object.assign(f.session, { previewLinks: true, previewRegions: true, previewBackground: true });
+  try {
+    f.send({ type: 'viewport', ...f.viewport });
+    assert.equal(f.messages.filter(m => m.type === 'state').at(-1)?.page, 0, 'toolbar reports browser center, independently of render priority');
+    f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: f.request[1], page: 1 });
+    assert.equal(f.commands.length, 2, 'passive reports do not ask for the center page again');
+    for (const sequence of [1, 3]) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 3, true, 0]);
+      const request = f.commands.at(-1)!;
+      assert.equal(request[2], 1, 'new source starts with the last edited visible page before SyncTeX replies');
+      assert.equal(request[3], 970);
+      f.send({ type: 'viewport', ...f.viewport });
+      f.controller.handle(['preview-forward', sequence + 1, sequence, 1, 100, 100]);
+      f.session.previewSequence = sequence + 1; f.controller.handle({ sourceSequence: sequence + 1 });
+      f.controller.handle(['preview-state', sequence + 2, sequence + 1, 3, true, 0]);
+      f.send({ type: 'viewport', ...f.viewport, width: 1200,
+        visible: [{ page: 0, width: 1200, allocation: 'resized-center-only' }, f.viewport.visible[1]] });
+      f.controller.handle(continuousFrame(request, 1, { width: 970,
+        annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] } }));
+      const progress = f.messages.filter(m => m.type === 'image').at(-1)!;
+      assert.equal(progress.header.sequence, sequence); assert.equal(progress.visualOnly, true);
+      assert.equal(progress.target, undefined, 'stale progress cannot reveal a target');
+      const commands: number = f.commands.length;
+      f.send({ type: 'link', page: 1, revision: sequence + 1, sequence, index: 0 });
+      f.send({ type: 'inverse', page: 1, revision: sequence + 1, sequence, x: 5, y: 5 });
+      f.send({ type: 'region', page: 1, revision: sequence + 1, sequence, token: 1, bounds: [0, 0, 10, 10], width: 100 });
+      assert.equal(f.opened.length, 0); assert.equal(f.commands.length, commands);
+      f.send({ type: 'decoded', id: request[1], displayed: true, stale: true });
+      assert.equal(f.commands.at(-1)?.[2], 1); assert.equal(f.commands.at(-1)?.[5], sequence + 1);
+      assert.equal((f.controller as any).visualSnapshots.get(1).sequence, sequence);
+      // Complete the newest frame before beginning another independent edit pair.
+      const current = f.commands.at(-1)!;
+      f.controller.handle(continuousFrame(current, 1, { width: 970 }));
+      f.send({ type: 'decoded', id: current[1], page: 1 });
+    }
+    assert.equal(f.commands.filter(command => command[0] === 'preview-render' && command[2] === 0).length, 1, 'only the initial center page was foreground-rendered');
+  } finally { f.controller.dispose(); }
+});
+
+test('manual navigation and real source-page demand changes retire older foreground progress', () => {
+  const changes = [
+    { name: 'scroll', update: { scroll: true, epoch: 1 }, page: 0, width: 1078 },
+    { name: 'jump', update: { jump: true, epoch: 1 }, page: 0, width: 1078 },
+    { name: 'resize', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 900, allocation: 'page-one' }] }, page: 1, width: 900 },
+    { name: 'allocation', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }, { page: 1, width: 970, allocation: 'new-page-one' }] }, page: 1, width: 970 },
+    { name: 'codec', update: { format: 'auto' }, page: 1, width: 970 },
+    { name: 'no longer visible', update: { visible: [{ page: 0, width: 1078, allocation: 'page-zero' }], resident: [0] }, page: 0, width: 1078 }
+  ];
+  for (const change of changes) {
+    const f = sourcePriorityFixture();
+    try {
+      const images = f.messages.filter(m => m.type === 'image').length;
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+      f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+      f.send({ type: 'viewport', ...f.viewport, ...change.update });
+      f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+      assert.equal(f.messages.filter(m => m.type === 'image').length, images, `${change.name} retires the old view intent`);
+      assert.equal(f.commands.at(-1)?.[2], change.page, change.name);
+      assert.equal(f.commands.at(-1)?.[3], change.width, change.name);
+    } finally { f.controller.dispose(); }
+  }
+});
+
+test('page commands use the browser center and override source priority', () => {
+  const f = sourcePriorityFixture();
+  try {
+    f.send({ type: 'viewport', ...f.viewport });
+    f.controller.navigate(1);
+    assert.equal(f.messages.filter(m => m.type === 'jump').at(-1)?.page, 1, 'Next from centered page zero means page one, even when source priority already is one');
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    const jumps = f.messages.filter(m => m.type === 'jump').length;
+    f.controller.handle(['preview-forward', 2, 1, 2, 100, 100]);
+    assert.equal(f.messages.filter(m => m.type === 'jump').length, jumps, 'manual page commands suspend later source targets');
+    f.controller.handle(continuousFrame(f.request, 1, { width: 970 }));
+    f.send({ type: 'viewport', ...f.viewport });
+    assert.equal(f.commands.at(-1)?.[2], 1, 'decode credit is not released by a viewport report');
+  } finally { f.controller.dispose(); }
+});
+
+test('manual page navigation uses a nearby page demand and retains the width when none is known', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1078, format: 'png', continuous: true,
+      visible: [{ page: 0, width: 1078 }], nearby: [{ page: 1, width: 970 }], resident: [0], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(first, 0, { width: 1078 }));
+    f.send({ type: 'decoded', id: first[1], page: 0 });
+    f.controller.navigate(1);
+    const neighbor = f.commands.at(-1)!;
+    assert.equal(neighbor[2], 1); assert.equal(neighbor[3], 970);
+    f.controller.handle(continuousFrame(neighbor, 1, { width: 970 }));
+    f.send({ type: 'decoded', id: neighbor[1], page: 1 });
+    f.controller.navigate(1);
+    const unknown = f.commands.at(-1)!;
+    assert.equal(unknown[2], 2); assert.equal(unknown[3], 970, 'an unmeasured page keeps the latest active width');
+  } finally { f.controller.dispose(); }
+});
+
 test('continuous page metadata routes links and cached-page inverse search by owning page', () => {
   const f=fixture();Object.assign(f.session,{previewLinks:true});
   try {
@@ -765,5 +933,627 @@ test('older engines render visible continuous pages without uncancellable specul
     }
     t.mock.timers.tick(2000);
     assert.equal(f.commands.length, 2, 'only visible pages are requested without the cancellation capability');
+  } finally { f.controller.dispose(); }
+});
+
+function prepareFixture() {
+  const f=fixture();
+  const positions:{document:unknown;offset:number}[]=[];
+  Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+  Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:(document:unknown,offset:number)=>{
+    positions.push({document,offset});
+    return Number.isSafeInteger(offset)&&offset>=0?{path:'/work/main.tex',offset}:undefined;
+  }}});
+  f.controller.handle(['preview-state',1,0,2,true,0]);f.send({type:'ready',page:0,width:1000});
+  f.controller.handle(continuousFrame(f.commands[0],0));f.send({type:'decoded',id:f.commands[0][1]});
+  return {...f,positions};
+}
+
+test('cursor preparation waits for idle and leaves the current page and render cache intact', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    const images=f.messages.filter(m=>m.type==='image').length;
+    const cache=(f.controller as any).pages.size;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'cursor movement never starts synchronous compiler work');
+    t.mock.timers.tick(1000);
+    const prepare=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    assert.ok(prepare);assert.deepEqual(prepare.slice(2),['/work/main.tex',128,1,0]);
+    f.controller.handle(['preview-prepared',prepare[1] as number,1,0,'ready']);
+    assert.equal(f.messages.filter(m=>m.type==='image').length,images,'checkpoint acknowledgment has no preview frame');
+    assert.equal((f.controller as any).pages.size,cache,'prewarming preserves encoded page cache');
+    assert.equal(f.messages.filter(m=>m.type==='jump'||m.type==='invalidate').length,0,'no scroll or source-state UI mutation');
+    assert.equal((f.controller as any).inFlight,undefined,'prewarming does not take render/decode credit');
+    const attempts=f.commands.filter(c=>c[0]==='preview-prepare').length;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,150);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,attempts,'moving within a prepared 64-byte bucket does not repeat speculative compilation');
+  } finally {f.controller.dispose();}
+});
+
+test('cursor retargeting and source edits cancel preparation; stale acknowledgments cannot revive old work', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);
+    const first=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,256);
+    assert.ok(f.commands.some(c=>c[0]==='preview-prepare-cancel'&&(c[1]===first[1]||c[1]===0)),'cursor retarget cancels obsolete native speculative work');
+    t.mock.timers.tick(1000);const second=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;
+    assert.notEqual(second[1],first[1]);assert.equal(second[3],256);
+    f.controller.handle(['preview-prepared',first[1] as number,1,0,'ready']);
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    assert.ok(f.commands.some(c=>c[0]==='preview-prepare-cancel'&&(c[1]===second[1]||c[1]===0)),'typing cancels preparation without waiting for an ACK');
+    const before=f.commands.filter(c=>c[0]==='preview-prepare').length;
+    f.controller.handle(['preview-prepared',second[1] as number,1,0,'ready']);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,before,'old completion cannot start more work under a new source barrier');
+  } finally {f.controller.dispose();}
+});
+
+test('cursor preparation is optional and suspended for hidden or paused previews', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});const f=prepareFixture();
+  try {
+    const prepare=()=>{f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);};
+    Object.assign(f.session,{previewPrepareEdit:false});prepare();
+    Object.assign(f.session,{previewPrepareEdit:true,paused:true});prepare();
+    f.session.paused=false;f.panel.visible=false;f.view();prepare();
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    f.panel.visible=true;f.view();f.send({type:'ready',page:0,width:1000});
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,-1);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'an unresolved or malformed source position is inert');
+  } finally {f.controller.dispose();}
+});
+
+test('preparing an edit preserves acknowledged PNG and SVG patch bases', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});
+  for(const svg of [false,true]) {
+    const f=svg?autoFixture():pngFixture();
+    Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+    Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:()=>({path:'/work/main.tex',offset:128})}});
+    try {
+      f.controller.handle(svg?autoFrame(1,true,12000):pngFrame(1,0));
+      const image=f.messages.filter(m=>m.type==='image').at(-1)!;
+      f.send({type:'decoded',id:1,...(svg?{svg:image.contentId}:{png:image.contentId}),cached:[image.contentId]});
+      const internals=f.controller as any,base=svg?internals.svgBase:internals.rasterBase;
+      assert.ok(base);
+      f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(200);
+      const command=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;assert.ok(command);
+      f.controller.handle(['preview-prepared',command[1] as number,1,0,'ready']);
+      assert.equal(svg?internals.svgBase:internals.rasterBase,base,'checkpoint replay does not invalidate the acknowledged mutable surface');
+      f.session.previewSequence=1;f.controller.handle({sourceSequence:1});f.controller.handle(['preview-state',2,1,3,true,0]);
+      const request=f.commands.at(-1)!;
+      if(!svg){assert.equal(request[6],1,'next PNG edit retains its native raster base');}
+      else {
+        f.controller.handle(autoFrame(request[1] as number,true,12000,1,2));
+        assert.equal(f.messages.filter(m=>m.type==='image').at(-1)!.svgPatch.base,image.contentId,'next SVG edit patches the previously acknowledged DOM');
+      }
+    } finally {f.controller.dispose();}
+  }
+});
+
+test('cursor preparation cannot get ahead of a pending page decode', t=>{
+  (t.mock.timers as unknown as {enable(options:{apis:string[]}):void}).enable({apis:['setTimeout']});
+  const f=fixture();Object.assign(f.session.document,{uri:{toString:()=>'/work/main.tex'},version:1});
+  Object.assign(f.session,{previewPrepareEdit:true,sync:{sourcePosition:()=>({path:'/work/main.tex',offset:128})}});
+  try {
+    f.controller.handle(['preview-state',1,0,2,true,0]);f.send({type:'ready',page:0,width:1000});
+    f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    f.controller.handle(continuousFrame(f.commands[0],0));t.mock.timers.tick(1000);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0,'receiving bytes does not prove a paintable frame');
+    f.send({type:'decoded',id:f.commands[0][1]});t.mock.timers.tick(199);
+    assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,0);
+    t.mock.timers.tick(1);assert.equal(f.commands.filter(c=>c[0]==='preview-prepare').length,1);
+  } finally {f.controller.dispose();}
+});
+
+
+test('old source state cannot shrink a new edit viewport or invalidate its current images', () => {
+  const f=fixture();
+  try {
+    f.controller.handle(['preview-state',5,0,30,true,24]);
+    f.send({type:'ready',page:24,width:1000,continuous:true,visible:[{page:24,width:1000}],nearby:[],resident:[24],epoch:0});
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});
+    const messages=f.messages.length;
+    f.controller.handle(['preview-state',5,0,2,true,1]);
+    f.controller.handle(['preview-invalidated',5,0]);
+    assert.equal(f.messages.length,messages,'obsolete source metadata has no UI effect');
+    f.controller.handle(['preview-state',6,1,30,true,24]);
+    assert.equal(f.messages.filter(m=>m.type==='state').at(-1)?.page,24,'new source keeps the selected distant page');
+    const count=f.messages.length;f.controller.handle(['preview-state',4,1,1,true,0]);
+    assert.equal(f.messages.length,count,'older compiler pass cannot replace current metadata');
+  } finally {f.controller.dispose();}
+});
+
+test('manual preview navigation cancels source search and rejects late forward results until a new source intent', () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  try {
+    f.controller.handle(['preview-state',1,0,30,true,0]);
+    f.send({type:'ready',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:0});
+    f.send({type:'viewport',page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:1,jump:true});
+    assert.ok(f.commands.some(c=>c[0]==='preview-cancel'&&c[1]===0),'even a cached same-page jump cancels pending source search');
+    const jumps=f.messages.filter(m=>m.type==='jump').length;
+    f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'a queued old source result cannot undo navigation');
+    f.controller.beginSourceFollow();f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,24,'new explicit source intent can follow again');
+  } finally {f.controller.dispose();}
+});
+
+
+test('manual continuous scrolling suspends late source targets even within the same page', () => {
+  const f=fixture();Object.assign(f.session,{previewBackground:true});
+  try {
+    f.controller.handle(['preview-state',1,0,30,true,0]);
+    const viewport={page:0,width:1000,continuous:true,visible:[{page:0,width:1000}],nearby:[],resident:[0],epoch:0};
+    f.send({type:'ready',...viewport});
+    f.send({type:'viewport',...viewport,epoch:1,scroll:false});
+    f.controller.handle(['preview-forward',1,0,0,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,1,'programmatic layout corrections preserve source following');
+    const oldRequest=f.commands.filter(c=>c[0]==='preview-render').at(-1)?.[1];
+    f.send({type:'viewport',...viewport,epoch:2,scroll:true});
+    assert.notEqual(f.commands.filter(c=>c[0]==='preview-render').at(-1)?.[1],oldRequest,
+      'cancel-all releases foreground credit and immediately replaces the canceled render');
+    assert.ok(f.commands.some(c=>c[0]==='preview-cancel'&&c[1]===0),'same-page manual scrolling cancels pending source search');
+    const jumps=f.messages.filter(m=>m.type==='jump').length;
+    f.controller.handle(['preview-forward',1,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'late source result cannot steal the manual scroll position');
+    f.controller.handle(['preview-state',2,0,30,true,0]);
+    f.controller.handle(['preview-forward',2,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').length,jumps,'a new compiler pass cannot release the manual scroll hold');
+    f.controller.beginSourceFollow();f.controller.handle(['preview-forward',2,0,24,100,100]);
+    assert.equal(f.messages.filter(m=>m.type==='jump').at(-1)?.page,24,'a new source intent resumes following');
+  } finally {f.controller.dispose();}
+});
+
+test('unacknowledged webview recovery reloads a fresh document and rejects retired messages within a bounded budget', () => {
+  const f = fixture(); let reloads = 0, html = f.panel.webview.html;
+  Object.defineProperty(f.panel.webview, 'html', { get: () => html, set: value => { if (value !== html) { html = value; reloads++; } } });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const old = f.commands.at(-1)!, oldHtml = html, oldInstance = html.match(/data-instance="([^"]+)"/)![1];
+    (f.controller as any).recoverWebview(); assert.equal(reloads, 1);
+    const instance = html.match(/data-instance="([^"]+)"/)![1];
+    assert.notEqual(instance, oldInstance); assert.notEqual(html, oldHtml, 'VS Code sees changed HTML instead of ignoring the assignment');
+    assert.ok(!html.includes(oldInstance));
+    assert.ok(html.includes(`script-src 'nonce-${instance}'`), 'CSP and new document identity agree');
+    assert.equal((html.match(new RegExp(`nonce="${instance}"`, 'g')) || []).length, 6, 'all script nonces rotate together');
+    const before = f.commands.length;
+    f.send({ instance: oldInstance, type: 'ready', page: 0, width: 1000 });
+    assert.equal(f.commands.length, before, 'queued ready from retired document cannot acquire fresh credit');
+    f.send({ type: 'ready', page: 0, width: 1000 }); const fresh = f.commands.at(-1)!;
+    assert.notEqual(old[1], fresh[1]);
+    f.send({ instance: oldInstance, type: 'decoded', id: fresh[1] });
+    assert.equal((f.controller as any).inFlight.id, fresh[1], 'old document cannot acknowledge a new request');
+    f.send({ type: 'decoded', id: old[1] });
+    assert.equal((f.controller as any).inFlight.id, fresh[1], 'stale decode cannot release new engine request');
+    (f.controller as any).recoverWebview(); assert.equal(reloads, 2);
+    assert.notEqual(html.match(/data-instance="([^"]+)"/)![1], instance, 'each permitted recovery gets a new identity');
+    f.send({ type: 'ready', page: 0, width: 1000 }); (f.controller as any).recoverWebview();
+    assert.equal(reloads, 2, 'third failure cannot create an endless reload loop');
+    assert.match(f.messages.at(-1)?.text, /two recovery attempts/);
+  } finally { f.controller.dispose(); }
+});
+
+test('replacing a failed engine preserves the webview while isolating source epochs and request identities', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 40, 0, 20, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const retired = f.commands.at(-1)!; const html = f.panel.webview.html;
+    const commands: Command[] = [], replacement = { ...f.session, send: (command: Command) => commands.push(command) };
+    f.controller.replaceSession(replacement as unknown as TexpressoSession);
+    assert.equal(f.panel.webview.html, html, 'engine recovery retains the existing DOM');
+    f.controller.handle(['preview-state', 1, 0, 20, false, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const current = commands.at(-1)!; assert.notEqual(current[1], retired[1]);
+    f.controller.handle(['preview-cancelled', Number(retired[1])]);
+    assert.equal((f.controller as any).inFlight.id, current[1], 'retired cancellation cannot settle replacement');
+    const before = f.messages.filter(m => m.type === 'jump').length;
+    f.controller.handle(['preview-forward', 1, 0, 15, 1, 1]);
+    assert.equal(f.messages.filter(m => m.type === 'jump').length, before, 'recovery does not steal the retained viewport');
+  } finally { f.controller.dispose(); }
+});
+
+test('SVG memory rejection persists across source edits without preventing allocation-driven retry', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const emit = (id: number, revision: number, sequence: number, mime: 'image/png' | 'image/svg+xml') => f.controller.handle({
+    header: { requestId: id, revision, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: 4, vectorCost: 10000 }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'old-page-size' }], nearby: [], resident: [0] });
+    const first = f.commands.at(-1)!; assert.equal(first[0], 'preview-svg'); emit(Number(first[1]), 1, 0, 'image/svg+xml');
+    f.send({ type: 'rasterize', page: 0, id: first[1], reason: 'budget', allocation: 'actual-page-size',
+      budget: { available: 100, required: 200, pixels: 150 } });
+    let fallback = f.commands.at(-1)!; assert.equal(fallback[0], 'preview-auto'); assert.equal(fallback[6], 0);
+    emit(Number(fallback[1]), 1, 0, 'image/png'); f.send({ type: 'decoded', id: fallback[1] });
+    for (let sequence = 1; sequence <= 3; sequence++) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 2, true, 0]);
+      fallback = f.commands.at(-1)!;
+      assert.equal(fallback[0], 'preview-auto', 'minor edits refresh vector metadata through cheap PNG selection');
+      assert.equal(fallback[6], 0, 'the same rejected SVG is not exported again');
+      emit(Number(fallback[1]), sequence + 1, sequence, 'image/png'); f.send({ type: 'decoded', id: fallback[1] });
+    }
+    f.send({ type: 'viewport', page: 0, width: 900, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 900, allocation: 'smaller-page-size' }], nearby: [], resident: [0] });
+    assert.equal(f.commands.at(-1)?.[0], 'preview-svg', 'changed geometry can retry SVG');
+  } finally { f.controller.dispose(); }
+});
+
+test('engine replacement preserves SVG controls while probing then adopts the new capabilities', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewRegions: true, previewLinks: true });
+  try {
+    f.controller.handle(['preview-state', 8, 0, 20, true, 0]);
+    f.send({ type: 'ready', page: 5, width: 1000, format: 'svg' });
+    const html = f.panel.webview.html;
+    const replacement = { ...f.session, state: 'starting', previewSvg: false, previewRegions: false, previewLinks: false };
+    f.controller.replaceSession(replacement as unknown as TexpressoSession);
+    f.controller.update();
+    let state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.svg, true); assert.equal(state.links, true); assert.equal(state.regions, true);
+    assert.equal(state.count, 20); assert.equal(state.complete, true, 'pagination does not collapse while probing');
+    f.send({ type: 'ready', page: 5, width: 1000, format: 'svg' });
+    assert.equal((f.controller as any).format, 'svg', 'ready during probing does not downgrade the saved mode');
+    assert.equal(f.panel.webview.html, html, 'same DOM and viewport survive capability negotiation');
+    replacement.state = 'running'; Object.assign(replacement, { previewSvg: true });
+    f.controller.update(); state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.svg, true); assert.equal(state.links, false); assert.equal(state.regions, false);
+    assert.equal(state.count, 20); assert.equal(state.complete, true, 'retained pagination outlives the capability probe');
+    f.controller.handle(['preview-state', 1, 1, 1, false, 0]); f.controller.update();
+    assert.equal(f.messages.filter(message => message.type === 'state').at(-1)?.count, 20, 'stale source metadata cannot clear the retained count');
+    f.controller.handle(['preview-state', 1, 0, 8, false, 0]);
+    state = f.messages.filter(message => message.type === 'state').at(-1)!;
+    assert.equal(state.count, 8); assert.equal(state.complete, false, 'first valid replacement state adopts its own pagination');
+    replacement.previewSvg = false; f.controller.update();
+    assert.equal(f.messages.filter(message => message.type === 'state').at(-1)?.svg, false, 'real capability changes are published after startup');
+  } finally { f.controller.dispose(); }
+});
+
+test('learned cached SVG cannot replay after rejection, but a same-width allocation change can retry it', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const svg = Buffer.from('<svg><path d="M0 0L1 1"/></svg>');
+  const emit = (id: number, mime: 'image/png' | 'image/svg+xml') => f.controller.handle({
+    header: { requestId: id, revision: 1, sequence: 0, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: mime === 'image/png' ? 4 : svg.length, vectorCost: 10000 }, bytes: mime === 'image/png' ? Buffer.alloc(4) : svg
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', svgDom: true, continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'small' }], nearby: [], resident: [0] });
+    const first = f.commands.at(-1)!; emit(Number(first[1]), 'image/svg+xml');
+    let image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: first[1], svg: image.contentId, cached: [image.contentId], renderMs: 1 });
+    const imagesBefore = f.messages.filter(message => message.type === 'image').length;
+    f.send({ type: 'rasterize', page: 0, id: first[1], reason: 'budget', allocation: 'small',
+      budget: { available: 100, required: 200, pixels: 150 } });
+    const fallback = f.commands.at(-1)!;
+    assert.notEqual(fallback[1], first[1]); assert.equal(fallback[0], 'preview-auto'); assert.equal(fallback[6], 0);
+    assert.equal(f.messages.filter(message => message.type === 'image').length, imagesBefore, 'rejected cached SVG does not consume a second decode credit');
+    emit(Number(fallback[1]), 'image/png'); image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    f.send({ type: 'decoded', id: fallback[1], cached: [image.contentId] });
+    f.send({ type: 'viewport', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'large' }], nearby: [], resident: [0] });
+    image = f.messages.filter(message => message.type === 'image').at(-1)!;
+    assert.equal(image.header.mime, 'image/svg+xml', 'allocation-only change retries the reusable SVG within the same source revision');
+    assert.notEqual(image.header.requestId, fallback[1]);
+  } finally { f.controller.dispose(); }
+});
+
+test('manual SVG retries once after a newly simplified PNG is acknowledged, without retrying minor edits', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const emit = (id: number, revision: number, sequence: number, mime: 'image/png' | 'image/svg+xml', vectorCost: number) => f.controller.handle({
+    header: { requestId: id, revision, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+      mime, byteLength: 4, vectorCost }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1000, allocation: 'fixed' }], nearby: [], resident: [0] });
+    const initial = f.commands.at(-1)!; emit(Number(initial[1]), 1, 0, 'image/svg+xml', 10000);
+    f.send({ type: 'rasterize', page: 0, id: initial[1], reason: 'budget', allocation: 'fixed',
+      budget: { available: 16000, required: 20000, pixels: 8000 } });
+    let request = f.commands.at(-1)!; emit(Number(request[1]), 1, 0, 'image/png', 10000);
+    f.send({ type: 'decoded', id: request[1] });
+    for (const [sequence, cost] of [[1, 9900], [2, 9800], [3, 5000]]) {
+      f.session.previewSequence = sequence; f.controller.handle({ sourceSequence: sequence });
+      f.controller.handle(['preview-state', sequence + 1, sequence, 1, true, 0]);
+      request = f.commands.at(-1)!;
+      assert.equal(request[0], 'preview-auto'); assert.equal(request[6], 0);
+      const before = f.commands.length;
+      emit(Number(request[1]), sequence + 1, sequence, 'image/png', cost);
+      assert.equal(f.commands.length, before, 'no second image request before the PNG decode credit is returned');
+      f.send({ type: 'decoded', id: request[1] });
+      if (cost > 5000) { assert.equal(f.commands.length, before, 'minor edits keep the budget decision without duplicate SVG exports'); }
+      else {
+        assert.equal(f.commands.length, before + 1);
+        const retry = f.commands.at(-1)!; assert.equal(retry[0], 'preview-svg');
+        assert.equal(retry[4], sequence + 1); assert.equal(retry[5], sequence, 'retry belongs to the acknowledged source generation');
+        emit(Number(retry[1]), sequence + 1, sequence, 'image/svg+xml', cost); f.send({ type: 'decoded', id: retry[1] });
+        assert.equal(f.commands.length, before + 1, 'successful retry cannot create a render loop');
+      }
+    }
+  } finally { f.controller.dispose(); }
+});
+
+test('capped PNG base width changes cannot create an idle SVG budget retry loop', () => {
+  const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+  const bounds: [number, number, number, number] = [0, 0, 595.275574, 841.889709];
+  const allocation = '1770:2504:16777216';
+  const emit = (id: number, mime: 'image/png' | 'image/svg+xml', width: number) => f.controller.handle({
+    header: { requestId: id, revision: 1, sequence: 0, page: 0, bounds, width, height: Math.ceil(width * bounds[3] / bounds[2]),
+      mime, byteLength: 4, vectorCost: 79582 }, bytes: Buffer.alloc(4)
+  });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1372, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 1372, allocation }], nearby: [], resident: [0] });
+    let request = f.commands.at(-1)!; emit(Number(request[1]), 'image/svg+xml', 596);
+    f.send({ type: 'rasterize', page: 0, id: request[1], reason: 'budget', allocation,
+      budget: { available: 16777216, required: 18995526, pixels: 17728320 } });
+    request = f.commands.at(-1)!; emit(Number(request[1]), 'image/png', 1372); f.send({ type: 'decoded', id: request[1] });
+    f.send({ type: 'viewport', page: 0, width: 970, format: 'svg', continuous: true,
+      visible: [{ page: 0, width: 970, allocation }], nearby: [], resident: [0] });
+    request = f.commands.at(-1)!;
+    assert.equal(request[0], 'preview-auto'); assert.equal(request[6], 0, 'new PNG cap preserves the rejected SVG allocation');
+    emit(Number(request[1]), 'image/png', 970); f.send({ type: 'decoded', id: request[1] });
+    const settled = f.commands.length;
+    for (let i = 0; i < 8; i++) {
+      f.send({ type: 'viewport', page: 0, width: 970, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 970, allocation }], nearby: [], resident: [0] });
+    }
+    assert.equal(f.commands.length, settled, 'unchanged idle viewport cannot trigger another render or cancellation');
+    assert.equal(f.commands.filter(command => command[0] === 'preview-svg').length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('sustained edits admit monotonic foreground snapshots while keeping links, caches and preparation source-current', () => {
+  const f = fixture(); let currentDecodes = 0; Object.assign(f.session, { previewLinks: true, previewDecoded: () => currentDecodes++ });
+  const emit = (request: Command, sequence: number) => f.controller.handle({ header: {
+    requestId: Number(request[1]), revision: sequence + 1, sequence, page: 0, bounds: [0, 0, 600, 800], width: 1000, height: 1333,
+    mime: 'image/png', byteLength: 4, annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] }
+  }, bytes: Buffer.from([sequence, 0, 0, 0]) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true, visible: [{ page: 0, width: 1000 }], nearby: [] });
+    for (let sequence = 0; sequence < 4; sequence++) {
+      const request = f.commands.at(-1)!;
+      f.session.previewSequence = sequence + 1; f.controller.handle({ sourceSequence: sequence + 1 });
+      f.controller.handle(['preview-state', sequence + 2, sequence + 1, 1, true, 0]);
+      emit(request, sequence);
+      const image = f.messages.filter(message => message.type === 'image').at(-1)!;
+      assert.equal(image.header.sequence, sequence); assert.equal(image.visualOnly, true);
+      assert.equal(image.target, undefined); assert.equal(image.destination, undefined);
+      const count = f.commands.length;
+      f.send({ type: 'link', page: 0, revision: sequence + 1, sequence, index: 0 });
+      f.send({ type: 'inverse', page: 0, revision: sequence + 1, sequence, x: 5, y: 5 });
+      f.send({ type: 'detail', page: 0, revision: sequence + 1, sequence, token: 1, bounds: [0, 0, 10, 10], width: 100 });
+      assert.equal(f.commands.length, count); assert.equal(f.opened.length, 0);
+      f.send({ type: 'decoded', id: request[1], displayed: true, stale: true });
+      assert.equal(f.commands.length, count + 1, 'newest source starts immediately after visual progress acknowledgment');
+      assert.equal((f.controller as any).pages.size, 0); assert.equal((f.controller as any).rasterPages.size, 0);
+      assert.equal((f.controller as any).visualSnapshots.get(0).sequence, sequence);
+    }
+    assert.equal(currentDecodes, 0, 'visual progress never acknowledges current-source readiness');
+    const current = f.commands.at(-1)!; emit(current, 4);
+    f.send({ type: 'decoded', id: current[1], displayed: true, stale: false });
+    assert.equal(currentDecodes, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('older-source progress is rejected after away-and-back page, width or rendering intent changes', () => {
+  for (const change of [
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 1, width: 1000 }); f.send({ type: 'viewport', page: 0, width: 1000 }); },
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 0, width: 1200 }); f.send({ type: 'viewport', page: 0, width: 1000 }); },
+    (f: ReturnType<typeof fixture>) => { f.send({ type: 'viewport', page: 0, width: 1000, format: 'png' }); f.send({ type: 'viewport', page: 0, width: 1000 }); }
+  ]) {
+    const f = fixture();
+    try {
+      f.controller.handle(['preview-state', 1, 0, 2, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+      const old = f.commands.at(-1)!;
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); change(f);
+      f.controller.handle(['preview-state', 2, 1, 2, true, 0]);
+      f.controller.handle({ header: { requestId: Number(old[1]), revision: 1, sequence: 0, page: 0,
+        bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+      assert.equal(f.messages.filter(message => message.type === 'image').length, 0, 'returning to equal dimensions does not revive retired work');
+      assert.equal(f.commands.at(-1)?.[5], 1, 'retired frame yields credit to the latest source');
+    } finally { f.controller.dispose(); }
+  }
+});
+
+test('an image invalidated during browser decode cannot report current-source readiness', () => {
+  const f = fixture(); let ready = 0; Object.assign(f.session, { previewDecoded: () => ready++ });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: true });
+    assert.equal(ready, 0); assert.equal(f.commands.at(-1)?.[5], 1);
+    const current = f.commands.at(-1)![1];
+    f.send({ type: 'decoded', id: 1, displayed: true, stale: false });
+    assert.equal((f.controller as any).inFlight.id, current, 'very late ACK cannot consume newer frame credit');
+  } finally { f.controller.dispose(); }
+});
+
+
+test('hiding retires an already decoding browser frame without letting its ACK release restored credit', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    const old = f.commands.at(-1)!;
+    f.controller.handle({ header: { requestId: Number(old[1]), revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    f.panel.visible = false; f.view();
+    const invalidation = f.messages.at(-1)!;
+    assert.equal(invalidation.type, 'invalidate'); assert.equal(invalidation.retire, true);
+    assert.equal(invalidation.sequence, 0); assert.equal(invalidation.revision, 1);
+    f.panel.visible = true; f.view(); f.send({ type: 'ready', page: 0, width: 1000 });
+    const restored = (f.controller as any).inFlight.id; assert.notEqual(restored, old[1]);
+    f.send({ type: 'decoded', id: old[1], displayed: false, stale: true });
+    assert.equal((f.controller as any).inFlight.id, restored);
+  } finally { f.controller.dispose(); }
+});
+
+test('older-revision visual progress cannot enable queued interactions in the same source sequence', () => {
+  const f = fixture(); Object.assign(f.session, { previewLinks: true, previewRegions: true });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true, visible: [{ page: 0, width: 1000 }], nearby: [] });
+    const request = f.commands.at(-1)!;
+    f.controller.handle(['preview-state', 2, 0, 1, true, 0]);
+    f.controller.handle({ header: { requestId: Number(request[1]), revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/png', byteLength: 4,
+      annotations: { links: [{ bounds: [1, 1, 10, 10], uri: 'https://example.com' }], destinations: [] } }, bytes: Buffer.alloc(4) });
+    assert.equal(f.messages.filter(message => message.type === 'image').at(-1)!.visualOnly, true);
+    const count = f.commands.length;
+    f.send({ type: 'link', page: 0, revision: 1, sequence: 0, index: 0 });
+    f.send({ type: 'inverse', page: 0, revision: 1, sequence: 0, x: 5, y: 5 });
+    for (const type of ['region', 'detail']) { f.send({ type, page: 0, revision: 1, sequence: 0, token: 1, bounds: [0, 0, 10, 10], width: 100 }); }
+    assert.equal(f.opened.length, 0); assert.equal(f.commands.length, count);
+    assert.equal((f.controller as any).inverse, undefined); assert.equal((f.controller as any).region, undefined);
+    assert.equal((f.controller as any).detail, undefined);
+  } finally { f.controller.dispose(); }
+});
+
+
+test('obsolete browser failures release credit without poisoning new source or codec decisions', () => {
+  for (const mime of ['image/png', 'image/svg+xml'] as const) {
+    for (const type of ['decode-error', 'rasterize', 'cache-miss']) {
+      for (const sequenceChange of [true, false]) {
+        const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+        try {
+          f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+          f.send({ type: 'ready', page: 0, width: 1000, format: mime === 'image/png' ? 'png' : 'svg', continuous: true,
+            visible: [{ page: 0, width: 1000, allocation: 'same' }], nearby: [] });
+          const obsolete = f.commands.at(-1)!;
+          f.controller.handle({ header: { requestId: Number(obsolete[1]), revision: 1, sequence: 0, page: 0,
+            bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime, byteLength: 4 }, bytes: Buffer.alloc(4) });
+          if (sequenceChange) { f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); }
+          f.controller.handle(['preview-state', 2, sequenceChange ? 1 : 0, 1, true, 0]);
+          const before = f.commands.length;
+          f.send({ type, page: 0, id: obsolete[1], reason: 'decode', allocation: 'same', pngUnsupported: true,
+            budget: { available: 100, required: 200, pixels: 150 } });
+          assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+          assert.equal((f.controller as any).failed.size, 0); assert.equal((f.controller as any).svgFailures.size, 0);
+          assert.equal((f.controller as any).svgDecodeFailed, false); assert.equal((f.controller as any).fallback.has(0), false);
+          assert.equal((f.controller as any).autoPages.size, 0);
+          assert.equal(f.commands.length, before + 1, 'latest source gets the returned decode credit');
+          assert.equal(f.commands.at(-1)![4], 2); assert.equal(f.commands.at(-1)![5], sequenceChange ? 1 : 0);
+          assert.equal(f.commands.at(-1)![0], mime === 'image/png' ? 'preview-render' : 'preview-svg');
+        } finally { f.controller.dispose(); }
+      }
+    }
+  }
+});
+
+test('obsolete viewport decode failures cannot fail the newly navigated page', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]); f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(cachedFrame(1)); f.send({ type: 'viewport', page: 1, width: 1000 });
+    f.send({ type: 'decode-error', id: 1 });
+    assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+    assert.equal((f.controller as any).failed.size, 0); assert.equal(f.commands.at(-1)![2], 1);
+  } finally { f.controller.dispose(); }
+});
+
+
+test('late SVG budget evidence survives source edits only for unchanged physical view intent', () => {
+  for (const changeView of [false, true]) {
+    const f = fixture(); Object.assign(f.session, { previewSvg: true, previewAuto: true });
+    try {
+      f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+      f.send({ type: 'ready', page: 0, width: 1000, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 1000, allocation: 'same' }], nearby: [] });
+      const obsolete = f.commands.at(-1)!;
+      f.controller.handle({ header: { requestId: Number(obsolete[1]), revision: 1, sequence: 0, page: 0,
+        bounds: [0, 0, 600, 800], width: 1000, height: 1333, mime: 'image/svg+xml', byteLength: 4 }, bytes: Buffer.alloc(4) });
+      f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+      f.controller.handle(['preview-state', 2, 1, 1, true, 0]);
+      if (changeView) { f.send({ type: 'viewport', page: 0, width: 900, format: 'svg', continuous: true,
+        visible: [{ page: 0, width: 900, allocation: 'different' }], nearby: [] }); }
+      f.send({ type: 'rasterize', page: 0, id: obsolete[1], reason: 'budget', allocation: 'same',
+        budget: { available: 100, required: 200, pixels: 150 } });
+      assert.equal((f.controller as any).fallback.has(0), !changeView);
+      assert.equal((f.controller as any).autoPages.size, 0); assert.equal((f.controller as any).failed.size, 0);
+      assert.equal(f.messages.filter(message => message.type === 'error').length, 0);
+      assert.equal(f.commands.at(-1)![5], 1, 'new source resumes after old decode credit is returned');
+      assert.equal(f.commands.at(-1)![0], changeView ? 'preview-svg' : 'preview-auto');
+      if (!changeView) { assert.equal(f.commands.at(-1)![6], 0); }
+    } finally { f.controller.dispose(); }
+  }
+});
+
+
+test('navigation observes a current retained surface after its ACK preceded the viewport update', () => {
+  const f = fixture(), decoded: number[] = [], visible: number[] = [];
+  Object.assign(f.session, { previewDecoded: (h: { page: number }) => decoded.push(h.page),
+    previewVisible: (h: { page: number }) => visible.push(h.page) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }], nearby: [], resident: [0], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(first, 0)); f.send({ type: 'decoded', id: first[1] });
+    f.controller.navigate(1);
+    const next = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(next, 1));
+    const viewport = (page: number, epoch: number) => f.send({ type: 'viewport', page, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }, { page: 1, width: 1000 }], nearby: [], resident: [0, 1], epoch });
+    viewport(0, 1); f.send({ type: 'decoded', id: next[1] });
+    assert.deepEqual(decoded, [0], 'neighbor ACK is not a foreground decode');
+    const commands = f.commands.length;
+    viewport(1, 2);
+    assert.deepEqual(visible, [1], 'browser viewport confirms the current decoded surface');
+    assert.equal(f.commands.length, commands, 'no extra native export is needed');
+    viewport(1, 2); assert.deepEqual(visible, [1], 'observation is bounded to this navigation');
+  } finally { f.controller.dispose(); }
+});
+
+test('figure actions use the decoded current header and reject stale or forged webview routing', async () => {
+  let prepared = 0, opened = 0, routeCurrent: (() => boolean) | undefined;
+  const f = fixture({ prepare: async () => { prepared++; return [0]; },
+    open: async (_session, _header, _index, current) => { if (current()) { opened++; } routeCurrent = current; } });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, false, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    const id = f.commands[0][1] as number;
+    f.controller.handle({ header: { requestId: id, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4,
+      annotations: { links: [], destinations: [], figures: [{ file: 'main.tex', line: 1, endLine: 4, bounds: [60, 80, 160, 160] }] } }, bytes: Buffer.alloc(4) });
+    assert.equal(prepared, 0, 'no figure actions for an image which has not decoded');
+    f.send({ type: 'decoded', id }); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(prepared, 1);
+    assert.deepEqual(f.messages.find(m => m.type === 'tikz-targets')?.indices, [0]);
+    f.send({ type: 'tikz-open', page: 0, revision: 0, sequence: 0, index: 0 });
+    f.send({ type: 'tikz-open', instance: 'forged', page: 0, revision: 1, sequence: 0, index: 0 });
+    assert.equal(opened, 0);
+    f.send({ type: 'tikz-open', page: 0, revision: 1, sequence: 0, index: 0 }); assert.equal(opened, 1);
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 });
+    assert.equal(routeCurrent!(), false, 'async save/open must recheck after source invalidation');
+    f.send({ type: 'tikz-open', page: 0, revision: 1, sequence: 0, index: 0 }); assert.equal(opened, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('precise cached-page inverse skips image restoration and retires its editor guard on newer source intent', () => {
+  const f = fixture(), queries: any[][] = [];
+  Object.assign(f.session, { previewSynctexPrecision: true, inversePrecise: (...args: any[]) => queries.push(args) });
+  try {
+    f.controller.handle(['preview-state', 1, 0, 2, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, continuous: true,
+      visible: [{ page: 0, width: 1000 }, { page: 1, width: 1000 }], nearby: [], resident: [0, 1], epoch: 0 });
+    for (const page of [0, 1]) {
+      const command = f.commands.at(-1)!; f.controller.handle(continuousFrame(command, page));
+      const image = f.messages.filter(m => m.type === 'image').at(-1)!;
+      f.send({ type: 'decoded', id: image.header.requestId, page, cached: [image.contentId] });
+    }
+    const commands = f.commands.length;
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: 100, y: 200 });
+    assert.deepEqual(queries[0].slice(0, 5), [1, 0, 0, 100, 200]);
+    assert.equal(f.commands.length, commands, 'a nonforeground cached page needs no render');
+    assert.equal(queries[0][5](), true);
+    f.controller.beginSourceFollow(); assert.equal(queries[0][5](), false, 'new source selection wins over an older click');
+    f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: -100, y: 200 });
+    assert.equal(queries.length, 1, 'malformed webview coordinates cannot query native state');
   } finally { f.controller.dispose(); }
 });

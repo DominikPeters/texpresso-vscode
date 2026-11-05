@@ -6,8 +6,8 @@ const q=values=>{values=values.filter(Number.isFinite);return values.length?{n:v
 function summarize(directories){
  const runs=directories.flatMap(directory=>fs.readFileSync(path.join(directory,'browser.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(s=>({...JSON.parse(s),cpuTimebase:JSON.parse(fs.readFileSync(path.join(directory,'metadata.json'),'utf8')).cpuTimebase})));
  const groups=[];
- for(const fixture of [...new Set(runs.map(r=>r.fixture))])for(const codec of ['png','svg','auto']){
-  const selected=runs.filter(r=>r.fixture===fixture&&r.codec===codec&&r.repeat>0);if(!selected.length)continue;
+ for(const variant of [...new Set(runs.map(r=>r.variant||'default'))])for(const fixture of [...new Set(runs.map(r=>r.fixture))])for(const codec of ['png','svg','auto']){
+  const selected=runs.filter(r=>(r.variant||'default')===variant&&r.fixture===fixture&&r.codec===codec&&r.repeat>0);if(!selected.length)continue;
   const operations={};
   for(const name of new Set(selected.flatMap(r=>r.rows.map(o=>o.name)))){
    const rows=selected.flatMap(r=>r.rows.filter(o=>o.name===name));
@@ -17,6 +17,8 @@ function summarize(directories){
     patchCount:rows.flatMap(o=>o.frames).filter(f=>f.rasterPatch||f.svgPatch).length,
     controllerMs:q(rows.map(o=>o.frames.reduce((n,f)=>n+(f.processingMs||0),0))),
     decodeApplyMs:q(rows.map(o=>o.frames.reduce((n,f)=>n+(f.dispatchToDecoded||0),0))),
+    domNodes:q(rows.map(o=>o.domNodes)),canvasPixels:q(rows.map(o=>o.canvasPixels)),
+    nativeExportMs:q(rows.flatMap(o=>o.frames.map(f=>f.exportMs))),
     finalKeyMs:q(rows.map(o=>o.lastInputAt===undefined?undefined:o.frames[0].paintedAt-o.lastInputAt))};
   }
   const firstEdits=selected.map(r=>r.rows.find(o=>o.name==='edit-letter')).filter(Boolean);
@@ -31,7 +33,7 @@ function summarize(directories){
     taskSumPeak:Math.max(0,...r.memory.map(s=>s.tasks.reduce((n,t)=>n+t.footprint,0))),
     nativeCpuMs:[...cpus.values()].reduce((n,c)=>n+c,0)/1e6,viewerCpuMs:(cpus.get(viewer)||0)/1e6};
   });
-  groups.push({fixture,codec,sessions:selected.length,operations,firstEditMs:q(firstEdits.map(o=>o.ms)),warmTypingMs:q(warmEdits.map(o=>o.ms)),
+  groups.push({variant,fixture,codec,sessions:selected.length,operations,firstEditMs:q(firstEdits.map(o=>o.ms)),warmTypingMs:q(warmEdits.map(o=>o.ms)),
    nativeStagesTotalMs:stages,viewerPeakMiB:q(memory.map(m=>m.viewerPeak/2**20)),taskSumPeakMiB:q(memory.map(m=>m.taskSumPeak/2**20)),
    nativeSampledCpuMs:q(memory.map(m=>m.nativeCpuMs)),viewerCpuMs:q(memory.map(m=>m.viewerCpuMs)),
    totalImageBytes:q(selected.map(r=>r.frames.reduce((n,f)=>n+f.bytes+f.patchBytes,0))),

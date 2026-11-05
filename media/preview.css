@@ -14,7 +14,7 @@ input { width: 52px; margin-left: 3px; }
 #status.error { color: var(--vscode-errorForeground,#f66); }
 main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
 #image { width: 100%; height: 100%; display: block; user-select: none; }
-#highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; }
+#highlight { position: absolute; width: 4px; height: 18px; margin-top: -14px; border-radius: 2px; background: #ffd54fcc; pointer-events: none; }
 #empty { margin: 64px auto; text-align: center; color: var(--vscode-descriptionForeground); }
 [hidden] { display: none !important; }
 
@@ -58,6 +58,20 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 .page-links { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .page-links .page-link { position: absolute; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; pointer-events: auto; cursor: pointer; }
 .page-links .page-link:hover { background: #0088ff22; }
-.page-highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; animation: locate 1.5s ease-out forwards; }
+.page-highlight { position: absolute; width: 4px; height: 18px; margin-top: -14px; border-radius: 2px; background: #ffd54fcc; pointer-events: none; animation: locate 1.5s ease-out forwards; }
 #viewport.magnify .page-image, #viewport.magnify .page-vector, #viewport.magnify .page-raster { cursor: zoom-in; touch-action: none; }
 @media (prefers-reduced-motion: reduce) { .page-highlight { animation: none; } }
+
+/* Match TeXstudio: a quiet outline, with a page-local control above the corner. */
+.tikz-highlight { position:absolute; box-sizing:border-box; border:1px solid #007acc69; border-radius:3px; background:transparent; pointer-events:none; z-index:5; }
+.tikz-action { position:absolute; z-index:6; display:flex; align-items:center; gap:7px; padding:5px 9px; min-height:30px;
+  border:1px solid var(--vscode-widget-border,#bbb); border-radius:4px; background:var(--vscode-editorWidget-background,#f6f6f6);
+  color:var(--vscode-editorWidget-foreground,#222); box-shadow:0 2px 7px #0002; cursor:default; font:12px var(--vscode-font-family,sans-serif); white-space:nowrap; }
+.tikz-action .tikz-editor-icon { width:20px; height:20px; flex:none; }
+.tikz-action:hover { background:var(--vscode-list-hoverBackground,#e9e9e9); }
+.tikz-action:focus-visible { outline:1px solid var(--vscode-focusBorder,#007acc); outline-offset:1px; }
+.tikz-action[hidden],.tikz-highlight[hidden] { display:none; }
+
+/* Like TeXstudio's PDF viewer: briefly tint real source boxes, without a border. */
+#highlight.source-boxes, .page-highlight.source-boxes { width:100%; height:100%; margin:0; border-radius:0; background:none; }
+.source-highlight-box { position:absolute; background:rgba(255,255,0,.25); pointer-events:none; }

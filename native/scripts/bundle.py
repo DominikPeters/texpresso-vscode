@@ -47,8 +47,9 @@ def copy_notices(source, notices):
         destination = notices / prefix.parent.name
         destination.mkdir(exist_ok=True)
         count = 0
-        for pattern in ('LICENSE*', 'COPYING*', 'NOTICE*', 'share/licenses/**/*',
-                        'share/doc/*/LICENSE*', 'share/doc/*/COPYING*', 'share/doc/*/NOTICE*'):
+        for pattern in ('LICENSE*', 'LICENCE*', 'COPYING*', 'NOTICE*', 'share/licenses/**/*',
+                        'share/doc/*/LICENSE*', 'share/doc/*/LICENCE*', 'share/doc/*/FTL*',
+                        'share/doc/*/COPYING*', 'share/doc/*/NOTICE*'):
             for file in prefix.glob(pattern):
                 if file.is_file():
                     relative = file.relative_to(prefix)

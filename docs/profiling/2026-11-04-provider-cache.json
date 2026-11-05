@@ -1,0 +1,662 @@
+{
+  "engine_revision": "25ea10f6a443636fff55f36c69dfd9e46952a0ea",
+  "versions": {
+    "kpsewhich": "kpathsea version 6.3.5",
+    "findtexmf": "MiKTeX Find Utility 4.1 (MiKTeX 26.5)",
+    "tectonic": "Tectonic 0.17.0"
+  },
+  "document_sha256": "b046c0e18e28bcfbae6d52adca6053ac25094ebfd1543f4264d02aa541f08700",
+  "repeats": 3,
+  "environment": "Linux runnervmnjgfq 6.18.54.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Tue Oct  6 19:13:07 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+  "results": {
+    "texlive-direct": {
+      "cold": {
+        "startup_ms": 3881.5078729999755,
+        "ready_ms": 3874.3071259999624,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          68.47489899996617,
+          14.3277949999856,
+          14.3481949999682,
+          13.852498999995078,
+          13.241304000018772
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 171.40719199983323,
+          "ready_ms": 165.44505499996376,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            147.0905500000299,
+            12.747564999926908,
+            13.958952999928442,
+            15.525236000030418,
+            12.674967000066317
+          ]
+        },
+        {
+          "startup_ms": 161.54162399993766,
+          "ready_ms": 155.39147999993475,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            144.79797700005292,
+            12.774483000157488,
+            12.985382000124446,
+            12.925580999990416,
+            12.872082999820122
+          ]
+        },
+        {
+          "startup_ms": 161.38286799991874,
+          "ready_ms": 155.2999370001089,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            163.89434000006986,
+            12.483058000043457,
+            12.610756999947625,
+            12.707654999985607,
+            12.641057000109868
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "tectonic-direct": {
+      "cold": {
+        "startup_ms": 1358.3843600000023,
+        "ready_ms": 1351.9169069999748,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          77.0649359999993,
+          12.489208000033614,
+          12.373910000007982,
+          12.470108000002256,
+          11.532916000021487
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 205.84713000016563,
+          "ready_ms": 199.7659940000176,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            178.89331399987896,
+            14.258949000122811,
+            13.655755999934627,
+            13.045063000163282,
+            11.332779999975173
+          ]
+        },
+        {
+          "startup_ms": 186.40803399989636,
+          "ready_ms": 180.33789799983424,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            222.9448499999762,
+            12.0589729999665,
+            11.955074000070454,
+            12.117872000089847,
+            11.198582000133683
+          ]
+        },
+        {
+          "startup_ms": 193.78040099991267,
+          "ready_ms": 186.54098299998623,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            161.42346800006635,
+            12.181760999965263,
+            11.787566000066363,
+            12.043164000033357,
+            11.136873000168634
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "miktex-direct": {
+      "cold": {
+        "startup_ms": 30034.757866000007,
+        "ready_ms": 27322.16517400002,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          3425.775329999965,
+          440.19735599999876,
+          440.27565499999355,
+          415.894073000004,
+          419.7981219999747
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 7057.69416399994,
+          "ready_ms": 4261.346893000109,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            3645.9025999999994,
+            434.7488280000107,
+            437.74340000004486,
+            405.77479300009145,
+            482.5941909998619
+          ]
+        },
+        {
+          "startup_ms": 6764.652943999863,
+          "ready_ms": 4096.024493999948,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            3504.859230999955,
+            454.69533300001785,
+            458.58450500008985,
+            449.0247730000192,
+            430.4298069998822
+          ]
+        },
+        {
+          "startup_ms": 7010.243467999999,
+          "ready_ms": 4229.64660699995,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            3564.64037700016,
+            419.96089799999936,
+            413.03751099985675,
+            430.1164040000458,
+            441.4723669999603
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "miktex-windows-direct": {
+      "cold": {
+        "startup_ms": 136226.66584,
+        "ready_ms": 128591.89061799998,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          8515.858110000067,
+          1197.7403490000142,
+          1076.4036770000303,
+          1191.5057200000092,
+          1081.0093669999787
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 19449.21383299993,
+          "ready_ms": 12187.156049999885,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            10324.710634999974,
+            1197.7454400000624,
+            1079.8517150001317,
+            1172.119500000008,
+            1118.9842179999232
+          ]
+        },
+        {
+          "startup_ms": 19918.71719300002,
+          "ready_ms": 12393.996802999936,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            10392.898146999869,
+            1193.604908999987,
+            1098.6107590001666,
+            1113.3688069999153,
+            1216.7792029999873
+          ]
+        },
+        {
+          "startup_ms": 19570.04905200006,
+          "ready_ms": 12454.389264999918,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            10869.830974000024,
+            1300.3661739999188,
+            1089.9127500001669,
+            1098.6986630000501,
+            1316.9264100001783
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {}
+    },
+    "miktex-windows-none": {
+      "cold": {
+        "startup_ms": 146462.25901700006,
+        "ready_ms": 138698.04251900007,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          9097.71097800001,
+          1346.398358999977,
+          1224.0916199999674,
+          1120.4708699999628,
+          1113.0035520000092
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 20276.23633400003,
+          "ready_ms": 12833.535257999984,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            11273.996022999881,
+            1231.3694940000914,
+            1337.5853389998156,
+            1114.513701000078,
+            1250.7975580001585
+          ]
+        },
+        {
+          "startup_ms": 20287.750362,
+          "ready_ms": 12597.663655999895,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            10870.191234999993,
+            1235.0546669999858,
+            1126.1311399998704,
+            1130.2317659999517,
+            1232.5458590000835
+          ]
+        },
+        {
+          "startup_ms": 20387.13644900008,
+          "ready_ms": 12687.820058999932,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            10807.057607999923,
+            1133.8324129999364,
+            1334.1639529999156,
+            1122.7812539998467,
+            1256.3829469997927
+          ]
+        }
+      ],
+      "cache_bytes": 0,
+      "proxy_stats": {
+        "stats-warm-2/proxy-5453.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 8704.364874999783,
+          "lookup_ms": 8709.878290999313,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-2/proxy-5460.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 8972.802304999732,
+          "lookup_ms": 8978.653616999281,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-2/proxy-5488.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 13381.512578999263,
+          "lookup_ms": 13386.99370999916,
+          "positive": 17,
+          "misses": 17
+        },
+        "stats-warm-1/proxy-5388.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 8877.674890999288,
+          "lookup_ms": 8884.480807000273,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-1/proxy-5416.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 13263.409905999879,
+          "lookup_ms": 13269.944920999706,
+          "positive": 17,
+          "misses": 17
+        },
+        "stats-warm-1/proxy-5381.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 8713.38136500026,
+          "lookup_ms": 8718.92860399953,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-warm-0/proxy-5344.json": {
+          "requests": 35,
+          "hits": 0,
+          "remote_ms": 13950.331783999673,
+          "lookup_ms": 13962.112661000674,
+          "positive": 17,
+          "misses": 17
+        },
+        "stats-warm-0/proxy-5316.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 9006.411217000277,
+          "lookup_ms": 9012.679459999617,
+          "positive": 13,
+          "misses": 9
+        },
+        "stats-warm-0/proxy-5309.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 8545.509276999383,
+          "lookup_ms": 8551.034826999512,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-cold/proxy-3771.json": {
+          "requests": 23,
+          "hits": 0,
+          "remote_ms": 9078.709892000119,
+          "lookup_ms": 9085.800617000132,
+          "positive": 15,
+          "misses": 7
+        },
+        "stats-cold/proxy-3778.json": {
+          "requests": 339,
+          "hits": 0,
+          "remote_ms": 132155.33944400042,
+          "lookup_ms": 132192.24526499916,
+          "positive": 260,
+          "misses": 78
+        }
+      }
+    },
+    "miktex-windows-paths": {
+      "cold": {
+        "startup_ms": 139737.5916220001,
+        "ready_ms": 134414.964379,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          3884.481484999924,
+          804.3534549999549,
+          772.224231999985,
+          888.2625700000517,
+          792.756590999943
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 9764.013900000009,
+          "ready_ms": 6613.60968200006,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            6092.887472000029,
+            789.6066840000913,
+            802.49202899995,
+            779.3543289999434,
+            795.9995850001178
+          ]
+        },
+        {
+          "startup_ms": 10142.485562000047,
+          "ready_ms": 6811.6355940001085,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            5825.517558999991,
+            798.6138629999004,
+            803.6882889998651,
+            796.1543979999988,
+            885.8754319999207
+          ]
+        },
+        {
+          "startup_ms": 9824.260805999984,
+          "ready_ms": 6550.30864299988,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            5753.399214999945,
+            788.3244869999544,
+            936.7355360000147,
+            782.97991799991,
+            801.0167720001391
+          ]
+        }
+      ],
+      "cache_bytes": 197139,
+      "proxy_stats": {
+        "stats-warm-2/proxy-6440.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 6775.492450999764,
+          "lookup_ms": 6834.106760000168,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-2/proxy-6405.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 3309.4282879999355,
+          "lookup_ms": 3390.988517000551,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-warm-2/proxy-6412.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 3800.5907789997764,
+          "lookup_ms": 3845.220503000519,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-warm-1/proxy-6215.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 3327.6787990000685,
+          "lookup_ms": 3405.7174770005076,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-warm-1/proxy-6250.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 6793.331764999721,
+          "lookup_ms": 6866.969905998303,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-1/proxy-6222.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 4052.26150999988,
+          "lookup_ms": 4097.708102000297,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-warm-0/proxy-5274.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 6979.853890000186,
+          "lookup_ms": 7046.4183300007335,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-0/proxy-5246.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 3898.744607000026,
+          "lookup_ms": 3943.522264999956,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-warm-0/proxy-5239.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 3069.239986999264,
+          "lookup_ms": 3153.4832419997656,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-cold/proxy-4068.json": {
+          "requests": 23,
+          "hits": 7,
+          "remote_ms": 6285.6314350000275,
+          "lookup_ms": 6359.786448000136,
+          "positive": 8,
+          "misses": 7
+        },
+        "stats-cold/proxy-4078.json": {
+          "requests": 339,
+          "hits": 17,
+          "remote_ms": 120312.12848799943,
+          "lookup_ms": 121395.78108499903,
+          "positive": 241,
+          "misses": 78
+        }
+      }
+    },
+    "miktex-windows-mirror": {
+      "cold": {
+        "startup_ms": 143783.94580999986,
+        "ready_ms": 138709.37006899988,
+        "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+        "edit_ms": [
+          3881.2681080000857,
+          759.4394300001568,
+          762.7227999998922,
+          765.5969739998909,
+          762.2034040000472
+        ]
+      },
+      "warm": [
+        {
+          "startup_ms": 10485.909214999992,
+          "ready_ms": 7552.9716330001975,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            5600.267422999877,
+            856.0581179999645,
+            800.9804889998122,
+            872.2983740001382,
+            767.0114099998955
+          ]
+        },
+        {
+          "startup_ms": 11120.54170700003,
+          "ready_ms": 7739.635747999955,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            5885.269547000007,
+            758.6039769998933,
+            1006.2045140000464,
+            875.5950620000021,
+            780.5444399998578
+          ]
+        },
+        {
+          "startup_ms": 10537.073663000001,
+          "ready_ms": 7398.401312000033,
+          "initial_png_sha256": "506e3cec9b8b5f8a2f46748225603deb208732276b361dc87913a3460b63f7e9",
+          "edit_ms": [
+            5869.080095999834,
+            782.6328359999479,
+            920.2185599999666,
+            878.2763409999461,
+            787.6034789999267
+          ]
+        }
+      ],
+      "cache_bytes": 9504516,
+      "proxy_stats": {
+        "stats-warm-2/proxy-6883.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 3688.073360999624,
+          "lookup_ms": 3754.4259780001994,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-warm-2/proxy-6911.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 7034.3470660006915,
+          "lookup_ms": 7125.297926000258,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-2/proxy-6876.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 3191.9090599999436,
+          "lookup_ms": 3271.962431999782,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-warm-1/proxy-6292.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 4102.219770999909,
+          "lookup_ms": 4167.75918500025,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-warm-1/proxy-6285.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 3394.330554999897,
+          "lookup_ms": 3474.0806200006773,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-warm-1/proxy-6320.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 7183.762262000073,
+          "lookup_ms": 7275.084691000075,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-0/proxy-6180.json": {
+          "requests": 35,
+          "hits": 17,
+          "remote_ms": 6754.055263999817,
+          "lookup_ms": 6842.3478650001925,
+          "positive": 0,
+          "misses": 17
+        },
+        "stats-warm-0/proxy-6145.json": {
+          "requests": 23,
+          "hits": 15,
+          "remote_ms": 2955.41948999994,
+          "lookup_ms": 3040.7226460001766,
+          "positive": 0,
+          "misses": 7
+        },
+        "stats-warm-0/proxy-6152.json": {
+          "requests": 23,
+          "hits": 13,
+          "remote_ms": 3719.1174830002183,
+          "lookup_ms": 3785.3166740001143,
+          "positive": 0,
+          "misses": 9
+        },
+        "stats-cold/proxy-4626.json": {
+          "requests": 339,
+          "hits": 17,
+          "remote_ms": 121784.27397800065,
+          "lookup_ms": 123508.77140000027,
+          "positive": 241,
+          "misses": 78
+        },
+        "stats-cold/proxy-4616.json": {
+          "requests": 23,
+          "hits": 7,
+          "remote_ms": 6031.713793000108,
+          "lookup_ms": 6125.476997000419,
+          "positive": 8,
+          "misses": 7
+        }
+      }
+    }
+  },
+  "extension_revision": "8275a919303c87c582527bde745e901e50328847",
+  "workflow_run": "https://github.com/DominikPeters/texpresso-vscode/actions/runs/41879711571",
+  "version_probe_warning": "findtexmf: security risk: running with elevated privileges",
+  "versions_source": "Linux MiKTeX version recovered from the same CI setup log; the original combined-output probe returned the privilege warning first."
+}
