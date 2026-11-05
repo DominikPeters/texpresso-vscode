@@ -376,6 +376,10 @@ def main():
                     component = collector(package, host, notices)
                     if component:
                         manifest['components'].append(component)
+                for package in native.get('buildSourcePackages', []):
+                    source = package.split('\t')[2]
+                    if not any(p.name == 'COPYING.RUNTIME' for p in (notices / source).rglob('*')):
+                        raise ValueError('Missing GCC runtime exception license: ' + source)
                 download(lock['icu']['sourceUrl'], inputs / 'icu.tgz', lock['icu']['sourceSha256'])
                 unpack_notices([inputs / 'icu.tgz'], notices / 'icu')
                 manifest['components'].append({'name': 'icu', 'version': lock['icu']['version'], 'source': 'inputs/icu.tgz'})

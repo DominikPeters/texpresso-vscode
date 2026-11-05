@@ -59,13 +59,19 @@ def package_notice(source, destination):
     return record
 
 
-def rpm_notice(source, destination):
+def rpm_source_identity(source):
     record = run(['rpm', '-qf', '--qf', '%{NAME}.%{ARCH}\t%{EPOCHNUM}:%{VERSION}-%{RELEASE}\t%{SOURCERPM}', source], capture=True)
     package, binary_version, source_rpm = record.split('\t')
     if not source_rpm.endswith('.src.rpm'):
         raise ValueError(f'Missing source RPM identity for {source}')
     source_name, source_version, source_release = source_rpm.removesuffix('.src.rpm').rsplit('-', 2)
-    identity = '\t'.join([package, binary_version, source_name, source_version + '-' + source_release])
+    return '\t'.join([package, binary_version, source_name, source_version + '-' + source_release])
+
+
+def rpm_notice(source, destination):
+    identity = rpm_source_identity(source)
+    package, _, source_name, source_version = identity.split('\t')
+    source_rpm = source_name + '-' + source_version + '.src.rpm'
     target = destination / package
     target.mkdir(exist_ok=True)
     def copy_licenses(candidate):
@@ -140,7 +146,9 @@ def bundle(executables, destination, metadata, notices_sources, *, maximum_glibc
         shutil.copyfile(source, notices / name)
     metadata['hostLibraries'] = sorted(packages)
     if source_inputs:
-        metadata['buildSourcePackages'] = sorted({package_notice(p, notices) for p in source_inputs})
+        # Compiler RPMs do not consistently mark installed texts as %license.
+        # Their full grants are collected from the exact SRPM before packaging.
+        metadata['buildSourcePackages'] = sorted({rpm_source_identity(p) for p in source_inputs})
     if maximum_glibc:
         from audit_linux import audit
         metadata['compatibility'] = audit(destination, maximum_glibc, metadata['architecture'])
