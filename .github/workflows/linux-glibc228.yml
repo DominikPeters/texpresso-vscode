@@ -42,7 +42,7 @@ jobs:
       - name: Install host acceptance tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends texlive-xetex xvfb xauth libgtk-3-0t64 libnss3 libgbm1 libasound2t64 qemu-user-static
+          sudo apt-get install -y --no-install-recommends texlive-xetex xvfb xauth libgtk-3-0t64 libnss3 libgbm1 libasound2t64 libgl1-mesa-dri qemu-user-static
           npm ci
           mkdir -p artifacts/glibc228 native/.bundles
       - name: Prepare maintained glibc 2.28 builder on GitHub
@@ -136,7 +136,10 @@ jobs:
       - name: Full native and development-webview acceptance on a modern distribution
         run: |
           export TEXPRESSO_BINARY="$PWD/native/.bundles/glibc228/bin/texpresso"
-          npm run test:engine
+          # SDL 2.0.10 cannot satisfy vsync on its dummy software renderer.
+          # Exercise real native-window startup on the isolated Xvfb display;
+          # embedded-preview cases independently require headless operation.
+          TEXPRESSO_TEST_NATIVE_WINDOW=1 SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a npm run test:engine
           xvfb-run -a npm run test:integration:preview
       - name: Save compact trial evidence only
         if: always()
