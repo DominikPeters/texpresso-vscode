@@ -60,7 +60,7 @@ jobs:
               value = lock[key]
               subprocess.run(['git', 'clone', '--filter=blob:none', '--no-checkout', value['repository'], str(inputs/name)], check=True)
               subprocess.run(['git', '-C', str(inputs/name), 'checkout', value['revision']], check=True)
-          subprocess.run(['git', '-C', str(inputs/'mupdf'), 'submodule', 'update', '--init', '--depth', '1', 'thirdparty/lcms2', 'thirdparty/jbig2dec'], check=True)
+          subprocess.run(['git', '-C', str(inputs/'mupdf'), 'submodule', 'update', '--init', '--depth', '1', 'thirdparty/lcms2', 'thirdparty/jbig2dec', 'thirdparty/harfbuzz'], check=True)
           archive = inputs/'icu.tgz'
           urllib.request.urlretrieve(lock['icu']['sourceUrl'], archive)
           assert hashlib.sha256(archive.read_bytes()).hexdigest() == lock['icu']['sourceSha256']
@@ -84,11 +84,11 @@ jobs:
       - name: Build and audit the complete glibc 2.28 dependency closure
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" texpresso-glibc228 bash -euxc '
-            for source in "$PWD" "$PWD/native/texpresso" "$PWD/.native-sources/mupdf" "$PWD/.native-sources/mupdf/thirdparty/lcms2" "$PWD/.native-sources/mupdf/thirdparty/jbig2dec" "$PWD/.native-sources/zlib-ng"; do
+            for source in "$PWD" "$PWD/native/texpresso" "$PWD/.native-sources/mupdf" "$PWD/.native-sources/mupdf/thirdparty/lcms2" "$PWD/.native-sources/mupdf/thirdparty/jbig2dec" "$PWD/.native-sources/mupdf/thirdparty/harfbuzz" "$PWD/.native-sources/zlib-ng"; do
               git config --global --add safe.directory "$source"
             done
             python3 -m unittest discover -s native/tests
-            python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/glibc228 --maximum-glibc 2.28 --bundled-jbig2dec
+            python3 native/scripts/build_linux.py --mupdf-source .native-sources/mupdf --zlib-ng-source .native-sources/zlib-ng --icu-prefix native/.icu --output native/.bundles/glibc228 --maximum-glibc 2.28 --bundled-jbig2dec --bundled-harfbuzz
           '
           sudo chown -R "$(id -u):$(id -g)" native/.bundles/glibc228
           python3 native/scripts/audit_linux.py native/.bundles/glibc228 --maximum-glibc 2.28 --architecture '${{ matrix.architecture }}' --output artifacts/glibc228/elf-audit.json

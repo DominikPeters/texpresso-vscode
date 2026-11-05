@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--keep-work', action='store_true', help='retain successful build intermediates for debugging')
     parser.add_argument('--maximum-glibc', help='reject any bundled ELF requiring a newer glibc')
     parser.add_argument('--bundled-jbig2dec', action='store_true', help='build the decoder pinned by MuPDF when no host development package exists')
+    parser.add_argument('--bundled-harfbuzz', action='store_true', help='build the text shaper pinned by MuPDF on older distributions')
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'aarch64'):
         parser.error('Build on a native Linux x64 or arm64 runner')
@@ -39,11 +40,13 @@ def main():
     engine, revision = pinned_engine()
     check_source(args.mupdf_source, lock['mupdf']['revision'])
     submodules = dict(lock['mupdf']['submodules'])
-    if args.bundled_jbig2dec:
-        entry = run(['git', 'ls-tree', 'HEAD', 'thirdparty/jbig2dec'], cwd=args.mupdf_source, capture=True)
-        if not entry.startswith('160000 commit '):
-            raise ValueError('MuPDF must pin its JBIG2 decoder')
-        submodules['thirdparty/jbig2dec'] = entry.split()[2]
+    for enabled, component in [(args.bundled_jbig2dec, 'jbig2dec'), (args.bundled_harfbuzz, 'harfbuzz')]:
+        if enabled:
+            path = 'thirdparty/' + component
+            entry = run(['git', 'ls-tree', 'HEAD', path], cwd=args.mupdf_source, capture=True)
+            if not entry.startswith('160000 commit '):
+                raise ValueError('MuPDF must pin ' + component)
+            submodules[path] = entry.split()[2]
     for path, sha in submodules.items():
         check_source(args.mupdf_source / path, sha)
     work_root = NATIVE / '.work'
@@ -62,6 +65,17 @@ def main():
         with (mupdf / 'user.make').open('a') as profile:
             profile.write('\nUSE_SYSTEM_JBIG2DEC := no\n')
     cpu_flags = ['-march=x86-64', '-mtune=generic'] if platform.machine() == 'x86_64' else ['-march=armv8-a', '-mtune=generic']
+    if args.bundled_harfbuzz:
+        prefix = work / 'harfbuzz-prefix'
+        run(['cmake', '-S', mupdf / 'thirdparty/harfbuzz', '-B', work / 'harfbuzz-build',
+             '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+             '-DCMAKE_INSTALL_PREFIX=' + str(prefix), '-DCMAKE_INSTALL_LIBDIR=lib',
+             '-DCMAKE_C_FLAGS=' + shell_flags(cpu_flags), '-DCMAKE_CXX_FLAGS=' + shell_flags(cpu_flags),
+             '-DBUILD_SHARED_LIBS=OFF', '-DHB_HAVE_FREETYPE=ON', '-DHB_HAVE_GRAPHITE2=ON',
+             '-DHB_BUILD_UTILS=OFF', '-DHB_BUILD_SUBSET=OFF'])
+        run(['cmake', '--build', work / 'harfbuzz-build', '--parallel', str(jobs)])
+        run(['cmake', '--install', work / 'harfbuzz-build'])
+        os.environ['PKG_CONFIG_PATH'] = str(prefix / 'lib/pkgconfig') + os.pathsep + os.environ.get('PKG_CONFIG_PATH', '')
     zng_include, zng_library, zng_notice, zng_metadata = zlib_ng.build(args.zlib_ng_source, work / 'zlib-ng', jobs, cpu_flags)
     packages = ['freetype2', 'libjpeg', 'libopenjp2', 'libbrotlidec', 'libbrotlienc', 'sdl2',
                 'harfbuzz', 'graphite2', 'fontconfig', 'libpng']
@@ -97,6 +111,8 @@ def main():
         'features': {'externalWindow': True, 'embeddedPreview': capabilities.get('previewProtocol') == 1},
         'capabilities': capabilities}
     notices = {'jbig2dec-COPYING': mupdf / 'thirdparty/jbig2dec/COPYING'} if args.bundled_jbig2dec else {}
+    if args.bundled_harfbuzz:
+        notices['harfbuzz-COPYING'] = mupdf / 'thirdparty/harfbuzz/COPYING'
     metadata['mupdfSubmodules'] = submodules
     bundle([txp / 'build/texpresso', txp / 'build/texpresso-xetex'], args.output, metadata, {
         'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
