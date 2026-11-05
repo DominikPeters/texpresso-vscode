@@ -259,9 +259,18 @@
     const width = () => desiredWidth(page,bounds,sheet.getBoundingClientRect().width);
     function highlight(target) {
       if (!header || stale || target.page !== page) { return; }
-      const mark = element('highlight'); mark.style.left = `${100*(target.x-bounds[0])/(bounds[2]-bounds[0])}%`; mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
-      clearTimeout(highlightTimer); mark.hidden = true; void mark.offsetWidth; mark.hidden = false;
-      highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
+      const mark = element('highlight');
+      clearTimeout(highlightTimer); mark.hidden = true;
+      // Automatic following only scrolls. An explicit jump marks the margin at
+      // the resolved line; a SyncTeX point cannot identify an exact word box.
+      if (target.highlight === true) {
+        const textLeft = header.textBounds?.[0] ?? bounds[0];
+        const left = 100*(textLeft-bounds[0])/(bounds[2]-bounds[0]);
+        mark.style.left = `max(4px, calc(${left}% - 10px))`;
+        mark.style.top = `${100*(target.y-bounds[1])/(bounds[3]-bounds[1])}%`;
+        void mark.offsetWidth; mark.hidden = false;
+        highlightTimer = setTimeout(() => { mark.hidden = true; }, 1500);
+      }
       const token = generation, revealToken = revealIntent;
       requestAnimationFrame(() => { if (sheet.isConnected && !stale && generation === token && revealToken === revealIntent) { revealTarget(target); } });
       return true;

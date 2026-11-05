@@ -14,7 +14,7 @@ input { width: 52px; margin-left: 3px; }
 #status.error { color: var(--vscode-errorForeground,#f66); }
 main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
 #image { width: 100%; height: 100%; display: block; user-select: none; }
-#highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; }
+#highlight { position: absolute; width: 4px; height: 18px; margin-top: -14px; border-radius: 2px; background: #ffd54fcc; pointer-events: none; }
 #empty { margin: 64px auto; text-align: center; color: var(--vscode-descriptionForeground); }
 [hidden] { display: none !important; }
 
@@ -58,7 +58,7 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 .page-links { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .page-links .page-link { position: absolute; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; pointer-events: auto; cursor: pointer; }
 .page-links .page-link:hover { background: #0088ff22; }
-.page-highlight { position: absolute; width: 22px; height: 22px; margin: -11px; border-radius: 50%; border: 2px solid #087bea; background: #2090ff44; pointer-events: none; animation: locate 1.5s ease-out forwards; }
+.page-highlight { position: absolute; width: 4px; height: 18px; margin-top: -14px; border-radius: 2px; background: #ffd54fcc; pointer-events: none; animation: locate 1.5s ease-out forwards; }
 #viewport.magnify .page-image, #viewport.magnify .page-vector, #viewport.magnify .page-raster { cursor: zoom-in; touch-action: none; }
 @media (prefers-reduced-motion: reduce) { .page-highlight { animation: none; } }
 

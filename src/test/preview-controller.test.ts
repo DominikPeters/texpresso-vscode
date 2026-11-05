@@ -118,6 +118,25 @@ test('forward targets are consumed once so later zooming does not revive a highl
   } finally { f.controller.dispose(); }
 });
 
+test('automatic source following stays quiet and explicit jump markers do not leak into later follows', () => {
+  const f = fixture();
+  try {
+    f.controller.handle(['preview-state', 1, 0, 1, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000 });
+    f.controller.handle(['preview-forward', 1, 0, 0, 100, 100]);
+    f.controller.handle({ header: { requestId: 1, revision: 1, sequence: 0, page: 0,
+      bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4 }, bytes: Buffer.alloc(4) });
+    assert.equal(f.messages.find(m => m.type === 'image')?.target.highlight, false);
+    f.send({ type: 'decoded', id: 1 });
+    f.controller.beginSourceFollow(true);
+    f.controller.handle(['preview-forward', 1, 0, 0, 150, 200]);
+    assert.equal(f.messages.at(-1)?.highlight, true);
+    f.controller.beginSourceFollow(false);
+    f.controller.handle(['preview-forward', 1, 0, 0, 180, 220]);
+    assert.equal(f.messages.at(-1)?.highlight, false);
+  } finally { f.controller.dispose(); }
+});
+
 test('magnifier shares decode credit, coalesces pointer movement, and yields to page updates', () => {
   const f = fixture();
   (f.session as typeof f.session & { previewRegions: boolean }).previewRegions = true;

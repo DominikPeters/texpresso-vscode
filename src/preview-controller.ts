@@ -32,6 +32,7 @@ export class PreviewController {
   private instance = randomBytes(16).toString('hex');
   private disposed = false;
   private sourceFollowing = true;
+  private sourceHighlight = false;
   private recoveryCapabilities?: { regions: boolean; svg: boolean; links: boolean };
   private recoveryPagination?: { count: number; complete: boolean };
   private ready = false;
@@ -94,7 +95,7 @@ export class PreviewController {
   private decodeTimeout?: NodeJS.Timeout;
   private state?: Extract<PreviewMessage, ['preview-state', ...unknown[]]>;
   private shown?: PreviewImageHeader;
-  private target?: { revision: number; sequence: number; page: number; x: number; y: number };
+  private target?: { revision: number; sequence: number; page: number; x: number; y: number; highlight: boolean };
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, public session: TexpressoSession,
     closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void, private tikz?: TikzActions) {
@@ -263,7 +264,7 @@ export class PreviewController {
           this.enginePage = undefined;
           if (event[2] !== this.session.previewSequence || event[1] !== this.state?.[1]) { break; }
           this.sourcePage = event[3];
-          this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5] };
+          this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5], highlight: this.sourceHighlight };
           if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
             if (this.page !== event[3]) { this.renderIntent++; this.svgDecodeFailed = false; }
@@ -284,7 +285,7 @@ export class PreviewController {
     this.prewarm.select(document ? `${document.uri.toString()}:${version ?? this.session.previewSequence}:${utf16Offset}` : undefined,
       document ? () => document.version === version ? this.session.sync.sourcePosition(document, utf16Offset) : undefined : undefined);
   }
-  beginSourceFollow(): void { this.sourceFollowing = true; this.prewarm.interrupt(); }
+  beginSourceFollow(explicit = false): void { this.sourceFollowing = true; this.sourceHighlight = explicit; this.prewarm.interrupt(); }
   interruptPreparation(): void { this.prewarm.interrupt(); }
   private manualNavigation(): void {
     this.sourcePage = undefined;

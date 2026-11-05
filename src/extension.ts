@@ -325,7 +325,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const revision = state?.[2] === session.previewSequence ? state[1] : 0;
     if (!sourceFollow.request({ session, document: editor.document.uri.toString(), version: editor.document.version,
       line: editor.selection.active.line, column: editor.selection.active.character, sequence: session.previewSequence, revision }, explicit)) { return; }
-    preview?.beginSourceFollow();
+    preview?.beginSourceFollow(explicit);
     session.sync.syncForward(editor.document, editor.selection.active.line);
   }
 

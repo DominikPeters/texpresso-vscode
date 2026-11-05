@@ -82,7 +82,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     const drain=async(limit=30)=>{for(let i=0;i<limit;i++){if(!pending.length){await new Promise(resolve=>setTimeout(resolve,30));if(!pending.length){return;}}const command=pending.shift()!;if((controller as any).inFlight?.id!==command[1]){continue;}respond(command);await until(()=>reports.some(r=>r.continuousCheck==='decoded'&&r.request===command[1])||(controller as any).inFlight?.id!==command[1],'page decode '+command[2]);}throw Error('unbounded render queue');};
     state();await until(()=>reports.some(r=>r.continuousCheck==='ready')&&pending.length>0,'continuous startup ready');
     return {controller,panel:()=>panel!,session,reports,commands,pending,regionPending,opened,until,action,state,respond,respondRegion,drain,
-      forward:(page:number,x:number,y:number)=>{controller.beginSourceFollow();controller.handle(['preview-forward',revision,sequence,page,x,y]);},
+      forward:(page:number,x:number,y:number,explicit=true)=>{controller.beginSourceFollow(explicit);controller.handle(['preview-forward',revision,sequence,page,x,y]);},
       invalidate:()=>{session.previewSequence=++sequence;revision++;controller.handle({sourceSequence:sequence});controller.handle(['preview-invalidated',revision,sequence]);state();}};
   };
   const f=await make();
@@ -109,6 +109,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       assert.equal(followed.scrollTop,beforeFollow.scrollTop,'visible SVG SyncTeX target cannot reset to page top or recenter');
       assert.equal(followed.toolbar,beforeFollow.toolbar,'visible source target cannot steal the center-derived active page');
       assert.equal(followed.epoch,beforeFollow.epoch,'source following cannot create a user-scroll epoch');
+      assert.ok(followed.shells.every((s:any)=>s.highlightHidden),'automatic following never displays a locator');
     }
     await f.drain();
     console.log('PASS: repeated visible SVG SyncTeX targets and adjacent-page targets preserve exact scroll position');
@@ -152,11 +153,17 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       assert.ok(sheet.ink.right-sheet.ink.left>first.width*.9,'text uses the available width');
       assert.ok(sheet.width>first.width*1.4,'full paper remains present beyond the fitted text');
       const edgeY=20+first.centerPoint.fraction*300;
+      let markerLeft:string|undefined;
       for(const x of [40,400]){
         fitted.forward(0,x,edgeY);const edge=await fitted.action('snapshot');
-        assert.equal(edge.shells.find((s:any)=>s.page===0).highlightHidden,false,'explicit source following applies the visible text-edge target');
+        const marker=edge.shells.find((s:any)=>s.page===0);
+        assert.equal(marker.highlightHidden,false,'explicit source following briefly marks its line');
+        if(markerLeft!==undefined){assert.equal(marker.highlightLeft,markerLeft,'the margin cue does not pretend to track the exact word');}
+        markerLeft=marker.highlightLeft;
         assert.ok(Math.abs(edge.scrollLeft-first.scrollLeft)<1,'visible text-edge SyncTeX target cannot drift horizontally');
       }
+      fitted.forward(0,40,edgeY,false);const quiet=await fitted.action('snapshot');
+      assert.equal(quiet.shells.find((s:any)=>s.page===0).highlightHidden,true,'automatic follow clears a preceding explicit marker');
       fitted.forward(0,220,300);const vertical=await fitted.action('snapshot');
       assert.ok(vertical.scrollTop>first.scrollTop+first.height/2,'text fit retains vertical SyncTeX following: '+JSON.stringify({before:first.scrollTop,after:vertical.scrollTop,height:first.height,point:first.centerPoint,sheet:vertical.shells.find((s:any)=>s.page===0)}));
       const panned=await fitted.action('scroll',{left:0});
@@ -296,7 +303,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     await progress.until(()=>progress.reports.some(r=>r.continuousCheck==='decoded'&&r.request===targetOld[1]),'newer source target preserved');
     const targetPaint=progress.reports.find(r=>r.continuousCheck==='decoded'&&r.request===targetOld[1]);
     const mark=targetPaint.shells.find((s:any)=>s.page===1);
-    assert.ok(mark.highlightHidden||(mark.highlightLeft==='75%'&&mark.highlightTop==='80%'),'an older delayed frame cannot replace the newer same-page target');
+    assert.ok(mark.highlightHidden||mark.highlightTop==='80%','an older delayed frame cannot replace the newer same-page target');
     assert.equal(targetPaint.scrollTop,newerTarget.scrollTop,'delayed old target cannot scroll away from the newer source intent');
     console.log('PASS: source invalidation permits monotonic stale PNG pixels with inert interactions; current frames restore links, navigation/zoom retire pending decoders');
   }finally{progress.controller.dispose();}
