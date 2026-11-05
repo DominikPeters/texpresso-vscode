@@ -13,7 +13,7 @@ def verify_capabilities(capabilities):
         raise ValueError('Bundled PNG encoder must use locked zlib-ng at level 2')
 
 
-def build(source, work, jobs):
+def build(source, work, jobs, cflags=()):
     lock = load_lock()['zlibNg']
     check_source(source, lock['revision'])
     exported, output = work / 'source', work / 'build'
@@ -21,7 +21,8 @@ def build(source, work, jobs):
     run(['cmake', '-S', exported, '-B', output, '-DCMAKE_BUILD_TYPE=Release',
          '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-DZLIB_COMPAT=OFF',
          '-DBUILD_SHARED_LIBS=OFF', '-DBUILD_TESTING=OFF', '-DWITH_GTEST=OFF',
-         '-DWITH_GZFILEOP=OFF'])
+         '-DWITH_GZFILEOP=OFF', '-DWITH_NATIVE_INSTRUCTIONS=OFF', '-DWITH_RUNTIME_CPU_DETECTION=ON',
+         '-DCMAKE_C_FLAGS=' + shlex.join(cflags)])
     run(['cmake', '--build', output, '--parallel', str(jobs)])
     library = output / 'libz-ng.a'
     metadata = {'version': lock['version'], 'revision': lock['revision'],

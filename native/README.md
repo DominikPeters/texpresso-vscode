@@ -265,3 +265,17 @@ VSIXs without the development libraries from their build environments.
 The universal VSIX excludes native archives. Platform VSIXs include only the
 selected bundle. Local ad-hoc signed candidates are for development; distribution
 requires the signed/notarized CI artifacts and platform acceptance results.
+
+### glibc 2.28 trial
+
+`linux-glibc228.yml` is an isolated, manual compatibility trial on x64 and
+ARM64. It builds in AlmaLinux 8 with a newer compiler, explicit baseline CPU
+flags, and the same locked engine/MuPDF/ICU/zlib-ng sources. It audits required
+ELF versions in **every** executable and bundled library, checks startup under
+a baseline CPU model on glibc 2.28, and runs real engine checks in an older
+runtime as well as full native/webview acceptance on a modern distribution.
+
+Only compact manifests and audit reports are uploaded. Trial binaries are not
+release artifacts: production adoption must also collect matching RPM sources
+and pass the normal source-archive and installed-VSIX gates. The existing
+Ubuntu 22.04 release workflow remains in use until those gates pass.
