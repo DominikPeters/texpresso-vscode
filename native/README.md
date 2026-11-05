@@ -268,9 +268,9 @@ requires the signed/notarized CI artifacts and platform acceptance results.
 
 ### glibc 2.28 trial
 
-`linux-glibc228.yml` is an isolated, manual compatibility trial on x64 and
+`linux-glibc228.yml` is an isolated compatibility trial on x64 and
 ARM64. It builds in AlmaLinux 8 with a newer compiler, explicit baseline CPU
-flags, and the same locked engine/MuPDF/ICU/zlib-ng sources. It audits required
+flags, MuPDF’s pinned JBIG2 decoder, and the same locked engine/MuPDF/ICU/zlib-ng sources. It audits required
 ELF versions in **every** executable and bundled library, checks startup under
 a baseline CPU model on glibc 2.28, and runs real engine checks in an older
 runtime as well as full native/webview acceptance on a modern distribution.

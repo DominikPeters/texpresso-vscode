@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--keep-work', action='store_true', help='retain successful build intermediates for debugging')
     parser.add_argument('--maximum-glibc', help='reject any bundled ELF requiring a newer glibc')
+    parser.add_argument('--bundled-jbig2dec', action='store_true', help='build the decoder pinned by MuPDF when no host development package exists')
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'aarch64'):
         parser.error('Build on a native Linux x64 or arm64 runner')
@@ -37,7 +38,13 @@ def main():
     lock = load_lock()
     engine, revision = pinned_engine()
     check_source(args.mupdf_source, lock['mupdf']['revision'])
-    for path, sha in lock['mupdf']['submodules'].items():
+    submodules = dict(lock['mupdf']['submodules'])
+    if args.bundled_jbig2dec:
+        entry = run(['git', 'ls-tree', 'HEAD', 'thirdparty/jbig2dec'], cwd=args.mupdf_source, capture=True)
+        if not entry.startswith('160000 commit '):
+            raise ValueError('MuPDF must pin its JBIG2 decoder')
+        submodules['thirdparty/jbig2dec'] = entry.split()[2]
+    for path, sha in submodules.items():
         check_source(args.mupdf_source / path, sha)
     work_root = NATIVE / '.work'
     work_root.mkdir(exist_ok=True)
@@ -47,10 +54,13 @@ def main():
     export_source(engine, txp)
     run(['make', 'test-profile'], cwd=txp)
     export_source(args.mupdf_source, mupdf)
-    for path in lock['mupdf']['submodules']:
+    for path in submodules:
         (mupdf / path).rmdir()
         export_source(args.mupdf_source / path, mupdf / path)
     shutil.copyfile(NATIVE / 'profiles/mupdf.mk', mupdf / 'user.make')
+    if args.bundled_jbig2dec:
+        with (mupdf / 'user.make').open('a') as profile:
+            profile.write('\nUSE_SYSTEM_JBIG2DEC := no\n')
     cpu_flags = ['-march=x86-64', '-mtune=generic'] if platform.machine() == 'x86_64' else ['-march=armv8-a', '-mtune=generic']
     zng_include, zng_library, zng_notice, zng_metadata = zlib_ng.build(args.zlib_ng_source, work / 'zlib-ng', jobs, cpu_flags)
     packages = ['freetype2', 'libjpeg', 'libopenjp2', 'libbrotlidec', 'libbrotlienc', 'sdl2',
@@ -62,7 +72,9 @@ def main():
     data_object, icu_metadata = prepare(args.icu_prefix, work / 'icu', lock['icu']['version'])
     libraries = [mupdf / 'build/vscode/libmupdf.a', mupdf / 'build/vscode/libmupdf-third.a', zng_library]
     libraries += shlex.split(run(['pkg-config', '--libs', *packages], capture=True))
-    libraries += ['-ljbig2dec', '-lz', '-lm', '-pthread', '-ldl']
+    if not args.bundled_jbig2dec:
+        libraries += ['-ljbig2dec']
+    libraries += ['-lz', '-lm', '-pthread', '-ldl']
     flags = ['-O2', '-fPIC', *cpu_flags, '-ffunction-sections', '-fdata-sections', '-I.',
              '-DTXP_ZLIB_NG', '-I' + str(zng_include), *include_flags]
     (txp / 'Makefile.config').write_text('CFLAGS=' + shell_flags(flags) + '\nCC=gcc $(CFLAGS)\n' +
@@ -84,10 +96,12 @@ def main():
         'profiles': {p.name: sha256(p) for p in (NATIVE / 'profiles').iterdir()},
         'features': {'externalWindow': True, 'embeddedPreview': capabilities.get('previewProtocol') == 1},
         'capabilities': capabilities}
+    notices = {'jbig2dec-COPYING': mupdf / 'thirdparty/jbig2dec/COPYING'} if args.bundled_jbig2dec else {}
+    metadata['mupdfSubmodules'] = submodules
     bundle([txp / 'build/texpresso', txp / 'build/texpresso-xetex'], args.output, metadata, {
         'texpresso-LICENSE': txp / 'LICENSE', 'mupdf-COPYING': mupdf / 'COPYING',
         'lcms2-LICENSE': mupdf / 'thirdparty/lcms2/LICENSE', 'zlib-ng-LICENSE': zng_notice,
-        'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE'}, maximum_glibc=args.maximum_glibc)
+        'icu-LICENSE': args.icu_prefix / 'share/icu' / lock['icu']['version'] / 'LICENSE', **notices}, maximum_glibc=args.maximum_glibc)
     if not args.keep_work:
         shutil.rmtree(work)
         print('Removed successful build workspace:', work)
