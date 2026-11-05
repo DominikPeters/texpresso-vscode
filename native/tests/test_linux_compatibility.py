@@ -74,3 +74,26 @@ class RpmNotices(unittest.TestCase):
             self.assertEqual(identity.split('\t')[2:], ['fixture-source', '1.2-3.el8'])
             saved = notices/'libfixture.x86_64'/license_file.relative_to('/')
             self.assertEqual(saved.read_text(), 'actual license')
+
+    def test_split_package_licenses_must_come_from_the_exact_same_source_rpm(self):
+        import tempfile
+        from unittest.mock import patch
+        from bundle_linux import rpm_notice
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); license_file = root/'COPYING'; license_file.write_text('shared license')
+            notices = root/'notices'; notices.mkdir()
+            source_rpm = 'compiler-1.2-3.el8.src.rpm'
+            def run(args, **kwargs):
+                if args[1] == '-qf':
+                    return 'libcxx.x86_64\t0:1.2-3.el8\t'+source_rpm
+                if args[1] == '-qa':
+                    return 'libcxx.x86_64\t'+source_rpm+'\nlibgcc.x86_64\t'+source_rpm+'\nunrelated.x86_64\tother-1-1.src.rpm'
+                if args[-1] == 'libcxx.x86_64':
+                    return '/usr/lib64/libcxx.so\t0'
+                self.assertEqual(args[-1], 'libgcc.x86_64')
+                return str(license_file)+'\t128'
+            with patch('bundle_linux.run', side_effect=run):
+                record = rpm_notice(root/'libcxx.so', notices)
+            self.assertTrue(record.startswith('libcxx.x86_64\t'))
+            self.assertEqual((notices/'libcxx.x86_64/license-packages.txt').read_text(), 'libgcc.x86_64\n')
+            self.assertEqual((notices/'libcxx.x86_64'/license_file.relative_to('/')).read_text(), 'shared license')

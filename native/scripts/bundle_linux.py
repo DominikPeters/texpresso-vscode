@@ -68,20 +68,31 @@ def rpm_notice(source, destination):
     identity = '\t'.join([package, binary_version, source_name, source_version + '-' + source_release])
     target = destination / package
     target.mkdir(exist_ok=True)
-    files = run(['rpm', '-q', '--qf', '[%{FILENAMES}\t%{FILEFLAGS}\n]', package], capture=True)
-    copied = 0
-    for entry in files.splitlines():
-        name, flags = entry.rsplit('\t', 1)
-        file = Path(name)
-        # RPMFILE_LICENSE identifies the installed, package-maintained license
-        # payload; preserve its full path to avoid same-named license collisions.
-        if int(flags) & 128 and file.is_file():
-            output = target / file.relative_to('/')
-            output.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(file, output)
-            copied += 1
-    if not copied:
-        raise ValueError(f'Missing installed RPM license texts: {package}')
+    def copy_licenses(candidate):
+        files = run(['rpm', '-q', '--qf', '[%{FILENAMES}\t%{FILEFLAGS}\n]', candidate], capture=True)
+        copied = 0
+        for entry in files.splitlines():
+            name, flags = entry.rsplit('\t', 1)
+            file = Path(name)
+            # RPMFILE_LICENSE marks installed, package-maintained license texts.
+            if int(flags) & 128 and file.is_file():
+                output = target / file.relative_to('/')
+                output.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(file, output)
+                copied += 1
+        return copied
+    owners = [package] if copy_licenses(package) else []
+    if not owners:
+        # Split runtime packages can keep their shared license payload in a
+        # companion (e.g. libstdc++ in libgcc). Require the exact same SRPM.
+        installed = run(['rpm', '-qa', '--qf', '%{NAME}.%{ARCH}\t%{SOURCERPM}\n'], capture=True)
+        for entry in installed.splitlines():
+            candidate, origin = entry.split('\t')
+            if candidate != package and origin == source_rpm and copy_licenses(candidate):
+                owners.append(candidate)
+    if not owners:
+        raise ValueError(f'Missing installed RPM license texts: {package} ({source_rpm})')
+    (target / 'license-packages.txt').write_text('\n'.join(sorted(owners)) + '\n')
     (target / 'package.txt').write_text(identity + '\n')
     return identity
 
