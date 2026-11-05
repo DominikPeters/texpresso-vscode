@@ -80,7 +80,10 @@ def main():
     packages = ['freetype2', 'libjpeg', 'libopenjp2', 'libbrotlidec', 'libbrotlienc', 'sdl2',
                 'harfbuzz', 'graphite2', 'fontconfig', 'libpng']
     versions = {p: run(['pkg-config', '--modversion', p], capture=True) for p in packages}
-    include_flags = ['-I' + str(mupdf / 'include')] + shlex.split(run(['pkg-config', '--cflags', *packages], capture=True))
+    shaper_includes = ['-I' + str(work / 'harfbuzz-prefix/include')] if args.bundled_harfbuzz else []
+    # XeTeX uses <harfbuzz/hb.h>; pkg-config's include/harfbuzz path
+    # alone only covers <hb.h> and otherwise silently selects system headers.
+    include_flags = [*shaper_includes, '-I' + str(mupdf / 'include')] + shlex.split(run(['pkg-config', '--cflags', *packages], capture=True))
     run(['make', f'-j{jobs}', 'libs', 'OUT=build/vscode', 'CC=gcc',
          'XCFLAGS=' + shell_flags(['-fPIC', *cpu_flags, *include_flags])], cwd=mupdf)
     data_object, icu_metadata = prepare(args.icu_prefix, work / 'icu', lock['icu']['version'])
@@ -96,7 +99,7 @@ def main():
     run(['make', 'common'], cwd=txp)
     run(['make', f'-j{jobs}', 'all', 'PKGSYS=', '_FLAGS=' + shell_flags([*cpu_flags, '-ffunction-sections', '-fdata-sections']),
          '_LDFLAGS=-Wl,--gc-sections',
-         'CSYSFLAGS=' + shell_flags(['-DU_STATIC_IMPLEMENTATION', '-I' + str(args.icu_prefix / 'include')]),
+         'CSYSFLAGS=' + shell_flags([*shaper_includes, '-DU_STATIC_IMPLEMENTATION', '-I' + str(args.icu_prefix / 'include')]),
          'LDSYSFLAGS=' + shell_flags([args.icu_prefix / 'lib/libicuuc.a', data_object, '-pthread', '-ldl'])], cwd=txp)
     run(['make', 'test-preview-png'], cwd=txp)
     capabilities = json.loads(run([txp / 'build/texpresso', '-capabilities'], capture=True))
