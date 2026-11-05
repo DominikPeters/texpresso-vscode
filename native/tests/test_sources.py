@@ -82,3 +82,31 @@ class CorrespondingSource(unittest.TestCase):
             info.update(sha256=sha256(archive), bytes=archive.stat().st_size)
             with self.assertRaisesRegex(ValueError, 'inventory mismatch'):
                 verify_archive(archive, info)
+
+    def test_native_verifier_requires_static_runtime_sources_and_all_mupdf_gitlinks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); payload = root/'payload'
+            required = ['BUILDING.txt', 'THIRD-PARTY-NOTICES.txt', 'project/package.json', 'project/package-lock.json',
+                        'project/THIRD-PARTY-NOTICES.txt', 'project/licenses/tmp-MIT.txt', 'project/licenses/wsl-path-MIT.txt',
+                        'project/native/texpresso/LICENSE', 'inputs/mupdf/COPYING', 'inputs/zlib-ng/LICENSE.md',
+                        'notices/engine/EMBEDDED-COPYRIGHTS.txt', 'notices/AGPL-3.0.txt', 'notices/GPL-2.0.txt',
+                        'notices/GPL-3.0.txt', 'notices/LGPL-2.1.txt', 'notices/COMPONENTS.json']
+            for name in required:
+                file = payload/name; file.parent.mkdir(parents=True, exist_ok=True); file.write_text('source fixture')
+            native = {'engineRevision': '2'*40, 'hostLibraries': []}
+            manifest = {'version': '2.0.0', 'extensionRevision': '1'*40, 'engineRevision': '2'*40,
+                        'target': 'linux-x64', 'components': [{'name': name} for name in ['mupdf', 'lcms2', 'zlib-ng', 'icu']]}
+            archive = root/'source.tar.gz'
+            def check():
+                (payload/'SOURCE-MANIFEST.json').unlink(missing_ok=True)
+                (payload/'BINARY-BUILD-MANIFEST.json').write_text(json.dumps(native))
+                info = create_archive(payload, archive, manifest)
+                return verify_archive(archive, info)
+            check()
+            native['buildSourcePackages'] = ['compiler-devel.x86_64\t0:13.1-1\tcompiler\t13.1-1']
+            with self.assertRaisesRegex(ValueError, 'Missing exact runtime library sources'):
+                check()
+            native['buildSourcePackages'] = []
+            native['mupdfSubmodules'] = {'thirdparty/harfbuzz': '3'*40}
+            with self.assertRaisesRegex(ValueError, 'Missing exact MuPDF submodule'):
+                check()

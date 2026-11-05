@@ -28,6 +28,8 @@ def libraries(binary):
 
 
 def package_notice(source, destination):
+    if not shutil.which('dpkg-query'):
+        return rpm_notice(source, destination)
     # These builds run in Debian/Ubuntu containers; include the exact installed
     # package's copyright file and its binary/source version for source retrieval.
     names = [source]
@@ -57,7 +59,51 @@ def package_notice(source, destination):
     return record
 
 
-def bundle(executables, destination, metadata, notices_sources):
+def rpm_source_identity(source):
+    record = run(['rpm', '-qf', '--qf', '%{NAME}.%{ARCH}\t%{EPOCHNUM}:%{VERSION}-%{RELEASE}\t%{SOURCERPM}', source], capture=True)
+    package, binary_version, source_rpm = record.split('\t')
+    if not source_rpm.endswith('.src.rpm'):
+        raise ValueError(f'Missing source RPM identity for {source}')
+    source_name, source_version, source_release = source_rpm.removesuffix('.src.rpm').rsplit('-', 2)
+    return '\t'.join([package, binary_version, source_name, source_version + '-' + source_release])
+
+
+def rpm_notice(source, destination):
+    identity = rpm_source_identity(source)
+    package, _, source_name, source_version = identity.split('\t')
+    source_rpm = source_name + '-' + source_version + '.src.rpm'
+    target = destination / package
+    target.mkdir(exist_ok=True)
+    def copy_licenses(candidate):
+        files = run(['rpm', '-q', '--qf', '[%{FILENAMES}\t%{FILEFLAGS}\n]', candidate], capture=True)
+        copied = 0
+        for entry in files.splitlines():
+            name, flags = entry.rsplit('\t', 1)
+            file = Path(name)
+            # RPMFILE_LICENSE marks installed, package-maintained license texts.
+            if int(flags) & 128 and file.is_file():
+                output = target / file.relative_to('/')
+                output.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(file, output)
+                copied += 1
+        return copied
+    owners = [package] if copy_licenses(package) else []
+    if not owners:
+        # Split runtime packages can keep their shared license payload in a
+        # companion (e.g. libstdc++ in libgcc). Require the exact same SRPM.
+        installed = run(['rpm', '-qa', '--qf', '%{NAME}.%{ARCH}\t%{SOURCERPM}\n'], capture=True)
+        for entry in installed.splitlines():
+            candidate, origin = entry.split('\t')
+            if candidate != package and origin == source_rpm and copy_licenses(candidate):
+                owners.append(candidate)
+    if not owners:
+        raise ValueError(f'Missing installed RPM license texts: {package} ({source_rpm})')
+    (target / 'license-packages.txt').write_text('\n'.join(sorted(owners)) + '\n')
+    (target / 'package.txt').write_text(identity + '\n')
+    return identity
+
+
+def bundle(executables, destination, metadata, notices_sources, *, maximum_glibc=None, source_inputs=()):
     if destination.exists() or destination.with_suffix('.zip').exists():
         raise ValueError(f'Refusing to replace bundle {destination}')
     (destination / 'bin').mkdir(parents=True)
@@ -66,7 +112,8 @@ def bundle(executables, destination, metadata, notices_sources):
     notices.mkdir()
     # Debian copyright files often reference these texts instead of embedding
     # them. Include the texts so notices remain complete outside the build OS.
-    shutil.copytree('/usr/share/common-licenses', notices / 'common-licenses')
+    if Path('/usr/share/common-licenses').is_dir():
+        shutil.copytree('/usr/share/common-licenses', notices / 'common-licenses')
     mapping = {Path('bin') / p.name: p.resolve() for p in executables}
     pending = list(executables)
     seen = set()
@@ -98,6 +145,13 @@ def bundle(executables, destination, metadata, notices_sources):
     for name, source in notices_sources.items():
         shutil.copyfile(source, notices / name)
     metadata['hostLibraries'] = sorted(packages)
+    if source_inputs:
+        # Compiler RPMs do not consistently mark installed texts as %license.
+        # Their full grants are collected from the exact SRPM before packaging.
+        metadata['buildSourcePackages'] = sorted({rpm_source_identity(p) for p in source_inputs})
+    if maximum_glibc:
+        from audit_linux import audit
+        metadata['compatibility'] = audit(destination, maximum_glibc, metadata['architecture'])
     metadata['files'] = [{'path': str(p), 'sha256': sha256(destination / p), 'bytes': (destination / p).stat().st_size} for p in mapping]
     metadata['installedBytes'] = sum(p.stat().st_size for p in destination.rglob('*') if p.is_file())
     (destination / 'build-manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
