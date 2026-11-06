@@ -28,7 +28,7 @@
   let zoom = ['width', 'text', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
   let textAlign = saved.textAlign !== false;
   let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
-  let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
+  let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, centerSyncTeX = saved.syncTeXHorizontal === true, lensOwner, detailOwner;
   let lensImage = globalElement('lensImage');
   let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, lastLeft = 0, direction = 1, programmaticTop, programmaticLeft, customZoomOption;
   let pinchAnchor, pinchOrigin, lastPinchTime = 0, restoring = true, disposing = false;
@@ -54,7 +54,7 @@
   function diagnostics() { viewport.dataset.shellCount = String(views.size); viewport.dataset.residentBytes = String(decoded.bytes); }
   function save() {
     const rect = geometry.rects[currentPage];
-    vscode.setState({ page: currentPage, zoom, format, textAlign, left: viewport.scrollLeft, top: viewport.scrollTop,
+    vscode.setState({ page: currentPage, zoom, format, textAlign, syncTeXHorizontal: centerSyncTeX, left: viewport.scrollLeft, top: viewport.scrollTop,
       point: rect ? Math.max(0, (viewport.scrollTop - rect.top) / rect.height) : 0 });
   }
   function describe() {
@@ -73,6 +73,10 @@
     const rect = geometry.rects[currentPage];
     const effectiveZoom = rect ? Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96 : 1;
     customZoom.value = String(Math.round(clamp(effectiveZoom, .25, 4) * 100));
+    const syncHorizontal = globalElement('syncHorizontal');
+    syncHorizontal.setAttribute('aria-pressed', String(centerSyncTeX));
+    syncHorizontal.title = centerSyncTeX ? 'Allow horizontal movement during SyncTeX' : 'Center page horizontally during SyncTeX';
+    syncHorizontal.setAttribute('aria-label', syncHorizontal.title);
     const header = views.get(currentPage)?.header();
     formatSelect.title = header?.fallback ? `Rendering format. PNG fallback: ${header.fallback}` : 'Rendering format';
     globalElement('magnify').disabled = !regions && header?.mime !== 'image/svg+xml';
@@ -224,7 +228,7 @@
     if (!sheet || !page) { return; }
     const rect = sheet.getBoundingClientRect(), clip = viewport.getBoundingClientRect(), b = page.bounds;
     const delta = syncScrollCorrection({
-      x: rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
+      x: centerSyncTeX ? rect.left + rect.width / 2 : rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
       y: rect.top + (target.y - b[1]) / (b[3] - b[1]) * rect.height
     }, { left: clip.left + viewport.clientLeft, top: clip.top + viewport.clientTop,
       width: viewport.clientWidth, height: viewport.clientHeight }, zoom === 'text');
@@ -760,6 +764,7 @@
   customZoom.oninput = () => changeZoom(Number(customZoom.value) / 100);
   formatSelect.onchange = () => { retireDecodes(); format = formatSelect.value; closeLens(); epoch++; lastSnapshot = ''; layoutDocument(true,true); };
   globalElement('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
+  globalElement('syncHorizontal').onclick = () => { centerSyncTeX = !centerSyncTeX; describe(); save(); };
   for (const id of ['restart','pause','output']) { globalElement(id).onclick = () => post({ type: id }); }
   viewport.addEventListener('scroll', () => {
     for (const view of views.values()) { view.hideFigure(); }

@@ -152,6 +152,7 @@ export class PreviewController {
       <select id="format" aria-label="Rendering format" title="Rendering format"><option value="auto">Auto</option><option value="png">PNG</option><option value="svg">SVG</option></select>
       <button id="zoomIn" title="Zoom in" aria-label="Zoom in">${icon('zoom-in')}</button></div>
       <div class="actions"><button id="magnify" title="Magnifier: hold the mouse button on the page (M)" aria-label="Magnifier" aria-pressed="false">${icon('search')}</button>
+      <button id="syncHorizontal" title="Center page horizontally during SyncTeX" aria-label="Center page horizontally during SyncTeX" aria-pressed="false"><span class="center-align-icon" aria-hidden="true"></span></button>
       <button id="pause" title="Pause compilation" aria-label="Pause compilation"><span id="pauseIcon">${icon('debug-pause')}</span><span id="resumeIcon" hidden>${icon('play')}</span></button>
       <button id="restart" title="Restart preview" aria-label="Restart preview">${icon('refresh')}</button><button id="output" title="Show compiler output" aria-label="Show compiler output">${icon('output')}</button></div></header>
       <div id="status" role="alert" hidden></div>

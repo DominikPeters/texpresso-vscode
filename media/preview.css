@@ -22,6 +22,10 @@ main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0
 button { display: inline-flex; align-items: center; justify-content: center; min-height: 26px; background: transparent; color: var(--vscode-icon-foreground,var(--vscode-foreground)); }
 button svg { display: block; width: 16px; height: 16px; fill: currentColor; }
 button svg path { fill: currentColor; }
+button#syncHorizontal .center-align-icon { display: block; width: 16px; height: 14px; background:
+  linear-gradient(currentColor,currentColor) 2px 1px/12px 2px no-repeat,
+  linear-gradient(currentColor,currentColor) 0 6px/16px 2px no-repeat,
+  linear-gradient(currentColor,currentColor) 3px 11px/10px 2px no-repeat; }
 button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,#555); outline: 1px solid var(--vscode-focusBorder); }
 #viewport.magnify #image { cursor: zoom-in; touch-action: none; }
 #lens { position: fixed; width: 240px; height: 240px; overflow: hidden; border-radius: 50%; border: 2px solid var(--vscode-focusBorder,#2684ff); box-shadow: 0 4px 16px #0008; background: var(--vscode-editor-background); pointer-events: none; z-index: 10; }
