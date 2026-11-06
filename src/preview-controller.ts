@@ -148,6 +148,7 @@ export class PreviewController {
       <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="text">Fit to text width</option><option value="page">Fit page</option>
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
       <option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select>
+      <input id="customZoom" type="range" min="25" max="400" step="1" value="100" aria-label="Zoom percentage" title="Zoom percentage">
       <select id="format" aria-label="Rendering format" title="Rendering format"><option value="auto">Auto</option><option value="png">PNG</option><option value="svg">SVG</option></select>
       <button id="zoomIn" title="Zoom in" aria-label="Zoom in">${icon('zoom-in')}</button></div>
       <div class="actions"><button id="magnify" title="Magnifier: hold the mouse button on the page (M)" aria-label="Magnifier" aria-pressed="false">${icon('search')}</button>

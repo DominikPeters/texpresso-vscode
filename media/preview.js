@@ -7,7 +7,7 @@
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
   const { clamp, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
-  const status = globalElement('status'), zoomSelect = globalElement('zoom'), formatSelect = globalElement('format');
+  const status = globalElement('status'), zoomSelect = globalElement('zoom'), customZoom = globalElement('customZoom'), formatSelect = globalElement('format');
   let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
   function observeSource(sequence, revision, reset = false) {
     const valid = value => Number.isSafeInteger(value) && value >= 0;
@@ -70,6 +70,9 @@
     const text = problem || (phase === 'failed' ? 'Preview stopped. Open Output or the engine log for details.' : '');
     status.hidden = !text; status.textContent = text; status.classList.toggle('error', !!text);
     formatSelect.value = format;
+    const rect = geometry.rects[currentPage];
+    const effectiveZoom = rect ? Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96 : 1;
+    customZoom.value = String(Math.round(clamp(effectiveZoom, .25, 4) * 100));
     const header = views.get(currentPage)?.header();
     formatSelect.title = header?.fallback ? `Rendering format. PNG fallback: ${header.fallback}` : 'Rendering format';
     globalElement('magnify').disabled = !regions && header?.mime !== 'image/svg+xml';
@@ -754,6 +757,7 @@
   globalElement('page').onchange = event => { const value = Number(event.target.value); if (Number.isInteger(value) && value > 0) { navigate(value-1); } };
   globalElement('zoomIn').onclick = () => stepZoom(1.25); globalElement('zoomOut').onclick = () => stepZoom(.8);
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
+  customZoom.oninput = () => changeZoom(Number(customZoom.value) / 100);
   formatSelect.onchange = () => { retireDecodes(); format = formatSelect.value; closeLens(); epoch++; lastSnapshot = ''; layoutDocument(true,true); };
   globalElement('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   for (const id of ['restart','pause','output']) { globalElement(id).onclick = () => post({ type: id }); }

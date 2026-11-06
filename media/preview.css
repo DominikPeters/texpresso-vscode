@@ -10,6 +10,7 @@ button:hover { background: var(--vscode-toolbar-hoverBackground,#555); }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible, select:focus-visible, input:focus-visible, main:focus-visible { outline: 1px solid var(--vscode-focusBorder,#2684ff); outline-offset: -1px; }
 input { width: 52px; margin-left: 3px; }
+#customZoom { width: 96px; margin-left: 0; }
 #status { padding: 4px 8px; min-height: 24px; color: var(--vscode-descriptionForeground); font-size: 12px; }
 #status.error { color: var(--vscode-errorForeground,#f66); }
 main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
