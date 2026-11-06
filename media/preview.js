@@ -6,7 +6,7 @@
   const template = globalElement('sheet').cloneNode(true); globalElement('sheet').remove();
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
-  const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
+  const { clamp, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
   const status = globalElement('status'), zoomSelect = globalElement('zoom'), formatSelect = globalElement('format');
   let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
   function observeSource(sequence, revision, reset = false) {
@@ -209,6 +209,12 @@
     if (factor === 1) { return; }
     const rect = geometry.rects[currentPage], effective = Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96;
     const next = clamp(effective * factor, .25, 4); if (next !== effective) { changeZoom(next, origin, anchor); }
+  }
+  function stepPresetZoom(delta, origin, anchor) {
+    const presets = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
+    const rect = geometry.rects[currentPage], effective = Number(zoom) || rect.width / (rect.bounds[2] - rect.bounds[0]) * 72/96;
+    const next = delta < 0 ? presets.find(value => value > effective + .001) : [...presets].reverse().find(value => value < effective - .001);
+    if (next !== undefined) { changeZoom(next, origin, anchor); }
   }
   function revealTarget(target) {
     const sheet = views.get(target.page)?.sheet, page = geometry.rects[target.page];
@@ -768,7 +774,7 @@
     if (event.ctrlKey || event.metaKey) {
       event.preventDefault(); const origin = { x:event.clientX,y:event.clientY }, now = performance.now();
       if (!pinchAnchor || now-lastPinchTime>250 || origin.x!==pinchOrigin.x || origin.y!==pinchOrigin.y) { pinchAnchor = anchorAt(origin); }
-      pinchOrigin = origin; lastPinchTime=now; stepZoom(wheelFactor(event.deltaY,event.deltaMode),origin,pinchAnchor);
+      pinchOrigin = origin; lastPinchTime=now; stepPresetZoom(event.deltaY, origin, pinchAnchor);
     } else { pinchAnchor = undefined; }
   }, { passive:false });
   viewport.addEventListener('keydown', event => {
