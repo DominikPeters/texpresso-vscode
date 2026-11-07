@@ -37,7 +37,7 @@
     const canvases = withResources ? [...document.querySelectorAll('canvas')] : [];
     return { toolbar: Number(document.getElementById('page').value) - 1, count: document.getElementById('total').textContent,
       scrollTop: viewport.scrollTop, scrollLeft: viewport.scrollLeft, visibility: document.visibilityState,
-      viewport: { width: clip.width, height: clip.height, dpr: devicePixelRatio, zoom: document.getElementById('zoom').value, format: document.getElementById('format').value },
+      viewport: { width: clip.width, height: clip.height, dpr: devicePixelRatio, zoom: document.getElementById('zoom').value, format: document.body.dataset.renderingFormat },
       resources: withResources ? { residentBytes: Number(viewport.dataset.residentBytes || 0), domNodes: document.getElementsByTagName('*').length,
         svgNodes: document.querySelectorAll('.page-vector *').length, canvasCount: canvases.length,
         canvasPixels: canvases.reduce((sum, canvas) => sum + canvas.width * canvas.height, 0),

@@ -39,6 +39,16 @@ actual webview, including image decoding, edits, navigation, tab restoration,
 and cleanup. It also accepts a Linux binary path on Windows/WSL. Set
 `VSCODE_EXECUTABLE` to an installed VS Code executable for offline testing.
 
+Run `npm run test:integration:latex-workshop` with `TEXPRESSO_BINARY`,
+`VSCODE_EXECUTABLE`, and `TEXPRESSO_TEST_LATEX_WORKSHOP` (the directory of an
+installed LaTeX Workshop extension) to check coexistence. This uses a disposable
+VS Code profile and links the existing Workshop installation without copying it
+or changing user settings. It requires XeLaTeX on the extension host. The suite
+checks both extensions together, magic-root selection, reference completions,
+both viewers, unsaved edits, external output isolation, both forward SyncTeX
+commands, default automatic builds, a custom output directory, and cleanup.
+See the [compatibility review](latex-workshop.md) for findings and scope.
+
 ### Native engine development
 
 The maintained engine fork is pinned as the optional `native/texpresso` submodule.

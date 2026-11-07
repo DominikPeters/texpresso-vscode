@@ -104,7 +104,7 @@ def main():
          '_LDFLAGS=-Wl,--gc-sections',
          'CSYSFLAGS=' + shell_flags([*shaper_includes, '-DU_STATIC_IMPLEMENTATION', '-I' + str(args.icu_prefix / 'include')]),
          'LDSYSFLAGS=' + shell_flags([args.icu_prefix / 'lib/libicuuc.a', data_object, '-pthread', '-ldl'])], cwd=txp)
-    run(['make', 'test-preview-png'], cwd=txp)
+    run(['make', 'test-preview-png', 'test-dvi-annotations'], cwd=txp)
     capabilities = json.loads(run([txp / 'build/texpresso', '-capabilities'], capture=True))
     zlib_ng.verify_capabilities(capabilities)
     metadata = {'schema': 1, 'kind': 'linux-host-build', 'platform': 'linux',

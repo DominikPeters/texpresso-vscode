@@ -7,7 +7,7 @@
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
   const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
-  const status = globalElement('status'), zoomSelect = globalElement('zoom'), formatSelect = globalElement('format');
+  const status = globalElement('status'), zoomSelect = globalElement('zoom');
   let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
   function observeSource(sequence, revision, reset = false) {
     const valid = value => Number.isSafeInteger(value) && value >= 0;
@@ -27,7 +27,8 @@
   let currentPage = Number.isInteger(saved.page) ? clamp(saved.page, 0, 100000) : 0;
   let zoom = ['width', 'text', 'page'].includes(saved.zoom) || (Number(saved.zoom) >= .25 && Number(saved.zoom) <= 4) ? saved.zoom : 'width';
   let textAlign = saved.textAlign !== false;
-  let format = ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
+  let format = ['auto', 'png', 'svg'].includes(document.body.dataset.renderingFormat) ? document.body.dataset.renderingFormat :
+    ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
   let lensImage = globalElement('lensImage');
   let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, lastLeft = 0, direction = 1, programmaticTop, programmaticLeft, customZoomOption;
@@ -58,6 +59,7 @@
       point: rect ? Math.max(0, (viewport.scrollTop - rect.top) / rect.height) : 0 });
   }
   function describe() {
+    document.body.dataset.renderingFormat = format;
     if (detailOwner && detailOwner.page !== currentPage) { detailOwner.clearDetail(); }
     globalElement('page').value = complete && count === 0 ? '' : String(currentPage + 1);
     globalElement('page').disabled = complete && count === 0;
@@ -69,9 +71,7 @@
     globalElement('pause').setAttribute('aria-label', globalElement('pause').title); globalElement('pause').disabled = phase !== 'running';
     const text = problem || (phase === 'failed' ? 'Preview stopped. Open Output or the engine log for details.' : '');
     status.hidden = !text; status.textContent = text; status.classList.toggle('error', !!text);
-    formatSelect.value = format;
     const header = views.get(currentPage)?.header();
-    formatSelect.title = header?.fallback ? `Rendering format. PNG fallback: ${header.fallback}` : 'Rendering format';
     globalElement('magnify').disabled = !regions && header?.mime !== 'image/svg+xml';
   }
   function anchorAt(origin) {
@@ -218,7 +218,7 @@
       x: rect.left + (target.x - b[0]) / (b[2] - b[0]) * rect.width,
       y: rect.top + (target.y - b[1]) / (b[3] - b[1]) * rect.height
     }, { left: clip.left + viewport.clientLeft, top: clip.top + viewport.clientTop,
-      width: viewport.clientWidth, height: viewport.clientHeight }, zoom === 'text');
+      width: viewport.clientWidth, height: viewport.clientHeight }, target.highlight !== true);
     const left = clamp(viewport.scrollLeft + delta.x, 0, Math.max(0, viewport.scrollWidth - viewport.clientWidth));
     const top = clamp(viewport.scrollTop + delta.y, 0, Math.max(0, viewport.scrollHeight - viewport.clientHeight));
     // Check the clamped correction too: a page boundary may prevent centering.
@@ -720,7 +720,10 @@
         if (complete) { count = available; layoutEnd = available; }
         else { if (layoutEnd !== undefined && available >= layoutEnd) { layoutEnd = undefined; } count = Math.max(count,available); }
         paused = m.paused; phase = m.phase; regions = m.regions === true;
-        globalElement('format').querySelector('[value=svg]').disabled = !m.svg;
+        const configuredFormat = m.renderingFormat === 'svg' && !m.svg ? 'png' : m.renderingFormat;
+        if (['auto', 'png', 'svg'].includes(configuredFormat) && format !== configuredFormat) {
+          retireDecodes(); format = configuredFormat; closeLens(); epoch++; lastSnapshot = '';
+        }
         if (!m.svg && format === 'svg') { format = 'png'; }
         if (complete) { currentPage = count === 0 ? 0 : Math.min(currentPage,count-1); }
         layoutDocument(true, false, anchor); describe(); break;
@@ -748,7 +751,6 @@
   globalElement('page').onchange = event => { const value = Number(event.target.value); if (Number.isInteger(value) && value > 0) { navigate(value-1); } };
   globalElement('zoomIn').onclick = () => stepZoom(1.25); globalElement('zoomOut').onclick = () => stepZoom(.8);
   zoomSelect.onchange = () => changeZoom(zoomSelect.value);
-  formatSelect.onchange = () => { retireDecodes(); format = formatSelect.value; closeLens(); epoch++; lastSnapshot = ''; layoutDocument(true,true); };
   globalElement('magnify').onclick = () => { setMagnify(!magnify); viewport.focus({ preventScroll: true }); };
   for (const id of ['restart','pause','output']) { globalElement(id).onclick = () => post({ type: id }); }
   viewport.addEventListener('scroll', () => {

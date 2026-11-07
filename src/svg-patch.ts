@@ -6,7 +6,12 @@ import { performance } from 'node:perf_hooks';
 interface Node { name: string; start: number; end: number; openEnd: number; children: Node[]; count: number }
 export interface SvgDocument { text: string; root: Node }
 export interface SvgSplice { path: number[]; start: number; remove: number; xml: string }
-export interface SvgPatch { base: string; operations: SvgSplice[] }
+export interface SvgTransforms { path: number[]; start: number; values: string[] }
+export interface SvgPatch { base: string; operations: SvgSplice[]; transforms?: SvgTransforms[] }
+export interface SvgDiffDiagnostic {
+  reason: 'ok' | 'root' | 'nodes' | 'transforms' | 'operations' | 'bytes' | 'time';
+  affected: number; operations: number; transforms: number; bytes: number;
+}
 const tags = new Set(['svg', 'defs', 'g', 'path', 'use', 'rect', 'clipPath', 'mask']);
 export function parseSvg(text: string, maxMs = 12): SvgDocument | undefined {
   if (text.length > 2 * 1024 * 1024 || /<!|<\?/.test(text)) { return; }
@@ -39,27 +44,80 @@ export function parseSvg(text: string, maxMs = 12): SvgDocument | undefined {
 }
 
 export function diffSvg(old: SvgDocument, next: SvgDocument, base: string,
-  limits: { maxMs?: number; maxNodes?: number; maxBytes?: number; maxOperations?: number } = {}): SvgPatch | undefined {
+  limits: { maxMs?: number; maxNodes?: number; maxBytes?: number; maxOperations?: number; maxTransforms?: number;
+    diagnostic?: (result: SvgDiffDiagnostic) => void } = {}): SvgPatch | undefined {
   const deadline = performance.now() + (limits.maxMs ?? 5);
   const maxNodes = limits.maxNodes ?? 256, maxOperations = limits.maxOperations ?? 64;
   const maxBytes = Math.min(limits.maxBytes ?? 65536, next.text.length * 0.35);
   const operations: SvgSplice[] = [];
+  const transforms: SvgTransforms[] = [];
+  const maxTransforms = Math.min(1024, limits.maxTransforms ?? 1024);
+  const signatures = new Map<Node, { signature: string; value: string } | undefined>();
   let affected = 0, bytes = 0, stopped = false, checks = 0;
+  let transformed = 0;
+  let reason: SvgDiffDiagnostic['reason'] = 'ok';
+  const report = (why = reason) => limits.diagnostic?.({reason:why,affected,operations:operations.length + transforms.length,transforms:transformed,bytes});
   const raw = (doc: SvgDocument, node: Node) => doc.text.slice(node.start, node.end);
   const same = (a: Node, b: Node) => a.end - a.start === b.end - b.start && raw(old, a) === raw(next, b);
   const compatible = (a: Node, b: Node) => a.children.length && b.children.length &&
     old.text.slice(a.start, a.openEnd) === next.text.slice(b.start, b.openEnd);
+  // Only a real transform attribute on an otherwise identical leaf <use> may
+  // change in place. Tokenize quoted attributes: data-text can contain text
+  // resembling attributes and must never be mistaken for markup.
+  const position = (doc: SvgDocument, node: Node) => {
+    if (signatures.has(node)) { return signatures.get(node); }
+    let result: { signature: string; value: string } | undefined;
+    if (node.name === 'use' && !node.children.length) {
+      const tag = doc.text.slice(node.start, node.openEnd);
+      const attrs = /\s+([A-Za-z_:][\w:.-]*)\s*=\s*("[^"]*"|'[^']*')/y;
+      let cursor = 4, span: { start: number; end: number; value: string } | undefined, duplicate = false;
+      while (cursor < tag.length) {
+        attrs.lastIndex = cursor; const match = attrs.exec(tag); if (!match) { break; }
+        if (match[1] === 'transform') {
+          if (span) { duplicate = true; break; }
+          const start = match.index + match[0].length - match[2].length + 1;
+          span = { start, end: attrs.lastIndex - 1, value: match[2].slice(1,-1) };
+        }
+        cursor = attrs.lastIndex;
+      }
+      if (span && !duplicate && /^\s*\/?\s*>$/.test(tag.slice(cursor)) && !/[&<>]/.test(span.value)) {
+        result = { signature: raw(doc,node).slice(0,span.start) + raw(doc,node).slice(span.end), value: span.value };
+      }
+    }
+    signatures.set(node,result); return result;
+  };
+  const sameGlyph = (a: Node, b: Node) => {
+    const left = position(old,a), right = position(next,b);
+    return !!left && !!right && left.signature === right.signature;
+  };
+  const samePath = (a: number[], b: number[]) => a.length === b.length && a.every((n,i)=>n===b[i]);
+  const move = (a: Node, b: Node, index: number, path: number[]) => {
+    if (!sameGlyph(a,b)) { return false; }
+    if (++transformed > maxTransforms) { stopped = true; reason = 'transforms'; return true; }
+    const value = position(next,b)!.value, last = transforms.at(-1);
+    if (last && samePath(last.path,path) && last.start + last.values.length === index) { last.values.push(value); }
+    else {
+      if (operations.length + transforms.length >= maxOperations) { stopped = true; reason = 'operations'; return true; }
+      transforms.push({path,start:index,values:[value]}); bytes += path.length * 8 + 80;
+    }
+    bytes += value.length + 4;
+    if (bytes > maxBytes) { stopped = true; reason = 'bytes'; }
+    return true;
+  };
   const check = () => {
-    if (++checks % 32 === 0 && performance.now() > deadline) { stopped = true; }
+    if (++checks % 32 === 0 && performance.now() > deadline) { stopped = true; reason = 'time'; }
     return !stopped;
   };
   const splice = (a: Node[], b: Node[], i: number, n: number, j: number, m: number, path: number[]) => {
     affected += a.slice(i, i + n).reduce((sum, node) => sum + node.count, 0) + b.slice(j, j + m).reduce((sum, node) => sum + node.count, 0);
-    if (affected > maxNodes || operations.length >= maxOperations) { stopped = true; return; }
+    if (affected > maxNodes) { stopped = true; reason = 'nodes'; return; }
     const xml = b.slice(j, j + m).map(node => raw(next, node)).join('');
-    bytes += xml.length + path.length * 8 + 80;
-    if (bytes > maxBytes) { stopped = true; return; }
-    operations.push({ path, start: i, remove: n, xml });
+    const last = operations.at(-1), merge = last && samePath(last.path,path) && last.start + last.remove === i;
+    if (!merge && operations.length + transforms.length >= maxOperations) { stopped = true; reason = 'operations'; return; }
+    bytes += xml.length + (merge ? 0 : path.length * 8 + 80);
+    if (bytes > maxBytes) { stopped = true; reason = 'bytes'; return; }
+    if (merge) { last.remove += n; last.xml += xml; }
+    else { operations.push({ path, start: i, remove: n, xml }); }
   };
   const children = (a: Node, b: Node, path: number[]) => {
     const left = a.children, right = b.children;
@@ -68,24 +126,29 @@ export function diffSvg(old: SvgDocument, next: SvgDocument, base: string,
     while (ae > i && be > j && check() && same(left[ae - 1], right[be - 1])) { ae--; be--; }
     while ((i < ae || j < be) && check()) {
       if (i < ae && j < be && same(left[i], right[j])) { i++; j++; continue; }
+      if (i < ae && j < be && move(left[i],right[j],i,path)) { i++; j++; continue; }
       if (i < ae && j < be && compatible(left[i], right[j])) { children(left[i], right[j], [...path, i]); i++; j++; continue; }
-      if (ae - i === be - j) { splice(left, right, i++, 1, j++, 1, path); continue; }
       // A bounded nearby anchor preserves unchanged nodes around insertions.
       let anchor: [number, number] | undefined;
       for (let distance = 1; distance <= 16 && !anchor && check(); distance++) {
         for (let x = 0; x <= distance; x++) {
           const y = distance - x;
-          if (i + x < ae && j + y < be && same(left[i + x], right[j + y])) { anchor = [x, y]; break; }
+          if (i + x < ae && j + y < be && (same(left[i + x], right[j + y]) || sameGlyph(left[i + x],right[j + y]))) { anchor = [x, y]; break; }
         }
       }
       if (anchor) { splice(left, right, i, anchor[0], j, anchor[1], path); i += anchor[0]; j += anchor[1]; }
+      else if (ae - i === be - j) { splice(left, right, i++, 1, j++, 1, path); }
       else { splice(left, right, i, ae - i, j, be - j, path); break; }
     }
   };
-  if (performance.now() > deadline || old.text.slice(0, old.root.openEnd) !== next.text.slice(0, next.root.openEnd)) { return; }
+  if (performance.now() > deadline) { report('time'); return; }
+  if (old.text.slice(0, old.root.openEnd) !== next.text.slice(0, next.root.openEnd)) { report('root'); return; }
   children(old.root, next.root, []);
-  const patch = { base, operations: operations.reverse() };
-  if (stopped || performance.now() > deadline || Buffer.byteLength(JSON.stringify(patch)) > maxBytes) { return; }
+  const patch: SvgPatch = { base, operations: operations.reverse(), ...(transforms.length ? {transforms} : {}) };
+  if (stopped) { report(); return; }
+  if (performance.now() > deadline) { report('time'); return; }
+  if (Buffer.byteLength(JSON.stringify(patch)) > maxBytes) { report('bytes'); return; }
+  report();
   return patch;
 }
 

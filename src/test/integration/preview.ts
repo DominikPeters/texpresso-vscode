@@ -59,6 +59,20 @@ async function checkSvgWebview(extensionUri: vscode.Uri): Promise<void> {
         assert(page.root.children[1] === retained, 'Unchanged node retained');
         assert(page.root.children[2].getAttribute('d') === 'M2 2', 'Changed node replaced');
         const clone = page.clone(); assert(clone.querySelector('[id]').id !== page.root.querySelector('[id]').id, 'Magnifier IDs scoped');
+        const positioned = TexpressoSvgPage.create(svg('<defs><path id="a" d="M0 0L1 1"/></defs><use href="#a" transform="translate(1 2)"/>'), 'positioned');
+        const retainedGlyph = positioned.root.children[1];
+        positioned.patch({base:'positioned',operations:[{path:[],start:1,remove:0,xml:'<use href="#a" transform="translate(0 0)"/>'}],
+          transforms:[{path:[],start:1,values:['translate(7 8)']}]}, 'moved');
+        assert(positioned.root.children[2] === retainedGlyph && retainedGlyph.getAttribute('transform') === 'translate(7 8)', 'Glyph move retains identity across insertion');
+        const snapshot = positioned.root.outerHTML;
+        for (const change of [
+          {operations:[{path:[],start:2,remove:1,xml:''}],transforms:[{path:[],start:2,values:['translate(3 4)']}]},
+          {operations:[{path:[],start:1,remove:0,xml:'<use href="#a"/>'}],transforms:[{path:[],start:2,values:['url(https://example.com/)']}]},
+          {operations:[],transforms:[{path:[],start:2,values:['translate(3 4)']},{path:[],start:2,values:['translate(5 6)']}]}
+        ]) {
+          let rejected = false; try { positioned.patch({base:'moved',...change}, 'bad'); } catch { rejected = true; }
+          assert(rejected && positioned.root.outerHTML === snapshot && positioned.contentId === 'moved', 'Invalid glyph updates reject atomically');
+        }
         for (const body of ['<script/>', '<foreignObject/>', '<use href="https://example.com/x"/>', '<path onload="alert(1)"/>', '<g style="fill:red"/>']) {
           assert(!TexpressoSvgPage.create(svg(body), 'bad'), 'Unsupported SVG rejected');
         }
@@ -131,10 +145,19 @@ Pages are compiled when requested, and images have a bounded pixel budget.
   const settings = vscode.workspace.getConfiguration('texpresso', document.uri);
   await settings.update('syncTeXForwardOnSelection', false, vscode.ConfigurationTarget.WorkspaceFolder);
   const command = (name: string) => vscode.commands.executeCommand('texpresso.' + name);
+  let scratch: vscode.TextDocument | undefined;
   try {
     await command('startDocument');
     await until(async () => (await renders()).some(r => r.page === 0), 'first webview render request', 90000);
     await until(async () => (await decoded()).some(d => d.page === 0), 'first page decoded');
+    assert.equal(settings.get('renderingFormat', 'auto'), 'auto', 'editor preview preserves the Auto default');
+    for (const format of ['svg', 'png']) {
+      const previous = (await decoded()).at(-1)!.id;
+      await settings.update('renderingFormat', format, vscode.ConfigurationTarget.WorkspaceFolder);
+      // Either format can reuse a decoded surface from the initial Auto pass.
+      await until(async () =>
+        (await decoded()).some(frame => frame.id > previous && frame.page === 0), 'rendering setting switches to ' + format);
+    }
     if (process.env.TEXPRESSO_TEST_BUNDLED === '1') {
       const executable = path.join(extension.extensionPath, 'runtime', process.platform + '-' + process.arch, 'bin', 'texpresso');
       assert.ok((await logs()).includes(JSON.stringify(executable)), 'installed VSIX selects its bundled engine without a command override');
@@ -182,7 +205,7 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     await until(async () => (await logs()).includes('[synctex forward] sync: hit page'), 'forward synchronization');
 
     const previewGroup = vscode.window.tabGroups.all.find(group => group.tabs.some(tab => tab.input instanceof vscode.TabInputWebview))!;
-    const scratch = await vscode.workspace.openTextDocument({ content: 'Temporary tab for preview lifecycle test', language: 'plaintext' });
+    scratch = await vscode.workspace.openTextDocument({ content: 'Temporary tab for preview lifecycle test', language: 'plaintext' });
     await vscode.window.showTextDocument(scratch, { viewColumn: previewGroup.viewColumn, preview: false });
     const hiddenId = (await decoded()).at(-1)!.id;
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -206,6 +229,10 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     console.log('PASS: Stop closes the preview panel');
   } finally {
     await command('stop'); await document.save();
+    if (scratch && !scratch.isClosed) {
+      await vscode.window.showTextDocument(scratch);
+      await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    }
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
   }
 }

@@ -1,5 +1,15 @@
 # Release notes
 
+### 2.0.1
+
+- Simplify the preview toolbar: choose Auto, PNG or SVG in Settings, with Auto still the default and zoom controls grouped together.
+- Preserve horizontal position during automatic SyncTeX following and minimally reveal offscreen targets on explicit jumps.
+- Match the editor theme while pages are preparing.
+- Keep SVG glyphs mounted through ordinary text reflow, reducing expensive full-page replacements.
+- Preserve queued PNG detail requests while rendering neighboring pages, restoring sharpness after navigation.
+- Fix invalid annotation JSON on Beamer slides and other pages with fractional link or destination coordinates.
+- Document and test coexistence with LaTeX Workshop.
+
 ### 2.0.0
 
 - Select TeX Live (default) or Tectonic as the package provider.

@@ -16,6 +16,19 @@ const header: PreviewImageHeader = { requestId: 1, revision: 3, sequence: 2, pag
 const body = Buffer.from([0x89, 0x50, 0, 10, 13, 255, 123, 0xc3, 0xa9]);
 const frame = Buffer.concat([Buffer.from(JSON.stringify(['preview-image', header]) + '\n'), body]);
 
+test('optional render feature metadata accepts bounded counters and rejects malformed samples', () => {
+  const features = {schema:1,glyphs:20,uniqueGlyphs:10,glyphOverflow:false,textSpans:2,fonts:1,fontOverflow:false,paths:3,pathBytes:100,
+    images:1,imagePixels:16000000,clips:2,groups:0,shades:0,vectorCost:600,svgEligible:false};
+  assert.ok(isImageHeader({...header,renderFeatures:features,featureMs:.2,featureCached:false}));
+  for (const change of [{schema:2},{glyphs:-1},{uniqueGlyphs:8193},{glyphOverflow:1},{fonts:65},{imagePixels:Infinity},{imagePixels:1.5},
+    {fontOverflow:'false'},{svgEligible:1}]) {
+    assert.equal(isImageHeader({...header,renderFeatures:{...features,...change}}),false);
+  }
+  assert.equal(isImageHeader({...header,featureMs:NaN}),false);
+  assert.equal(isImageHeader({...header,featureCached:1}),false);
+  assert.ok(isImageHeader(header), 'legacy engines do not need feature metadata');
+});
+
 test('binary preview framing preserves every byte and split boundary beside Unicode compiler output', () => {
   const stream = Buffer.concat([Buffer.from('["append-lines","out","é😀"]\n'), frame, Buffer.from('["flush"]\n')]);
   for (let split = 1; split < stream.length; split++) {

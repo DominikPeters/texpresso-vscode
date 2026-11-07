@@ -3,7 +3,7 @@
   "displayName": "TeXpresso",
   "description": "Live LaTeX preview inside VS Code, with native rendering and bidirectional SyncTeX",
   "publisher": "DominikPeters",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "icon": "./assets/texpresso_logo.png",
   "homepage": "https://github.com/DominikPeters/texpresso-vscode",
   "repository": {
@@ -272,6 +272,22 @@
           "order": 21,
           "markdownDescription": "Start TeXpresso in streaming mode and supply project files, including binary resources, through the editor protocol. Requires the merged `-stream`, `register`, `resume`, and `open-base64` support (May 2026 or newer). Takes effect when starting a document."
         },
+        "texpresso.renderingFormat": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "png",
+            "svg"
+          ],
+          "enumItemLabels": [
+            "Auto",
+            "PNG",
+            "SVG"
+          ],
+          "default": "auto",
+          "scope": "resource",
+          "markdownDescription": "Rendering format for the editor preview. PNG uses incremental raster updates. SVG provides vector rendering where supported, with PNG fallback. Auto chooses between them. Changes apply immediately."
+        },
         "texpresso.previewLocation": {
           "type": "string",
           "enum": [
@@ -363,6 +379,7 @@
     "test:package": "npm run compile-tests && npm run package:vsix && node scripts/check-vsix.cjs artifacts/texpresso.vsix && node scripts/test-integration.cjs --packaged",
     "test:package:preview": "npm run compile-tests && node scripts/test-integration.cjs --bundled",
     "test:integration:preview": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --preview",
+    "test:integration:latex-workshop": "npm run compile-tests && npm run compile && node scripts/test-integration.cjs --latex-workshop",
     "demo:preview": "npm run package:vsix && node scripts/open-preview-demo.cjs",
     "profile:preview": "npm run compile-tests && node scripts/profile-preview.cjs",
     "profile:preview:browser": "npm run compile-tests && node scripts/profiling/browser.cjs",

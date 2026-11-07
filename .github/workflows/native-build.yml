@@ -97,7 +97,7 @@ jobs:
         run: |
           brew install --cask basictex
           sudo /Library/TeX/texbin/tlmgr update --self
-          sudo /Library/TeX/texbin/tlmgr install geometry amsmath hyperref xcolor fontspec
+          sudo /Library/TeX/texbin/tlmgr install geometry amsmath hyperref xcolor fontspec beamer
       - name: Test the bundle with TeX Live
         run: |
           export PATH="/Library/TeX/texbin:$PATH"

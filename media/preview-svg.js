@@ -9,6 +9,7 @@
     'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'x', 'y', 'width', 'height', 'viewBox',
     'version', 'clip-path', 'mask', 'maskUnits', 'maskContentUnits', 'clipPathUnits', 'href']);
   const id = /^[A-Za-z_][\w.-]{0,127}$/;
+  const transform = /^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([-+0-9.eE,\s]+\)\s*)+$/;
   let serial = 0;
   function prepare(xml, scope, fragment = false) {
     if (typeof xml !== 'string' || xml.length > 2 * 1024 * 1024 || /<!|<\?/.test(xml)) { throw Error('Unsupported SVG'); }
@@ -40,7 +41,7 @@
         } else if (name === 'd') {
           if (!/^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]*$/.test(value)) { throw Error('Invalid SVG path'); }
         } else if (name === 'transform') {
-          if (!/^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([-+0-9.eE,\s]+\)\s*)+$/.test(value)) { throw Error('Invalid SVG transform'); }
+          if (!transform.test(value)) { throw Error('Invalid SVG transform'); }
         } else if (['fill', 'stroke'].includes(name)) {
           if (!/^(?:none|black|white|#[0-9a-fA-F]{3,8})$/.test(value)) { throw Error('Unsupported SVG paint'); }
         } else if (['fill-rule', 'clip-rule'].includes(name)) {
@@ -68,8 +69,10 @@
     }
     constructor(page, contentId, scope) { Object.assign(this, page); this.contentId = contentId; this.scope = scope; }
     patch(patch, contentId) {
-      if (patch.base !== this.contentId || !Array.isArray(patch.operations) || patch.operations.length > 64) { throw Error('SVG patch base unavailable'); }
+      const movements = patch.transforms === undefined ? [] : patch.transforms;
+      if (patch.base !== this.contentId || !Array.isArray(patch.operations) || !Array.isArray(movements) || patch.operations.length + movements.length > 64) { throw Error('SVG patch base unavailable'); }
       const plans = [], ids = new Set(this.ids), refs = new Map(this.refs), removedNodes = new Set(), positions = new Map(), snapshots = new Map();
+      const moves = [], moved = new Set();
       let affected = 0, bytes = 0, count = this.count;
       for (const op of patch.operations) {
         if (!Array.isArray(op.path) || op.path.length > 32) { throw Error('Invalid SVG patch path'); }
@@ -108,6 +111,22 @@
         for (const [name, n] of plan.addition.refs) { refs.set(name, (refs.get(name) || 0) + n); }
       }
       if (!referencesValid(ids, refs)) { throw Error('Dangling SVG reference'); }
+      for (const op of movements) {
+        if (!Array.isArray(op.path) || op.path.length > 32 || !Array.isArray(op.values) || !op.values.length ||
+            moves.length + op.values.length > 1024 || !Number.isInteger(op.start) || op.start < 0) { throw Error('Invalid SVG transform batch'); }
+        let parent = this.root;
+        for (const i of op.path) { if (!Number.isInteger(i) || i < 0 || !parent.children[i]) { throw Error('Invalid SVG transform path'); } parent = parent.children[i]; }
+        if (op.start + op.values.length > parent.children.length) { throw Error('Invalid SVG transform range'); }
+        for (let i=0;i<op.values.length;i++) {
+          const node=parent.children[op.start+i],value=op.values[i];
+          if (node.namespaceURI !== NS || node.localName !== 'use' || node.children.length || !node.hasAttribute('transform') ||
+              moved.has(node) || typeof value !== 'string' || !transform.test(value)) { throw Error('Invalid SVG glyph transform'); }
+          for(let ancestor=node;ancestor;ancestor=ancestor.parentNode) { if(removedNodes.has(ancestor)) { throw Error('Removed SVG transform target'); } }
+          moved.add(node); bytes+=value.length;
+          if(bytes>65536) { throw Error('SVG patch byte budget'); }
+          moves.push({node,value});
+        }
+      }
       // Validate every fragment and path before changing the visible page.
       const replacements = new Map();
       for (const plan of plans) {
@@ -117,6 +136,7 @@
         for (const node of plan.remove) { node.remove(); replacements.set(node, additions[0] || anchor); }
         for (const node of additions) { plan.parent.insertBefore(node, anchor); }
       }
+      for (const {node,value} of moves) { node.setAttribute('transform',value); }
       for (const [name, n] of refs) { if (n === 0) { refs.delete(name); } }
       this.count = count; this.ids = ids; this.refs = refs; this.contentId = contentId;
     }
