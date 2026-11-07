@@ -10,7 +10,7 @@ import { config, document } from '../helpers';
 
 const binary = process.env.TEXPRESSO_BINARY;
 test('Beamer navigation annotations are valid JSON without a stream adapter',
-  { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 60000 }, async () => {
+  { skip: !binary || process.env.TEXPRESSO_TEST_PREVIEW !== '1', timeout: 120000 }, async () => {
     const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'txp-annotations-')));
     const main = document(path.join(root, 'slides.tex'), String.raw`\documentclass{beamer}
 \begin{document}
@@ -36,8 +36,8 @@ An ordinary slide with navigation icons and a \hyperlink{later}{link}.
           }
         }
       });
-    const until = async (condition: () => boolean) => {
-      const deadline = Date.now() + 20000;
+    const until = async (condition: () => boolean, timeout = 20000) => {
+      const deadline = Date.now() + timeout;
       while (!condition()) {
         if (failure || Date.now() > deadline) { throw failure || new Error('Annotation frame timeout\n' + debug); }
         await new Promise(resolve => setTimeout(resolve, 15));
@@ -50,7 +50,10 @@ An ordinary slide with navigation icons and a \hyperlink{later}{link}.
         for (let attempt = 0; attempt < 20 && !frame; attempt++) {
           const id = index * 100 + attempt + 1;
           session.send([verb, id, 0, 1200, state![1], state![2]]);
-          await until(() => frames.has(id) || retries.has(id)); frame = frames.get(id);
+          // This is the first engine test: fresh TeX Live installations may
+          // build font maps and the XeLaTeX format before compiling Beamer.
+          // Keep ordinary subsequent exports bounded separately from bootstrap.
+          await until(() => frames.has(id) || retries.has(id), index === 0 ? 60000 : 20000); frame = frames.get(id);
         }
         assert.ok(frame, 'current frame reaches the production JSON parser');
         assert.ok(frame.header.annotations?.links.length, 'Beamer navigation links are retained');
