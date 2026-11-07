@@ -107,6 +107,7 @@ class Run {
       command: binary,
       previewLocation: 'editor',
       packageProvider: 'texlive',
+      includeDirectories: fixture.includeDirectories || [],
       watchDependencies: false
     }, new SessionPaths(fixture.file, false), () => [ this.main ], {
       state: () => {
@@ -148,6 +149,11 @@ class Run {
         }
       });
       this.pid = child.pid;
+      if (fixture.normalizePreviewNumbers) {
+        const {JsonNumberBridge}=require('./profiling/json-number-bridge.cjs');
+        const bridge=new JsonNumberBridge();
+        child.stdout.pipe(bridge);child.stdout=bridge;this.numberBridge=bridge;
+      }
       if (child.pid && process.platform === 'darwin' && fs.existsSync(path.join(output, 'memory-sampler'))) {
         this.sampler = cp.spawn(path.join(output, 'memory-sampler'), [ String(child.pid) ]);
         let pending = '';

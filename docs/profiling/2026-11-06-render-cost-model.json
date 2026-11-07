@@ -1,0 +1,3224 @@
+{
+  "schema": 1,
+  "projects": [
+    "acm-paper",
+    "budget-figure",
+    "conference-paper",
+    "election-figure",
+    "equilibrium-paper",
+    "math-paper",
+    "slides"
+  ],
+  "extractionAudit": {
+    "completedSessions": 126,
+    "warmupSessions": 42,
+    "missingCostObservation": 82,
+    "invalidSessions": 2,
+    "actualCodecFallback": 16,
+    "observations": 722
+  },
+  "pairingAudit": {
+    "pngNeedsRefinement": 85,
+    "missingCodecPartner": 34,
+    "densityEquivalentPairs": 259
+  },
+  "summary": [
+    {
+      "variant": "constant",
+      "observations": 722,
+      "pairs": 259,
+      "projectMaeMs": 11.544930426456213,
+      "projectRmseMs": 33.845012549399534,
+      "projectRenderMs": 5.553372866147124,
+      "projectFeatureMs": 0.0,
+      "projectRenderPlusFeaturesMs": 5.553372866147124,
+      "projectRegretMs": 0.1289062499104472,
+      "projectPngFraction": 1.0,
+      "projects": [
+        {
+          "project": "acm-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "budget-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "conference-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "election-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "equilibrium-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "math-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "slides",
+          "regretMs": 0.9023437493731303
+        }
+      ]
+    },
+    {
+      "variant": "scalar",
+      "observations": 722,
+      "pairs": 259,
+      "projectMaeMs": 11.505743039228966,
+      "projectRmseMs": 33.35662061132576,
+      "projectRenderMs": 5.452880660234117,
+      "projectFeatureMs": 0.06847028897028896,
+      "projectRenderPlusFeaturesMs": 5.521350949204406,
+      "projectRegretMs": 0.028414043997439995,
+      "projectPngFraction": 0.868131868131868,
+      "projects": [
+        {
+          "project": "acm-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "budget-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "conference-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "election-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "equilibrium-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "math-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "slides",
+          "regretMs": 0.19889830798207997
+        }
+      ]
+    },
+    {
+      "variant": "content",
+      "observations": 722,
+      "pairs": 259,
+      "projectMaeMs": 12.124460783161513,
+      "projectRmseMs": 33.942774122679246,
+      "projectRenderMs": 5.4425014129571805,
+      "projectFeatureMs": 0.07127523402523403,
+      "projectRenderPlusFeaturesMs": 5.513776646982415,
+      "projectRegretMs": 0.0180347967205037,
+      "projectPngFraction": 0.9560439560439561,
+      "projects": [
+        {
+          "project": "acm-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "budget-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "conference-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "election-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "equilibrium-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "math-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "slides",
+          "regretMs": 0.1262435770435259
+        }
+      ]
+    },
+    {
+      "variant": "always-png",
+      "observations": 0,
+      "pairs": 259,
+      "projectMaeMs": null,
+      "projectRmseMs": null,
+      "projectRenderMs": 5.553372866147124,
+      "projectFeatureMs": 0.0,
+      "projectRenderPlusFeaturesMs": 5.553372866147124,
+      "projectRegretMs": 0.1289062499104472,
+      "projectPngFraction": 1.0,
+      "projects": [
+        {
+          "project": "acm-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "budget-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "conference-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "election-figure",
+          "regretMs": 0.0
+        },
+        {
+          "project": "equilibrium-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "math-paper",
+          "regretMs": 0.0
+        },
+        {
+          "project": "slides",
+          "regretMs": 0.9023437493731303
+        }
+      ]
+    },
+    {
+      "variant": "always-svg",
+      "observations": 0,
+      "pairs": 259,
+      "projectMaeMs": null,
+      "projectRmseMs": null,
+      "projectRenderMs": 20.293563856064473,
+      "projectFeatureMs": 0.0,
+      "projectRenderPlusFeaturesMs": 20.293563856064473,
+      "projectRegretMs": 14.869097239827793,
+      "projectPngFraction": 0.0,
+      "projects": [
+        {
+          "project": "acm-paper",
+          "regretMs": 11.954197666649309
+        },
+        {
+          "project": "budget-figure",
+          "regretMs": 19.796914222060174
+        },
+        {
+          "project": "conference-paper",
+          "regretMs": 34.515716416489866
+        },
+        {
+          "project": "election-figure",
+          "regretMs": 10.744413140881859
+        },
+        {
+          "project": "equilibrium-paper",
+          "regretMs": 13.106290500322054
+        },
+        {
+          "project": "math-paper",
+          "regretMs": 13.489594943356087
+        },
+        {
+          "project": "slides",
+          "regretMs": 0.4765537890352067
+        }
+      ]
+    }
+  ],
+  "comparisonsIncludingFeatureAcquisition": [
+    {
+      "baseline": "scalar",
+      "projectSavings": [
+        {
+          "project": "acm-paper",
+          "savingMs": 0.0
+        },
+        {
+          "project": "budget-figure",
+          "savingMs": 0.0
+        },
+        {
+          "project": "conference-paper",
+          "savingMs": 0.0
+        },
+        {
+          "project": "election-figure",
+          "savingMs": 0.0
+        },
+        {
+          "project": "equilibrium-paper",
+          "savingMs": 0.0
+        },
+        {
+          "project": "math-paper",
+          "savingMs": 0.0
+        },
+        {
+          "project": "slides",
+          "savingMs": 0.053020115553938485
+        }
+      ],
+      "meanSavingMs": 0.0075743022219912125,
+      "projectsImproved": 1,
+      "leaveOneProjectOutMeanRangeMs": [
+        0.0,
+        0.008836685925656415
+      ]
+    },
+    {
+      "baseline": "constant",
+      "projectSavings": [
+        {
+          "project": "acm-paper",
+          "savingMs": -0.08029629629629653
+        },
+        {
+          "project": "budget-figure",
+          "savingMs": -0.043277777777776194
+        },
+        {
+          "project": "conference-paper",
+          "savingMs": -0.09141666666666648
+        },
+        {
+          "project": "election-figure",
+          "savingMs": -0.07624999999999993
+        },
+        {
+          "project": "equilibrium-paper",
+          "savingMs": -0.08694444444444471
+        },
+        {
+          "project": "math-paper",
+          "savingMs": -0.07397222222222233
+        },
+        {
+          "project": "slides",
+          "savingMs": 0.7293309415603733
+        }
+      ],
+      "meanSavingMs": 0.03959621916470958,
+      "projectsImproved": 1,
+      "leaveOneProjectOutMeanRangeMs": [
+        -0.07535956790123437,
+        0.061431700136605594
+      ]
+    },
+    {
+      "baseline": "always-png",
+      "projectSavings": [
+        {
+          "project": "acm-paper",
+          "savingMs": -0.08029629629629653
+        },
+        {
+          "project": "budget-figure",
+          "savingMs": -0.043277777777776194
+        },
+        {
+          "project": "conference-paper",
+          "savingMs": -0.09141666666666648
+        },
+        {
+          "project": "election-figure",
+          "savingMs": -0.07624999999999993
+        },
+        {
+          "project": "equilibrium-paper",
+          "savingMs": -0.08694444444444471
+        },
+        {
+          "project": "math-paper",
+          "savingMs": -0.07397222222222233
+        },
+        {
+          "project": "slides",
+          "savingMs": 0.7293309415603733
+        }
+      ],
+      "meanSavingMs": 0.03959621916470958,
+      "projectsImproved": 1,
+      "leaveOneProjectOutMeanRangeMs": [
+        -0.07535956790123437,
+        0.061431700136605594
+      ]
+    },
+    {
+      "baseline": "always-svg",
+      "projectSavings": [
+        {
+          "project": "acm-paper",
+          "savingMs": 11.87390137035301
+        },
+        {
+          "project": "budget-figure",
+          "savingMs": 19.7536364442824
+        },
+        {
+          "project": "conference-paper",
+          "savingMs": 34.4242997498232
+        },
+        {
+          "project": "election-figure",
+          "savingMs": 10.668163140881859
+        },
+        {
+          "project": "equilibrium-paper",
+          "savingMs": 13.019346055877609
+        },
+        {
+          "project": "math-paper",
+          "savingMs": 13.415622721133865
+        },
+        {
+          "project": "slides",
+          "savingMs": 0.3035409812224499
+        }
+      ],
+      "meanSavingMs": 14.779787209082055,
+      "projectsImproved": 7,
+      "leaveOneProjectOutMeanRangeMs": [
+        11.505701785625197,
+        17.192494913725323
+      ]
+    }
+  ],
+  "folds": [
+    {
+      "heldOutProject": "acm-paper",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1335.4394876512142
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1336.164753858753
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1357.2906473293663
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1382.3103334841944
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.315578336036667,
+            -2.3856531342402945
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            21.05405295750264,
+            -10.425256863492644
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "acm-paper",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1304.7700260585107
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1292.7085725305685
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1314.7236954374932
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1370.3812492646036
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.718061221942577,
+            14.547729399759136,
+            14.706322100573248,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6542654255464722,
+            0.4850011037700652,
+            0.6866580804505881,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.315578336036648,
+            0.4114048192490953,
+            2.3289587776002607,
+            4.43181228518621,
+            -2.0998220897756217
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.71804872841499,
+            14.533382327033785,
+            14.648089098450237,
+            0.881091617933723
+          ],
+          "scales": [
+            0.6542607381231939,
+            0.48406702299643894,
+            0.6514987987601615,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            21.05405295750264,
+            7.266808194592078,
+            0.7236785707473649,
+            0.3999912526839692,
+            -9.017613193820978
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "acm-paper",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1380.0488170998017
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1319.8501527494693
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1317.1207444290987
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1364.2935244032417
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.681633306681442,
+            4.646000828726129,
+            4.632849298250998,
+            2.014367907278244,
+            1.8699647569725804,
+            4.552263818926432,
+            14.547729399759136,
+            14.706322100573248,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.684926698905547,
+            0.41237365598101694,
+            1.0838748492480463,
+            0.4801988962809928,
+            1.6880105235061027,
+            3.574197720069349,
+            0.4850011037700652,
+            0.6866580804505881,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.315578336036658,
+            0.4873619121594665,
+            1.0474314670927114,
+            -0.48636759976255606,
+            0.8275194623848013,
+            1.917068017381541,
+            1.3967907583261672,
+            1.9384750574516016,
+            2.0947860539008216,
+            -0.9171875511950522,
+            0.0
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.681620033740502,
+            4.646000828726129,
+            4.632844883033394,
+            2.014367907278244,
+            1.8699647569725804,
+            4.552263818926432,
+            14.533382327033785,
+            14.648089098450237,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.684922326084224,
+            0.41237365598101694,
+            1.0838689127250534,
+            0.4801988962809928,
+            1.6880105235061027,
+            3.574197720069349,
+            0.48406702299643894,
+            0.6514987987601615,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            21.05405295750264,
+            1.9413900048741626,
+            2.0371932330137645,
+            1.2377313252195763,
+            1.1653499258180555,
+            -0.9034149302674793,
+            -0.46676124322475243,
+            0.7091135945622509,
+            0.6843892029666906,
+            -3.932076760029741,
+            0.0
+          ],
+          "trainingProjects": [
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "budget-figure",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 180.09622871778637
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 181.30661222063043
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 205.3831553509289
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 232.99183578255614
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            5.389329987206406,
+            -3.055721570728401
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            19.226830349460503,
+            -10.51187909559998
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "budget-figure",
+      "variant": "scalar",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 140.3419488456336
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 143.09696397643424
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 175.42180431337806
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 226.59200342477865
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 0.1,
+          "means": [
+            10.719218006813364,
+            14.549205587646297,
+            14.702590009192692,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6549688063254503,
+            0.47807714414202945,
+            0.6765584626909169,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            5.389329987206404,
+            0.15733127960320809,
+            0.7661003056114404,
+            0.22889447820800557,
+            -3.0636901112672073
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 0.1,
+          "means": [
+            10.719205513285777,
+            14.538508401268977,
+            14.655746450910803,
+            0.881091617933723
+          ],
+          "scales": [
+            0.6549641460019264,
+            0.483532833541032,
+            0.6545020643885057,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            19.226830349460496,
+            7.605541595422589,
+            0.419688247998105,
+            -0.1286707363712507,
+            -10.455721600395586
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "budget-figure",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 261.10540654405787
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 177.94625842725665
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 176.0312361400258
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 223.5825751854022
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.694246957924889,
+            4.657287191068621,
+            4.64428235097479,
+            2.0515584991639457,
+            1.3145973386100465,
+            3.7568897333662075,
+            14.549205587646297,
+            14.702590009192692,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.6922242034658933,
+            0.4242043009358465,
+            1.0894052720083944,
+            0.5220209854897703,
+            1.4133226879975302,
+            3.130746173649469,
+            0.47807714414202945,
+            0.6765584626909169,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            5.389329987206404,
+            0.09321102481114175,
+            0.09106473842576328,
+            0.12061142274746683,
+            0.053847989169541886,
+            0.041306810880999495,
+            0.03663307277118031,
+            0.2703615397292522,
+            0.255656964879621,
+            -1.1660862416156919,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.694233684983948,
+            4.657287191068621,
+            4.644277935757186,
+            2.0515584991639457,
+            1.3145973386100465,
+            3.7568897333662075,
+            14.538508401268977,
+            14.655746450910803,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.6922201186035124,
+            0.4242043009358465,
+            1.0893994119595574,
+            0.5220209854897703,
+            1.4133226879975302,
+            3.130746173649469,
+            0.483532833541032,
+            0.6545020643885057,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            19.2268303494605,
+            1.6637505663852474,
+            1.3356332307989192,
+            1.4621886826914665,
+            0.3561936399758246,
+            -1.1066085711723797,
+            -0.6316112669882669,
+            0.5062023726396984,
+            0.46871437154095913,
+            -3.991696419376658,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "conference-paper",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1249.0003265656246
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1250.2982542470825
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1278.2548403993878
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1310.5664302252344
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.307836159917514,
+            -2.514031667369435
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            17.494184124032248,
+            -11.600021780680901
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "conference-paper",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1250.1778155830377
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1238.438581998577
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1264.8149267214583
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1304.6360280154893
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.6948461171905,
+            14.559620002259239,
+            14.717468240130406,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6368843209885792,
+            0.47608966102868405,
+            0.6793265629347391,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.307836159917505,
+            0.5805936968780928,
+            2.272245697911429,
+            4.242861515935396,
+            -2.2054720129783147
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.69483362366291,
+            14.548922815881921,
+            14.670624681848516,
+            0.881091617933723
+          ],
+          "scales": [
+            0.6368790502347995,
+            0.48179914961307113,
+            0.6584224149548443,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            17.494184124032245,
+            4.71241636783697,
+            1.2041561218993129,
+            0.16414818652241436,
+            -10.055739486642208
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "conference-paper",
+      "variant": "content",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1293.8185488701677
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1279.0091373340128
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1283.3908903096315
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1305.5192208393194
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 1.0,
+          "means": [
+            7.658412423143034,
+            4.664888942943963,
+            4.55031011366152,
+            2.066060395328884,
+            1.8699647569725804,
+            4.552263818926432,
+            14.559620002259239,
+            14.717468240130406,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.6669324207800328,
+            0.4308251980792434,
+            1.016719953865242,
+            0.5325434387092723,
+            1.6880105235061027,
+            3.574197720069349,
+            0.47608966102868405,
+            0.6793265629347391,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.307836159917493,
+            3.1757901375898867,
+            2.449981133539598,
+            -6.022705411357404,
+            -0.3079850099727151,
+            6.265670895409174,
+            3.6728422334930078,
+            3.424323477987081,
+            3.8743786017401782,
+            -2.2154386859507564,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 1.0,
+          "means": [
+            7.658399150202094,
+            4.664888942943962,
+            4.550305698443915,
+            2.066060395328884,
+            1.8699647569725804,
+            4.552263818926432,
+            14.548922815881921,
+            14.670624681848516,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.6669274678431362,
+            0.4308251980792434,
+            1.016713266791642,
+            0.5325434387092723,
+            1.6880105235061027,
+            3.574197720069349,
+            0.48179914961307113,
+            0.6584224149548443,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            17.49418412403224,
+            3.967285537754396,
+            3.202902583630906,
+            -1.6850479401348375,
+            -1.59743646685741,
+            2.2504856282051273,
+            0.270433552595206,
+            1.1048213187481561,
+            0.1565261218971321,
+            -10.05145520366887,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "election-figure",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1335.8334307775378
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1336.981117205856
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1365.0932764251909
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1397.9561605167255
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.226481361002662,
+            -2.639981650819675
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            20.96103499690933,
+            -11.53706926443202
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "election-figure",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1301.5163885809327
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1297.640056791617
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1330.513886785751
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1389.1495698979686
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.744099983066105,
+            14.569202231160338,
+            14.702668982643514,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6665259323214894,
+            0.4961193272828613,
+            0.6765475564276099,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.226481361002664,
+            0.3229740123048724,
+            0.9731436842272012,
+            5.536063020377432,
+            -2.3212734277739315
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.744099983066105,
+            14.57285211750837,
+            14.714058426484634,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6665259323214894,
+            0.5019888055508146,
+            0.6888491920942421,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            20.961034996909333,
+            7.296157199081242,
+            0.8246484453762373,
+            -0.39333971613755525,
+            -10.078601102825543
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "election-figure",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1677.5982062304918
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1351.6865759878494
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1341.255631884016
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1386.3581913345154
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.717709699182461,
+            4.678785877767138,
+            4.484340768419686,
+            2.0515584991639457,
+            1.383669634958534,
+            3.80278358383457,
+            14.569202231160338,
+            14.702668982643514,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.7013863410133994,
+            0.4403045613348677,
+            0.9232518781751009,
+            0.5220209854897703,
+            1.5292351687770152,
+            3.1959209371785944,
+            0.4961193272828613,
+            0.6765475564276099,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.226481361002657,
+            0.5853777259143402,
+            0.8440613714668184,
+            0.32271398362055354,
+            0.26709964007144865,
+            2.82759501657159,
+            1.9533651994338277,
+            1.7983141699769127,
+            2.2932460933288947,
+            -1.0231182540307453,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.717709699182461,
+            4.678785877767138,
+            4.484340768419686,
+            2.0515584991639457,
+            1.383669634958534,
+            3.80278358383457,
+            14.57285211750837,
+            14.714058426484634,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.7013863410133994,
+            0.4403045613348677,
+            0.9232518781751009,
+            0.5220209854897703,
+            1.5292351687770152,
+            3.1959209371785944,
+            0.5019888055508146,
+            0.6888491920942421,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            20.961034996909323,
+            1.9179910969362464,
+            1.6117379971692063,
+            1.9895979734564009,
+            0.3241468118701348,
+            -0.09109731537469375,
+            -0.045890868641861385,
+            0.5478963542315415,
+            0.3794130079958267,
+            -4.404354189619375,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "equilibrium-paper",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "equilibrium-paper",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1330.0786149822209
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1331.677735642343
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1363.286343999864
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1399.50829032346
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.44298173721568,
+            -2.5644533482864946
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            20.969366864956893,
+            -12.241741951657941
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "equilibrium-paper",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1301.3692576114481
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1289.617004786583
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1322.2072784127024
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1377.7878223802973
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.809272945626581,
+            14.544079513411104,
+            14.694932656732128,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.6657148502989669,
+            0.478731977764563,
+            0.674185791313016,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.442981737215662,
+            -0.7929811230018974,
+            2.7736605531846936,
+            4.727876363401213,
+            -2.258566732097916
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.809260452098991,
+            14.533382327033785,
+            14.648089098450237,
+            0.881091617933723
+          ],
+          "scales": [
+            0.6657119552816732,
+            0.48406702299643894,
+            0.6514987987601615,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            20.969366864956864,
+            6.822919245645283,
+            0.8096979448451416,
+            0.06135326287075982,
+            -10.63360106967758
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "equilibrium-paper",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 2117.4366084380285
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1449.4913120990489
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1341.4205670638412
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1381.2080808132994
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.772719541599584,
+            4.750026546904961,
+            4.943898051766102,
+            2.2346605472752974,
+            1.9854892870659047,
+            5.15852817888083,
+            14.544079513411104,
+            14.694932656732128,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.7011860452999802,
+            0.4401630401035609,
+            0.9216362861537026,
+            0.44330041392127145,
+            1.5760886755043622,
+            3.0154470799291966,
+            0.478731977764563,
+            0.674185791313016,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.442981737215671,
+            0.5352345177918378,
+            0.8052665875968468,
+            -0.6631478360621977,
+            0.19979853701176986,
+            2.1092692620775,
+            1.5089838948834877,
+            1.9879024901104176,
+            2.1789573180822908,
+            -0.9856362153851089,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.772706268658644,
+            4.750026546904961,
+            4.943893636548498,
+            2.2346605472752974,
+            1.9854892870659047,
+            5.15852817888083,
+            14.533382327033785,
+            14.648089098450237,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.7011834980822305,
+            0.4401630401035609,
+            0.9216307947276763,
+            0.44330041392127145,
+            1.5760886755043622,
+            3.0154470799291966,
+            0.48406702299643894,
+            0.6514987987601615,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            20.96936686495689,
+            1.8545707432393688,
+            1.5414465371385584,
+            1.4246294741848322,
+            0.3793696746055259,
+            -0.4490208212446827,
+            -0.32753867555364186,
+            0.6377851019528514,
+            0.5813847415378534,
+            -4.6376150298676535,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "math-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "math-paper",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1329.3293947435366
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1330.4692075184091
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1356.479517019218
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1386.701493188093
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.374459499826669,
+            -2.545659237913062
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            20.834588960781723,
+            -11.221358060603054
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "math-paper",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1302.3120000848435
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1292.60181216261
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1319.2368675113846
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1376.3113630410123
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.727185608100621,
+            14.559620002259239,
+            14.717468240130406,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.659407360491468,
+            0.47608966102868405,
+            0.6793265629347391,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.374459499826656,
+            0.2769253486019054,
+            2.427459340996512,
+            4.282081187742623,
+            -2.233613586707993
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            10.727173114573032,
+            14.548922815881921,
+            14.670624681848516,
+            0.881091617933723
+          ],
+          "scales": [
+            0.659402882497389,
+            0.48179914961307113,
+            0.6584224149548443,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            20.834588960781705,
+            7.201088864954597,
+            0.7191360354116032,
+            0.007541095420095623,
+            -9.725982352508932
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "math-paper",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 2066.1009883549223
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1418.6242680908936
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1332.0370595915576
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1373.4795579045874
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.690663721304868,
+            4.748184907540531,
+            4.796014185932618,
+            2.2346605472752974,
+            1.9854892870659047,
+            5.15852817888083,
+            14.559620002259239,
+            14.717468240130406,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.6903230816356863,
+            0.44118179804187113,
+            1.0830572110820555,
+            0.44330041392127145,
+            1.5760886755043622,
+            3.0154470799291966,
+            0.47608966102868405,
+            0.6793265629347391,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.37445949982666,
+            0.5191498705524619,
+            0.7729243224403367,
+            -0.5164923493503196,
+            0.2862330978510581,
+            2.1534011085114844,
+            1.5889035684559807,
+            1.9740714976458769,
+            2.099563052909069,
+            -0.9760829003174575,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.690650448363928,
+            4.74818490754053,
+            4.796009770715014,
+            2.2346605472752974,
+            1.9854892870659047,
+            5.15852817888083,
+            14.548922815881921,
+            14.670624681848516,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.6903189166278763,
+            0.44118179804187113,
+            1.0830519352427765,
+            0.44330041392127145,
+            1.5760886755043622,
+            3.0154470799291966,
+            0.48179914961307113,
+            0.6584224149548443,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            20.834588960781716,
+            2.0266694282056417,
+            1.5542515418379756,
+            1.3126797920037725,
+            0.2755144034999602,
+            -0.485356987633306,
+            -0.40440008614811274,
+            0.6518978847288878,
+            0.547251688145868,
+            -4.249657928049278,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "slides"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "slides",
+      "variant": "constant",
+      "alpha": 0.1,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1291.5995244637336
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1293.8430169376486
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1331.087617862876
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1372.9206286257222
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.8888888888888888
+          ],
+          "scales": [
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.610448712626484,
+            -2.9766934613316334
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        },
+        "svg": {
+          "variant": "constant",
+          "alpha": 0.1,
+          "means": [
+            0.881091617933723
+          ],
+          "scales": [
+            0.3236806740302194
+          ],
+          "coefficients": [
+            23.375788806131645,
+            -12.972541752697438
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "slides",
+      "variant": "scalar",
+      "alpha": 1.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1341.1146540689049
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1330.6228912650176
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1334.5528869585798
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1370.6367360207694
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            11.015832664411313,
+            14.677538293791857,
+            14.856333043879468,
+            0.8888888888888888
+          ],
+          "scales": [
+            0.2164386532135346,
+            0.34831509081454326,
+            0.5894664827140379,
+            0.31426968052735443
+          ],
+          "coefficients": [
+            10.610448712626456,
+            2.434239516418901,
+            3.9781666619217546,
+            2.8666510154991482,
+            -2.5600498564066094
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        },
+        "svg": {
+          "variant": "scalar",
+          "alpha": 1.0,
+          "means": [
+            11.015820170883726,
+            14.666841107414536,
+            14.80948948559758,
+            0.881091617933723
+          ],
+          "scales": [
+            0.21644167209747597,
+            0.35960429030012137,
+            0.5766420681019964,
+            0.3236806740302194
+          ],
+          "coefficients": [
+            23.375788806131652,
+            4.081060803310724,
+            0.3231187011410713,
+            0.21948307951813895,
+            -11.31877620084778
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        }
+      }
+    },
+    {
+      "heldOutProject": "slides",
+      "variant": "content",
+      "alpha": 10.0,
+      "innerValidation": [
+        {
+          "alpha": 0.1,
+          "projectMse": 1706.41415147984
+        },
+        {
+          "alpha": 1.0,
+          "projectMse": 1439.2536197356337
+        },
+        {
+          "alpha": 10.0,
+          "projectMse": 1357.8009345169073
+        },
+        {
+          "alpha": 100.0,
+          "projectMse": 1372.3299461409904
+        }
+      ],
+      "models": {
+        "png": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.998564500920536,
+            4.85479465680869,
+            4.943898051766102,
+            2.1413912492860603,
+            1.5037606607498775,
+            3.969911760469678,
+            14.677538293791857,
+            14.856333043879468,
+            0.8888888888888888,
+            0.0
+          ],
+          "scales": [
+            0.2156328314545677,
+            0.253928150180556,
+            0.9216362861537026,
+            0.54210161463694,
+            1.6650982796260707,
+            3.3861897078495624,
+            0.34831509081454326,
+            0.5894664827140379,
+            0.31426968052735443,
+            1e-08
+          ],
+          "coefficients": [
+            10.610448712626468,
+            0.33682618549623655,
+            0.7299325181685066,
+            -0.7650035469787855,
+            0.21559300377749963,
+            2.288679435078751,
+            1.6739285242337258,
+            2.122398626450287,
+            1.8304863412234882,
+            -1.126085542388916,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        },
+        "svg": {
+          "variant": "content",
+          "alpha": 10.0,
+          "means": [
+            7.998551227979596,
+            4.85479465680869,
+            4.943893636548498,
+            2.1413912492860603,
+            1.5037606607498775,
+            3.969911760469678,
+            14.666841107414536,
+            14.80948948559758,
+            0.881091617933723,
+            0.0
+          ],
+          "scales": [
+            0.2156384499901049,
+            0.253928150180556,
+            0.9216307947276763,
+            0.54210161463694,
+            1.6650982796260707,
+            3.3861897078495624,
+            0.35960429030012137,
+            0.5766420681019964,
+            0.3236806740302194,
+            1e-08
+          ],
+          "coefficients": [
+            23.375788806131638,
+            1.4468923661786666,
+            0.6247059546569603,
+            0.4923477288137682,
+            0.18975158224084282,
+            -0.08410719351479581,
+            0.15888123012210986,
+            0.19042580950535148,
+            0.2320743416234009,
+            -4.938401303871908,
+            0.0
+          ],
+          "trainingProjects": [
+            "acm-paper",
+            "budget-figure",
+            "conference-paper",
+            "election-figure",
+            "equilibrium-paper",
+            "math-paper"
+          ]
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Exploratory, single-machine corpus; edits within a project are correlated.",
+    "All scaling and regularization tuning excludes the outer held-out project.",
+    "Decision pairs require matching page counters and full-density PNG; detail-refinement cost is not modeled.",
+    "Actual patch flags and timings are targets/diagnostics, never predictive features.",
+    "Paired forced-codec histories do not simulate switching penalties or a deployed controller.",
+    "No current-Auto replay is inferred from these forced-codec runs."
+  ],
+  "created": "2026-11-06T17:41:50.931851+00:00",
+  "python": "3.12.8",
+  "extensionBase": "577b4254dae48bebb51e27000f9d7cbd4a2b5fde",
+  "extensionDirty": true,
+  "nativeSourceCommit": "262c7173ea2b643750a759f1df4b7732053f7929",
+  "nativeSourceBranch": "codex/render-cost-features",
+  "nativeSourcePushed": false,
+  "sourceRuntimeNote": "Measured frontend: a33eded plus recorded feature patch; that exact patch is now preserved in the local native source commit. Original worker is reused unchanged.",
+  "runtimeMetadata": [
+    {
+      "schema": 1,
+      "created": "2026-11-06T17:24:09.949Z",
+      "vscode": "1.145.0",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "cpu": "Apple M1 Pro",
+      "cpus": 8,
+      "memory": 17179869184,
+      "binarySha256": "e48da943f279a33a12a48e5ccc7ec6c1faf4dd6293189335fe3c1b1793f4a580",
+      "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+      "runtimeHashes": {
+        "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+        "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+        "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+        "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+        "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+        "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+        "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+        "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+        "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+        "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+        "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+        "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+        "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+        "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+        "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+        "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+        "out/preview-controller.js": "4c5b9d8b6548cea62b004cbc8c593d4c65540883d464b23e29e87a94d7530a75",
+        "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+        "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+        "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+        "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+        "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+        "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+        "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+        "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+        "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+        "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+        "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+        "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+        "out/svg-patch.js": "607eaee75f36678c002b78e72c06a584a1055df98f371a6672abf263bb774fdc",
+        "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+        "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+        "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+        "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+        "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+        "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+        "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+        "media/preview-svg.js": "ed80c1152154f6d4dcdb308e8d525d063b51c049a18ff9ee50ca94b228956782",
+        "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+        "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+        "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+        "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+        "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+        "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+        "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+      },
+      "engineManifest": {
+        "schema": 1,
+        "kind": "profiling-frontend",
+        "platform": "darwin",
+        "architecture": "arm64",
+        "engineRevision": "a33eded4f6a5b62a3c94e91572496588e8ff4b87",
+        "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+        "icu": {
+          "version": "78.3",
+          "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+          "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+          "fullBytes": 33109168,
+          "filteredBytes": 10867248,
+          "retainedItems": 267
+        },
+        "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+        "sdk": "MacOSX26.2.sdk",
+        "hostPackageVersions": {
+          "freetype2": "26.7.20",
+          "libjpeg": "3.2.1",
+          "libopenjp2": "2.5.4",
+          "libbrotlidec": "1.2.1",
+          "libbrotlienc": "1.2.1",
+          "sdl2": "2.32.74",
+          "harfbuzz": "15.1.0",
+          "graphite2": "3.3.1",
+          "fontconfig": "2.18.3",
+          "libpng": "1.6.59"
+        },
+        "profiles": {
+          "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+          "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+        },
+        "features": {
+          "externalWindow": true,
+          "embeddedPreview": true
+        },
+        "capabilities": {
+          "previewProtocol": 1,
+          "maxPreviewPixels": 16000000,
+          "codecs": [
+            "png",
+            "svg"
+          ],
+          "synctex": true,
+          "synctexPrecision": 1,
+          "regions": true,
+          "links": true,
+          "tikzFigures": true,
+          "adaptiveRendering": true,
+          "pngPatches": true,
+          "backgroundRendering": true,
+          "prepareEdit": true,
+          "requestLifecycle": true,
+          "parentWatch": true,
+          "packageProviders": [
+            "texlive",
+            "miktex",
+            "miktex-windows",
+            "tectonic"
+          ],
+          "miktexAutoInstall": true,
+          "miktexWindowsBridge": true,
+          "pngCompression": {
+            "library": "zlib-ng",
+            "version": "2.3.3",
+            "level": 2
+          }
+        },
+        "sourceDirty": true,
+        "created": "2026-11-05",
+        "purpose": "Precise source synchronization and cached inverse lookup",
+        "workerProtocol": 2,
+        "zlibNg": {
+          "version": "2.3.3",
+          "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+          "api": "native",
+          "linkage": "static",
+          "pngLevel": 2,
+          "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+        },
+        "renderer": {
+          "library": "MuPDF",
+          "linkage": "static",
+          "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+          "reusedArchives": {
+            "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+            "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+          },
+          "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+        },
+        "hostLibraries": [
+          {
+            "package": "brotli",
+            "version": "1.2.1",
+            "noticesFound": true
+          },
+          {
+            "package": "fontconfig",
+            "version": "2.18.3",
+            "noticesFound": true
+          },
+          {
+            "package": "freetype",
+            "version": "2.15.0",
+            "noticesFound": true
+          },
+          {
+            "package": "gettext",
+            "version": "1.0",
+            "noticesFound": true
+          },
+          {
+            "package": "glib",
+            "version": "2.90.1",
+            "noticesFound": true
+          },
+          {
+            "package": "graphite2",
+            "version": "1.3.15",
+            "noticesFound": true
+          },
+          {
+            "package": "harfbuzz",
+            "version": "15.1.0",
+            "noticesFound": true
+          },
+          {
+            "package": "jbig2dec",
+            "version": "0.20",
+            "noticesFound": true
+          },
+          {
+            "package": "jpeg-turbo",
+            "version": "3.2.1",
+            "noticesFound": true
+          },
+          {
+            "package": "libpng",
+            "version": "1.6.59",
+            "noticesFound": true
+          },
+          {
+            "package": "openjpeg",
+            "version": "2.5.4_1",
+            "noticesFound": true
+          },
+          {
+            "package": "pcre2",
+            "version": "10.49",
+            "noticesFound": true
+          },
+          {
+            "package": "sdl2-compat",
+            "version": "2.32.74",
+            "noticesFound": true
+          },
+          {
+            "package": "sdl3",
+            "version": "3.4.20",
+            "noticesFound": true
+          }
+        ],
+        "files": [
+          {
+            "path": "bin/texpresso",
+            "sha256": "e48da943f279a33a12a48e5ccc7ec6c1faf4dd6293189335fe3c1b1793f4a580"
+          },
+          {
+            "path": "bin/texpresso-xetex",
+            "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229"
+          }
+        ],
+        "installedBytes": 31276510,
+        "incrementalBuild": {
+          "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+          "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+          "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+          "script": "synctex-bundle-build.py",
+          "makeCommand": [
+            "make",
+            "-j4",
+            "all"
+          ]
+        },
+        "featureInstrumentation": {
+          "patchSha256": "2b3099461b756a3f2eed7a42979cf06caa960ab3f30e1f537c1e2c0ce7d8f02f",
+          "buildScriptSha256": "ac25a3f945fca550d96f66f269e41bb6ad01477227ef12367c238d6fd0a3d65b",
+          "packageVersions": {
+            "freetype2": "26.7.20",
+            "libjpeg": "3.2.1",
+            "libopenjp2": "2.5.4",
+            "libbrotlidec": "1.2.1",
+            "libbrotlienc": "1.2.1"
+          },
+          "baseManifestSha256": "cfbdc52dd427cb35680007e169faf977e102807ba54e4d28a3064030fba213c3",
+          "configSha256": "0f7830d0cde6226e2405f72e3f20d211685fe6c61b4bef59fd43d1738ed50186",
+          "workerReused": true
+        }
+      },
+      "power": "Now drawing from 'Battery Power'\n -InternalBattery-0 (id=32374883)\t94%; discharging; 3:25 remaining present: true\n",
+      "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+      "widths": [
+        1100
+      ],
+      "dpr": 1,
+      "repeats": 3,
+      "codecs": [
+        "png",
+        "svg"
+      ],
+      "profileFeatures": true,
+      "cases": [
+        {
+          "id": "math-paper",
+          "focusPage": 0,
+          "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+          "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b",
+          "compatibility": [
+            "T1 encoding for XeTeX legacy text fonts",
+            "pdfTeX output selection omitted for XeTeX"
+          ],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "conference-paper",
+          "focusPage": 0,
+          "sourceSha256": "daae0d0976e8f3aa2eee1fdeedad68b56bd5417ddfc8fcad16db0f98768cfe5e",
+          "originalSha256": "87a55a205b9461d0431c434a0417bebbc616706f25b45cde7fcdc2ac33d84b7a",
+          "compatibility": [
+            "pdfTeX metadata register shim",
+            "T1 encoding for XeTeX Times fonts"
+          ],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "slides",
+          "focusPage": 1,
+          "sourceSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+          "originalSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "acm-paper",
+          "focusPage": 0,
+          "sourceSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+          "originalSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "equilibrium-paper",
+          "focusPage": 0,
+          "sourceSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+          "originalSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "budget-figure",
+          "focusPage": 1,
+          "sourceSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+          "originalSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "election-figure",
+          "focusPage": 2,
+          "sourceSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+          "originalSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        }
+      ],
+      "limitations": [
+        "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+        "Native task footprint excludes Chromium/GPU memory.",
+        "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+        "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+      ]
+    },
+    {
+      "schema": 1,
+      "created": "2026-11-06T17:02:55.887Z",
+      "vscode": "1.145.0",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "cpu": "Apple M1 Pro",
+      "cpus": 8,
+      "memory": 17179869184,
+      "binarySha256": "e48da943f279a33a12a48e5ccc7ec6c1faf4dd6293189335fe3c1b1793f4a580",
+      "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+      "runtimeHashes": {
+        "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+        "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+        "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+        "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+        "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+        "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+        "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+        "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+        "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+        "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+        "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+        "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+        "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+        "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+        "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+        "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+        "out/preview-controller.js": "4c5b9d8b6548cea62b004cbc8c593d4c65540883d464b23e29e87a94d7530a75",
+        "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+        "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+        "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+        "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+        "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+        "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+        "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+        "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+        "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+        "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+        "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+        "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+        "out/svg-patch.js": "607eaee75f36678c002b78e72c06a584a1055df98f371a6672abf263bb774fdc",
+        "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+        "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+        "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+        "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+        "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+        "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+        "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+        "media/preview-svg.js": "ed80c1152154f6d4dcdb308e8d525d063b51c049a18ff9ee50ca94b228956782",
+        "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+        "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+        "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+        "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+        "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+        "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+        "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+      },
+      "engineManifest": {
+        "schema": 1,
+        "kind": "profiling-frontend",
+        "platform": "darwin",
+        "architecture": "arm64",
+        "engineRevision": "a33eded4f6a5b62a3c94e91572496588e8ff4b87",
+        "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+        "icu": {
+          "version": "78.3",
+          "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+          "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+          "fullBytes": 33109168,
+          "filteredBytes": 10867248,
+          "retainedItems": 267
+        },
+        "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+        "sdk": "MacOSX26.2.sdk",
+        "hostPackageVersions": {
+          "freetype2": "26.7.20",
+          "libjpeg": "3.2.1",
+          "libopenjp2": "2.5.4",
+          "libbrotlidec": "1.2.1",
+          "libbrotlienc": "1.2.1",
+          "sdl2": "2.32.74",
+          "harfbuzz": "15.1.0",
+          "graphite2": "3.3.1",
+          "fontconfig": "2.18.3",
+          "libpng": "1.6.59"
+        },
+        "profiles": {
+          "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+          "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+        },
+        "features": {
+          "externalWindow": true,
+          "embeddedPreview": true
+        },
+        "capabilities": {
+          "previewProtocol": 1,
+          "maxPreviewPixels": 16000000,
+          "codecs": [
+            "png",
+            "svg"
+          ],
+          "synctex": true,
+          "synctexPrecision": 1,
+          "regions": true,
+          "links": true,
+          "tikzFigures": true,
+          "adaptiveRendering": true,
+          "pngPatches": true,
+          "backgroundRendering": true,
+          "prepareEdit": true,
+          "requestLifecycle": true,
+          "parentWatch": true,
+          "packageProviders": [
+            "texlive",
+            "miktex",
+            "miktex-windows",
+            "tectonic"
+          ],
+          "miktexAutoInstall": true,
+          "miktexWindowsBridge": true,
+          "pngCompression": {
+            "library": "zlib-ng",
+            "version": "2.3.3",
+            "level": 2
+          }
+        },
+        "sourceDirty": true,
+        "created": "2026-11-05",
+        "purpose": "Precise source synchronization and cached inverse lookup",
+        "workerProtocol": 2,
+        "zlibNg": {
+          "version": "2.3.3",
+          "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+          "api": "native",
+          "linkage": "static",
+          "pngLevel": 2,
+          "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+        },
+        "renderer": {
+          "library": "MuPDF",
+          "linkage": "static",
+          "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+          "reusedArchives": {
+            "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+            "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+          },
+          "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+        },
+        "hostLibraries": [
+          {
+            "package": "brotli",
+            "version": "1.2.1",
+            "noticesFound": true
+          },
+          {
+            "package": "fontconfig",
+            "version": "2.18.3",
+            "noticesFound": true
+          },
+          {
+            "package": "freetype",
+            "version": "2.15.0",
+            "noticesFound": true
+          },
+          {
+            "package": "gettext",
+            "version": "1.0",
+            "noticesFound": true
+          },
+          {
+            "package": "glib",
+            "version": "2.90.1",
+            "noticesFound": true
+          },
+          {
+            "package": "graphite2",
+            "version": "1.3.15",
+            "noticesFound": true
+          },
+          {
+            "package": "harfbuzz",
+            "version": "15.1.0",
+            "noticesFound": true
+          },
+          {
+            "package": "jbig2dec",
+            "version": "0.20",
+            "noticesFound": true
+          },
+          {
+            "package": "jpeg-turbo",
+            "version": "3.2.1",
+            "noticesFound": true
+          },
+          {
+            "package": "libpng",
+            "version": "1.6.59",
+            "noticesFound": true
+          },
+          {
+            "package": "openjpeg",
+            "version": "2.5.4_1",
+            "noticesFound": true
+          },
+          {
+            "package": "pcre2",
+            "version": "10.49",
+            "noticesFound": true
+          },
+          {
+            "package": "sdl2-compat",
+            "version": "2.32.74",
+            "noticesFound": true
+          },
+          {
+            "package": "sdl3",
+            "version": "3.4.20",
+            "noticesFound": true
+          }
+        ],
+        "files": [
+          {
+            "path": "bin/texpresso",
+            "sha256": "e48da943f279a33a12a48e5ccc7ec6c1faf4dd6293189335fe3c1b1793f4a580"
+          },
+          {
+            "path": "bin/texpresso-xetex",
+            "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229"
+          }
+        ],
+        "installedBytes": 31276510,
+        "incrementalBuild": {
+          "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+          "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+          "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+          "script": "synctex-bundle-build.py",
+          "makeCommand": [
+            "make",
+            "-j4",
+            "all"
+          ]
+        },
+        "featureInstrumentation": {
+          "patchSha256": "2b3099461b756a3f2eed7a42979cf06caa960ab3f30e1f537c1e2c0ce7d8f02f",
+          "buildScriptSha256": "ac25a3f945fca550d96f66f269e41bb6ad01477227ef12367c238d6fd0a3d65b",
+          "packageVersions": {
+            "freetype2": "26.7.20",
+            "libjpeg": "3.2.1",
+            "libopenjp2": "2.5.4",
+            "libbrotlidec": "1.2.1",
+            "libbrotlienc": "1.2.1"
+          },
+          "baseManifestSha256": "cfbdc52dd427cb35680007e169faf977e102807ba54e4d28a3064030fba213c3",
+          "configSha256": "0f7830d0cde6226e2405f72e3f20d211685fe6c61b4bef59fd43d1738ed50186",
+          "workerReused": true
+        }
+      },
+      "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=32374883)\t90%; charging; 0:37 remaining present: true\n",
+      "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+      "widths": [
+        640,
+        1100
+      ],
+      "dpr": 2,
+      "repeats": 3,
+      "codecs": [
+        "png",
+        "svg"
+      ],
+      "profileFeatures": true,
+      "cases": [
+        {
+          "id": "math-paper",
+          "focusPage": 0,
+          "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+          "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b",
+          "compatibility": [
+            "T1 encoding for XeTeX legacy text fonts",
+            "pdfTeX output selection omitted for XeTeX"
+          ],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "conference-paper",
+          "focusPage": 0,
+          "sourceSha256": "daae0d0976e8f3aa2eee1fdeedad68b56bd5417ddfc8fcad16db0f98768cfe5e",
+          "originalSha256": "87a55a205b9461d0431c434a0417bebbc616706f25b45cde7fcdc2ac33d84b7a",
+          "compatibility": [
+            "pdfTeX metadata register shim",
+            "T1 encoding for XeTeX Times fonts"
+          ],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "slides",
+          "focusPage": 1,
+          "sourceSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+          "originalSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "acm-paper",
+          "focusPage": 0,
+          "sourceSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+          "originalSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "equilibrium-paper",
+          "focusPage": 0,
+          "sourceSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+          "originalSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "budget-figure",
+          "focusPage": 1,
+          "sourceSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+          "originalSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        },
+        {
+          "id": "election-figure",
+          "focusPage": 2,
+          "sourceSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+          "originalSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+          "compatibility": [],
+          "normalizePreviewNumbers": true
+        }
+      ],
+      "limitations": [
+        "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+        "Native task footprint excludes Chromium/GPU memory.",
+        "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+        "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+      ]
+    }
+  ],
+  "corpus": [
+    {
+      "id": "math-paper",
+      "focusPage": 0,
+      "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b",
+      "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+      "compatibility": [
+        "T1 encoding for XeTeX legacy text fonts",
+        "pdfTeX output selection omitted for XeTeX"
+      ],
+      "projectFingerprint": {
+        "sha256": "198131d5bd2541133ec0842d23a567790beb112586b29f391ca34073f9c405ca",
+        "files": 42,
+        "bytes": 5070207
+      },
+      "repositoryRevision": "02d48eb742127b6b467f8ca6983c296d692a9047"
+    },
+    {
+      "id": "conference-paper",
+      "focusPage": 0,
+      "originalSha256": "87a55a205b9461d0431c434a0417bebbc616706f25b45cde7fcdc2ac33d84b7a",
+      "sourceSha256": "daae0d0976e8f3aa2eee1fdeedad68b56bd5417ddfc8fcad16db0f98768cfe5e",
+      "compatibility": [
+        "pdfTeX metadata register shim",
+        "T1 encoding for XeTeX Times fonts"
+      ],
+      "projectFingerprint": {
+        "sha256": "c00115b45cfbea022e74c730c9b757516142352be6addb105078d81bffd6732e",
+        "files": 40,
+        "bytes": 2659945
+      },
+      "repositoryRevision": "392d4c96fcfd32eef64abc517298117536a1b08b"
+    },
+    {
+      "id": "slides",
+      "focusPage": 1,
+      "originalSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+      "sourceSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "a778e17ce32382f8747d46938bc81b1986c24189b7f5a3a0ff9d0d3bcb0bbb4a",
+        "files": 51,
+        "bytes": 12071591
+      },
+      "repositoryRevision": "a9b86d97e9e98aa91624014ab8462b7812a24eb6"
+    },
+    {
+      "id": "graphic-slides",
+      "focusPage": 20,
+      "originalSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+      "sourceSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "effc357481e746866e78159ebbfd1b921388ffcc6a062c2520a23a8911a2cc05",
+        "files": 105,
+        "bytes": 16473552
+      },
+      "repositoryRevision": "69882dbd677c56e8a4a6820bfb140eae584b22af"
+    },
+    {
+      "id": "acm-paper",
+      "focusPage": 0,
+      "originalSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+      "sourceSha256": "985015c612e97b5626e79b304b0efd4592dfb21f22be002b864a0941cb8ebcdd",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "9e3bdb424e3c4a405991546b03852c151db095e423f810098204423178ee20ac",
+        "files": 45,
+        "bytes": 2525807
+      },
+      "repositoryRevision": "bd16cd28ed6c0aa70ed9b5c58c2c43a2d45203e2"
+    },
+    {
+      "id": "equilibrium-paper",
+      "focusPage": 0,
+      "originalSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+      "sourceSha256": "ce9aa0dd00172d2048e6f854df8fe1f2aed553224706e030245c200e8b0bb75e",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "60a6a69bd23706bf2250f2723dbe45f50d58e60981efcf89983c07a7c99489b7",
+        "files": 104,
+        "bytes": 24048159
+      },
+      "repositoryRevision": "a47d94f37bcf4d9d2c23b55f9de9f36aeabc8d88"
+    },
+    {
+      "id": "budget-figure",
+      "focusPage": 1,
+      "originalSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+      "sourceSha256": "080422b3de76c74cc5c71018e97d45f8f4db889dab11669e9f2737b67535e192",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "28a5b7cf2d66c12bda8b45fe0cc4100275ca2de083dad525b694a38b7a4cc7cc",
+        "files": 7,
+        "bytes": 456742
+      },
+      "repositoryRevision": "a7ef2f1db6bc875d724cf7d9e0e0957cd2947f6c"
+    },
+    {
+      "id": "election-figure",
+      "focusPage": 2,
+      "originalSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+      "sourceSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+      "compatibility": [],
+      "projectFingerprint": {
+        "sha256": "cc03efb5f60cd751bf1d0369c67710f438bbf0bdde9211f599ca437f8be88376",
+        "files": 11,
+        "bytes": 931909
+      },
+      "repositoryRevision": "c21cbefb3c16403dcafc54838976d9ef0b7455d8"
+    }
+  ],
+  "validation": {
+    "nodeUnitTests": 241,
+    "modelUnitTests": 5,
+    "lint": "passed, no warnings",
+    "nativeFeatureCounts": "passed",
+    "nativePayloadAndCache": "PNG/SVG byte-identical with features off/on; cache reused across resize and invalidated after source edits",
+    "sanitizedReplay": "identical fits, held-out decisions and summaries"
+  },
+  "analysisSourceHashes": {
+    "scripts/profiling/render-cost-model.py": "761261d3cc053f50b05f3f71761df7eb8b9369818b820a47217595f58defa8bf",
+    "scripts/profiling/test_render_cost_model.py": "309b73a06b91b8366c4b2622e25bfe591340e4b9f1b55c71010ab368adbe9f57",
+    "scripts/profiling/test-feature-fidelity.cjs": "9a8904bc56a52acba07aa9edbe7912e859d1aefe140eac4e4be82c4f10ad3c89",
+    "scripts/profiling/build-feature-frontend.py": "b0f6ef7bf51968b54d597d04847b46550b4421f0a171b153ebc878fb23fe4541"
+  },
+  "rawSessionsSha256": "b6f4570239c77cbcdc67b5c55a7fb71112f76b728d78d573656675661a630d21",
+  "observationsSha256": "4ccb41eabc66153e9e0ab1d1eeb914436f5dacd4825e560df43f25783ae205ec",
+  "excludedMeasuredSessions": [
+    {
+      "key": "acm-paper-1100-dpr2-png-1",
+      "reason": "webview became hidden",
+      "visibility": [
+        {
+          "at": 3410.199999988079,
+          "state": "hidden"
+        },
+        {
+          "at": 4411.199999988079,
+          "state": "visible"
+        }
+      ]
+    },
+    {
+      "key": "acm-paper-1100-dpr1-png-1",
+      "reason": "webview became hidden",
+      "visibility": [
+        {
+          "at": 7498.79999999702,
+          "state": "hidden"
+        },
+        {
+          "at": 8139.4000000059605,
+          "state": "visible"
+        },
+        {
+          "at": 8752.10000000894,
+          "state": "hidden"
+        },
+        {
+          "at": 9753.29999999702,
+          "state": "visible"
+        }
+      ]
+    }
+  ],
+  "nativePatchMatchesCommit": true,
+  "postMeasurementBuilderChange": "Successful frontend builds now remove copied source/object/test intermediates after saving the profiling runtime. The recorded runtime manifest retains the exact build-script hash used for this study.",
+  "cleanup": {
+    "beforeMiB": 188.03,
+    "retainedMiB": 3.07,
+    "removedMiB": 184.96
+  }
+}

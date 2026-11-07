@@ -1,0 +1,4989 @@
+{
+  "schema": 1,
+  "created": "2026-11-06T20:53:28.374Z",
+  "sessions": 21,
+  "measured": 14,
+  "warmups": 7,
+  "quantiles": "Nearest rank. Warmed edits within one session are correlated; session pairs, not keys, are experimental repetitions.",
+  "cells": [
+    {
+      "key": "conference-paper/640/2/auto",
+      "sessions": 2,
+      "keys": [
+        "conference-paper-640-dpr2-auto-1",
+        "conference-paper-640-dpr2-auto-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 43.599999994039536,
+        "p95": 53.79999999701977,
+        "max": 53.79999999701977
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 692.9000000059605,
+        "p95": 768.7999999970198,
+        "max": 768.7999999970198
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 49,
+        "p95": 66.6000000089407,
+        "max": 66.6000000089407
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.600000008940697,
+        "p95": 4.700000002980232,
+        "max": 4.700000002980232
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "conference-paper-640-dpr2-auto-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 43.599999994039536,
+            "p95": 53.79999999701977,
+            "max": 53.79999999701977
+          },
+          "burstMs": 49,
+          "load": [
+            9.8447265625,
+            10.509765625,
+            7.681640625
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.196
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.5,
+              "exportMs": 3.408
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 2.2999999970197678,
+              "exportMs": 2.567
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.1000000089406967,
+              "exportMs": 3.358
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.300000011920929,
+              "exportMs": 2.076
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1,
+              "exportMs": 2.455
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 2.357
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 2.708
+            }
+          ],
+          "zeroLimitAutoRequests": 43
+        },
+        {
+          "repeat": 2,
+          "key": "conference-paper-640-dpr2-auto-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 42.80000001192093,
+            "p95": 50.79999999701977,
+            "max": 50.79999999701977
+          },
+          "burstMs": 66.6000000089407,
+          "load": [
+            7.55029296875,
+            9.63232421875,
+            7.58251953125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.214
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.300000011920929,
+              "exportMs": 2.864
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 2.326
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.4000000059604645,
+              "exportMs": 2.221
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.157
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.4000000059604645,
+              "exportMs": 2.198
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.362
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.836
+            }
+          ],
+          "zeroLimitAutoRequests": 43
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 906.4000000059605,
+            "p95": 990.4000000059605,
+            "max": 990.4000000059605
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 10.599999994039536,
+            "p95": 13.400000005960464,
+            "max": 13.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 10.599999994039536,
+            "p95": 13.400000005960464,
+            "max": 13.400000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 10.599999994039536,
+            "p95": 13.400000005960464,
+            "max": 13.400000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 10.400000005960464,
+            "p95": 15.799999997019768,
+            "max": 15.799999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 31.400000005960464,
+            "p95": 37.20000000298023,
+            "max": 37.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 31.400000005960464,
+            "p95": 37.20000000298023,
+            "max": 37.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.799999997019768,
+            "p95": 13.600000008940697,
+            "max": 13.600000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 180.70000000298023,
+            "p95": 184.5,
+            "max": 184.5
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 180.70000000298023,
+            "p95": 184.5,
+            "max": 184.5
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11.100000008940697,
+            "p95": 11.900000005960464,
+            "max": 11.900000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 156,
+            "p95": 156.59999999403954,
+            "max": 156.59999999403954
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 156,
+            "p95": 156.59999999403954,
+            "max": 156.59999999403954
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 9.200000002980232,
+            "p95": 12.200000002980232,
+            "max": 12.200000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 163.79999999701977,
+            "p95": 176.79999999701977,
+            "max": 176.79999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 163.79999999701977,
+            "p95": 176.79999999701977,
+            "max": 176.79999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.399999991059303,
+            "p95": 10,
+            "max": 10
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 154.79999999701977,
+            "p95": 158.70000000298023,
+            "max": 158.70000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 154.79999999701977,
+            "p95": 158.70000000298023,
+            "max": 158.70000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7,
+            "p95": 8.200000002980232,
+            "max": 8.200000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 7,
+            "p95": 8.200000002980232,
+            "max": 8.200000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 7,
+            "p95": 8.200000002980232,
+            "max": 8.200000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 29,
+            "p95": 34.79999999701977,
+            "max": 34.79999999701977
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 29,
+            "p95": 34.79999999701977,
+            "max": 34.79999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 29,
+            "p95": 34.79999999701977,
+            "max": 34.79999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 1.9000000059604645,
+            "p95": 6.5,
+            "max": 6.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 6.5,
+            "p95": 13.200000002980232,
+            "max": 13.200000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 6.5,
+            "p95": 13.200000002980232,
+            "max": 13.200000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 52.09515380859375,
+        "p95": 58.56427001953125,
+        "max": 58.56427001953125
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 482.0625,
+        "p95": 497.909833,
+        "max": 497.909833
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 31.954106330871582,
+        "p95": 31.954106330871582,
+        "max": 31.954106330871582
+      },
+      "numberBridge": {
+        "changed": 0,
+        "headers": 74,
+        "meanHeaderMs": 0.034203770271356126,
+        "maxHeaderMs": 0.20708300000114832
+      }
+    },
+    {
+      "key": "conference-paper/640/2/png",
+      "sessions": 2,
+      "keys": [
+        "conference-paper-640-dpr2-png-1",
+        "conference-paper-640-dpr2-png-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 46.099999994039536,
+        "p95": 70.59999999403954,
+        "max": 70.59999999403954
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 707.7000000029802,
+        "p95": 726.8000000119209,
+        "max": 726.8000000119209
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 42.69999998807907,
+        "p95": 43.900000005960464,
+        "max": 43.900000005960464
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.5,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "conference-paper-640-dpr2-png-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 44.400000005960464,
+            "p95": 70.59999999403954,
+            "max": 70.59999999403954
+          },
+          "burstMs": 43.900000005960464,
+          "load": [
+            8.564453125,
+            10.212890625,
+            7.60888671875
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 2.899
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.5,
+              "exportMs": 3.114
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.300000011920929,
+              "exportMs": 3.466
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.699999988079071,
+              "exportMs": 2.278
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.3
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.379
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.1000000089406967,
+              "exportMs": 2.913
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 2.31
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        },
+        {
+          "repeat": 2,
+          "key": "conference-paper-640-dpr2-png-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 47,
+            "p95": 56.20000000298023,
+            "max": 56.20000000298023
+          },
+          "burstMs": 42.69999998807907,
+          "load": [
+            8.18798828125,
+            9.82470703125,
+            7.62548828125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.3999999910593033,
+              "exportMs": 2.655
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.6000000089406967,
+              "exportMs": 3.593
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 2.593
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 2.8999999910593033,
+              "exportMs": 2.16
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.300000011920929,
+              "exportMs": 2.624
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.0999999940395355,
+              "exportMs": 2.228
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.474
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 2.359
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 849.7000000029802,
+            "p95": 898.9000000059605,
+            "max": 898.9000000059605
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11.700000002980232,
+            "p95": 14.699999988079071,
+            "max": 14.699999988079071
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 11.700000002980232,
+            "p95": 14.699999988079071,
+            "max": 14.699999988079071
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 11.700000002980232,
+            "p95": 14.699999988079071,
+            "max": 14.699999988079071
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.200000002980232,
+            "p95": 11,
+            "max": 11
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 30.599999994039536,
+            "p95": 32.79999999701977,
+            "max": 32.79999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 30.599999994039536,
+            "p95": 32.79999999701977,
+            "max": 32.79999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 6.4000000059604645,
+            "p95": 9.5,
+            "max": 9.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 176.79999999701977,
+            "p95": 190.09999999403954,
+            "max": 190.09999999403954
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 176.79999999701977,
+            "p95": 190.09999999403954,
+            "max": 190.09999999403954
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11,
+            "p95": 11.5,
+            "max": 11.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 145.09999999403954,
+            "p95": 165.20000000298023,
+            "max": 165.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 145.09999999403954,
+            "p95": 165.20000000298023,
+            "max": 165.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 6.5999999940395355,
+            "p95": 11.100000008940697,
+            "max": 11.100000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 150.09999999403954,
+            "p95": 165.70000000298023,
+            "max": 165.70000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 150.09999999403954,
+            "p95": 165.70000000298023,
+            "max": 165.70000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.299999997019768,
+            "p95": 21.700000002980232,
+            "max": 21.700000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 150.5,
+            "p95": 177.3999999910593,
+            "max": 177.3999999910593
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 150.5,
+            "p95": 177.3999999910593,
+            "max": 177.3999999910593
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 6.9000000059604645,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 6.9000000059604645,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 6.9000000059604645,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 28.5,
+            "p95": 44.5,
+            "max": 44.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 28.5,
+            "p95": 44.5,
+            "max": 44.5
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 28.5,
+            "p95": 44.5,
+            "max": 44.5
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 6.5,
+            "p95": 17.19999998807907,
+            "max": 17.19999998807907
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 6.5,
+            "p95": 17.19999998807907,
+            "max": 17.19999998807907
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 6.5,
+            "p95": 17.19999998807907,
+            "max": 17.19999998807907
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 58.01708984375,
+        "p95": 59.56396484375,
+        "max": 59.56396484375
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 409.174958,
+        "p95": 497.731583,
+        "max": 497.731583
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 31.954106330871582,
+        "p95": 31.954106330871582,
+        "max": 31.954106330871582
+      },
+      "numberBridge": {
+        "changed": 0,
+        "headers": 70,
+        "meanHeaderMs": 0.02856902857227916,
+        "maxHeaderMs": 0.15587499999674037
+      }
+    },
+    {
+      "key": "math-paper/640/2/auto",
+      "sessions": 2,
+      "keys": [
+        "math-paper-640-dpr2-auto-1",
+        "math-paper-640-dpr2-auto-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 33.70000000298023,
+        "p95": 40.79999999701977,
+        "max": 40.79999999701977
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 688.7000000029802,
+        "p95": 713.1000000089407,
+        "max": 713.1000000089407
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 34.1000000089407,
+        "p95": 34.400000005960464,
+        "max": 34.400000005960464
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.5,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "math-paper-640-dpr2-auto-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 35.30000001192093,
+            "p95": 40.79999999701977,
+            "max": 40.79999999701977
+          },
+          "burstMs": 34.400000005960464,
+          "load": [
+            8.52197265625,
+            10.14111328125,
+            7.61328125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2,
+              "exportMs": 2.307
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.461
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.6000000089406967,
+              "exportMs": 2.488
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.5,
+              "exportMs": 2.045
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.292
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.507
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.356
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.644
+            }
+          ],
+          "zeroLimitAutoRequests": 1
+        },
+        {
+          "repeat": 2,
+          "key": "math-paper-640-dpr2-auto-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 33.599999994039536,
+            "p95": 35.20000000298023,
+            "max": 35.20000000298023
+          },
+          "burstMs": 34.1000000089407,
+          "load": [
+            6.06982421875,
+            9.154296875,
+            7.4580078125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.1000000089406967,
+              "exportMs": 1.984
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2,
+              "exportMs": 2.614
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.269
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.3999999910593033,
+              "exportMs": 2.529
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.8999999910593033,
+              "exportMs": 2.657
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.800000011920929,
+              "exportMs": 2.433
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.609
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.434
+            }
+          ],
+          "zeroLimitAutoRequests": 1
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 830,
+            "p95": 882.3999999910593,
+            "max": 882.3999999910593
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 12.799999997019768,
+            "max": 12.799999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 12.799999997019768,
+            "max": 12.799999997019768
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 12.799999997019768,
+            "max": 12.799999997019768
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 13.599999994039536,
+            "p95": 14.099999994039536,
+            "max": 14.099999994039536
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 13.599999994039536,
+            "p95": 14.099999994039536,
+            "max": 14.099999994039536
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 13.599999994039536,
+            "p95": 14.099999994039536,
+            "max": 14.099999994039536
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.375,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.375,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 28.900000005960464,
+            "p95": 29.399999991059303,
+            "max": 29.399999991059303
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 28.900000005960464,
+            "p95": 29.399999991059303,
+            "max": 29.399999991059303
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 28.900000005960464,
+            "p95": 29.399999991059303,
+            "max": 29.399999991059303
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.3,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.3,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 17.900000005960464,
+            "p95": 21,
+            "max": 21
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 17.900000005960464,
+            "p95": 21,
+            "max": 21
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 191.90000000596046,
+            "p95": 194.5,
+            "max": 194.5
+          },
+          "sharpnessRegressions": 2,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 12,
+            "p95": 16.900000005960464,
+            "max": 16.900000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 160.79999999701977,
+            "p95": 166.20000000298023,
+            "max": 166.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 160.70000000298023,
+            "p95": 166.20000000298023,
+            "max": 166.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.5999999940395355,
+            "p95": 11.5,
+            "max": 11.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 152.59999999403954,
+            "p95": 153.40000000596046,
+            "max": 153.40000000596046
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 152.59999999403954,
+            "p95": 153.40000000596046,
+            "max": 153.40000000596046
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 68.70000000298023,
+            "max": 68.70000000298023
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 68.70000000298023,
+            "max": 68.70000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 68.70000000298023,
+            "max": 68.70000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 30.400000005960464,
+            "p95": 36.79999999701977,
+            "max": 36.79999999701977
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 30.400000005960464,
+            "p95": 36.79999999701977,
+            "max": 36.79999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 30.400000005960464,
+            "p95": 36.79999999701977,
+            "max": 36.79999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 9.200000002980232,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 9.200000002980232,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 9.200000002980232,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 55.62646484375,
+        "p95": 57.73590087890625,
+        "max": 57.73590087890625
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 391.757625,
+        "p95": 403.139625,
+        "max": 403.139625
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 28.434694290161133,
+        "p95": 28.434694290161133,
+        "max": 28.434694290161133
+      },
+      "numberBridge": {
+        "changed": 0,
+        "headers": 66,
+        "meanHeaderMs": 0.021773363637983108,
+        "maxHeaderMs": 0.07495800001197495
+      }
+    },
+    {
+      "key": "math-paper/640/2/png",
+      "sessions": 2,
+      "keys": [
+        "math-paper-640-dpr2-png-1",
+        "math-paper-640-dpr2-png-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 36.099999994039536,
+        "p95": 53,
+        "max": 53
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 679.5,
+        "p95": 698.0999999940395,
+        "max": 698.0999999940395
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 34.6000000089407,
+        "p95": 34.6000000089407,
+        "max": 34.6000000089407
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.299999997019768,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "math-paper-640-dpr2-png-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 30.299999997019768,
+            "p95": 48.099999994039536,
+            "max": 48.099999994039536
+          },
+          "burstMs": 34.6000000089407,
+          "load": [
+            8.27490234375,
+            10.03662109375,
+            7.60546875
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.5,
+              "exportMs": 2.136
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.0999999940395355,
+              "exportMs": 2.253
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.1000000089406967,
+              "exportMs": 2.747
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 2,
+              "exportMs": 2.47
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 2.528
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 3.066
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 2.259
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 1.967
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        },
+        {
+          "repeat": 2,
+          "key": "math-paper-640-dpr2-png-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 36.400000005960464,
+            "p95": 53,
+            "max": 53
+          },
+          "burstMs": 34.6000000089407,
+          "load": [
+            6.548828125,
+            9.34765625,
+            7.50537109375
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.33
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.3999999910593033,
+              "exportMs": 2.527
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.4000000059604645,
+              "exportMs": 2.46
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.442
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.4000000059604645,
+              "exportMs": 2.66
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 2.461
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.5,
+              "exportMs": 2.89
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 2.298
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 851.6000000089407,
+            "p95": 856.3000000119209,
+            "max": 856.3000000119209
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 12.099999994039536,
+            "max": 12.099999994039536
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 12.099999994039536,
+            "max": 12.099999994039536
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 12.099999994039536,
+            "max": 12.099999994039536
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 10.799999997019768,
+            "p95": 14.899999991059303,
+            "max": 14.899999991059303
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 32.1000000089407,
+            "p95": 36,
+            "max": 36
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 32.1000000089407,
+            "p95": 36,
+            "max": 36
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 9.299999997019768,
+            "p95": 12,
+            "max": 12
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 174.70000000298023,
+            "p95": 204.20000000298023,
+            "max": 204.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 174.70000000298023,
+            "p95": 204.20000000298023,
+            "max": 204.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.8612745098039216,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.200000002980232,
+            "p95": 8.5,
+            "max": 8.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 162.70000000298023,
+            "p95": 163.5,
+            "max": 163.5
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 162.70000000298023,
+            "p95": 163.40000000596046,
+            "max": 163.40000000596046
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.5999999940395355,
+            "p95": 14.5,
+            "max": 14.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 147.6000000089407,
+            "p95": 160.59999999403954,
+            "max": 160.59999999403954
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 147.6000000089407,
+            "p95": 160.59999999403954,
+            "max": 160.59999999403954
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.600000008940697,
+            "p95": 10.299999997019768,
+            "max": 10.299999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 150.90000000596046,
+            "p95": 162.59999999403954,
+            "max": 162.59999999403954
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 150.90000000596046,
+            "p95": 162.59999999403954,
+            "max": 162.59999999403954
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11,
+            "p95": 15.200000002980232,
+            "max": 15.200000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 11,
+            "p95": 15.200000002980232,
+            "max": 15.200000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 11,
+            "p95": 15.200000002980232,
+            "max": 15.200000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 42.70000000298023,
+            "p95": 45.20000000298023,
+            "max": 45.20000000298023
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 42.70000000298023,
+            "p95": 45.20000000298023,
+            "max": 45.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 42.70000000298023,
+            "p95": 45.20000000298023,
+            "max": 45.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 12.800000011920929,
+            "p95": 16.700000002980232,
+            "max": 16.700000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 12.800000011920929,
+            "p95": 16.700000002980232,
+            "max": 16.700000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 12.800000011920929,
+            "p95": 16.700000002980232,
+            "max": 16.700000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 55.0950927734375,
+        "p95": 56.2825927734375,
+        "max": 56.2825927734375
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 403.94175,
+        "p95": 426.640083,
+        "max": 426.640083
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 31.846590995788574,
+        "p95": 31.846590995788574,
+        "max": 31.846590995788574
+      },
+      "numberBridge": {
+        "changed": 0,
+        "headers": 70,
+        "meanHeaderMs": 0.021320242855706186,
+        "maxHeaderMs": 0.05637500001466833
+      }
+    },
+    {
+      "key": "slides/640/2/auto",
+      "sessions": 2,
+      "keys": [
+        "slides-640-dpr2-auto-1",
+        "slides-640-dpr2-auto-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 42.1000000089407,
+        "p95": 51.5,
+        "max": 51.5
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 704.6000000089407,
+        "p95": 732.3999999910593,
+        "max": 732.3999999910593
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 38.20000000298023,
+        "p95": 38.8999999910593,
+        "max": 38.8999999910593
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.4000000059604645,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "slides-640-dpr2-auto-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 43.5,
+            "p95": 51.5,
+            "max": 51.5
+          },
+          "burstMs": 38.8999999910593,
+          "load": [
+            7.1494140625,
+            9.73828125,
+            7.52783203125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 0.685
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.9000000059604645,
+              "exportMs": 0.601
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.709
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 2.778
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.628
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.699999988079071,
+              "exportMs": 0.554
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1,
+              "exportMs": 0.619
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.799
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        },
+        {
+          "repeat": 2,
+          "key": "slides-640-dpr2-auto-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 41.19999998807907,
+            "p95": 43.79999999701977,
+            "max": 43.79999999701977
+          },
+          "burstMs": 38.20000000298023,
+          "load": [
+            4.90234375,
+            8.689453125,
+            7.330078125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 0.587
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.78
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.62
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.800000011920929,
+              "exportMs": 0.517
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7000000029802322,
+              "exportMs": 0.703
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.800000011920929,
+              "exportMs": 0.578
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7999999970197678,
+              "exportMs": 0.616
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 0.7000000029802322,
+              "exportMs": 0.584
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 803.4000000059605,
+            "p95": 861,
+            "max": 861
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 39.599999994039536,
+            "p95": 48.20000000298023,
+            "max": 48.20000000298023
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 39.599999994039536,
+            "p95": 48.20000000298023,
+            "max": 48.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 39.599999994039536,
+            "p95": 48.20000000298023,
+            "max": 48.20000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 12.200000002980232,
+            "p95": 12.900000005960464,
+            "max": 12.900000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 12.200000002980232,
+            "p95": 12.900000005960464,
+            "max": 12.900000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 12.200000002980232,
+            "p95": 12.900000005960464,
+            "max": 12.900000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.37517562133617555,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.37517562133617555,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 6,
+            "p95": 12.200000002980232,
+            "max": 12.200000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 6,
+            "p95": 12.200000002980232,
+            "max": 12.200000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 6,
+            "p95": 12.200000002980232,
+            "max": 12.200000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.30014049706894047,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.30014049706894047,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 14.400000005960464,
+            "p95": 16.100000008940697,
+            "max": 16.100000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 14.400000005960464,
+            "p95": 16.100000008940697,
+            "max": 16.100000008940697
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 14.400000005960464,
+            "p95": 16.100000008940697,
+            "max": 16.100000008940697
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.900000005960464,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 8.900000005960464,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 8.900000005960464,
+            "p95": 12.400000005960464,
+            "max": 12.400000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 9.100000008940697,
+            "p95": 10.400000005960464,
+            "max": 10.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 9.100000008940697,
+            "p95": 10.400000005960464,
+            "max": 10.400000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 9.100000008940697,
+            "p95": 10.400000005960464,
+            "max": 10.400000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.187586674660417,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 10.799999997019768,
+            "p95": 17.299999997019768,
+            "max": 17.299999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 10.799999997019768,
+            "p95": 17.299999997019768,
+            "max": 17.299999997019768
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 10.799999997019768,
+            "p95": 17.299999997019768,
+            "max": 17.299999997019768
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 8.700000002980232,
+            "p95": 12,
+            "max": 12
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 8.700000002980232,
+            "p95": 12,
+            "max": 12
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 8.700000002980232,
+            "p95": 12,
+            "max": 12
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.700000002980232,
+            "p95": 11.100000008940697,
+            "max": 11.100000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 7.700000002980232,
+            "p95": 11.100000008940697,
+            "max": 11.100000008940697
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 7.700000002980232,
+            "p95": 11.100000008940697,
+            "max": 11.100000008940697
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.3872,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 30.76708984375,
+        "p95": 30.97021484375,
+        "max": 30.97021484375
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 452.725666,
+        "p95": 471.635541,
+        "max": 471.635541
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 31.99279022216797,
+        "p95": 31.99279022216797,
+        "max": 31.99279022216797
+      },
+      "numberBridge": {
+        "changed": 200,
+        "headers": 200,
+        "meanHeaderMs": 0.016992904999860912,
+        "maxHeaderMs": 0.049624999999650754
+      }
+    },
+    {
+      "key": "slides/640/2/png",
+      "sessions": 2,
+      "keys": [
+        "slides-640-dpr2-png-1",
+        "slides-640-dpr2-png-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 44.5,
+        "p95": 59.8999999910593,
+        "max": 59.8999999910593
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 707.2000000029802,
+        "p95": 714.5,
+        "max": 714.5
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 39.79999999701977,
+        "p95": 45,
+        "max": 45
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.4000000059604645,
+        "p95": 4.600000008940697,
+        "max": 4.600000008940697
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "slides-640-dpr2-png-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 45.5,
+            "p95": 54.29999999701977,
+            "max": 54.29999999701977
+          },
+          "burstMs": 39.79999999701977,
+          "load": [
+            9.11181640625,
+            10.07470703125,
+            7.6728515625
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.4000000059604645,
+              "exportMs": 1.654
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 1.479
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.9000000059604645,
+              "exportMs": 1.472
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 1.436
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 1.264
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2000000029802322,
+              "exportMs": 1.286
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.0999999940395355,
+              "exportMs": 1.353
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.0999999940395355,
+              "exportMs": 1.256
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        },
+        {
+          "repeat": 2,
+          "key": "slides-640-dpr2-png-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 41.6000000089407,
+            "p95": 59.8999999910593,
+            "max": 59.8999999910593
+          },
+          "burstMs": 45,
+          "load": [
+            5.51708984375,
+            8.9345703125,
+            7.3994140625
+          ],
+          "editFrames": [
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 3.1000000089406967,
+              "exportMs": 1.686
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.199999988079071,
+              "exportMs": 1.485
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.1000000089406967,
+              "exportMs": 1.359
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.3999999910593033,
+              "exportMs": 1.363
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.1000000089406967,
+              "exportMs": 1.365
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.2999999970197678,
+              "exportMs": 1.26
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1,
+              "exportMs": 1.444
+            },
+            {
+              "mime": "image/png",
+              "svgPatch": false,
+              "pngPatch": true,
+              "renderMs": 1.0999999940395355,
+              "exportMs": 1.597
+            }
+          ],
+          "zeroLimitAutoRequests": 0
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 830,
+            "p95": 859.7999999970198,
+            "max": 859.7999999970198
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 38.3999999910593,
+            "p95": 49.1000000089407,
+            "max": 49.1000000089407
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 38.3999999910593,
+            "p95": 49.1000000089407,
+            "max": 49.1000000089407
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 38.3999999910593,
+            "p95": 49.1000000089407,
+            "max": 49.1000000089407
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.699999988079071,
+            "p95": 14.5,
+            "max": 14.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 25.5,
+            "p95": 29.69999998807907,
+            "max": 29.69999998807907
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 25.399999991059303,
+            "p95": 29.69999998807907,
+            "max": 29.69999998807907
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1.0007267089772782,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1.0007267089772782,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11.599999994039536,
+            "p95": 13.799999997019768,
+            "max": 13.799999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 26.599999994039536,
+            "p95": 30,
+            "max": 30
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 26.599999994039536,
+            "p95": 30,
+            "max": 30
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1.0002616152318202,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1.0002616152318202,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 9.099999994039536,
+            "p95": 11,
+            "max": 11
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 171.90000000596046,
+            "p95": 176.29999999701977,
+            "max": 176.29999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 171.90000000596046,
+            "p95": 176.29999999701977,
+            "max": 176.29999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.8437524601977847,
+              "detail": 1.000625006009673,
+              "detailCovers": true
+            },
+            {
+              "base": 0.8437524601977847,
+              "detail": 1.000625006009673,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 16.200000002980232,
+            "p95": 17.600000008940697,
+            "max": 17.600000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 149.70000000298023,
+            "p95": 152.20000000298023,
+            "max": 152.20000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 149.6000000089407,
+            "p95": 152.1000000089407,
+            "max": 152.1000000089407
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.8437524601977847,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.8437524601977847,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.5,
+            "p95": 9.700000002980232,
+            "max": 9.700000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 33,
+            "p95": 43.70000000298023,
+            "max": 43.70000000298023
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 33,
+            "p95": 43.70000000298023,
+            "max": 43.70000000298023
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1.0003330729308602,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1.0003330729308602,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.399999991059303,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 5.399999991059303,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 5.399999991059303,
+            "p95": 9.799999997019768,
+            "max": 9.799999997019768
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 12.100000008940697,
+            "p95": 18.200000002980232,
+            "max": 18.200000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 12.100000008940697,
+            "p95": 18.200000002980232,
+            "max": 18.200000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 12.100000008940697,
+            "p95": 18.200000002980232,
+            "max": 18.200000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 11.400000005960464,
+            "p95": 14.600000008940697,
+            "max": 14.600000008940697
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 11.400000005960464,
+            "p95": 14.600000008940697,
+            "max": 14.600000008940697
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 11.400000005960464,
+            "p95": 14.600000008940697,
+            "max": 14.600000008940697
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 1,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 45.07958984375,
+        "p95": 45.47027587890625,
+        "max": 45.47027587890625
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 523.507416,
+        "p95": 558.98275,
+        "max": 558.98275
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 30.616453170776367,
+        "p95": 30.616453170776367,
+        "max": 30.616453170776367
+      },
+      "numberBridge": {
+        "changed": 223,
+        "headers": 227,
+        "meanHeaderMs": 0.01762884581489242,
+        "maxHeaderMs": 0.053500000009080395
+      }
+    },
+    {
+      "key": "conference-paper/640/2/svg",
+      "sessions": 2,
+      "keys": [
+        "conference-paper-640-dpr2-svg-1",
+        "conference-paper-640-dpr2-svg-2"
+      ],
+      "pacedMs": {
+        "n": 16,
+        "p50": 47.20000000298023,
+        "p95": 51.5,
+        "max": 51.5
+      },
+      "coldMs": {
+        "n": 2,
+        "p50": 696.7999999970198,
+        "p95": 700.8999999910593,
+        "max": 700.8999999910593
+      },
+      "burstMs": {
+        "n": 2,
+        "p50": 44.5,
+        "p95": 49.6000000089407,
+        "max": 49.6000000089407
+      },
+      "cadenceRejected": 0,
+      "maximumLatenessMs": {
+        "n": 2,
+        "p50": 4.200000002980232,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "recoveries": [],
+      "hidden": 0,
+      "repetitions": [
+        {
+          "repeat": 1,
+          "key": "conference-paper-640-dpr2-svg-1",
+          "pacedMs": {
+            "n": 8,
+            "p50": 48,
+            "p95": 51.5,
+            "max": 51.5
+          },
+          "burstMs": 49.6000000089407,
+          "load": [
+            6.658203125,
+            8.43115234375,
+            7.361328125
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.2999999970197678,
+              "exportMs": 2.758
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 4.0999999940395355,
+              "exportMs": 2.954
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 3.2000000029802322,
+              "exportMs": 3.038
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7000000029802322,
+              "exportMs": 2.935
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.8999999910593033,
+              "exportMs": 2.869
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.846
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.9000000059604645,
+              "exportMs": 2.853
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.800000011920929,
+              "exportMs": 2.82
+            }
+          ],
+          "zeroLimitAutoRequests": 1
+        },
+        {
+          "repeat": 2,
+          "key": "conference-paper-640-dpr2-svg-2",
+          "pacedMs": {
+            "n": 8,
+            "p50": 46.400000005960464,
+            "p95": 49.599999994039536,
+            "max": 49.599999994039536
+          },
+          "burstMs": 44.5,
+          "load": [
+            6.23583984375,
+            8.259765625,
+            7.31884765625
+          ],
+          "editFrames": [
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.2000000029802322,
+              "exportMs": 2.875
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 4,
+              "exportMs": 3.017
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 3.2000000029802322,
+              "exportMs": 2.943
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.678
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 3.123
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 1.7999999970197678,
+              "exportMs": 2.988
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.8999999910593033,
+              "exportMs": 2.815
+            },
+            {
+              "mime": "image/svg+xml",
+              "svgPatch": true,
+              "pngPatch": false,
+              "renderMs": 2.7999999970197678,
+              "exportMs": 2.956
+            }
+          ],
+          "zeroLimitAutoRequests": 1
+        }
+      ],
+      "operations": {
+        "initial": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 947.6999999880791,
+            "p95": 994.2999999970198,
+            "max": 994.2999999970198
+          },
+          "sharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "durableSharpMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {},
+            {}
+          ]
+        },
+        "focus": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 9.099999994039536,
+            "max": 9.099999994039536
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 9.099999994039536,
+            "max": 9.099999994039536
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 7.600000008940697,
+            "p95": 9.099999994039536,
+            "max": 9.099999994039536
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-100": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 27.399999991059303,
+            "p95": 27.700000002980232,
+            "max": 27.700000002980232
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 27.399999991059303,
+            "p95": 27.700000002980232,
+            "max": 27.700000002980232
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 27.399999991059303,
+            "p95": 27.700000002980232,
+            "max": 27.700000002980232
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.375,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.375,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-125": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 19,
+            "p95": 29.400000005960464,
+            "max": 29.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 19,
+            "p95": 29.400000005960464,
+            "max": 29.400000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 19,
+            "p95": 29.400000005960464,
+            "max": 29.400000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.3,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.3,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "zoom-200": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 14.900000005960464,
+            "p95": 24.900000005960464,
+            "max": 24.900000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 14.900000005960464,
+            "p95": 24.900000005960464,
+            "max": 24.900000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 202.20000000298023,
+            "p95": 204.20000000298023,
+            "max": 204.20000000298023
+          },
+          "sharpnessRegressions": 2,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-right": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 12.399999991059303,
+            "p95": 15.400000005960464,
+            "max": 15.400000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 167.5,
+            "p95": 167.79999999701977,
+            "max": 167.79999999701977
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 167.5,
+            "p95": 167.79999999701977,
+            "max": 167.79999999701977
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "pan-down": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 5.799999997019768,
+            "p95": 8.5,
+            "max": 8.5
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 148.79999999701977,
+            "p95": 175.90000000596046,
+            "max": 175.90000000596046
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 148.79999999701977,
+            "p95": 175.90000000596046,
+            "max": 175.90000000596046
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/png",
+            "image/png"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            },
+            {
+              "base": 0.538296568627451,
+              "detail": 1,
+              "detailCovers": true
+            }
+          ]
+        },
+        "fit-width": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 7.5999999940395355,
+            "p95": 64,
+            "max": 64
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 7.5999999940395355,
+            "p95": 64,
+            "max": 64
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 7.5999999940395355,
+            "p95": 64,
+            "max": 64
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "next-page": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 17.200000002980232,
+            "p95": 17.900000005960464,
+            "max": 17.900000005960464
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 17.200000002980232,
+            "p95": 17.900000005960464,
+            "max": 17.900000005960464
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 17.200000002980232,
+            "p95": 17.900000005960464,
+            "max": 17.900000005960464
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        },
+        "cached-return": {
+          "firstVisualMs": {
+            "n": 2,
+            "p50": 13.399999991059303,
+            "p95": 30.899999991059303,
+            "max": 30.899999991059303
+          },
+          "sharpMs": {
+            "n": 2,
+            "p50": 13.399999991059303,
+            "p95": 30.899999991059303,
+            "max": 30.899999991059303
+          },
+          "durableSharpMs": {
+            "n": 2,
+            "p50": 13.399999991059303,
+            "p95": 30.899999991059303,
+            "max": 30.899999991059303
+          },
+          "sharpnessRegressions": 0,
+          "firstVisualBeyondQualityWindow": 0,
+          "finalNotSharp": 0,
+          "neverSharp": 0,
+          "finalMimes": [
+            "image/svg+xml",
+            "image/svg+xml"
+          ],
+          "finalRatios": [
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            },
+            {
+              "base": 0.4896,
+              "detail": 0,
+              "detailCovers": false
+            }
+          ]
+        }
+      },
+      "viewerPeakMiB": {
+        "n": 2,
+        "p50": 54.75140380859375,
+        "p95": 55.40765380859375,
+        "max": 55.40765380859375
+      },
+      "viewerCpuMs": {
+        "n": 2,
+        "p50": 438.208958,
+        "p95": 458.538125,
+        "max": 458.538125
+      },
+      "browserResidentMiB": {
+        "n": 2,
+        "p50": 30.310490608215332,
+        "p95": 30.310490608215332,
+        "max": 30.310490608215332
+      },
+      "numberBridge": {
+        "changed": 0,
+        "headers": 62,
+        "meanHeaderMs": 0.027450274193700264,
+        "maxHeaderMs": 0.25724999999874854
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "metadata": [
+        {
+          "schema": 1,
+          "created": "2026-11-06T20:48:11.468Z",
+          "vscode": "1.145.0",
+          "platform": "darwin",
+          "architecture": "arm64",
+          "cpu": "Apple M1 Pro",
+          "cpus": 8,
+          "memory": 17179869184,
+          "binarySha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+          "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+          "runtimeHashes": {
+            "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+            "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+            "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+            "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+            "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+            "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+            "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+            "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+            "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+            "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+            "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+            "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+            "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+            "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+            "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+            "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+            "out/preview-controller.js": "cdac4a86651657ef952b437d9640a67f6a02b908f1972a8c445635bea93e50be",
+            "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+            "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+            "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+            "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+            "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+            "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+            "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+            "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+            "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+            "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+            "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+            "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+            "out/svg-patch.js": "a64d2760199b77b236d977ca14112c039b8a2887cf3ce39f517c05d9528ef99b",
+            "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+            "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+            "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+            "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+            "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+            "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+            "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+            "media/preview-svg.js": "aacd78aff4ec059a8b672da3d061616ca6168042e24b0fb10841c112db63e72f",
+            "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+            "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+            "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+            "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+            "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+            "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+            "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+          },
+          "engineManifest": {
+            "schema": 1,
+            "kind": "development-host-build",
+            "platform": "darwin",
+            "architecture": "arm64",
+            "engineRevision": "8c8553ff574acb1905d6b17208ea026f40738b6f",
+            "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+            "icu": {
+              "version": "78.3",
+              "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+              "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+              "fullBytes": 33109168,
+              "filteredBytes": 10867248,
+              "retainedItems": 267
+            },
+            "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+            "sdk": "MacOSX26.2.sdk",
+            "hostPackageVersions": {
+              "freetype2": "26.7.20",
+              "libjpeg": "3.2.1",
+              "libopenjp2": "2.5.4",
+              "libbrotlidec": "1.2.1",
+              "libbrotlienc": "1.2.1",
+              "sdl2": "2.32.74",
+              "harfbuzz": "15.1.0",
+              "graphite2": "3.3.1",
+              "fontconfig": "2.18.3",
+              "libpng": "1.6.59"
+            },
+            "profiles": {
+              "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+              "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+            },
+            "features": {
+              "externalWindow": true,
+              "embeddedPreview": true
+            },
+            "capabilities": {
+              "previewProtocol": 1,
+              "maxPreviewPixels": 16000000,
+              "codecs": [
+                "png",
+                "svg"
+              ],
+              "synctex": true,
+              "synctexPrecision": 1,
+              "regions": true,
+              "links": true,
+              "tikzFigures": true,
+              "adaptiveRendering": true,
+              "pngPatches": true,
+              "backgroundRendering": true,
+              "prepareEdit": true,
+              "requestLifecycle": true,
+              "parentWatch": true,
+              "packageProviders": [
+                "texlive",
+                "miktex",
+                "miktex-windows",
+                "tectonic"
+              ],
+              "miktexAutoInstall": true,
+              "miktexWindowsBridge": true,
+              "pngCompression": {
+                "library": "zlib-ng",
+                "version": "2.3.3",
+                "level": 2
+              }
+            },
+            "sourceDirty": false,
+            "created": "2026-11-05",
+            "purpose": "Precise source synchronization and cached inverse lookup",
+            "workerProtocol": 2,
+            "zlibNg": {
+              "version": "2.3.3",
+              "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+              "api": "native",
+              "linkage": "static",
+              "pngLevel": 2,
+              "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+            },
+            "renderer": {
+              "library": "MuPDF",
+              "linkage": "static",
+              "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+              "reusedArchives": {
+                "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+                "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+              },
+              "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+            },
+            "hostLibraries": [
+              {
+                "package": "brotli",
+                "version": "1.2.1",
+                "noticesFound": true
+              },
+              {
+                "package": "fontconfig",
+                "version": "2.18.3",
+                "noticesFound": true
+              },
+              {
+                "package": "freetype",
+                "version": "2.15.0",
+                "noticesFound": true
+              },
+              {
+                "package": "gettext",
+                "version": "1.0",
+                "noticesFound": true
+              },
+              {
+                "package": "glib",
+                "version": "2.90.1",
+                "noticesFound": true
+              },
+              {
+                "package": "graphite2",
+                "version": "1.3.15",
+                "noticesFound": true
+              },
+              {
+                "package": "harfbuzz",
+                "version": "15.1.0",
+                "noticesFound": true
+              },
+              {
+                "package": "jbig2dec",
+                "version": "0.20",
+                "noticesFound": true
+              },
+              {
+                "package": "jpeg-turbo",
+                "version": "3.2.1",
+                "noticesFound": true
+              },
+              {
+                "package": "libpng",
+                "version": "1.6.59",
+                "noticesFound": true
+              },
+              {
+                "package": "openjpeg",
+                "version": "2.5.4_1",
+                "noticesFound": true
+              },
+              {
+                "package": "pcre2",
+                "version": "10.49",
+                "noticesFound": true
+              },
+              {
+                "package": "sdl2-compat",
+                "version": "2.32.74",
+                "noticesFound": true
+              },
+              {
+                "package": "sdl3",
+                "version": "3.4.20",
+                "noticesFound": true
+              }
+            ],
+            "files": [
+              {
+                "path": "bin/texpresso",
+                "sha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+                "bytes": 9170656
+              },
+              {
+                "path": "bin/texpresso-xetex",
+                "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+                "bytes": 12968752
+              },
+              {
+                "path": "lib/libSDL3.dylib",
+                "sha256": "b2c30727ba075537d832848ba64aa8b1a106daa342208c0cfd7d9a7abbf6b10a",
+                "bytes": 2177312
+              },
+              {
+                "path": "lib/libharfbuzz.0.dylib",
+                "sha256": "52504a845feb2707ba51adc501d3a923d2b63991d88a7218de63d1fd8e993fb3",
+                "bytes": 1035472
+              },
+              {
+                "path": "lib/libgraphite2.3.3.1.dylib",
+                "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+                "bytes": 122960
+              },
+              {
+                "path": "lib/libfontconfig.1.dylib",
+                "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+                "bytes": 465616
+              },
+              {
+                "path": "lib/libfreetype.6.dylib",
+                "sha256": "fc3569becf77439f8213836cc58bc692e5d804c41fa8d8fc7e427a819c414e6a",
+                "bytes": 615936
+              },
+              {
+                "path": "lib/libpng16.16.dylib",
+                "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+                "bytes": 200368
+              },
+              {
+                "path": "lib/libbrotlidec.1.2.1.dylib",
+                "sha256": "3aa8bf3687559d79ee6854a60fe109643c90186f2b4edac1fe9c970c9b2ab9d4",
+                "bytes": 86512
+              },
+              {
+                "path": "lib/libbrotlicommon.1.2.1.dylib",
+                "sha256": "d736452db8a43e7af86c33ae789a821f26e9545785a86f040b5c7c264095a36c",
+                "bytes": 167936
+              },
+              {
+                "path": "lib/libintl.8.dylib",
+                "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+                "bytes": 223440
+              },
+              {
+                "path": "lib/libglib-2.0.0.dylib",
+                "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+                "bytes": 1237248
+              },
+              {
+                "path": "lib/libpcre2-8.0.dylib",
+                "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+                "bytes": 554864
+              },
+              {
+                "path": "lib/libjpeg.8.3.2.dylib",
+                "sha256": "e8e627953ea97325cf022705ab6126ef74d188f5e5d0fef491ca1fad9abbc68c",
+                "bytes": 445296
+              },
+              {
+                "path": "lib/libopenjp2.2.5.4.dylib",
+                "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+                "bytes": 317728
+              },
+              {
+                "path": "lib/libbrotlienc.1.2.1.dylib",
+                "sha256": "783483c3a4231122016f24ba37f3c392bb18386777a7b9ea97e61af4d0b20e1f",
+                "bytes": 648048
+              },
+              {
+                "path": "lib/libSDL2-2.0.0.dylib",
+                "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+                "bytes": 449696
+              },
+              {
+                "path": "lib/libjbig2dec.0.dylib",
+                "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+                "bytes": 158976
+              }
+            ],
+            "installedBytes": 31276510,
+            "incrementalBuild": {
+              "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+              "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+              "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+              "script": "synctex-bundle-build.py",
+              "makeCommand": [
+                "make",
+                "-j4",
+                "all"
+              ]
+            }
+          },
+          "power": "Now drawing from 'Battery Power'\n -InternalBattery-0 (id=32374883)\t91%; discharging; 2:55 remaining present: true\n",
+          "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+          "widths": [
+            640
+          ],
+          "dpr": 2,
+          "repeats": 3,
+          "codecs": [
+            "png",
+            "auto"
+          ],
+          "profileFeatures": false,
+          "cases": [
+            {
+              "id": "conference-paper",
+              "focusPage": 0,
+              "sourceSha256": "daae0d0976e8f3aa2eee1fdeedad68b56bd5417ddfc8fcad16db0f98768cfe5e",
+              "originalSha256": "87a55a205b9461d0431c434a0417bebbc616706f25b45cde7fcdc2ac33d84b7a",
+              "compatibility": [
+                "pdfTeX metadata register shim",
+                "T1 encoding for XeTeX Times fonts"
+              ],
+              "normalizePreviewNumbers": true
+            },
+            {
+              "id": "math-paper",
+              "focusPage": 0,
+              "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+              "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b",
+              "compatibility": [
+                "T1 encoding for XeTeX legacy text fonts",
+                "pdfTeX output selection omitted for XeTeX"
+              ],
+              "normalizePreviewNumbers": true
+            },
+            {
+              "id": "slides",
+              "focusPage": 1,
+              "sourceSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+              "originalSha256": "1061d2e13b1e1bd6c4c1b68e264ce50cb97e92c9d3655822296c75badc78a26d",
+              "compatibility": [],
+              "normalizePreviewNumbers": true
+            }
+          ],
+          "limitations": [
+            "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+            "Native task footprint excludes Chromium/GPU memory.",
+            "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+            "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+          ]
+        }
+      ]
+    },
+    {
+      "metadata": [
+        {
+          "schema": 1,
+          "created": "2026-11-06T20:52:14.039Z",
+          "vscode": "1.145.0",
+          "platform": "darwin",
+          "architecture": "arm64",
+          "cpu": "Apple M1 Pro",
+          "cpus": 8,
+          "memory": 17179869184,
+          "binarySha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+          "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+          "runtimeHashes": {
+            "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+            "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+            "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+            "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+            "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+            "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+            "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+            "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+            "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+            "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+            "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+            "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+            "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+            "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+            "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+            "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+            "out/preview-controller.js": "cdac4a86651657ef952b437d9640a67f6a02b908f1972a8c445635bea93e50be",
+            "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+            "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+            "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+            "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+            "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+            "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+            "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+            "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+            "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+            "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+            "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+            "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+            "out/svg-patch.js": "a64d2760199b77b236d977ca14112c039b8a2887cf3ce39f517c05d9528ef99b",
+            "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+            "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+            "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+            "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+            "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+            "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+            "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+            "media/preview-svg.js": "aacd78aff4ec059a8b672da3d061616ca6168042e24b0fb10841c112db63e72f",
+            "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+            "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+            "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+            "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+            "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+            "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+            "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+          },
+          "engineManifest": {
+            "schema": 1,
+            "kind": "development-host-build",
+            "platform": "darwin",
+            "architecture": "arm64",
+            "engineRevision": "8c8553ff574acb1905d6b17208ea026f40738b6f",
+            "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+            "icu": {
+              "version": "78.3",
+              "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+              "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+              "fullBytes": 33109168,
+              "filteredBytes": 10867248,
+              "retainedItems": 267
+            },
+            "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+            "sdk": "MacOSX26.2.sdk",
+            "hostPackageVersions": {
+              "freetype2": "26.7.20",
+              "libjpeg": "3.2.1",
+              "libopenjp2": "2.5.4",
+              "libbrotlidec": "1.2.1",
+              "libbrotlienc": "1.2.1",
+              "sdl2": "2.32.74",
+              "harfbuzz": "15.1.0",
+              "graphite2": "3.3.1",
+              "fontconfig": "2.18.3",
+              "libpng": "1.6.59"
+            },
+            "profiles": {
+              "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+              "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+            },
+            "features": {
+              "externalWindow": true,
+              "embeddedPreview": true
+            },
+            "capabilities": {
+              "previewProtocol": 1,
+              "maxPreviewPixels": 16000000,
+              "codecs": [
+                "png",
+                "svg"
+              ],
+              "synctex": true,
+              "synctexPrecision": 1,
+              "regions": true,
+              "links": true,
+              "tikzFigures": true,
+              "adaptiveRendering": true,
+              "pngPatches": true,
+              "backgroundRendering": true,
+              "prepareEdit": true,
+              "requestLifecycle": true,
+              "parentWatch": true,
+              "packageProviders": [
+                "texlive",
+                "miktex",
+                "miktex-windows",
+                "tectonic"
+              ],
+              "miktexAutoInstall": true,
+              "miktexWindowsBridge": true,
+              "pngCompression": {
+                "library": "zlib-ng",
+                "version": "2.3.3",
+                "level": 2
+              }
+            },
+            "sourceDirty": false,
+            "created": "2026-11-05",
+            "purpose": "Precise source synchronization and cached inverse lookup",
+            "workerProtocol": 2,
+            "zlibNg": {
+              "version": "2.3.3",
+              "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+              "api": "native",
+              "linkage": "static",
+              "pngLevel": 2,
+              "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+            },
+            "renderer": {
+              "library": "MuPDF",
+              "linkage": "static",
+              "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+              "reusedArchives": {
+                "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+                "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+              },
+              "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+            },
+            "hostLibraries": [
+              {
+                "package": "brotli",
+                "version": "1.2.1",
+                "noticesFound": true
+              },
+              {
+                "package": "fontconfig",
+                "version": "2.18.3",
+                "noticesFound": true
+              },
+              {
+                "package": "freetype",
+                "version": "2.15.0",
+                "noticesFound": true
+              },
+              {
+                "package": "gettext",
+                "version": "1.0",
+                "noticesFound": true
+              },
+              {
+                "package": "glib",
+                "version": "2.90.1",
+                "noticesFound": true
+              },
+              {
+                "package": "graphite2",
+                "version": "1.3.15",
+                "noticesFound": true
+              },
+              {
+                "package": "harfbuzz",
+                "version": "15.1.0",
+                "noticesFound": true
+              },
+              {
+                "package": "jbig2dec",
+                "version": "0.20",
+                "noticesFound": true
+              },
+              {
+                "package": "jpeg-turbo",
+                "version": "3.2.1",
+                "noticesFound": true
+              },
+              {
+                "package": "libpng",
+                "version": "1.6.59",
+                "noticesFound": true
+              },
+              {
+                "package": "openjpeg",
+                "version": "2.5.4_1",
+                "noticesFound": true
+              },
+              {
+                "package": "pcre2",
+                "version": "10.49",
+                "noticesFound": true
+              },
+              {
+                "package": "sdl2-compat",
+                "version": "2.32.74",
+                "noticesFound": true
+              },
+              {
+                "package": "sdl3",
+                "version": "3.4.20",
+                "noticesFound": true
+              }
+            ],
+            "files": [
+              {
+                "path": "bin/texpresso",
+                "sha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+                "bytes": 9170656
+              },
+              {
+                "path": "bin/texpresso-xetex",
+                "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+                "bytes": 12968752
+              },
+              {
+                "path": "lib/libSDL3.dylib",
+                "sha256": "b2c30727ba075537d832848ba64aa8b1a106daa342208c0cfd7d9a7abbf6b10a",
+                "bytes": 2177312
+              },
+              {
+                "path": "lib/libharfbuzz.0.dylib",
+                "sha256": "52504a845feb2707ba51adc501d3a923d2b63991d88a7218de63d1fd8e993fb3",
+                "bytes": 1035472
+              },
+              {
+                "path": "lib/libgraphite2.3.3.1.dylib",
+                "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+                "bytes": 122960
+              },
+              {
+                "path": "lib/libfontconfig.1.dylib",
+                "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+                "bytes": 465616
+              },
+              {
+                "path": "lib/libfreetype.6.dylib",
+                "sha256": "fc3569becf77439f8213836cc58bc692e5d804c41fa8d8fc7e427a819c414e6a",
+                "bytes": 615936
+              },
+              {
+                "path": "lib/libpng16.16.dylib",
+                "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+                "bytes": 200368
+              },
+              {
+                "path": "lib/libbrotlidec.1.2.1.dylib",
+                "sha256": "3aa8bf3687559d79ee6854a60fe109643c90186f2b4edac1fe9c970c9b2ab9d4",
+                "bytes": 86512
+              },
+              {
+                "path": "lib/libbrotlicommon.1.2.1.dylib",
+                "sha256": "d736452db8a43e7af86c33ae789a821f26e9545785a86f040b5c7c264095a36c",
+                "bytes": 167936
+              },
+              {
+                "path": "lib/libintl.8.dylib",
+                "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+                "bytes": 223440
+              },
+              {
+                "path": "lib/libglib-2.0.0.dylib",
+                "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+                "bytes": 1237248
+              },
+              {
+                "path": "lib/libpcre2-8.0.dylib",
+                "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+                "bytes": 554864
+              },
+              {
+                "path": "lib/libjpeg.8.3.2.dylib",
+                "sha256": "e8e627953ea97325cf022705ab6126ef74d188f5e5d0fef491ca1fad9abbc68c",
+                "bytes": 445296
+              },
+              {
+                "path": "lib/libopenjp2.2.5.4.dylib",
+                "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+                "bytes": 317728
+              },
+              {
+                "path": "lib/libbrotlienc.1.2.1.dylib",
+                "sha256": "783483c3a4231122016f24ba37f3c392bb18386777a7b9ea97e61af4d0b20e1f",
+                "bytes": 648048
+              },
+              {
+                "path": "lib/libSDL2-2.0.0.dylib",
+                "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+                "bytes": 449696
+              },
+              {
+                "path": "lib/libjbig2dec.0.dylib",
+                "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+                "bytes": 158976
+              }
+            ],
+            "installedBytes": 31276510,
+            "incrementalBuild": {
+              "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+              "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+              "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+              "script": "synctex-bundle-build.py",
+              "makeCommand": [
+                "make",
+                "-j4",
+                "all"
+              ]
+            }
+          },
+          "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=32374883)\t91%; charging; 0:37 remaining present: true\n",
+          "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+          "widths": [
+            640
+          ],
+          "dpr": 2,
+          "repeats": 3,
+          "codecs": [
+            "svg"
+          ],
+          "profileFeatures": false,
+          "cases": [
+            {
+              "id": "conference-paper",
+              "focusPage": 0,
+              "sourceSha256": "daae0d0976e8f3aa2eee1fdeedad68b56bd5417ddfc8fcad16db0f98768cfe5e",
+              "originalSha256": "87a55a205b9461d0431c434a0417bebbc616706f25b45cde7fcdc2ac33d84b7a",
+              "compatibility": [
+                "pdfTeX metadata register shim",
+                "T1 encoding for XeTeX Times fonts"
+              ],
+              "normalizePreviewNumbers": true
+            }
+          ],
+          "limitations": [
+            "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+            "Native task footprint excludes Chromium/GPU memory.",
+            "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+            "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+          ]
+        }
+      ]
+    }
+  ]
+}
