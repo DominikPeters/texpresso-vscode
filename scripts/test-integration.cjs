@@ -45,7 +45,7 @@ const { spawnSync } = require('node:child_process');
     'chat.disableAIFeatures': true,
     'workbench.colorTheme': 'Default Dark Modern',
     'window.zoomLevel': 0,
-    ...(realistic ? { 'window.newWindowDimensions': 'maximized' } : {}),
+    ...(preview ? { 'window.newWindowDimensions': 'maximized' } : {}),
     'editor.fontSize': 16,
     'telemetry.telemetryLevel': 'off'
   }));

@@ -141,6 +141,14 @@ Pages are compiled when requested, and images have a bounded pixel budget.
 \end{document}
 `);
   const document = await vscode.workspace.openTextDocument(file);
+  // The preceding webview fixtures create/close many side-by-side panels.
+  // Empty editor groups can leave the native preview only ~200 CSS px wide,
+  // fitting both test pages at once. Background decodes then need not produce
+  // the foreground presentation transitions asserted below. Start this stage
+  // with the ordinary two-column source/preview layout instead.
+  await vscode.commands.executeCommand('workbench.action.joinAllGroups');
+  await vscode.commands.executeCommand('workbench.action.closeSidebar');
+  await vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
   const editor = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false });
   const settings = vscode.workspace.getConfiguration('texpresso', document.uri);
   await settings.update('syncTeXForwardOnSelection', false, vscode.ConfigurationTarget.WorkspaceFolder);
