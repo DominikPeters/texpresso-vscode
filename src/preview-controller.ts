@@ -99,7 +99,9 @@ export class PreviewController {
   private target?: { revision: number; sequence: number; page: number; x: number; y: number; highlight: boolean; rectangles?: import('./preview-protocol').SourceRect[] };
 
   constructor(private api: typeof vscode, extensionUri: vscode.Uri, public session: TexpressoSession,
-    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void, private tikz?: TikzActions) {
+    closed: () => void, private action: (name: 'restart' | 'pause' | 'output') => void, private navigated?: () => void, private tikz?: TikzActions,
+    private renderingFormat?: 'auto' | 'png' | 'svg') {
+    if (this.renderingFormat !== undefined && !['auto', 'png', 'svg'].includes(this.renderingFormat)) { this.renderingFormat = 'png'; }
     this.prewarm = new EditPrewarm(() => ({
       available: !!this.session.previewPrepareEdit && !this.disposed && this.panel?.visible && !this.session.paused && this.session.state === 'running',
       idle: this.ready && !this.dirty && !this.inFlight && !this.region && !this.detail && !this.inverse && !this.destination && !this.gesture &&
@@ -139,7 +141,7 @@ export class PreviewController {
     this.html = `<!doctype html><html><head><meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${this.instance}';">
-      <link rel="stylesheet" href="${style}"></head><body data-instance="${this.instance}">
+      <link rel="stylesheet" href="${style}"></head><body data-instance="${this.instance}" data-rendering-format="${this.renderingFormat || ''}">
       <header aria-label="Preview controls"><div class="navigation">
       <button id="previous" title="Previous page" aria-label="Previous page">${icon('chevron-left')}</button>
       <label>Page <input id="page" type="number" min="1" value="1" aria-label="Page number"></label><span id="total">/ …</span>
@@ -148,7 +150,6 @@ export class PreviewController {
       <select id="zoom" aria-label="Zoom"><option value="width">Fit width</option><option value="text">Fit to text width</option><option value="page">Fit page</option>
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
       <option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select>
-      <select id="format" aria-label="Rendering format" title="Rendering format"><option value="auto">Auto</option><option value="png">PNG</option><option value="svg">SVG</option></select>
       <button id="zoomIn" title="Zoom in" aria-label="Zoom in">${icon('zoom-in')}</button></div>
       <div class="actions"><button id="magnify" title="Magnifier: hold the mouse button on the page (M)" aria-label="Magnifier" aria-pressed="false">${icon('search')}</button>
       <button id="pause" title="Pause compilation" aria-label="Pause compilation"><span id="pauseIcon">${icon('debug-pause')}</span><span id="resumeIcon" hidden>${icon('play')}</span></button>
@@ -612,7 +613,13 @@ export class PreviewController {
       const { page, width } = demand;
       const secondary = !!background || (this.continuous && page !== this.page && !this.inverse);
       if (page === this.page) { this.dirty = false; }
-      if (!background) { this.region = undefined; this.detail = undefined; }
+      if (!background) {
+        this.region = undefined;
+        // A replacement of this same page resets the browser's detail cache.
+        // Rendering another visible page must retain its queued crop: the
+        // browser is still waiting for that token and will not request it again.
+        if (this.detail?.page === page) { this.detail = undefined; }
+      }
       if (background) { this.prefetched.add(page); }
       if (background && page >= this.state[3]) { this.frontierBudget--; }
       const learned = this.autoPages.get(page);
@@ -758,7 +765,7 @@ export class PreviewController {
     request.patched = !!svgPatch;
     // A native frame can still be a decoded-content hit or a no-op patch. Its
     // near-zero browser work is neither a full mount nor a meaningful edit.
-    request.costContext = visualOnly || request.background || (contentId && this.hasDecoded(contentId, h.page)) || svgPatch?.operations.length === 0 ||
+    request.costContext = visualOnly || request.background || (contentId && this.hasDecoded(contentId, h.page)) || (svgPatch?.operations.length === 0 && !svgPatch.transforms?.length) ||
       (h.patch && !h.byteLength) ? undefined : this.costContext(h.page, request.width || this.width, h.bounds,
       h.vectorCost ?? this.autoPages.get(h.page)?.cost);
     this.svgPending = svgDocument && contentId ? { id: h.requestId, page: h.page, contentId, document: svgDocument } : undefined;
@@ -913,7 +920,12 @@ export class PreviewController {
   private status(): void {
     void this.post({ type: 'state', page: this.continuous ? this.viewportPage : this.page, count: this.state?.[3] ?? this.recoveryPagination?.count ?? 0,
       complete: this.state?.[4] ?? this.recoveryPagination?.complete ?? false,
+      renderingFormat: this.renderingFormat,
       ...this.uiCapabilities(), sequence: this.session.previewSequence, revision: this.state?.[2] === this.session.previewSequence ? this.state[1] : undefined, paused: this.session.paused, phase: this.session.state });
+  }
+  setRenderingFormat(format: 'auto' | 'png' | 'svg'): void {
+    this.renderingFormat = ['auto', 'png', 'svg'].includes(format) ? format : 'png';
+    this.status();
   }
   private post(message: object): Promise<boolean> {
     return this.disposed ? Promise.resolve(false) : Promise.resolve(

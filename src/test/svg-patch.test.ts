@@ -4,6 +4,18 @@ import { parseSvg, canonicalSvg, diffSvg, type SvgPatch } from '../svg-patch';
 
 const wrap = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg"><defs><path id="a" d="M0 0L1 1"/></defs>${body}</svg>`;
 function apply(text: string, patch: SvgPatch): string {
+  const edits: {start:number;end:number;value:string}[]=[];
+  const initial=parseSvg(text,1000)!;
+  for(const op of patch.transforms||[]) {
+    let parent=initial.root;for(const i of op.path){parent=parent.children[i];}
+    for(let i=0;i<op.values.length;i++) {
+      const node=parent.children[op.start+i],raw=text.slice(node.start,node.openEnd);
+      const match=[...raw.matchAll(/\s([\w:-]+)\s*=\s*("[^"]*"|'[^']*')/g)].find(m=>m[1]==='transform')!;
+      const start=node.start+match.index!+match[0].length-match[2].length+1;
+      edits.push({start,end:start+match[2].length-2,value:op.values[i]});
+    }
+  }
+  for(const edit of edits.sort((a,b)=>b.start-a.start)){text=text.slice(0,edit.start)+edit.value+text.slice(edit.end);}
   for (const op of patch.operations) {
     const doc = parseSvg(text, 1000)!;
     let parent = doc.root;
@@ -26,6 +38,41 @@ test('SVG splices preserve order, definitions and nested paths across insertions
     assert.ok(patch); assert.equal(apply(old, patch), next);
     const undo = diffSvg(parseSvg(next, 1000)!, parseSvg(old, 1000)!, 'next', { maxMs: 1000 })!;
     assert.ok(undo); assert.equal(apply(next, undo), old);
+  }
+});
+
+test('SVG text reflow retains glyphs across insertions and hundreds of position changes', () => {
+  const glyph=(i:number,x=i)=>`<use href="#a" data-text="${i%7}" transform="translate(${x} 20)"/>`;
+  const old=wrap(Array.from({length:900},(_,i)=>glyph(i)).join(''));
+  const next=wrap(Array.from({length:900},(_,i)=>glyph(i,i<100||i>800?i:i+1)).join('').replace(glyph(120,121),glyph(9999)+glyph(120,121)));
+  const patch=diffSvg(parseSvg(old,1000)!,parseSvg(next,1000)!,'base',{maxMs:1000})!;
+  assert.ok(patch);assert.ok(patch.transforms);assert.equal(apply(old,patch),next);
+  assert.ok(patch.operations.length<10);assert.ok(patch.transforms.reduce((n,t)=>n+t.values.length,0)>600);
+  assert.equal(diffSvg(parseSvg(old,1000)!,parseSvg(next,1000)!,'base',{maxMs:1000,maxTransforms:10}),undefined);
+});
+
+test('SVG transform patches never confuse quoted source metadata with an attribute', () => {
+  const a=wrap(`<use data-text='fake transform="translate(1 2)"' href="#a" transform="translate(3 4)"/>`+Array.from({length:30},(_,i)=>path(i)).join(''));
+  const b=a.replace('translate(1 2)','translate(8 9)');
+  const patch=diffSvg(parseSvg(a,1000)!,parseSvg(b,1000)!,'base',{maxMs:1000})!;
+  assert.ok(patch);assert.equal(patch.transforms,undefined);assert.equal(apply(a,patch),b);
+  const moved=a.replace('translate(3 4)','translate(8 9)');
+  const move=diffSvg(parseSvg(a,1000)!,parseSvg(moved,1000)!,'base',{maxMs:1000})!;
+  assert.ok(move.transforms);assert.equal(apply(a,move),moved);
+});
+
+test('SVG glyph alignment handles equal-count insert/delete, nested moves and undo without changing references', () => {
+  const glyph=(i:number,x=i)=>`<use href="#a" data-text="${i%5}" transform="translate(${x} 20)"/>`;
+  for(let variation=0;variation<24;variation++) {
+    const items=Array.from({length:100},(_,i)=>glyph(i));
+    const old=wrap('<g>'+items.join('')+'</g>');
+    const changed=items.map((_,i)=>glyph(i,i>=20&&i<80?i+variation+1:i));
+    changed.splice(24,1);changed.splice(55,0,glyph(700+variation));
+    const next=wrap('<g>'+changed.join('')+'</g>');
+    for(const [from,to] of [[old,next],[next,old]]) {
+      const patch=diffSvg(parseSvg(from,1000)!,parseSvg(to,1000)!,'base',{maxMs:1000})!;
+      assert.ok(patch);assert.equal(apply(from,patch),to);
+    }
   }
 });
 

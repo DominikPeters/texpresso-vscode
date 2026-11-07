@@ -18,11 +18,17 @@ For projects with multiple files, add a `% !TeX root = ../main.tex` comment or u
 
 Use the preview toolbar to navigate pages, adjust zoom and fit, pause or restart compilation, and open compiler output. Pinch or use Control/Command-scroll to zoom. Hyperlinks are clickable; Control-click (Command-click on macOS) in the preview to jump to the corresponding source. Forward SyncTeX can follow your editor cursor quietly. Explicit forward jumps briefly highlight matching text in yellow when supported by the engine.
 
-The magnifier button, or **M** while the preview has focus, enables a loupe: hold the left mouse button over the page to use it, and press Escape to leave magnifier mode. The toolbar also offers Auto, PNG and SVG rendering. Availability of some controls depends on the engine version.
+The magnifier button, or **M** while the preview has focus, enables a loupe: hold the left mouse button over the page to use it, and press Escape to leave magnifier mode. The preview uses Auto by default; choose PNG or SVG with `texpresso.renderingFormat` in Settings. Availability of some controls depends on the engine version.
 
 The TeXpresso status-bar entry opens controls for starting, stopping, restarting and pausing the preview, running additional compilation passes, opening logs and changing settings. Use **External Compile and Refresh** when you need an external build, for example to run a bibliography program.
 
 When TikZ Editor is installed locally, hover over a TikZ figure to show **Edit in TikZ Editor**. The action opens the matching source figure after saving any unsaved changes with your approval. This integration is available in trusted local desktop workspaces; use `texpresso.tikzEditorPath` if automatic detection misses the app.
+
+## Using LaTeX Workshop
+
+Keep LaTeX Workshop for completions, citations, builds and its PDF viewer, and use **TeXpresso: Start Document** for live preview. The previews are independent: Workshop's build, view and SyncTeX shortcuts still operate on its PDF. Use **TeXpresso: Show Current Position in Preview Window (SyncTeX)** for an explicit jump in the live preview. A `% !TeX root = main.tex` comment gives both extensions the same main document.
+
+TeXpresso uses its own engine and settings; it does not inherit Workshop recipes, compiler choices or output directories. **External Compile and Refresh** uses `texpresso.externalCompileCommand`, rather than the selected Workshop recipe. Workshop's automatic builds can stay enabled. To avoid running an extra build on each save, optionally set `latex-workshop.latex.autoBuild.run` to `never` and build manually when needed.
 
 ## Windows and WSL
 
@@ -36,6 +42,7 @@ Search for **TeXpresso** in VS Code Settings. Common options include:
 
 - `texpresso.command`: choose an external engine.
 - `texpresso.previewLocation`: choose Auto, Editor or Window.
+- `texpresso.renderingFormat`: choose Auto (the default), PNG or SVG for the editor preview.
 - `texpresso.packageProvider`: choose TeX Live (the default) or Tectonic.
 - `texpresso.includeDirectories`: add directories for project inputs.
 - `texpresso.autoRerun`: run additional passes for references and the table of contents when editing pauses.

@@ -141,3 +141,5 @@ dist
 
 /artifacts/
 *.vsix
+__pycache__/
+*.py[cod]

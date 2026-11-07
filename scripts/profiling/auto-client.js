@@ -83,7 +83,7 @@ const profileApi = () => ({
       pendingRegions.delete(regionKey(frame.type,frame.page,frame.token));
       frame.paintVisibility = visibility();
       frame.statusHidden = document.getElementById('status').hidden;
-      frame.autoLabel = document.querySelector('#format [value=auto]').textContent;
+      frame.autoLabel = ({auto:'Auto',png:'PNG',svg:'SVG'})[document.body.dataset.renderingFormat];
       frame.latestInputAtPaint = profileInputs.at(-1)?.id;
       frame.dispatchToPaintOpportunity = frame.paintedAt - frame.dispatched;
       pendingMain.delete(m.id);
@@ -262,7 +262,7 @@ else {
     };
     if(profileJob.prewarmScenario) {
       if(profileJob.prewarmMode!=='cold') {
-        const snapshot=()=>({page:document.getElementById('page').value,scrollTop:document.getElementById('viewport').scrollTop,scrollLeft:document.getElementById('viewport').scrollLeft,statusHidden:document.getElementById('status').hidden,format:document.getElementById('format').value});
+        const snapshot=()=>({page:document.getElementById('page').value,scrollTop:document.getElementById('viewport').scrollTop,scrollLeft:document.getElementById('viewport').scrollLeft,statusHidden:document.getElementById('status').hidden,format:document.body.dataset.renderingFormat});
         const before=snapshot(),requestedAt=performance.now();
         profileHost.postMessage({type:'profile-prewarm',inputId:'warmup',requestedAt});
         await until(()=>prewarmEvents.some(e=>e.inputId==='warmup'&&e.phase==='sent'),'Cursor prewarm acceptance');

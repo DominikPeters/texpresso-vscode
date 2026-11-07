@@ -120,7 +120,9 @@ DOM patching in a separate experiment.
 The [retained SVG follow-up](2026-10-22-svg-dom.md) implements the SVG DOM renderer,
 content-addressed glyph identities and bounded patches. It measures actual
 controller/webview work and a separate exact-pixel PNG dirty-rectangle prototype.
-At that stage PNG remained the default; current previews default to Auto.
+Auto remains the default; PNG and SVG are available through Settings. Earlier
+discussion favored PNG after accounting for switching/refinement complexity;
+the real-document follow-up below revisits that judgment with quality checks.
 
 Native PNG dirty rectangles are implemented and measured in [the PNG patch report](2026-10-22-png-patches.md).
 
@@ -164,3 +166,84 @@ allocation fix from unresolved compiler starvation and source-target validation.
 [The 29 October compiler benchmark](2026-10-29-retex-xetex.md) compares retex with its own checkpoints disabled against XeTeX XDV and PDF output, including body timing, native-macro/cache ablations, memory and LuaLaTeX output checks. It measures complete compiler passes rather than integrated preview latency.
 
 [Updated PNG/SVG/Auto comparison (1 November)](2026-11-01-codecs.md) compares matched system-zlib and zlib-ng builds through actual VS Code, including continuous navigation, zoom/lens, rapid input, and a cursor-prewarming control. It records 188 sessions and 252 lossless-validated native PNG exports. [Compact evidence](2026-11-01-codecs.json).
+
+## Private real-document comparisons
+
+[The 6 November comparison](2026-11-06-realistic-codecs.md) evaluates real papers
+and slides, current Auto and a candidate classifier, including sharpness after
+zoom/refinement. Its private corpus and visual samples stay local.
+
+[The feature-based cost-model experiment](2026-11-06-render-cost-model.md) adds
+opt-in display-list counters and paired render-work observations. It evaluates
+small regressions with nested project-held-out validation; the models are not
+used by the shipping Auto classifier.
+
+[Retaining glyphs through SVG reflow](2026-11-06-svg-reflow-patches.md) follows up
+on expensive full replacements: bounded transform patches avoid those rebuilds
+for the measured text edits, with actual VS Code replay and independent DOM
+equivalence checks. These timings supersede the earlier replacement behavior
+for these cases; the Auto default is unchanged.
+
+[Post-fix live-pipeline checks](2026-11-06-post-reflow-live.md) verify PNG/Auto
+typing and zoom behavior after the reflow change, including a forced-SVG check.
+[The PNG detail-queue fix](2026-11-06-png-detail-queue.md) reproduces and resolves
+the earlier missing refinement after navigation to a graphics slide.
+
+`scripts/profiling/real-corpus.cjs` copies selected local projects into disposable
+output, keeping originals untouched. Supply a local JSON array with entries like:
+
+```json
+[{"id":"paper","project":"/absolute/project","entry":"main.tex",
+  "focusPage":0,"startAfter":"\\begin{document}","editAfter":"A unique prose anchor"}]
+```
+
+Page numbers are zero based. Verify the edited page against the current source,
+not an old compiled PDF. The helper filters dependencies and generated TeX state,
+limits copies to 256 MiB per project, and records original/prepared source hashes.
+Any XeTeX compatibility adaptations must be selected explicitly and recorded.
+
+```sh
+node -e 'const fs=require("fs"),{prepare}=require("./scripts/profiling/real-corpus.cjs"); const out="artifacts/real-documents"; fs.mkdirSync(out,{recursive:true}); const cases=prepare("/absolute/private-inputs.json",out); fs.writeFileSync(out+"/cases.json",JSON.stringify(cases.map(({text,...c})=>c),null,2))'
+npm run compile-tests
+VSCODE_EXECUTABLE='/Applications/Visual Studio Code.app/Contents/MacOS/Code' \
+TEXPRESSO_BINARY=/absolute/current/bundle/bin/texpresso \
+TEXPRESSO_PROFILE_OUTPUT=artifacts/real-documents \
+TEXPRESSO_REAL_WIDTHS=640,1100 TEXPRESSO_REAL_REPEATS=4 \
+TEXPRESSO_REAL_DPR=2 TEXPRESSO_REAL_CAPTURE=1 \
+TEXPRESSO_PROFILE_CODECS=png,auto \
+node scripts/test-integration.cjs --profile-realistic
+node scripts/profiling/summarize-realistic.cjs artifacts/real-documents
+```
+
+The opt-in integration test uses actual VS Code IPC and production rendering,
+starts a fresh native session for each cell/repetition, reverses codec order on
+alternate repetitions, and excludes repetition zero as warm-up. It verifies DPR
+and available viewport width. Run one job at a time; do not build or change its
+runtime files during a matrix. The metadata stores hashes of the executed JS and
+native binaries, not merely the source checkout revision. Use a new output
+directory after changing the observer or experimental policy.
+
+The client records cold edits separately, eight paced edits, a twelve-key
+open-loop burst, zoom/panning, navigation and cached return. Bursts more than
+40 ms late are excluded from burst latency. Two animation frames after decode
+are a paint opportunity, not scanout. Sustained sharpness records transitions
+until foreground rendering settles, with a 2.2 s observation limit; it checks
+display density and visible detail coverage rather than equating first paint
+with a sharp result. This is a geometric quality check, not a perceptual metric.
+Pixel samples are composites of mounted surfaces and are captured after timed
+operations. Native task memory excludes Chromium/GPU memory.
+
+`edit-png-auto` is an experimental policy confined to this harness, not a
+shipping format. It tests raster preference during edits and suppression of
+unnecessary SVG idle upgrades based on display density and the existing surface
+budget. It retains production complexity checks and fallback behavior. Compare
+its actual request/frame trace, not just its label.
+
+The optional fixture flag `normalizePreviewNumbers` enables a measurement-only
+adapter for MuPDF leading-dot annotation numbers. It repairs header syntax and
+preserves image payload bytes. Production parsing is unchanged; results using
+this adapter do not establish unmodified-engine document compatibility.
+
+Local cases, images and traces can contain private manuscript material. Do not
+commit or upload them. Preserve the compact, source-free summary and reproduction
+details before removing copied projects and large traces.

@@ -22,7 +22,7 @@
   }
   // Keep source following still while the target remains comfortably visible.
   // A small hysteresis band absorbs SyncTeX/rounding noise near the margin.
-  function syncScrollCorrection(point, viewport, fitText = false) {
+  function syncScrollCorrection(point, viewport, automatic = false) {
     const axis = (value, start, size) => {
       const margin = Math.min(48, size * .1), tolerance = 4;
       if (value >= start + margin - tolerance && value <= start + size - margin + tolerance) { return 0; }
@@ -30,7 +30,12 @@
       return Math.abs(delta) > tolerance ? delta : 0;
     };
     const visibleX = point.x >= viewport.left - 4 && point.x <= viewport.left + viewport.width + 4;
-    return { x: fitText && visibleX ? 0 : axis(point.x, viewport.left, viewport.width), y: axis(point.y, viewport.top, viewport.height) };
+    // Source following never undoes the user's horizontal pan/zoom. Explicit
+    // jumps reveal an offscreen target with the smallest useful correction.
+    const inset = Math.min(24, viewport.width / 4);
+    const x = automatic || visibleX ? 0 : point.x < viewport.left
+      ? point.x - viewport.left - inset : point.x - viewport.left - viewport.width + inset;
+    return { x, y: axis(point.y, viewport.top, viewport.height) };
   }
   function rasterWidth(bounds, cssWidth, dpr) {
     const w = bounds[2] - bounds[0], h = bounds[3] - bounds[1];

@@ -10,6 +10,13 @@ export interface PreviewAnnotations {
   destinations: { name: string; x: number; y: number }[];
   figures?: PreviewFigure[];
 }
+/** Optional, content-free counters emitted only by opt-in native profiling. */
+export interface RenderFeatures {
+  schema: 1; glyphs: number; uniqueGlyphs: number; glyphOverflow: boolean;
+  textSpans: number; fonts: number; fontOverflow: boolean;
+  paths: number; pathBytes: number; images: number; imagePixels: number;
+  clips: number; groups: number; shades: number; vectorCost: number; svgEligible: boolean;
+}
 export interface PreviewImageHeader {
   requestId: number; revision: number; sequence: number; page: number;
   bounds: [number, number, number, number]; width: number; height: number;
@@ -20,6 +27,7 @@ export interface PreviewImageHeader {
   svgEligible?: boolean; vectorCost?: number;
   /** Native export wall time, excluding compilation and pipe transfer. */
   exportMs?: number;
+  renderFeatures?: RenderFeatures; featureMs?: number; featureCached?: boolean;
   fallback?: string; annotations?: PreviewAnnotations;
 }
 export interface PreviewImage { header: PreviewImageHeader; bytes: Buffer }
@@ -74,6 +82,14 @@ function rasterPatch(h: PreviewImageHeader): boolean {
   return h.byteLength === 0 ? r.every(n => n === 0) :
     w > 0 && height > 0 && x + w <= h.width && y + height <= h.height;
 }
+function renderFeatures(value: unknown): boolean {
+  if (!value || typeof value !== 'object') { return false; }
+  const f = value as RenderFeatures;
+  return f.schema === 1 && [f.glyphs, f.uniqueGlyphs, f.textSpans, f.fonts, f.paths, f.pathBytes, f.images,
+    f.clips, f.groups, f.shades, f.vectorCost].every(count) && f.fonts <= 64 &&
+    Number.isSafeInteger(f.imagePixels) && f.imagePixels >= 0 && f.uniqueGlyphs <= 8192 && typeof f.glyphOverflow === 'boolean' &&
+    typeof f.fontOverflow === 'boolean' && typeof f.svgEligible === 'boolean';
+}
 export function isImageHeader(value: unknown): value is PreviewImageHeader {
   if (!value || typeof value !== 'object') { return false; }
   const h = value as PreviewImageHeader;
@@ -86,6 +102,9 @@ export function isImageHeader(value: unknown): value is PreviewImageHeader {
     (h.svgEligible === undefined || typeof h.svgEligible === 'boolean') &&
     (h.vectorCost === undefined || count(h.vectorCost)) &&
     (h.exportMs === undefined || (typeof h.exportMs === 'number' && Number.isFinite(h.exportMs) && h.exportMs >= 0 && h.exportMs < 1e9)) &&
+    (h.renderFeatures === undefined || renderFeatures(h.renderFeatures)) &&
+    (h.featureMs === undefined || (typeof h.featureMs === 'number' && Number.isFinite(h.featureMs) && h.featureMs >= 0 && h.featureMs < 1e9)) &&
+    (h.featureCached === undefined || typeof h.featureCached === 'boolean') &&
     (h.annotations === undefined || annotations(h.annotations));
 }
 
