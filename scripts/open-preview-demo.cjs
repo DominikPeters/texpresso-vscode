@@ -35,7 +35,11 @@ try {
     const target = path.join(demo, 'sample', name);
     if (!fs.existsSync(target)) fs.copyFileSync(path.join(__dirname, 'preview-demo', name), target);
   }
-  const launchFile = process.env.TEXPRESSO_DEMO_SAMPLE === 'original' ? file :
+  // README recording samples (smiley, lipsum) are recopied on every launch so each take starts from the original.
+  const recording = ['smiley', 'lipsum', 'prose', 'math'].includes(process.env.TEXPRESSO_DEMO_SAMPLE) && process.env.TEXPRESSO_DEMO_SAMPLE;
+  const recordingFile = recording && path.join(demo, `sample/readme-${recording}.tex`);
+  if (recording) fs.copyFileSync(path.join(__dirname, `preview-demo/${recording}.tex`), recordingFile);
+  const launchFile = recording ? recordingFile : process.env.TEXPRESSO_DEMO_SAMPLE === 'original' ? file :
     process.env.TEXPRESSO_DEMO_SAMPLE === 'links' ? featureSample : showcase;
   const env = {...process.env, PATH: (process.platform === 'darwin' ? '/Library/TeX/texbin' + path.delimiter : '') + process.env.PATH,
     TEXPRESSO_DEMO_FILE: launchFile};
@@ -52,8 +56,18 @@ try {
     'texpresso.useChangeRangeMode': true, 'texpresso.syncTeXForwardOnSelection': false,
     'texpresso.autoRerun': true, 'texpresso.externalCompileCommand': 'latexmk -xelatex -interaction=nonstopmode -halt-on-error',
     'workbench.startupEditor': 'none', 'workbench.colorTheme': 'Default Dark Modern',
-    'chat.disableAIFeatures': true, 'editor.fontSize': 16, 'editor.minimap.enabled': false,
-    'window.zoomLevel': 0, 'telemetry.telemetryLevel': 'off'
+    'chat.disableAIFeatures': true, 'editor.fontSize': 16, 'editor.minimap.enabled': false, 'editor.wordWrap': 'on', 'git.enabled': false, 'update.mode': 'none',
+    'window.zoomLevel': 0, 'telemetry.telemetryLevel': 'off',
+    // Recording: only the editor and the preview, as in the original README animation.
+    ...(recording ? {'window.zoomLevel': 1.5, 'workbench.activityBar.location': 'hidden', 'workbench.statusBar.visible': false,
+      'breadcrumbs.enabled': false, 'window.commandCenter': false, 'workbench.layoutControl.enabled': false,
+      'editor.autoClosingBrackets': 'never', 'editor.fontSize': 14, 'editor.lineNumbers': 'off',
+      'editor.renderLineHighlight': recording === 'smiley' ? 'none' : 'line', 'editor.glyphMargin': false,
+      // The SyncTeX clips follow the editor cursor, as in the original README.
+      'texpresso.syncTeXForwardOnSelection': recording !== 'smiley', 'editor.folding': false,
+      'editor.cursorBlinking': 'solid', 'editor.quickSuggestions': {other: 'off', comments: 'off', strings: 'off'},
+      'editor.suggestOnTriggerCharacters': false, 'editor.wordBasedSuggestions': 'off', 'editor.scrollBeyondLastLine': false,
+      'editor.occurrencesHighlight': 'off', 'editor.selectionHighlight': false, 'editor.hover.enabled': false} : {})
   }, null, 2);
   fs.writeFileSync(path.join(demo, 'sample/.vscode/settings.json'), settings);
   fs.mkdirSync(path.join(profile, 'user/User'), {recursive: true});
@@ -62,7 +76,9 @@ try {
   fs.writeFileSync(workspace, JSON.stringify({folders: [{path: 'sample'}]}));
   const profiles = ['--user-data-dir', path.join(profile, 'user'), '--extensions-dir', path.join(profile, 'extensions')];
   run([...profiles, '--install-extension', vsix, '--force'], env);
-  const child = spawn(cli, ['--new-window', ...profiles, '--extensionDevelopmentPath', path.join(__dirname, 'preview-demo'),
+  // Optional extra flags, e.g. TEXPRESSO_DEMO_ARGS="--remote-debugging-port=9333" for scripted capture.
+  const extra = (process.env.TEXPRESSO_DEMO_ARGS || '').split(/\s+/).filter(Boolean);
+  const child = spawn(cli, ['--new-window', ...extra, ...profiles, '--extensionDevelopmentPath', path.join(__dirname, 'preview-demo'),
     '--disable-extension', 'github.copilot-chat', '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', workspace],
     {env, stdio: 'inherit', shell: process.platform === 'win32'});
   child.on('error', error => {console.error(error.message); process.exitCode = 1;});

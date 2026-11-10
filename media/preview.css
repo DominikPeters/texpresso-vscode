@@ -10,7 +10,10 @@ button:hover { background: var(--vscode-toolbar-hoverBackground,#555); }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible, select:focus-visible, input:focus-visible, main:focus-visible { outline: 1px solid var(--vscode-focusBorder,#2684ff); outline-offset: -1px; }
 input { width: 52px; margin-left: 3px; }
-#status { padding: 4px 8px; min-height: 24px; color: var(--vscode-descriptionForeground); font-size: 12px; }
+/* Floats over the bottom of the preview so showing it never moves or rescales the page. */
+#status { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 5; padding: 5px 9px; border-radius: 4px; color: var(--vscode-descriptionForeground); font-size: 12px;
+  background: var(--vscode-editorWidget-background,#252526); border: 1px solid var(--vscode-editorWidget-border,#454545); box-shadow: 0 2px 8px #0006; }
+#status.error { border-color: var(--vscode-inputValidation-errorBorder,var(--vscode-errorForeground,#f66)); }
 #status.error { color: var(--vscode-errorForeground,#f66); }
 main { flex: 1; min-height: 0; overflow: auto; overflow-anchor: none; padding: 0; background: var(--vscode-sideBar-background,#252526); }
 #image { width: 100%; height: 100%; display: block; user-select: none; }

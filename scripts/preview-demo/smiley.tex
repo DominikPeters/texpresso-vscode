@@ -1,0 +1,26 @@
+\documentclass{article}
+\usepackage[margin=0.2cm,papersize={5cm,5.6cm}]{geometry}
+\usepackage{tikz}
+
+\begin{document}
+
+\section{Introduction}
+This is an example document. \\
+
+\vspace{10pt}
+
+\begin{tikzpicture}
+  % Draw the face
+  \draw (0, 0) circle (1cm);
+
+  % Draw the eyes
+  \fill (0.3, 0.2) circle (0.1cm);
+  \fill (-0.3, 0.2) circle (0.1cm);
+
+  % Draw the smile
+  \draw (-0.5, -0.3) ..
+    controls (-0.2, -0.6) and (0.2, -0.6) ..
+    (0.5, -0.3);
+\end{tikzpicture}
+
+\end{document}

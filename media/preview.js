@@ -30,6 +30,18 @@
   let format = ['auto', 'png', 'svg'].includes(document.body.dataset.renderingFormat) ? document.body.dataset.renderingFormat :
     ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
+  // Compile errors usually come from source that is briefly invalid while typing. The last good
+  // page stays visible; the error is shown only if it persists, and once shown it stays until a
+  // page renders again, so it never blinks with each keystroke.
+  let problemTimer;
+  function reportProblem(text, delay = 600) {
+    clearTimeout(problemTimer); problemTimer = undefined;
+    if (problem || !delay) { problem = text; describe(); return; }
+    problemTimer = setTimeout(() => { problemTimer = undefined; problem = text; describe(); }, delay);
+  }
+  function clearProblem() { clearTimeout(problemTimer); problemTimer = undefined; problem = ''; }
+  // A newer edit supersedes an error that has not been shown yet.
+  function cancelPendingProblem() { clearTimeout(problemTimer); problemTimer = undefined; }
   let lensImage = globalElement('lensImage');
   let timer, scrollFrame, epoch = 0, lastSnapshot = '', lastTop = 0, lastLeft = 0, direction = 1, programmaticTop, programmaticLeft, customZoomOption;
   let pinchAnchor, pinchOrigin, lastPinchTime = 0, restoring = true, disposing = false;
@@ -648,7 +660,7 @@
           image.hidden = !!svgPage || !!pngPage;
           hideFigure(); tikzIndices = []; objectUrl = url; header = m.header; bounds = header.bounds;
           visualSnapshot = { sequence: header.sequence, revision: header.revision };
-          problem = ''; stale = m.visualOnly === true || sourceToken !== sourceGeneration || !currentSnapshot(header);
+          clearProblem(); stale = m.visualOnly === true || sourceToken !== sourceGeneration || !currentSnapshot(header);
           sheet.dataset.stale = String(stale); sheet.hidden = false; sheet.classList.remove('waiting'); element('empty').hidden = true;
           image.alt = `Rendered LaTeX page ${page + 1}`;
           if (!stale) {
@@ -712,7 +724,7 @@
       case 'ping': requestViewport(false, false, true); break;
       case 'state': {
         if (observeSource(m.sequence, m.revision)) { for (const view of views.values()) { view.invalidate(); } }
-        const anchor = topAnchor(); if (m.phase === 'starting' && phase !== 'starting') { problem = ''; }
+        const anchor = topAnchor(); if (m.phase === 'starting' && phase !== 'starting') { clearProblem(); }
         const available = Number.isInteger(m.count) ? clamp(m.count,0,100001) : count;
         complete = m.complete === true;
         // A rolled-back native prefix is not evidence that the old layout has
@@ -731,9 +743,9 @@
       case 'jump': if (m.target) { target(m.target); } else { navigate(m.page, false); requestViewport(false); } break;
       case 'invalidate':
         if (!observeSource(m.sequence, m.revision, m.reset === true)) { sourceGeneration++; revealIntent++; pendingReveal = undefined; }
-        problem = ''; for (const view of views.values()) { view.invalidate(m.retire === true, m.reset === true); } describe(); requestViewport(false); break;
-      case 'error': problem = m.text; if (Number.isInteger(m.page)) { views.get(m.page)?.invalidate(); } else { for (const view of views.values()) { view.invalidate(); } } describe(); break;
-      case 'link-error': problem = m.text; describe(); break;
+        cancelPendingProblem(); for (const view of views.values()) { view.invalidate(m.retire === true, m.reset === true); } describe(); requestViewport(false); break;
+      case 'error': if (Number.isInteger(m.page)) { views.get(m.page)?.invalidate(); } else { for (const view of views.values()) { view.invalidate(); } } describe(); reportProblem(m.text); break;
+      case 'link-error': reportProblem(m.text, 0); break;
       case 'target': target(m); break;
       default: {
         const index = m.header?.page ?? m.page ?? currentPage;
