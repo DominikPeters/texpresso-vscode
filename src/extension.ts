@@ -114,7 +114,8 @@ export function activate(context: vscode.ExtensionContext): void {
           if (action === 'restart') { void startDocument(session.document, false); }
           else if (action === 'pause') { session.setPaused(!session.paused); }
           else { output.show(true); }
-        }, () => { if (activeSession) { sourceFollow.suspend(activeSession); } }, new TikzEditor(vscode));
+        }, () => { if (activeSession) { sourceFollow.suspend(activeSession); } }, new TikzEditor(vscode),
+        settings(activeSession.document).get<'auto' | 'png' | 'svg'>('renderingFormat', 'auto'));
       preview = controller;
     }
     preview?.update();
@@ -416,6 +417,9 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       if (event.affectsConfiguration('texpresso.autoRerun', session.document.uri)) {
         session.setAutoRerun(settings(session.document).get('autoRerun', false));
+      }
+      if (event.affectsConfiguration('texpresso.renderingFormat', session.document.uri)) {
+        preview?.setRenderingFormat(settings(session.document).get<'auto' | 'png' | 'svg'>('renderingFormat', 'auto'));
       }
       const launchKeys = ['command', 'useWSL', 'wslDistribution', 'useChangeRangeMode', 'packageProvider', 'includeDirectories', 'arguments',
         'streamFiles', 'watchDependencies', 'previewLocation'];

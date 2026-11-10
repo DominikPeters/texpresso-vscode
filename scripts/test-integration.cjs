@@ -11,8 +11,13 @@ const { spawnSync } = require('node:child_process');
   if (vsixIndex >= 0 && !process.argv[vsixIndex + 1]) { throw new Error('--vsix requires a file path'); }
   const vsix = path.resolve(vsixIndex >= 0 ? process.argv[vsixIndex + 1] : 'artifacts/texpresso.vsix');
   const profileVaried = process.argv.includes('--profile-varied');
-  const profileAuto = process.argv.includes('--profile-auto') || profileVaried;
-  const preview = process.argv.includes('--preview') || profileAuto || bundled;
+  const realistic = process.argv.includes('--profile-realistic');
+  const svgPatch = process.argv.includes('--profile-svg-patch');
+  const coexistence = process.argv.includes('--latex-workshop');
+  const workshop = process.env.TEXPRESSO_TEST_LATEX_WORKSHOP;
+  if (coexistence && !workshop) { throw new Error('--latex-workshop requires TEXPRESSO_TEST_LATEX_WORKSHOP (an installed extension directory)'); }
+  const profileAuto = process.argv.includes('--profile-auto') || profileVaried || realistic || svgPatch;
+  const preview = process.argv.includes('--preview') || profileAuto || bundled || coexistence;
   const realEngine = process.argv.includes('--real-engine') || preview;
   const useWSL = realEngine && process.platform === 'win32';
   const binary = process.env.TEXPRESSO_BINARY;
@@ -40,6 +45,7 @@ const { spawnSync } = require('node:child_process');
     'chat.disableAIFeatures': true,
     'workbench.colorTheme': 'Default Dark Modern',
     'window.zoomLevel': 0,
+    ...(preview ? { 'window.newWindowDimensions': 'maximized' } : {}),
     'editor.fontSize': 16,
     'telemetry.telemetryLevel': 'off'
   }));
@@ -57,6 +63,14 @@ const { spawnSync } = require('node:child_process');
       if (fs.existsSync(renamed)) { executable = renamed; }
     }
     const profiles = ['--user-data-dir=' + path.join(root, 'user'), '--extensions-dir=' + path.join(root, 'extensions')];
+    if (coexistence) {
+      // Reuse an installed copy without changing the user's extension profile
+      // or duplicating its dependencies on disk.
+      const manifest = JSON.parse(fs.readFileSync(path.join(workshop, 'package.json'), 'utf8'));
+      if (manifest.publisher !== 'James-Yu' || manifest.name !== 'latex-workshop') { throw new Error('Expected the LaTeX Workshop extension'); }
+      fs.mkdirSync(path.join(root, 'extensions'), { recursive: true });
+      fs.symlinkSync(path.resolve(workshop), path.join(root, 'extensions', 'james-yu.latex-workshop-' + manifest.version), process.platform === 'win32' ? 'junction' : 'dir');
+    }
     let development = path.resolve(__dirname, '..');
     if (packaged) {
       const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(executable, { reuseMachineInstall: true });
@@ -76,7 +90,7 @@ const { spawnSync } = require('node:child_process');
       reuseMachineInstall: true,
       version: process.env.VSCODE_VERSION || 'stable',
       extensionDevelopmentPath: development,
-      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (profileVaried ? 'varied-profile.js' : profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
+      extensionTestsPath: path.resolve(__dirname, '../out/test/integration/' + (svgPatch ? 'svg-patch-profile.js' : realistic ? 'realistic-profile.js' : coexistence ? 'latex-workshop.js' : profileVaried ? 'varied-profile.js' : profileAuto ? 'auto-profile.js' : preview ? 'preview.js' : realEngine ? 'real-engine.js' : 'index.js')),
       extensionTestsEnv: {
         TEXPRESSO_PROFILE: profileVaried ? '1' : process.env.TEXPRESSO_PROFILE,
         TEXPRESSO_TEST_WEBVIEW_ONLY: process.env.TEXPRESSO_TEST_WEBVIEW_ONLY,
@@ -97,6 +111,14 @@ const { spawnSync } = require('node:child_process');
         TEXPRESSO_PROFILE_RAPID_EARLY: process.env.TEXPRESSO_PROFILE_RAPID_EARLY,
         TEXPRESSO_PROFILE_SCENARIO: process.env.TEXPRESSO_PROFILE_SCENARIO,
         TEXPRESSO_PROFILE_OUTPUT: process.env.TEXPRESSO_PROFILE_OUTPUT,
+        TEXPRESSO_SVG_PATCH_CAPTURE: process.env.TEXPRESSO_SVG_PATCH_CAPTURE,
+        TEXPRESSO_SVG_PATCH_BASELINE: process.env.TEXPRESSO_SVG_PATCH_BASELINE,
+        TEXPRESSO_PROFILE_FEATURES: process.env.TEXPRESSO_PROFILE_FEATURES,
+        TEXPRESSO_REAL_CASES: process.env.TEXPRESSO_REAL_CASES,
+        TEXPRESSO_REAL_WIDTHS: process.env.TEXPRESSO_REAL_WIDTHS,
+        TEXPRESSO_REAL_REPEATS: process.env.TEXPRESSO_REAL_REPEATS,
+        TEXPRESSO_REAL_DPR: process.env.TEXPRESSO_REAL_DPR,
+        TEXPRESSO_REAL_CAPTURE: process.env.TEXPRESSO_REAL_CAPTURE,
         TEXPRESSO_PROFILE_RESUME: process.env.TEXPRESSO_PROFILE_RESUME,
         TEXPRESSO_PROFILE_PAGES: process.env.TEXPRESSO_PROFILE_PAGES,
         TEXPRESSO_PROFILE_KINDS: process.env.TEXPRESSO_PROFILE_KINDS,
@@ -110,15 +132,16 @@ const { spawnSync } = require('node:child_process');
       // must not suspend their assertions or distort scheduled typing.
       // https://www.electronjs.org/docs/latest/api/command-line-switches
       // https://github.com/GoogleChrome/chrome-launcher/blob/main/docs/chrome-flags-for-tools.md
-      launchArgs: [workspaceFile, ...(preview ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
+      launchArgs: [workspaceFile, ...(preview ? ['--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'] : []), ...(packaged || coexistence ? [] : ['--disable-extensions']), '--disable-extension=github.copilot-chat', '--skip-welcome', '--skip-release-notes',
         '--disable-workspace-trust', ...profiles,
         ...(process.platform === 'linux' && process.getuid?.() === 0 ? ['--no-sandbox'] : []),
+        ...(realistic && process.env.TEXPRESSO_REAL_DPR ? ['--force-device-scale-factor=' + Number(process.env.TEXPRESSO_REAL_DPR)] : []),
         ...(process.env.TEXPRESSO_DEBUG_PORT ? ['--remote-debugging-port=' + process.env.TEXPRESSO_DEBUG_PORT] : [])]
     });
     failed = false;
   } finally {
     if (failed) {
-      const diagnostics = path.resolve(process.env.TEXPRESSO_TEST_ARTIFACTS || 'artifacts', realEngine ? 'real-engine-host' : packaged ? 'packaged-host' : 'development-host');
+      const diagnostics = path.resolve(process.env.TEXPRESSO_TEST_ARTIFACTS || 'artifacts', coexistence ? 'latex-workshop-host' : realEngine ? 'real-engine-host' : packaged ? 'packaged-host' : 'development-host');
       fs.mkdirSync(diagnostics, { recursive: true });
       for (const entry of ['user/logs', 'engine.jsonl', 'workspace', 'fixture.code-workspace']) {
         const source = path.join(root, entry);

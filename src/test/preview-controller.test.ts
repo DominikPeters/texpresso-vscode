@@ -6,7 +6,7 @@ import type { Command } from '../protocol';
 import { PreviewController } from '../preview-controller';
 import type { TikzActions } from '../tikz-editor';
 
-function fixture(tikz?: TikzActions) {
+function fixture(tikz?: TikzActions, renderingFormat?: 'auto' | 'png' | 'svg') {
   let receive!: (value: unknown) => void, view!: () => void, closed!: () => void;
   let stops = 0;
   const messages: Record<string, any>[] = [], commands: Command[] = [], opened: string[] = [];
@@ -20,11 +20,27 @@ function fixture(tikz?: TikzActions) {
   const session = { embedded: true, state: 'running', paused: false, previewSequence: 0,
     document: { fileName: '/work/main.tex' }, send: (command: Command) => commands.push(command) };
   const controller = new PreviewController(api as unknown as typeof vscode, {} as vscode.Uri,
-    session as unknown as TexpressoSession, () => { stops++; }, () => {}, undefined, tikz);
+    session as unknown as TexpressoSession, () => { stops++; }, () => {}, undefined, tikz, renderingFormat);
   const instance = () => panel.webview.html.match(/data-instance="([^"]+)"/)![1];
   return { controller, panel, session, messages, commands, opened, stops: () => stops,
     send: (m: object) => receive({ instance: instance(), ...m }), view: () => view() };
 }
+
+test('rendering settings initialize the preview and publish changes without an engine restart or toolbar dropdown', () => {
+  const f = fixture(undefined, 'png');
+  try {
+    assert.match(f.panel.webview.html, /data-rendering-format="png"/);
+    assert.doesNotMatch(f.panel.webview.html, /id="format"/);
+    assert.match(f.panel.webview.html, /id="zoomOut"[\s\S]*id="zoom"[\s\S]*id="zoomIn"/);
+    f.controller.setRenderingFormat('svg');
+    assert.equal(f.messages.at(-1)?.renderingFormat, 'svg');
+    assert.equal(f.stops(), 0);
+    f.controller.setRenderingFormat('auto');
+    assert.equal(f.messages.at(-1)?.renderingFormat, 'auto');
+    f.controller.setRenderingFormat('invalid' as 'png');
+    assert.equal(f.messages.at(-1)?.renderingFormat, 'png');
+  } finally { f.controller.dispose(); }
+});
 
 test('preview admits one frame until decode acknowledgment and ignores messages from another webview', () => {
   const f = fixture();
@@ -441,6 +457,25 @@ function autoFrame(id: number, svg = false, cost = 40000, sequence = 0, revision
     byteLength: bytes.length, svgEligible: true, vectorCost: cost }, bytes };
 }
 
+test('position-only SVG patches retain their render-cost observation', () => {
+  const f=fixture();(f.session as typeof f.session & {previewSvg:boolean}).previewSvg=true;
+  const frame=(id:number,revision:number,sequence:number,x:number)=>{
+    const bytes=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><defs><path id="a" d="M0 0L1 1"/></defs>'+Array.from({length:80},(_,i)=>`<use href="#a" transform="translate(${i===20?x:i} 0)"/>`).join('')+'</svg>');
+    return {header:{...cachedFrame(id).header,revision,sequence,mime:'image/svg+xml' as const,byteLength:bytes.length,vectorCost:1600,exportMs:2},bytes};
+  };
+  try {
+    f.controller.handle(['preview-state',1,0,1,true,0]);f.send({type:'ready',page:0,width:1200,format:'svg',svgDom:true});
+    f.controller.handle(frame(1,1,0,20));const first=f.messages.filter(m=>m.type==='image').at(-1)!;
+    f.send({type:'decoded',id:1,svg:first.contentId,cached:[first.contentId],renderMs:1});
+    const observed:unknown[][]=[];(f.controller as any).renderCosts.record=(...args:unknown[])=>observed.push(args);
+    f.session.previewSequence=1;f.controller.handle({sourceSequence:1});f.controller.handle(['preview-invalidated',2,1]);f.controller.handle(['preview-state',2,1,1,true,0]);
+    f.controller.handle(frame(2,2,1,40));const image=f.messages.filter(m=>m.type==='image').at(-1)!;
+    assert.equal(image.svgPatch.operations.length,0);assert.equal(image.svgPatch.transforms.length,1);
+    f.send({type:'decoded',id:2,svg:image.contentId,cached:[image.contentId],renderMs:1});
+    assert.equal(observed.length,1);assert.equal(observed[0][1],'svg');assert.equal(observed[0][2],true);
+  }finally{f.controller.dispose();}
+});
+
 test('Auto starts with native complexity selection, upgrades after idle and learns to keep SVG across edits', t => {
   (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] }); const f = autoFixture();
   try {
@@ -651,6 +686,30 @@ function continuousFrame(command: Command, page: number, extra: object = {}) {
     mime: 'image/png' as const, byteLength: 4, ...extra }, bytes: Buffer.from([1, 2, 3, 4]) };
 }
 const prefetchDelay = () => new Promise(resolve => setTimeout(resolve, 175));
+
+test('active-page detail survives queued visible-neighbor renders', () => {
+  const f = fixture();
+  (f.session as typeof f.session & { previewRegions: boolean }).previewRegions = true;
+  try {
+    f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    f.send({ type: 'ready', page: 0, width: 1000, format: 'png', continuous: true,
+      visible: [0, 1, 2].map(page => ({ page, width: 1000 })), nearby: [], resident: [0, 1, 2], epoch: 0 });
+    const first = f.commands.at(-1)!;
+    f.controller.handle(continuousFrame(first, 0)); f.send({ type: 'decoded', id: first[1], page: 0 });
+    const neighbor = f.commands.at(-1)!; assert.equal(neighbor[2], 1);
+    f.send({ type: 'detail', page: 0, revision: 1, sequence: 0, token: 7, bounds: [0, 0, 600, 400], width: 2000 });
+    // Interactive detail may interrupt/restart the secondary-page request.
+    const activeNeighbor = f.commands.at(-1)!; assert.equal(activeNeighbor[2], 1);
+    f.controller.handle(continuousFrame(activeNeighbor, 1)); f.send({ type: 'decoded', id: activeNeighbor[1], page: 1 });
+    const last = f.commands.at(-1)!; assert.equal(last[2], 2, 'visible base pages precede detail');
+    f.controller.handle(continuousFrame(last, 2)); f.send({ type: 'decoded', id: last[1], page: 2 });
+    const crop = f.commands.at(-1)!;
+    assert.equal(crop[0], 'preview-region', 'the queued detail must eventually receive credit');
+    assert.equal(crop[2], 0); assert.equal(crop[3], 2000);
+    f.controller.handle(continuousFrame(crop, 0, { bounds: [0, 0, 600, 400] }));
+    assert.equal(f.messages.filter(m => m.type === 'detail').at(-1)?.token, 7);
+  } finally { f.controller.dispose(); }
+});
 
 test('continuous viewport serves visible neighbors without turning native page observations into jumps', () => {
   const f = fixture();

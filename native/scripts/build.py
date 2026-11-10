@@ -110,7 +110,7 @@ def main():
          'CSYSFLAGS=' + shell_flags(['-isysroot', sdk, '-DXETEX_MAC',
                                     '-I' + str(args.icu_prefix / 'include'),
                                     '-I' + str(host_prefix / 'include'), '-fno-common'])], cwd=txp)
-    run(['make', 'test-preview-png'], cwd=txp)
+    run(['make', 'test-preview-png', 'test-dvi-annotations'], cwd=txp)
     probe = subprocess.run([str(txp / 'build/texpresso'), '-capabilities'], capture_output=True, text=True, timeout=5)
     try:
         capabilities = json.loads(probe.stdout) if probe.returncode == 0 else {}

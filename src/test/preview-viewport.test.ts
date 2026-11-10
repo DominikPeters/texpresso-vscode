@@ -6,7 +6,7 @@ type Region = { token: number; bounds: number[]; width: number };
 const { wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = require('../../media/preview-viewport.js') as {
   wheelFactor(delta: number, mode: number): number;
   scrollCorrection(before: Rect, after: Rect, origin: { x: number; y: number }, point?: { x: number; y: number }): { x: number; y: number };
-  syncScrollCorrection(point: { x: number; y: number }, viewport: Rect, fitText?: boolean): { x: number; y: number };
+  syncScrollCorrection(point: { x: number; y: number }, viewport: Rect, automatic?: boolean): { x: number; y: number };
   rasterWidth(bounds: number[], cssWidth: number, dpr: number): number;
   DetailCache: { new(): {
     cached?: { bounds: number[]; width: number }; pending?: Region;
@@ -105,14 +105,15 @@ test('SyncTeX leaves visible targets still and rejects small margin corrections 
   // Bottom comfortable edge is 602px; 1–4px drift must not recenter it.
   assert.deepEqual(syncScrollCorrection({ x: 300, y: 606 }, viewport), { x: 0, y: 0 });
   assert.deepEqual(syncScrollCorrection({ x: 300, y: 700 }, viewport), { x: 0, y: 350 });
-  assert.deepEqual(syncScrollCorrection({ x: 40, y: 350 }, viewport), { x: -460, y: 0 });
+  assert.deepEqual(syncScrollCorrection({ x: 40, y: 350 }, viewport), { x: -84, y: 0 });
+  assert.deepEqual(syncScrollCorrection({ x: 960, y: 350 }, viewport), { x: 84, y: 0 });
   assert.deepEqual(syncScrollCorrection({ x: 4, y: 5 }, { left: 0, top: 0, width: 10, height: 10 }), { x: 0, y: 0 });
 });
 
-test('text-fit SyncTeX keeps visible gutter targets still while retaining vertical and offscreen following', () => {
+test('automatic SyncTeX preserves horizontal position even for offscreen targets; explicit jumps reveal only when needed', () => {
   const viewport = { left: 100, top: 50, width: 800, height: 600 };
   for (const x of [96, 100, 112, 888, 900, 904]) { assert.equal(syncScrollCorrection({ x, y: 300 }, viewport, true).x, 0); }
   assert.deepEqual(syncScrollCorrection({ x: 112, y: 700 }, viewport, true), { x: 0, y: 350 });
-  assert.equal(syncScrollCorrection({ x: 80, y: 300 }, viewport, true).x, -420);
-  assert.notEqual(syncScrollCorrection({ x: 112, y: 300 }, viewport).x, 0, 'other zoom modes retain their comfortable horizontal margins');
+  for (const x of [-500, 80, 920, 2000]) { assert.equal(syncScrollCorrection({ x, y: 300 }, viewport, true).x, 0); }
+  assert.equal(syncScrollCorrection({ x: 112, y: 300 }, viewport).x, 0, 'explicit jumps also leave visible targets still');
 });

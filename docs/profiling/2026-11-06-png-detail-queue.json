@@ -1,0 +1,1031 @@
+{
+  "method": "Same graphics slides, width 1100, DPR 2, existing native bundle; before has 1 measured repetition, after has 2; repetition zero excluded in each.",
+  "variants": {
+    "before": {
+      "metadata": {
+        "schema": 1,
+        "created": "2026-11-06T20:53:29.835Z",
+        "vscode": "1.145.0",
+        "platform": "darwin",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "cpus": 8,
+        "memory": 17179869184,
+        "binarySha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+        "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+        "runtimeHashes": {
+          "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+          "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+          "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+          "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+          "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+          "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+          "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+          "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+          "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+          "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+          "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+          "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+          "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+          "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+          "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+          "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+          "out/preview-controller.js": "cdac4a86651657ef952b437d9640a67f6a02b908f1972a8c445635bea93e50be",
+          "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+          "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+          "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+          "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+          "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+          "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+          "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+          "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+          "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+          "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+          "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+          "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+          "out/svg-patch.js": "a64d2760199b77b236d977ca14112c039b8a2887cf3ce39f517c05d9528ef99b",
+          "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+          "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+          "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+          "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+          "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+          "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+          "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+          "media/preview-svg.js": "aacd78aff4ec059a8b672da3d061616ca6168042e24b0fb10841c112db63e72f",
+          "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+          "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+          "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+          "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+          "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+          "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+          "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+        },
+        "engineManifest": {
+          "schema": 1,
+          "kind": "development-host-build",
+          "platform": "darwin",
+          "architecture": "arm64",
+          "engineRevision": "8c8553ff574acb1905d6b17208ea026f40738b6f",
+          "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+          "icu": {
+            "version": "78.3",
+            "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+            "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+            "fullBytes": 33109168,
+            "filteredBytes": 10867248,
+            "retainedItems": 267
+          },
+          "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+          "sdk": "MacOSX26.2.sdk",
+          "hostPackageVersions": {
+            "freetype2": "26.7.20",
+            "libjpeg": "3.2.1",
+            "libopenjp2": "2.5.4",
+            "libbrotlidec": "1.2.1",
+            "libbrotlienc": "1.2.1",
+            "sdl2": "2.32.74",
+            "harfbuzz": "15.1.0",
+            "graphite2": "3.3.1",
+            "fontconfig": "2.18.3",
+            "libpng": "1.6.59"
+          },
+          "profiles": {
+            "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+            "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+          },
+          "features": {
+            "externalWindow": true,
+            "embeddedPreview": true
+          },
+          "capabilities": {
+            "previewProtocol": 1,
+            "maxPreviewPixels": 16000000,
+            "codecs": [
+              "png",
+              "svg"
+            ],
+            "synctex": true,
+            "synctexPrecision": 1,
+            "regions": true,
+            "links": true,
+            "tikzFigures": true,
+            "adaptiveRendering": true,
+            "pngPatches": true,
+            "backgroundRendering": true,
+            "prepareEdit": true,
+            "requestLifecycle": true,
+            "parentWatch": true,
+            "packageProviders": [
+              "texlive",
+              "miktex",
+              "miktex-windows",
+              "tectonic"
+            ],
+            "miktexAutoInstall": true,
+            "miktexWindowsBridge": true,
+            "pngCompression": {
+              "library": "zlib-ng",
+              "version": "2.3.3",
+              "level": 2
+            }
+          },
+          "sourceDirty": false,
+          "created": "2026-11-05",
+          "purpose": "Precise source synchronization and cached inverse lookup",
+          "workerProtocol": 2,
+          "zlibNg": {
+            "version": "2.3.3",
+            "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+            "api": "native",
+            "linkage": "static",
+            "pngLevel": 2,
+            "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+          },
+          "renderer": {
+            "library": "MuPDF",
+            "linkage": "static",
+            "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+            "reusedArchives": {
+              "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+              "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+            },
+            "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+          },
+          "hostLibraries": [
+            {
+              "package": "brotli",
+              "version": "1.2.1",
+              "noticesFound": true
+            },
+            {
+              "package": "fontconfig",
+              "version": "2.18.3",
+              "noticesFound": true
+            },
+            {
+              "package": "freetype",
+              "version": "2.15.0",
+              "noticesFound": true
+            },
+            {
+              "package": "gettext",
+              "version": "1.0",
+              "noticesFound": true
+            },
+            {
+              "package": "glib",
+              "version": "2.90.1",
+              "noticesFound": true
+            },
+            {
+              "package": "graphite2",
+              "version": "1.3.15",
+              "noticesFound": true
+            },
+            {
+              "package": "harfbuzz",
+              "version": "15.1.0",
+              "noticesFound": true
+            },
+            {
+              "package": "jbig2dec",
+              "version": "0.20",
+              "noticesFound": true
+            },
+            {
+              "package": "jpeg-turbo",
+              "version": "3.2.1",
+              "noticesFound": true
+            },
+            {
+              "package": "libpng",
+              "version": "1.6.59",
+              "noticesFound": true
+            },
+            {
+              "package": "openjpeg",
+              "version": "2.5.4_1",
+              "noticesFound": true
+            },
+            {
+              "package": "pcre2",
+              "version": "10.49",
+              "noticesFound": true
+            },
+            {
+              "package": "sdl2-compat",
+              "version": "2.32.74",
+              "noticesFound": true
+            },
+            {
+              "package": "sdl3",
+              "version": "3.4.20",
+              "noticesFound": true
+            }
+          ],
+          "files": [
+            {
+              "path": "bin/texpresso",
+              "sha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+              "bytes": 9170656
+            },
+            {
+              "path": "bin/texpresso-xetex",
+              "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+              "bytes": 12968752
+            },
+            {
+              "path": "lib/libSDL3.dylib",
+              "sha256": "b2c30727ba075537d832848ba64aa8b1a106daa342208c0cfd7d9a7abbf6b10a",
+              "bytes": 2177312
+            },
+            {
+              "path": "lib/libharfbuzz.0.dylib",
+              "sha256": "52504a845feb2707ba51adc501d3a923d2b63991d88a7218de63d1fd8e993fb3",
+              "bytes": 1035472
+            },
+            {
+              "path": "lib/libgraphite2.3.3.1.dylib",
+              "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+              "bytes": 122960
+            },
+            {
+              "path": "lib/libfontconfig.1.dylib",
+              "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+              "bytes": 465616
+            },
+            {
+              "path": "lib/libfreetype.6.dylib",
+              "sha256": "fc3569becf77439f8213836cc58bc692e5d804c41fa8d8fc7e427a819c414e6a",
+              "bytes": 615936
+            },
+            {
+              "path": "lib/libpng16.16.dylib",
+              "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+              "bytes": 200368
+            },
+            {
+              "path": "lib/libbrotlidec.1.2.1.dylib",
+              "sha256": "3aa8bf3687559d79ee6854a60fe109643c90186f2b4edac1fe9c970c9b2ab9d4",
+              "bytes": 86512
+            },
+            {
+              "path": "lib/libbrotlicommon.1.2.1.dylib",
+              "sha256": "d736452db8a43e7af86c33ae789a821f26e9545785a86f040b5c7c264095a36c",
+              "bytes": 167936
+            },
+            {
+              "path": "lib/libintl.8.dylib",
+              "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+              "bytes": 223440
+            },
+            {
+              "path": "lib/libglib-2.0.0.dylib",
+              "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+              "bytes": 1237248
+            },
+            {
+              "path": "lib/libpcre2-8.0.dylib",
+              "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+              "bytes": 554864
+            },
+            {
+              "path": "lib/libjpeg.8.3.2.dylib",
+              "sha256": "e8e627953ea97325cf022705ab6126ef74d188f5e5d0fef491ca1fad9abbc68c",
+              "bytes": 445296
+            },
+            {
+              "path": "lib/libopenjp2.2.5.4.dylib",
+              "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+              "bytes": 317728
+            },
+            {
+              "path": "lib/libbrotlienc.1.2.1.dylib",
+              "sha256": "783483c3a4231122016f24ba37f3c392bb18386777a7b9ea97e61af4d0b20e1f",
+              "bytes": 648048
+            },
+            {
+              "path": "lib/libSDL2-2.0.0.dylib",
+              "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+              "bytes": 449696
+            },
+            {
+              "path": "lib/libjbig2dec.0.dylib",
+              "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+              "bytes": 158976
+            }
+          ],
+          "installedBytes": 31276510,
+          "incrementalBuild": {
+            "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+            "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+            "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+            "script": "synctex-bundle-build.py",
+            "makeCommand": [
+              "make",
+              "-j4",
+              "all"
+            ]
+          }
+        },
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=32374883)\t91%; charging; 0:35 remaining present: true\n",
+        "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+        "widths": [
+          1100
+        ],
+        "dpr": 2,
+        "repeats": 2,
+        "codecs": [
+          "png"
+        ],
+        "profileFeatures": false,
+        "cases": [
+          {
+            "id": "graphic-slides",
+            "focusPage": 20,
+            "sourceSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+            "originalSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+            "compatibility": [],
+            "normalizePreviewNumbers": true
+          }
+        ],
+        "limitations": [
+          "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+          "Native task footprint excludes Chromium/GPU memory.",
+          "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+          "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+        ]
+      },
+      "observations": [
+        {
+          "key": "graphic-slides-1100-dpr2-png-1",
+          "warmup": false,
+          "nextPage": {
+            "name": "next-page",
+            "page": 21,
+            "start": 20197.5,
+            "firstVisualMs": 13.5,
+            "sharpMs": null,
+            "durableSharpMs": null,
+            "qualityTimeline": [
+              {
+                "at": 13.5,
+                "sharp": false,
+                "mime": "image/png",
+                "base": 0.868663594470046,
+                "detail": 0
+              }
+            ],
+            "firstQuality": {
+              "ready": true,
+              "sharp": false,
+              "mime": "image/png",
+              "baseRatio": 0.868663594470046,
+              "detailRatio": 0,
+              "detailCovers": false,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1885,
+              "rasterHeight": 1061,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": false,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "finalQuality": {
+              "ready": true,
+              "sharp": false,
+              "mime": "image/png",
+              "baseRatio": 0.868663594470046,
+              "detailRatio": 0,
+              "detailCovers": false,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1885,
+              "rasterHeight": 1061,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": false,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "settledMs": 928.8000000119209,
+            "frameIds": [
+              83,
+              85,
+              86,
+              87,
+              88
+            ],
+            "memory": {
+              "residentBytes": 31935801,
+              "canvasPixels": 5048065,
+              "domNodes": 135,
+              "heapBytes": 3467834
+            },
+            "scroll": [
+              0,
+              28695.5
+            ]
+          },
+          "detailFrames": [],
+          "errors": [],
+          "hidden": false,
+          "visibility": [],
+          "load": [
+            3.9814453125,
+            7.20556640625,
+            6.99560546875
+          ]
+        }
+      ],
+      "warmups": 1
+    },
+    "after": {
+      "metadata": {
+        "schema": 1,
+        "created": "2026-11-06T20:55:27.891Z",
+        "vscode": "1.145.0",
+        "platform": "darwin",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "cpus": 8,
+        "memory": 17179869184,
+        "binarySha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+        "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+        "runtimeHashes": {
+          "out/auto-render-costs.js": "22b97772f415816855c67ceb0de63bc80f980f694f7cb21a354c668773703e8f",
+          "out/byte-buffer.js": "5ba761fe693a08576de6fd4108e96cfc09e82e2179b138d775a140c1412466db",
+          "out/configuration.js": "057a1d6e52bca90acbbe86a5e1917fe206d6eaa7fc3482cdd8ff607fc44fd8f3",
+          "out/controls.js": "77c7582f2e46221cdb758810b833f7a9c1baf0dd92d7ea0c6a3b34470b1a158a",
+          "out/dependencies.js": "fb136bedd15c91319061ee6ea0f26464a09bb9d94b9f8be72cf3eb516ca7f05d",
+          "out/document-sync.js": "79caffb239f32235902ea210aec2475f4494dc1cc4d03945a2d989a7a6a8ff81",
+          "out/edit-prewarm.js": "1c11a16baeec55376a871ddaaa035a09216f9203d74dc0cf273d1b882b68d7f4",
+          "out/engine-process.js": "68db98763537bea7d5555692ec520f1052c8fbb4a1120c54264d30e853ca5e76",
+          "out/engine-selection.js": "1a37dda1d5cade726163ff9d920571e562f345b229de6b5d9f4bbb1b8b248c92",
+          "out/extension.js": "c49e20405c325f643ba0b14fd6a67efaf3fe9e496b115b32a29949a54b5c3086",
+          "out/external-compile.js": "2739d5236b17ffec59ad2aa5b3f7a1e1e23bf00f51f1eeb771182f137f0765b1",
+          "out/failures.js": "6729d7e4dedf2b39cfb867b2a155073bf9bbbb93694c810050019b2033242d87",
+          "out/logs.js": "d50b9c62bc91aa2a9b02d573f92602db3ab9c78e719a8e0969dc01ff2147f7e5",
+          "out/main-document.js": "89250a02c0f88148761261bafcb5b498dd13ae6e437beff7a7530583bc313b1a",
+          "out/paths.js": "58238eccbab57f8b9c0d5b9ec5658ef16c7e3969c0416f556a205082fcd4f9ce",
+          "out/preview-capabilities.js": "183f35c58d18b4d535c553a3cdbf6b8cfa1373b81c7142c9f61f9676729554ca",
+          "out/preview-controller.js": "561ba3e0837f9c994fbd93ace02b25671c3f5a5a43b9e4294dab24c802d41fd6",
+          "out/preview-protocol.js": "de35f6f5881bfdadfeac0bfa3d1d3a147524d8755eb4765e3a894c3769a35713",
+          "out/process-lifecycle.js": "629c6c5675cb54edb59d3e1e0ac60c05c692139080d8639c916ab69b0c20db3d",
+          "out/protocol.js": "6c835cd94b43a48292fe401815f6cae6a206b9fd0f6e3a9aad3d72001ae459a3",
+          "out/recovery.js": "e05f521609cc4ba89d21026e0cdcc0fcada7a489ac8f51c4b19b7e7f06b1bab9",
+          "out/renames.js": "0b7328b1c176f6daf667867bc8f7a2ac290fbc05aea0dc2d5ff982253b9982af",
+          "out/render-fallback.js": "2ce330a78542da67cfb85d693f06ad4bc03f1d95f82fc3659abf1828ebb52be7",
+          "out/root-selection.js": "c1e22a9eef59be537f2fea4c306b1f729724960f86b752bc2acea642bd3be163",
+          "out/rope.js": "c8c037b69e54bc4cd5d4918df4522d24f4958442d6c0509267cab98dec55ccfa",
+          "out/session.js": "a6380bb58588f1c878912ac13beaf29eb224d3187f21f31666426cd6df67ae5a",
+          "out/setup.js": "8a0b725f7edfd24556c3c1b8371d79306f73d8c92bf415f3cf84a8b25d7740a9",
+          "out/source-follow.js": "9fafb9d99c8fac9810c01e665be196eddba491646943b1bd34c68cc2d6428281",
+          "out/source-word.js": "1954d8b23ef455f4076ebec5543acf3b2e4cc7a232eb4f2c652fabdce5f69072",
+          "out/svg-patch.js": "a64d2760199b77b236d977ca14112c039b8a2887cf3ce39f517c05d9528ef99b",
+          "out/tikz-editor.js": "6b7ed19d2f369393e739305a7e5abb8c345ff181a8abbcbb1fac71533cadbbbb",
+          "out/tikz-installation.js": "9afbc8e451726b8f7375b832ed0dafd7f425f49c942d400127e20b218a774cc7",
+          "out/tikz-source.js": "634af87a229d2ce02b35c8aa019b5e579cb66d594c7b9605493a32b620397db0",
+          "out/wsl.js": "0b3ad4f3f9c592f0353c40df86289bfbdc684e865d83eebb840ed790a80f184a",
+          "media/preview-cache.js": "fd5ca5afe25a02da145cc52d8f6fbc4b44ac8b0f6c3a552097c34dffbef1f5a1",
+          "media/preview-lens.js": "5198e9ef426675b9b487c443545e38a34f1362e12fae33cd4a2b4b4510d424d1",
+          "media/preview-png.js": "3e21d1d766e17839ff8ee35172ef3b2c7c9827f9fb6f7483bd4d51ec1035d69a",
+          "media/preview-svg.js": "aacd78aff4ec059a8b672da3d061616ca6168042e24b0fb10841c112db63e72f",
+          "media/preview-viewport.js": "cb407802d2f7f28767756d1c2ea407c37bf92a09b1e64736df76d421c033abd5",
+          "media/preview.css": "0182aef71f04fa3eaddad76b3e8a4341884f4257834ba60d7c2192636b34d6f9",
+          "media/preview.js": "fe2110752aab651c1773543aa06d0791be75039ed85501d90beda85d926e3331",
+          "out/test/integration/realistic-profile.js": "953492ef2be2dfafc75d44208db36c5135f21d463684794886bfdf3c970a88f1",
+          "scripts/profiling/realistic-client.js": "f6f3cda95583e5863b536bd3a82b950681872c605daceb1804bbbde8aca143f8",
+          "scripts/profiling/json-number-bridge.cjs": "ed0b1c876dd50c577d45df20b29935e5fc3888362464e1e9260e54c42555b193",
+          "scripts/profile-preview.cjs": "85dea0b791fd5db2def45ce8b5ac52ecb19f4a9cad04956a824b302f9ac8deb7"
+        },
+        "engineManifest": {
+          "schema": 1,
+          "kind": "development-host-build",
+          "platform": "darwin",
+          "architecture": "arm64",
+          "engineRevision": "8c8553ff574acb1905d6b17208ea026f40738b6f",
+          "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+          "icu": {
+            "version": "78.3",
+            "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+            "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+            "fullBytes": 33109168,
+            "filteredBytes": 10867248,
+            "retainedItems": 267
+          },
+          "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+          "sdk": "MacOSX26.2.sdk",
+          "hostPackageVersions": {
+            "freetype2": "26.7.20",
+            "libjpeg": "3.2.1",
+            "libopenjp2": "2.5.4",
+            "libbrotlidec": "1.2.1",
+            "libbrotlienc": "1.2.1",
+            "sdl2": "2.32.74",
+            "harfbuzz": "15.1.0",
+            "graphite2": "3.3.1",
+            "fontconfig": "2.18.3",
+            "libpng": "1.6.59"
+          },
+          "profiles": {
+            "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+            "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+          },
+          "features": {
+            "externalWindow": true,
+            "embeddedPreview": true
+          },
+          "capabilities": {
+            "previewProtocol": 1,
+            "maxPreviewPixels": 16000000,
+            "codecs": [
+              "png",
+              "svg"
+            ],
+            "synctex": true,
+            "synctexPrecision": 1,
+            "regions": true,
+            "links": true,
+            "tikzFigures": true,
+            "adaptiveRendering": true,
+            "pngPatches": true,
+            "backgroundRendering": true,
+            "prepareEdit": true,
+            "requestLifecycle": true,
+            "parentWatch": true,
+            "packageProviders": [
+              "texlive",
+              "miktex",
+              "miktex-windows",
+              "tectonic"
+            ],
+            "miktexAutoInstall": true,
+            "miktexWindowsBridge": true,
+            "pngCompression": {
+              "library": "zlib-ng",
+              "version": "2.3.3",
+              "level": 2
+            }
+          },
+          "sourceDirty": false,
+          "created": "2026-11-05",
+          "purpose": "Precise source synchronization and cached inverse lookup",
+          "workerProtocol": 2,
+          "zlibNg": {
+            "version": "2.3.3",
+            "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+            "api": "native",
+            "linkage": "static",
+            "pngLevel": 2,
+            "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+          },
+          "renderer": {
+            "library": "MuPDF",
+            "linkage": "static",
+            "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+            "reusedArchives": {
+              "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+              "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+            },
+            "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+          },
+          "hostLibraries": [
+            {
+              "package": "brotli",
+              "version": "1.2.1",
+              "noticesFound": true
+            },
+            {
+              "package": "fontconfig",
+              "version": "2.18.3",
+              "noticesFound": true
+            },
+            {
+              "package": "freetype",
+              "version": "2.15.0",
+              "noticesFound": true
+            },
+            {
+              "package": "gettext",
+              "version": "1.0",
+              "noticesFound": true
+            },
+            {
+              "package": "glib",
+              "version": "2.90.1",
+              "noticesFound": true
+            },
+            {
+              "package": "graphite2",
+              "version": "1.3.15",
+              "noticesFound": true
+            },
+            {
+              "package": "harfbuzz",
+              "version": "15.1.0",
+              "noticesFound": true
+            },
+            {
+              "package": "jbig2dec",
+              "version": "0.20",
+              "noticesFound": true
+            },
+            {
+              "package": "jpeg-turbo",
+              "version": "3.2.1",
+              "noticesFound": true
+            },
+            {
+              "package": "libpng",
+              "version": "1.6.59",
+              "noticesFound": true
+            },
+            {
+              "package": "openjpeg",
+              "version": "2.5.4_1",
+              "noticesFound": true
+            },
+            {
+              "package": "pcre2",
+              "version": "10.49",
+              "noticesFound": true
+            },
+            {
+              "package": "sdl2-compat",
+              "version": "2.32.74",
+              "noticesFound": true
+            },
+            {
+              "package": "sdl3",
+              "version": "3.4.20",
+              "noticesFound": true
+            }
+          ],
+          "files": [
+            {
+              "path": "bin/texpresso",
+              "sha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+              "bytes": 9170656
+            },
+            {
+              "path": "bin/texpresso-xetex",
+              "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+              "bytes": 12968752
+            },
+            {
+              "path": "lib/libSDL3.dylib",
+              "sha256": "b2c30727ba075537d832848ba64aa8b1a106daa342208c0cfd7d9a7abbf6b10a",
+              "bytes": 2177312
+            },
+            {
+              "path": "lib/libharfbuzz.0.dylib",
+              "sha256": "52504a845feb2707ba51adc501d3a923d2b63991d88a7218de63d1fd8e993fb3",
+              "bytes": 1035472
+            },
+            {
+              "path": "lib/libgraphite2.3.3.1.dylib",
+              "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+              "bytes": 122960
+            },
+            {
+              "path": "lib/libfontconfig.1.dylib",
+              "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+              "bytes": 465616
+            },
+            {
+              "path": "lib/libfreetype.6.dylib",
+              "sha256": "fc3569becf77439f8213836cc58bc692e5d804c41fa8d8fc7e427a819c414e6a",
+              "bytes": 615936
+            },
+            {
+              "path": "lib/libpng16.16.dylib",
+              "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+              "bytes": 200368
+            },
+            {
+              "path": "lib/libbrotlidec.1.2.1.dylib",
+              "sha256": "3aa8bf3687559d79ee6854a60fe109643c90186f2b4edac1fe9c970c9b2ab9d4",
+              "bytes": 86512
+            },
+            {
+              "path": "lib/libbrotlicommon.1.2.1.dylib",
+              "sha256": "d736452db8a43e7af86c33ae789a821f26e9545785a86f040b5c7c264095a36c",
+              "bytes": 167936
+            },
+            {
+              "path": "lib/libintl.8.dylib",
+              "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+              "bytes": 223440
+            },
+            {
+              "path": "lib/libglib-2.0.0.dylib",
+              "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+              "bytes": 1237248
+            },
+            {
+              "path": "lib/libpcre2-8.0.dylib",
+              "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+              "bytes": 554864
+            },
+            {
+              "path": "lib/libjpeg.8.3.2.dylib",
+              "sha256": "e8e627953ea97325cf022705ab6126ef74d188f5e5d0fef491ca1fad9abbc68c",
+              "bytes": 445296
+            },
+            {
+              "path": "lib/libopenjp2.2.5.4.dylib",
+              "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+              "bytes": 317728
+            },
+            {
+              "path": "lib/libbrotlienc.1.2.1.dylib",
+              "sha256": "783483c3a4231122016f24ba37f3c392bb18386777a7b9ea97e61af4d0b20e1f",
+              "bytes": 648048
+            },
+            {
+              "path": "lib/libSDL2-2.0.0.dylib",
+              "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+              "bytes": 449696
+            },
+            {
+              "path": "lib/libjbig2dec.0.dylib",
+              "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+              "bytes": 158976
+            }
+          ],
+          "installedBytes": 31276510,
+          "incrementalBuild": {
+            "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+            "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+            "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+            "script": "synctex-bundle-build.py",
+            "makeCommand": [
+              "make",
+              "-j4",
+              "all"
+            ]
+          }
+        },
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=32374883)\t92%; charging; 0:32 remaining present: true\n",
+        "powerSettings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         20\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           1\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10\n",
+        "widths": [
+          1100
+        ],
+        "dpr": 2,
+        "repeats": 3,
+        "codecs": [
+          "png"
+        ],
+        "profileFeatures": false,
+        "cases": [
+          {
+            "id": "graphic-slides",
+            "focusPage": 20,
+            "sourceSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+            "originalSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+            "compatibility": [],
+            "normalizePreviewNumbers": true
+          }
+        ],
+        "limitations": [
+          "Two requestAnimationFrame callbacks are a paint opportunity, not display scanout.",
+          "Native task footprint excludes Chromium/GPU memory.",
+          "In-memory source edits use production DocumentSync; physical key dispatch is not measured.",
+          "Capture pixels are composed from actual mounted webview surfaces, not an OS screenshot."
+        ]
+      },
+      "observations": [
+        {
+          "key": "graphic-slides-1100-dpr2-png-1",
+          "warmup": false,
+          "nextPage": {
+            "name": "next-page",
+            "page": 21,
+            "start": 20616.5,
+            "firstVisualMs": 14.200000002980232,
+            "sharpMs": 776.8999999910593,
+            "durableSharpMs": 776.8999999910593,
+            "qualityTimeline": [
+              {
+                "at": 14.200000002980232,
+                "sharp": false,
+                "mime": "image/png",
+                "base": 0.868663594470046,
+                "detail": 0
+              },
+              {
+                "at": 776.8999999910593,
+                "sharp": true,
+                "mime": "image/png",
+                "base": 0.868663594470046,
+                "detail": 1
+              }
+            ],
+            "firstQuality": {
+              "ready": true,
+              "sharp": false,
+              "mime": "image/png",
+              "baseRatio": 0.868663594470046,
+              "detailRatio": 0,
+              "detailCovers": false,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1885,
+              "rasterHeight": 1061,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": false,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "finalQuality": {
+              "ready": true,
+              "sharp": true,
+              "mime": "image/png",
+              "baseRatio": 0.868663594470046,
+              "detailRatio": 1,
+              "detailCovers": true,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1885,
+              "rasterHeight": 1061,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": true,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "settledMs": 952.5,
+            "frameIds": [
+              81,
+              83,
+              84,
+              85,
+              86,
+              87
+            ],
+            "memory": {
+              "residentBytes": 31935801,
+              "canvasPixels": 5048065,
+              "domNodes": 135,
+              "heapBytes": 3400605
+            },
+            "scroll": [
+              0,
+              28695.5
+            ]
+          },
+          "detailFrames": [
+            {
+              "id": 85,
+              "page": 21,
+              "sequence": 43,
+              "revision": 81,
+              "width": 2170,
+              "height": 1221,
+              "renderMs": null,
+              "painted": 21401.79999999702
+            }
+          ],
+          "errors": [],
+          "hidden": false,
+          "visibility": [],
+          "load": [
+            5.8876953125,
+            6.97607421875,
+            6.93359375
+          ]
+        },
+        {
+          "key": "graphic-slides-1100-dpr2-png-2",
+          "warmup": false,
+          "nextPage": {
+            "name": "next-page",
+            "page": 21,
+            "start": 20037,
+            "firstVisualMs": 12.399999991059303,
+            "sharpMs": 770.3999999910593,
+            "durableSharpMs": 770.3999999910593,
+            "qualityTimeline": [
+              {
+                "at": 12.399999991059303,
+                "sharp": false,
+                "mime": "image/png",
+                "base": 0.6142857142857143,
+                "detail": 0
+              },
+              {
+                "at": 770.3999999910593,
+                "sharp": true,
+                "mime": "image/png",
+                "base": 0.868663594470046,
+                "detail": 1
+              }
+            ],
+            "firstQuality": {
+              "ready": true,
+              "sharp": false,
+              "mime": "image/png",
+              "baseRatio": 0.6142857142857143,
+              "detailRatio": 0,
+              "detailCovers": false,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1333,
+              "rasterHeight": 750,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": false,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "finalQuality": {
+              "ready": true,
+              "sharp": true,
+              "mime": "image/png",
+              "baseRatio": 0.868663594470046,
+              "detailRatio": 1,
+              "detailCovers": true,
+              "cssWidth": 1085,
+              "cssHeight": 610.3125,
+              "rasterWidth": 1885,
+              "rasterHeight": 1061,
+              "visible": {
+                "left": 0,
+                "top": 37.0625,
+                "right": 1085,
+                "bottom": 647.375
+              },
+              "detail": true,
+              "sequence": 43,
+              "baseNode": "CANVAS"
+            },
+            "settledMs": 912.3999999910593,
+            "frameIds": [
+              81,
+              83,
+              84,
+              85,
+              86,
+              87
+            ],
+            "memory": {
+              "residentBytes": 31935801,
+              "canvasPixels": 5048065,
+              "domNodes": 135,
+              "heapBytes": 3919919
+            },
+            "scroll": [
+              0,
+              28695.5
+            ]
+          },
+          "detailFrames": [
+            {
+              "id": 85,
+              "page": 21,
+              "sequence": 43,
+              "revision": 79,
+              "width": 2170,
+              "height": 1221,
+              "renderMs": null,
+              "painted": 20808.09999999404
+            }
+          ],
+          "errors": [],
+          "hidden": false,
+          "visibility": [],
+          "load": [
+            5.330078125,
+            6.7685546875,
+            6.85888671875
+          ]
+        }
+      ],
+      "warmups": 1
+    }
+  }
+}
