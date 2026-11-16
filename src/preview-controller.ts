@@ -49,6 +49,9 @@ export class PreviewController {
   private page = 0;
   private viewportPage = 0;
   private navigationObservation?: number;
+  private nextViewportRequest = 0;
+  private awaitingViewport?: number;
+  private viewportTimeout?: ReturnType<typeof setTimeout>;
   private sourcePage?: number;
   private width = 1200;
   private clip?: Clip;
@@ -140,6 +143,7 @@ export class PreviewController {
     this.panel.onDidChangeViewState(() => {
       if (visible === this.panel.visible) { return; }
       visible = this.panel.visible; this.renderIntent++; this.sourcePage = undefined;
+      this.releaseViewport();
       this.interactive(); this.gesture = false; this.ready = false; this.release(); this.dirty = true; this.region = undefined; this.detail = undefined; this.target = undefined;
       this.shown = undefined; this.presented.clear(); this.resident.clear(); this.visible = []; this.nearby = []; this.cancelPrefetch(); this.destination = undefined; this.destinationPage = undefined; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBases.clear(); this.svgBase = undefined; this.svgPending = undefined; this.inverse = undefined; this.forceNative = false;
       // A restored webview announces ready; a retained live one answers ping.
@@ -149,7 +153,7 @@ export class PreviewController {
     });
     this.panel.onDidDispose(() => {
       const notify = !this.disposed;
-      this.disposed = true; this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBases.clear(); this.svgBase = undefined; this.svgPending = undefined;
+      this.disposed = true; this.releaseViewport(); this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBases.clear(); this.svgBase = undefined; this.svgPending = undefined;
       if (notify) { closed(); }
     });
     this.html = `<!doctype html><html><head><meta charset="utf-8">
@@ -198,6 +202,7 @@ export class PreviewController {
   }
 
   private recoverWebview(): void {
+    this.releaseViewport();
     this.session.debugPreviewRecovery?.('webview acknowledgment timeout');
     if (!this.webviewRecovery.take()) {
       this.release(); this.ready = false;
@@ -272,7 +277,7 @@ export class PreviewController {
         case 'preview-destination':
           if (event[1] !== this.state?.[1] || event[2] !== this.session.previewSequence || event[3] !== this.destination) { break; }
           if (event[4] < 0) { this.destination = undefined; this.destinationPage = undefined; void this.post({ type: 'link-error', text: 'This link target is not available in the document yet.' }); }
-          else { this.sourcePage = undefined; this.viewportPage = event[4]; this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.selectPage(event[4]); this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; void this.post({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
+          else { this.sourcePage = undefined; this.viewportPage = event[4]; this.renderIntent++; if (this.page !== event[4]) { this.svgDecodeFailed = false; } this.selectPage(event[4]); this.destinationPage = event[4]; this.shown = undefined; this.target = undefined; this.dirty = true; this.jump({ type: 'jump', page: this.page, destination: this.destination }); this.status(); this.flush(); }
           break;
         case 'preview-forward':
           if (!this.sourceFollowing) { break; }
@@ -282,7 +287,7 @@ export class PreviewController {
           this.sourcePage = event[3];
           this.target = { revision: event[1], sequence: event[2], page: event[3], x: event[4], y: event[5], highlight: this.sourceHighlight,
             ...(event[6] ? { rectangles: event[6] } : {}) };
-          if (this.continuous) { this.shown = this.presented.get(event[3])?.header; void this.post({ type: 'jump', page: event[3], target: this.target }); }
+          if (this.continuous) { this.shown = this.presented.get(event[3])?.header; this.jump({ type: 'jump', page: event[3], target: this.target }); }
           if (this.page !== event[3] || !this.shown || this.shown.revision !== event[1]) {
             if (this.page !== event[3]) { this.renderIntent++; this.svgDecodeFailed = false; }
             this.selectPage(event[3]);
@@ -324,7 +329,7 @@ export class PreviewController {
     if (this.state?.[4]) { page = Math.min(page, Math.max(0, this.state[3] - 1)); }
     this.selectPage(page); this.viewportPage = page; this.navigationObservation = page;
     this.manualNavigation();
-    this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; void this.post({ type: 'jump', page: this.page }); this.status(); this.flush();
+    this.dirty = true; this.shown = undefined; this.region = undefined; this.detail = undefined; this.target = undefined; this.jump({ type: 'jump', page: this.page }); this.status(); this.flush();
   }
 
   private selectPage(page: number): void {
@@ -334,6 +339,24 @@ export class PreviewController {
     const demand = this.continuous ? this.visible.find(d => d.page === page) || this.nearby.find(d => d.page === page) : undefined;
     this.page = page;
     if (demand) { this.width = demand.width; this.clip = demand.clip; }
+  }
+
+  private jump(message: { type: 'jump'; page: number; target?: unknown; destination?: string }): void {
+    // Nearby pages have only a coarse prefetch demand. After a jump the browser
+    // must first tell us the target's sharp grid/clip; rendering immediately
+    // would replace a cached sharp canvas with that coarse whole-page raster.
+    this.releaseViewport();
+    const viewportRequest = this.continuous && this.surfaces() ? ++this.nextViewportRequest : undefined;
+    this.awaitingViewport = viewportRequest;
+    if (viewportRequest !== undefined) {
+      this.viewportTimeout = setTimeout(() => {
+        if (this.awaitingViewport === viewportRequest && !this.disposed) { this.recoverWebview(); }
+      }, 10000);
+    }
+    void this.post({ ...message, ...(viewportRequest === undefined ? {} : { viewportRequest }) });
+  }
+  private releaseViewport(): void {
+    clearTimeout(this.viewportTimeout); this.viewportTimeout = undefined; this.awaitingViewport = undefined;
   }
 
   private receive(value: unknown): void {
@@ -369,9 +392,11 @@ export class PreviewController {
         this.interactive(); this.prewarm.refresh(); this.scheduleUpgrade(); break;
       case 'ready':
       case 'viewport':
+        if (this.awaitingViewport !== undefined && m.type !== 'ready' && m.viewportRequest !== this.awaitingViewport) { return; }
         const activeClip = this.clipOf(m.clip, m.width);
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > (activeClip ? 65536 : 4096)) { return; }
+        this.releaseViewport();
         const previousAllocation = this.visible.find(d => d.page === this.page)?.allocation ||
           this.nearby.find(d => d.page === this.page)?.allocation || this.allocation;
         if (m.continuous === true) { this.continuous = true; }
@@ -622,7 +647,7 @@ export class PreviewController {
   }
 
   private flush(): void {
-    if (!this.ready || !this.panel.visible || this.disposed || this.inFlight ||
+    if (!this.ready || !this.panel.visible || this.disposed || this.inFlight || this.awaitingViewport !== undefined ||
         !this.state || this.state[2] !== this.session.previewSequence || this.session.state !== 'running') { return; }
     // Page updates take priority; interactive magnification precedes background detail.
     // All requests share one frame/decode credit.
@@ -765,6 +790,12 @@ export class PreviewController {
       request.intent === this.renderIntent && request.page === this.page && request.width === this.width && sameClip(request.clip, this.clip) && request.format === this.format &&
       (!this.continuous || this.visible.some(demand => demand.page === h.page)) &&
       h.sequence === request.sequence && h.revision === request.revision && h.sequence <= this.session.previewSequence && monotonic;
+    if (this.surfaces() && request.background && !request.region && !request.clip && h.mime === 'image/png' &&
+        this.presented.get(h.page)?.header.clip) {
+      // A late coarse prefetch may be cached, but cannot replace sharp pixels
+      // already held for that page, even while they are stale during an edit.
+      this.release(); this.flush(); return;
+    }
     if (!this.ready || !this.panel.visible || (!currentSource && !visualOnly) ||
         (!this.continuous && request.page !== this.page) || h.page !== request.page || (this.dirty && request.page === this.page && !visualOnly)) {
       this.release(); if (!request.background) { this.dirty = true; } this.flush(); return;
@@ -1048,5 +1079,5 @@ export class PreviewController {
     }
   }
   private release(): void { clearTimeout(this.decodeTimeout); this.decodeTimeout = undefined; this.inFlight = undefined; this.rasterPending = undefined; }
-  dispose(): void { if (!this.disposed) { this.disposed = true; this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBases.clear(); this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
+  dispose(): void { if (!this.disposed) { this.disposed = true; this.releaseViewport(); this.interactive(); this.cancelPrefetch(); this.release(); this.clearPages(); this.svgDocuments.clear(); this.svgDocumentBytes = 0; this.decodedImages.clear(); this.decodedPages.clear(); this.rasterBases.clear(); this.svgBase = undefined; this.svgPending = undefined; this.panel.dispose(); } }
 }

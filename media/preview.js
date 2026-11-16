@@ -37,6 +37,7 @@
   // engines) a capped whole-page base is sharpened by a debounced detail crop.
   // The host states both at creation, so the first layout is already the right one.
   let surfaces = document.body.dataset.surfaces === 'true';
+  let viewportRequest;
   let maxPixels = Number.isSafeInteger(Number(document.body.dataset.maxPixels)) && Number(document.body.dataset.maxPixels) >= 1 ? Number(document.body.dataset.maxPixels) : 4000000;
   const baseCacheBytes = 32 * 1024 * 1024;
   // Compile errors usually come from source that is briefly invalid while typing. The last good
@@ -258,7 +259,7 @@
     // become surfaces of their own once visible.
     const nearby = order.filter(index => index >= 0 && index < geometry.count && !visible.some(entry=>entry.page===index)).map(index => ({ page: index, width: views.get(index)?.width() || desiredWidth(index,geometry.rects[index].bounds,geometry.rects[index].width), allocation: allocation(index) }));
     const active = visible.find(entry => entry.page === currentPage);
-    const snapshot = { page: currentPage, allocation: allocation(currentPage), width: active.width, ...(active.clip ? { clip: active.clip } : {}), format, continuous: true, visible, nearby, resident: resident(), epoch };
+    const snapshot = { page: currentPage, allocation: allocation(currentPage), width: active.width, ...(active.clip ? { clip: active.clip } : {}), format, continuous: true, visible, nearby, resident: resident(), epoch, viewportRequest };
     const key = JSON.stringify(snapshot);
     if (ready || jump || scroll || key !== lastSnapshot) { lastSnapshot = key; post({ type: ready ? 'ready' : 'viewport', ...snapshot, ...(scroll ? { scroll: true } : {}), ...(jump ? { jump: true } : {}), ...(ready ? { svgDom: true, pngCanvas: true } : {}) }); }
   }
@@ -866,7 +867,7 @@
         if (complete) { currentPage = count === 0 ? 0 : Math.min(currentPage,count-1); }
         layoutDocument(true, false, anchor); describe(); break;
       }
-      case 'jump': if (m.target) { target(m.target); } else { navigate(m.page, false); requestViewport(false); } break;
+      case 'jump': viewportRequest = m.viewportRequest; if (m.target) { target(m.target); } else { navigate(m.page, false); requestViewport(false); } break;
       case 'invalidate':
         if (!observeSource(m.sequence, m.revision, m.reset === true)) { sourceGeneration++; revealIntent++; pendingReveal = undefined; }
         cancelPendingProblem(); for (const view of views.values()) { view.invalidate(m.retire === true, m.reset === true); } describe(); requestViewport(false); break;
