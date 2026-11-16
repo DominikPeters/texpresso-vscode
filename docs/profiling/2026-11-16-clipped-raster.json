@@ -1,0 +1,3462 @@
+{
+  "metadata": {
+    "created": "2026-11-16T11:59:23.054Z",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "binarySha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+    "workerSha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+    "nativeManifest": {
+      "schema": 1,
+      "kind": "development-host-build",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "engineRevision": "8c8553ff574acb1905d6b17208ea026f40738b6f",
+      "mupdfRevision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+      "icu": {
+        "version": "78.3",
+        "fullDataSha256": "c444842227506921a7016179b564ffb46ae6343d9f9172e2d987abb9e19538b1",
+        "filteredDataSha256": "affb9a909512ff409d9b6e25cf03e82c46d7ac71ac78e6a6c260f5cc31bc74a0",
+        "fullBytes": 33109168,
+        "filteredBytes": 10867248,
+        "retainedItems": 267
+      },
+      "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+      "sdk": "MacOSX26.2.sdk",
+      "hostPackageVersions": {
+        "freetype2": "26.7.20",
+        "libjpeg": "3.2.1",
+        "libopenjp2": "2.5.4",
+        "libbrotlidec": "1.2.1",
+        "libbrotlienc": "1.2.1",
+        "sdl2": "2.32.74",
+        "harfbuzz": "15.1.0",
+        "graphite2": "3.3.1",
+        "fontconfig": "2.18.3",
+        "libpng": "1.6.59"
+      },
+      "profiles": {
+        "mupdf.mk": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+        "icu-filter.json": "ea916801cf600ddfc6666046b546308cb96fce4b27012518cd892292270b7255"
+      },
+      "features": {
+        "externalWindow": true,
+        "embeddedPreview": true
+      },
+      "capabilities": {
+        "previewProtocol": 1,
+        "maxPreviewPixels": 16000000,
+        "codecs": [
+          "png",
+          "svg"
+        ],
+        "synctex": true,
+        "synctexPrecision": 1,
+        "regions": true,
+        "links": true,
+        "tikzFigures": true,
+        "adaptiveRendering": true,
+        "pngPatches": true,
+        "backgroundRendering": true,
+        "prepareEdit": true,
+        "requestLifecycle": true,
+        "parentWatch": true,
+        "packageProviders": [
+          "texlive",
+          "miktex",
+          "miktex-windows",
+          "tectonic"
+        ],
+        "miktexAutoInstall": true,
+        "miktexWindowsBridge": true,
+        "pngCompression": {
+          "library": "zlib-ng",
+          "version": "2.3.3",
+          "level": 2
+        }
+      },
+      "sourceDirty": false,
+      "created": "2026-11-05",
+      "purpose": "Precise source synchronization and cached inverse lookup",
+      "workerProtocol": 2,
+      "zlibNg": {
+        "version": "2.3.3",
+        "revision": "12731092979c6d07f42da27da673a9f6c7b13586",
+        "api": "native",
+        "linkage": "static",
+        "pngLevel": 2,
+        "librarySha256": "abe8c1fbb99a5ab37f007469465eafa7e6680877d26fd90f3da08a351569f950"
+      },
+      "renderer": {
+        "library": "MuPDF",
+        "linkage": "static",
+        "profileSha256": "dc13840094606a842c09d40d8d6231f4ef0eec15f0767550515b87fe348faaa0",
+        "reusedArchives": {
+          "libmupdf.a": "7ed643bbdce6edddf28cae73e6d89d9f23c23a3abacee3258e44285b5f5fa382",
+          "libmupdf-third.a": "52f3a839d8898ffc7864834023ad24e95e35e97856eb1b58c3629f9d684c4fc6"
+        },
+        "archiveSource": "texpresso-vscode compact build; locked MuPDF revision and matching profile"
+      },
+      "hostLibraries": [
+        {
+          "package": "brotli",
+          "version": "1.2.1",
+          "noticesFound": true
+        },
+        {
+          "package": "fontconfig",
+          "version": "2.18.3",
+          "noticesFound": true
+        },
+        {
+          "package": "freetype",
+          "version": "2.15.0",
+          "noticesFound": true
+        },
+        {
+          "package": "gettext",
+          "version": "1.0",
+          "noticesFound": true
+        },
+        {
+          "package": "glib",
+          "version": "2.90.1",
+          "noticesFound": true
+        },
+        {
+          "package": "graphite2",
+          "version": "1.3.15",
+          "noticesFound": true
+        },
+        {
+          "package": "harfbuzz",
+          "version": "15.1.0",
+          "noticesFound": true
+        },
+        {
+          "package": "jbig2dec",
+          "version": "0.20",
+          "noticesFound": true
+        },
+        {
+          "package": "jpeg-turbo",
+          "version": "3.2.1",
+          "noticesFound": true
+        },
+        {
+          "package": "libpng",
+          "version": "1.6.59",
+          "noticesFound": true
+        },
+        {
+          "package": "openjpeg",
+          "version": "2.5.4_1",
+          "noticesFound": true
+        },
+        {
+          "package": "pcre2",
+          "version": "10.49",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl2-compat",
+          "version": "2.32.74",
+          "noticesFound": true
+        },
+        {
+          "package": "sdl3",
+          "version": "3.4.20",
+          "noticesFound": true
+        }
+      ],
+      "files": [
+        {
+          "path": "bin/texpresso",
+          "sha256": "6f9ee9f2b7dcd3da11fb5eaa8e6fa14a068f31326c3a8db5d851c54149ae6d32",
+          "bytes": 9170656
+        },
+        {
+          "path": "bin/texpresso-xetex",
+          "sha256": "0ba3ab4bd817f9a27baffbbffc9bcfb500d08deaf58faddeb959ed911db9a229",
+          "bytes": 12968752
+        },
+        {
+          "path": "lib/libSDL3.dylib",
+          "sha256": "b2c30727ba075537d832848ba64aa8b1a106daa342208c0cfd7d9a7abbf6b10a",
+          "bytes": 2177312
+        },
+        {
+          "path": "lib/libharfbuzz.0.dylib",
+          "sha256": "52504a845feb2707ba51adc501d3a923d2b63991d88a7218de63d1fd8e993fb3",
+          "bytes": 1035472
+        },
+        {
+          "path": "lib/libgraphite2.3.3.1.dylib",
+          "sha256": "00aad4cadff903e8203c112b2ebcd71299aeb5f6974958534783a9a10be45b99",
+          "bytes": 122960
+        },
+        {
+          "path": "lib/libfontconfig.1.dylib",
+          "sha256": "08ae693ed3d49591fcdd0015c99cb8b7fb313543896c4aaf466dddbfbb08ed13",
+          "bytes": 465616
+        },
+        {
+          "path": "lib/libfreetype.6.dylib",
+          "sha256": "fc3569becf77439f8213836cc58bc692e5d804c41fa8d8fc7e427a819c414e6a",
+          "bytes": 615936
+        },
+        {
+          "path": "lib/libpng16.16.dylib",
+          "sha256": "c5ef4bcca1359bc75be8cbb049434b4dc90fe560c0d0cc728403ed9b96060580",
+          "bytes": 200368
+        },
+        {
+          "path": "lib/libbrotlidec.1.2.1.dylib",
+          "sha256": "3aa8bf3687559d79ee6854a60fe109643c90186f2b4edac1fe9c970c9b2ab9d4",
+          "bytes": 86512
+        },
+        {
+          "path": "lib/libbrotlicommon.1.2.1.dylib",
+          "sha256": "d736452db8a43e7af86c33ae789a821f26e9545785a86f040b5c7c264095a36c",
+          "bytes": 167936
+        },
+        {
+          "path": "lib/libintl.8.dylib",
+          "sha256": "d8304d854f9ba9cedb004d3391e92db192640797d27a8a6f143d7dc291db0473",
+          "bytes": 223440
+        },
+        {
+          "path": "lib/libglib-2.0.0.dylib",
+          "sha256": "93f70b3a11841004cd16356f2a482bfba6ac0d12175aaf169642f9b8164388ab",
+          "bytes": 1237248
+        },
+        {
+          "path": "lib/libpcre2-8.0.dylib",
+          "sha256": "c66dc64ff645dd41b3d9cbec80e3f4916c023660b5cdca6a49df6b3499b09bac",
+          "bytes": 554864
+        },
+        {
+          "path": "lib/libjpeg.8.3.2.dylib",
+          "sha256": "e8e627953ea97325cf022705ab6126ef74d188f5e5d0fef491ca1fad9abbc68c",
+          "bytes": 445296
+        },
+        {
+          "path": "lib/libopenjp2.2.5.4.dylib",
+          "sha256": "af922085d58428f36924547c6c435ed470cd5d5920e2779636f596c7d85b3368",
+          "bytes": 317728
+        },
+        {
+          "path": "lib/libbrotlienc.1.2.1.dylib",
+          "sha256": "783483c3a4231122016f24ba37f3c392bb18386777a7b9ea97e61af4d0b20e1f",
+          "bytes": 648048
+        },
+        {
+          "path": "lib/libSDL2-2.0.0.dylib",
+          "sha256": "51de0582d5a619ca132f7d5376d62ea255e5cd9f4796b2b4dbdc628141805132",
+          "bytes": 449696
+        },
+        {
+          "path": "lib/libjbig2dec.0.dylib",
+          "sha256": "6590d9bad3da78a31d1e37e11a6b9f0b0540f01f83edadabf0296207b65380d3",
+          "bytes": 158976
+        }
+      ],
+      "installedBytes": 31276510,
+      "incrementalBuild": {
+        "dependencyManifestSha256": "d1633aff0496d03dc724ec4a110e475ba3e39781015a7ae316fcb5be6b5c3002",
+        "icuDataObjectSha256": "c12df2b3fc3dce1ce01d312d450fe73617371ac08a35116b49a04833854c3af5",
+        "makefileConfigSha256": "bc3ef9ba829bd0b9f74b5beec005cb5d0655bbc89d8f77c28eaf2fef4508e82d",
+        "script": "synctex-bundle-build.py",
+        "makeCommand": [
+          "make",
+          "-j4",
+          "all"
+        ]
+      }
+    },
+    "harnessSha256": "fce1d6bffe0a478f5fadaab15a331ac39a4f7f3f52d069b06fe3a75ef489ba15",
+    "viewportCss": [
+      1000,
+      700
+    ],
+    "dpr": 2,
+    "repeats": 6,
+    "fixtures": [
+      {
+        "id": "math-paper",
+        "focusPage": 0,
+        "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+        "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b",
+        "compatibility": [
+          "T1 encoding for XeTeX legacy text fonts",
+          "pdfTeX output selection omitted for XeTeX"
+        ]
+      },
+      {
+        "id": "graphic-slides",
+        "focusPage": 20,
+        "sourceSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+        "originalSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+        "compatibility": []
+      },
+      {
+        "id": "election-figure",
+        "focusPage": 2,
+        "sourceSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+        "originalSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+        "compatibility": []
+      }
+    ],
+    "cpu": "Apple M1 Pro"
+  },
+  "cells": [
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 6.635,
+        "min": 6.553,
+        "max": 6.761
+      },
+      "roundTripMs": {
+        "median": 7.7537499999962165,
+        "min": 7.587542000001122,
+        "max": 7.966208999998344
+      },
+      "pngBytes": {
+        "median": 189303,
+        "min": 189303,
+        "max": 189303
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 6.633,
+          "min": 6.552,
+          "max": 6.758
+        },
+        "pipe-write": {
+          "median": 0.095,
+          "min": 0.074,
+          "max": 0.116
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.912,
+          "min": 0.872,
+          "max": 0.945
+        },
+        "png-encode": {
+          "median": 5.705,
+          "min": 5.597,
+          "max": 5.829
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2802000,
+      "exportMs": {
+        "median": 7.792,
+        "min": 7.626,
+        "max": 7.821
+      },
+      "roundTripMs": {
+        "median": 8.761875000003783,
+        "min": 8.648500000002969,
+        "max": 8.934790999999677
+      },
+      "pngBytes": {
+        "median": 224184,
+        "min": 224184,
+        "max": 224184
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.789,
+          "min": 7.623,
+          "max": 7.819
+        },
+        "pipe-write": {
+          "median": 0.11,
+          "min": 0.096,
+          "max": 0.14
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 1.58,
+          "min": 1.547,
+          "max": 1.719
+        },
+        "png-encode": {
+          "median": 6.129,
+          "min": 6.023,
+          "max": 6.248
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 5658000,
+      "exportMs": {
+        "median": 14.322,
+        "min": 13.984,
+        "max": 15.392
+      },
+      "roundTripMs": {
+        "median": 15.497083999995084,
+        "min": 15.324791999999434,
+        "max": 16.627874999998312
+      },
+      "pngBytes": {
+        "median": 348825,
+        "min": 348825,
+        "max": 348825
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 14.319,
+          "min": 13.982,
+          "max": 15.389
+        },
+        "pipe-write": {
+          "median": 0.2,
+          "min": 0.185,
+          "max": 0.239
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 3.653,
+          "min": 3.336,
+          "max": 4.083
+        },
+        "png-encode": {
+          "median": 10.699,
+          "min": 10.631,
+          "max": 11.377
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 3997418,
+      "exportMs": {
+        "median": 11.345,
+        "min": 11,
+        "max": 11.718
+      },
+      "roundTripMs": {
+        "median": 12.538708000000042,
+        "min": 12.076500000002852,
+        "max": 12.993332999998529
+      },
+      "pngBytes": {
+        "median": 279831,
+        "min": 279831,
+        "max": 279831
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 11.341,
+          "min": 10.998,
+          "max": 11.716
+        },
+        "pipe-write": {
+          "median": 0.151,
+          "min": 0.119,
+          "max": 0.19
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 2.978,
+          "min": 2.927,
+          "max": 3.043
+        },
+        "png-encode": {
+          "median": 8.274,
+          "min": 8.004,
+          "max": 8.745
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 179200,
+      "exportMs": {
+        "median": 0.302,
+        "min": 0.3,
+        "max": 0.305
+      },
+      "roundTripMs": {
+        "median": 1.25370799999655,
+        "min": 1.06395799999882,
+        "max": 1.4384999999965657
+      },
+      "pngBytes": {
+        "median": 893,
+        "min": 893,
+        "max": 893
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.301,
+          "min": 0.298,
+          "max": 0.303
+        },
+        "pipe-write": {
+          "median": 0.004,
+          "min": 0.003,
+          "max": 0.005
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.053,
+          "min": 0.014,
+          "max": 0.056
+        },
+        "png-encode": {
+          "median": 0.241,
+          "min": 0.235,
+          "max": 0.279
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 0.487,
+        "min": 0.421,
+        "max": 0.506
+      },
+      "roundTripMs": {
+        "median": 1.5643330000020796,
+        "min": 1.4756249999991269,
+        "max": 1.6955410000009579
+      },
+      "pngBytes": {
+        "median": 5305,
+        "min": 5305,
+        "max": 5305
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.486,
+          "min": 0.42,
+          "max": 0.504
+        },
+        "pipe-write": {
+          "median": 0.004,
+          "min": 0.003,
+          "max": 0.042
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.102,
+          "min": 0.043,
+          "max": 0.107
+        },
+        "png-encode": {
+          "median": 0.382,
+          "min": 0.369,
+          "max": 0.392
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 6.729,
+        "min": 6.641,
+        "max": 7.082
+      },
+      "roundTripMs": {
+        "median": 7.7303329999995185,
+        "min": 7.679958999993687,
+        "max": 8.115749999997206
+      },
+      "pngBytes": {
+        "median": 150313,
+        "min": 150313,
+        "max": 150313
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 6.727,
+          "min": 6.639,
+          "max": 7.08
+        },
+        "pipe-write": {
+          "median": 0.08,
+          "min": 0.073,
+          "max": 0.12
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.797,
+          "min": 1.689,
+          "max": 1.838
+        },
+        "png-encode": {
+          "median": 4.941,
+          "min": 4.854,
+          "max": 5.241
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 7.32,
+        "min": 7.116,
+        "max": 7.502
+      },
+      "roundTripMs": {
+        "median": 8.417709000001196,
+        "min": 8.093583000001672,
+        "max": 8.665499999995518
+      },
+      "pngBytes": {
+        "median": 176152,
+        "min": 176152,
+        "max": 176152
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.318,
+          "min": 7.114,
+          "max": 7.501
+        },
+        "pipe-write": {
+          "median": 0.099,
+          "min": 0.092,
+          "max": 0.102
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.828,
+          "min": 1.795,
+          "max": 2.177
+        },
+        "png-encode": {
+          "median": 5.43,
+          "min": 5.24,
+          "max": 5.555
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 5.306,
+        "min": 5.12,
+        "max": 5.325
+      },
+      "roundTripMs": {
+        "median": 6.33125000000291,
+        "min": 6.079875000003085,
+        "max": 6.422874999996566
+      },
+      "pngBytes": {
+        "median": 111794,
+        "min": 111794,
+        "max": 111794
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 5.304,
+          "min": 5.118,
+          "max": 5.323
+        },
+        "pipe-write": {
+          "median": 0.076,
+          "min": 0.033,
+          "max": 0.097
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.63,
+          "min": 0.628,
+          "max": 0.665
+        },
+        "png-encode": {
+          "median": 4.625,
+          "min": 4.475,
+          "max": 4.686
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 7.082,
+        "min": 6.975,
+        "max": 7.29
+      },
+      "roundTripMs": {
+        "median": 8.141332999999577,
+        "min": 7.997791999994661,
+        "max": 8.447957999997016
+      },
+      "pngBytes": {
+        "median": 201485,
+        "min": 201485,
+        "max": 201485
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.081,
+          "min": 6.973,
+          "max": 7.288
+        },
+        "pipe-write": {
+          "median": 0.106,
+          "min": 0.075,
+          "max": 0.156
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.026,
+          "min": 0.991,
+          "max": 1.131
+        },
+        "png-encode": {
+          "median": 6.044,
+          "min": 5.872,
+          "max": 6.136
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 14993880,
+      "exportMs": {
+        "median": 31.186,
+        "min": 31.034,
+        "max": 31.446
+      },
+      "roundTripMs": {
+        "median": 32.588292000000365,
+        "min": 31.95495800000208,
+        "max": 32.992999999994936
+      },
+      "pngBytes": {
+        "median": 551435,
+        "min": 551435,
+        "max": 551435
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 31.182,
+          "min": 31.03,
+          "max": 31.443
+        },
+        "pipe-write": {
+          "median": 0.389,
+          "min": 0.367,
+          "max": 0.406
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 7.865,
+          "min": 7.451,
+          "max": 8.124
+        },
+        "png-encode": {
+          "median": 23.295,
+          "min": 23.166,
+          "max": 23.882
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 3997418,
+      "exportMs": {
+        "median": 11.26,
+        "min": 11.167,
+        "max": 11.828
+      },
+      "roundTripMs": {
+        "median": 12.403459000001021,
+        "min": 11.471041999997396,
+        "max": 12.694084000002476
+      },
+      "pngBytes": {
+        "median": 279831,
+        "min": 279831,
+        "max": 279831
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 11.257,
+          "min": 11.164,
+          "max": 11.825
+        },
+        "pipe-write": {
+          "median": 0.235,
+          "min": 0.193,
+          "max": 0.342
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 2.965,
+          "min": 2.86,
+          "max": 3.5
+        },
+        "png-encode": {
+          "median": 8.3,
+          "min": 8.222,
+          "max": 8.473
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 179200,
+      "exportMs": {
+        "median": 0.675,
+        "min": 0.612,
+        "max": 0.683
+      },
+      "roundTripMs": {
+        "median": 1.6985840000052121,
+        "min": 1.5502090000009048,
+        "max": 1.8126250000059372
+      },
+      "pngBytes": {
+        "median": 10188,
+        "min": 10188,
+        "max": 10188
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.674,
+          "min": 0.611,
+          "max": 0.681
+        },
+        "pipe-write": {
+          "median": 0.006,
+          "min": 0.005,
+          "max": 0.008
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.235,
+          "min": 0.207,
+          "max": 0.246
+        },
+        "png-encode": {
+          "median": 0.425,
+          "min": 0.393,
+          "max": 0.432
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 0.345,
+        "min": 0.319,
+        "max": 0.449
+      },
+      "roundTripMs": {
+        "median": 1.416083999996772,
+        "min": 1.367166999996698,
+        "max": 1.5088340000002063
+      },
+      "pngBytes": {
+        "median": 1345,
+        "min": 1345,
+        "max": 1345
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.343,
+          "min": 0.318,
+          "max": 0.447
+        },
+        "pipe-write": {
+          "median": 0.003,
+          "min": 0.002,
+          "max": 0.004
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.022,
+          "min": 0.016,
+          "max": 0.113
+        },
+        "png-encode": {
+          "median": 0.317,
+          "min": 0.295,
+          "max": 0.322
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 4.925,
+        "min": 4.866,
+        "max": 4.97
+      },
+      "roundTripMs": {
+        "median": 5.889958000007027,
+        "min": 5.804541999998037,
+        "max": 5.974666000001889
+      },
+      "pngBytes": {
+        "median": 54460,
+        "min": 54460,
+        "max": 54460
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 4.923,
+          "min": 4.863,
+          "max": 4.968
+        },
+        "pipe-write": {
+          "median": 0.018,
+          "min": 0.012,
+          "max": 0.021
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.231,
+          "min": 1.165,
+          "max": 1.242
+        },
+        "png-encode": {
+          "median": 3.667,
+          "min": 3.62,
+          "max": 3.758
+        }
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 6.012,
+        "min": 5.922,
+        "max": 6.222
+      },
+      "roundTripMs": {
+        "median": 7.057375000003958,
+        "min": 6.948083000002953,
+        "max": 7.1600409999955446
+      },
+      "pngBytes": {
+        "median": 116880,
+        "min": 116880,
+        "max": 116880
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 6.009,
+          "min": 5.919,
+          "max": 6.22
+        },
+        "pipe-write": {
+          "median": 0.079,
+          "min": 0.045,
+          "max": 0.106
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.461,
+          "min": 1.351,
+          "max": 1.507
+        },
+        "png-encode": {
+          "median": 4.525,
+          "min": 4.482,
+          "max": 4.697
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 486.439,
+        "min": 483.021,
+        "max": 505.386
+      },
+      "roundTripMs": {
+        "median": 487.99362499999916,
+        "min": 484.1900830000013,
+        "max": 506.3760829999992
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 486.437,
+          "min": 483.019,
+          "max": 505.382
+        },
+        "pipe-write": {
+          "median": 0.373,
+          "min": 0.331,
+          "max": 0.527
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.004
+        },
+        "png-draw": {
+          "median": 478.071,
+          "min": 475.097,
+          "max": 497.086
+        },
+        "png-encode": {
+          "median": 8.209,
+          "min": 7.9,
+          "max": 8.334
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 486.419,
+        "min": 481.059,
+        "max": 498.089
+      },
+      "roundTripMs": {
+        "median": 487.5253329999978,
+        "min": 482.1745839999967,
+        "max": 499.42683299999953
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 486.416,
+          "min": 481.056,
+          "max": 498.086
+        },
+        "pipe-write": {
+          "median": 0.352,
+          "min": 0.324,
+          "max": 0.518
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 478.219,
+          "min": 473.094,
+          "max": 489.794
+        },
+        "png-encode": {
+          "median": 8.182,
+          "min": 7.926,
+          "max": 8.258
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 483.935,
+        "min": 481.195,
+        "max": 488.087
+      },
+      "roundTripMs": {
+        "median": 485.1371250000011,
+        "min": 482.1636670000007,
+        "max": 489.9847919999993
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 483.933,
+          "min": 481.193,
+          "max": 488.083
+        },
+        "pipe-write": {
+          "median": 0.389,
+          "min": 0.299,
+          "max": 0.864
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 475.941,
+          "min": 473.105,
+          "max": 479.71
+        },
+        "png-encode": {
+          "median": 7.977,
+          "min": 7.765,
+          "max": 8.338
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 496.615,
+        "min": 482.075,
+        "max": 501.664
+      },
+      "roundTripMs": {
+        "median": 497.7582079999993,
+        "min": 482.7987910000011,
+        "max": 502.5490420000024
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 496.612,
+          "min": 482.072,
+          "max": 501.658
+        },
+        "pipe-write": {
+          "median": 0.346,
+          "min": 0.337,
+          "max": 0.463
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 488.347,
+          "min": 474.017,
+          "max": 493.484
+        },
+        "png-encode": {
+          "median": 8.147,
+          "min": 8.011,
+          "max": 9.204
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 144128,
+      "exportMs": {
+        "median": 1.343,
+        "min": 1.254,
+        "max": 1.746
+      },
+      "roundTripMs": {
+        "median": 2.1872089999997115,
+        "min": 2.1134170000004815,
+        "max": 2.758625000002212
+      },
+      "pngBytes": {
+        "median": 3349,
+        "min": 3349,
+        "max": 3349
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 1.34,
+          "min": 1.253,
+          "max": 1.743
+        },
+        "pipe-write": {
+          "median": 0.005,
+          "min": 0.004,
+          "max": 0.009
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 1.102,
+          "min": 1.063,
+          "max": 1.156
+        },
+        "png-encode": {
+          "median": 0.189,
+          "min": 0.173,
+          "max": 0.667
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 31.999,
+        "min": 31.516,
+        "max": 32.446
+      },
+      "roundTripMs": {
+        "median": 32.72416599999997,
+        "min": 32.29545800000051,
+        "max": 33.31075000000055
+      },
+      "pngBytes": {
+        "median": 50024,
+        "min": 50024,
+        "max": 50024
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 31.996,
+          "min": 31.514,
+          "max": 32.444
+        },
+        "pipe-write": {
+          "median": 0.017,
+          "min": 0.013,
+          "max": 0.03
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 31.162,
+          "min": 30.669,
+          "max": 31.607
+        },
+        "png-encode": {
+          "median": 0.819,
+          "min": 0.811,
+          "max": 0.862
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 486.153,
+        "min": 483.284,
+        "max": 498.387
+      },
+      "roundTripMs": {
+        "median": 487.32495799999924,
+        "min": 484.6613749999997,
+        "max": 500.28700000000026
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 486.151,
+          "min": 483.281,
+          "max": 498.385
+        },
+        "pipe-write": {
+          "median": 0.41,
+          "min": 0.361,
+          "max": 0.905
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 478.265,
+          "min": 474.984,
+          "max": 490.547
+        },
+        "png-encode": {
+          "median": 7.866,
+          "min": 7.761,
+          "max": 8.26
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2252000,
+      "exportMs": {
+        "median": 490.893,
+        "min": 482.764,
+        "max": 522.883
+      },
+      "roundTripMs": {
+        "median": 493.202833000003,
+        "min": 483.93458400000236,
+        "max": 523.9760000000024
+      },
+      "pngBytes": {
+        "median": 516048,
+        "min": 516048,
+        "max": 516048
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 490.891,
+          "min": 482.762,
+          "max": 522.88
+        },
+        "pipe-write": {
+          "median": 0.378,
+          "min": 0.345,
+          "max": 1.572
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 483.171,
+          "min": 474.755,
+          "max": 514.083
+        },
+        "png-encode": {
+          "median": 8.039,
+          "min": 7.701,
+          "max": 8.759
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 374.636,
+        "min": 372.02,
+        "max": 376.874
+      },
+      "roundTripMs": {
+        "median": 376.28258300000016,
+        "min": 373.0400000000009,
+        "max": 378.36754199999996
+      },
+      "pngBytes": {
+        "median": 637427,
+        "min": 637427,
+        "max": 637427
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 374.632,
+          "min": 372.017,
+          "max": 376.871
+        },
+        "pipe-write": {
+          "median": 0.437,
+          "min": 0.352,
+          "max": 0.505
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 365.011,
+          "min": 362.302,
+          "max": 367.476
+        },
+        "png-encode": {
+          "median": 9.564,
+          "min": 9.274,
+          "max": 9.679
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 724.808,
+        "min": 723.544,
+        "max": 732.412
+      },
+      "roundTripMs": {
+        "median": 726.0739580000009,
+        "min": 725.1092500000013,
+        "max": 734.0410000000047
+      },
+      "pngBytes": {
+        "median": 925480,
+        "min": 925480,
+        "max": 925480
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 724.806,
+          "min": 723.542,
+          "max": 732.41
+        },
+        "pipe-write": {
+          "median": 0.79,
+          "min": 0.643,
+          "max": 1.349
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 711.704,
+          "min": 710.625,
+          "max": 718.87
+        },
+        "png-encode": {
+          "median": 12.983,
+          "min": 12.897,
+          "max": 13.501
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 9004000,
+      "exportMs": {
+        "median": 986.979,
+        "min": 980.165,
+        "max": 1030.128
+      },
+      "roundTripMs": {
+        "median": 989.8660000000018,
+        "min": 982.9498749999984,
+        "max": 1033.861917000002
+      },
+      "pngBytes": {
+        "median": 1613227,
+        "min": 1613227,
+        "max": 1613227
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 986.976,
+          "min": 980.163,
+          "max": 1030.125
+        },
+        "pipe-write": {
+          "median": 2.076,
+          "min": 1.927,
+          "max": 2.119
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 961.155,
+          "min": 954.989,
+          "max": 1004.315
+        },
+        "png-encode": {
+          "median": 25.774,
+          "min": 25.132,
+          "max": 25.845
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 3999000,
+      "exportMs": {
+        "median": 577.866,
+        "min": 575.191,
+        "max": 594.044
+      },
+      "roundTripMs": {
+        "median": 579.1666660000046,
+        "min": 576.2945830000026,
+        "max": 596.3573749999996
+      },
+      "pngBytes": {
+        "median": 822837,
+        "min": 822837,
+        "max": 822837
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 577.864,
+          "min": 575.186,
+          "max": 594.041
+        },
+        "pipe-write": {
+          "median": 0.675,
+          "min": 0.524,
+          "max": 0.765
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 564.591,
+          "min": 562.447,
+          "max": 581.501
+        },
+        "png-encode": {
+          "median": 12.712,
+          "min": 12.518,
+          "max": 13.241
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 179328,
+      "exportMs": {
+        "median": 1.353,
+        "min": 1.271,
+        "max": 1.463
+      },
+      "roundTripMs": {
+        "median": 2.1312089999992168,
+        "min": 1.8881249999976717,
+        "max": 2.2245420000035665
+      },
+      "pngBytes": {
+        "median": 3466,
+        "min": 3466,
+        "max": 3466
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 1.351,
+          "min": 1.268,
+          "max": 1.46
+        },
+        "pipe-write": {
+          "median": 0.005,
+          "min": 0.003,
+          "max": 0.01
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.109,
+          "min": 1.055,
+          "max": 1.156
+        },
+        "png-encode": {
+          "median": 0.206,
+          "min": 0.203,
+          "max": 0.24
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 1.645,
+        "min": 1.554,
+        "max": 1.75
+      },
+      "roundTripMs": {
+        "median": 2.5365419999943697,
+        "min": 2.4914579999967827,
+        "max": 2.724040999994031
+      },
+      "pngBytes": {
+        "median": 14086,
+        "min": 14086,
+        "max": 14086
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 1.642,
+          "min": 1.553,
+          "max": 1.749
+        },
+        "pipe-write": {
+          "median": 0.009,
+          "min": 0.005,
+          "max": 0.011
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.276,
+          "min": 1.195,
+          "max": 1.363
+        },
+        "png-encode": {
+          "median": 0.369,
+          "min": 0.349,
+          "max": 0.371
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 460.947,
+        "min": 458.609,
+        "max": 462.137
+      },
+      "roundTripMs": {
+        "median": 461.97991699999693,
+        "min": 459.0682910000032,
+        "max": 462.98229100000026
+      },
+      "pngBytes": {
+        "median": 574413,
+        "min": 574413,
+        "max": 574413
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 460.945,
+          "min": 458.606,
+          "max": 462.134
+        },
+        "pipe-write": {
+          "median": 0.376,
+          "min": 0.215,
+          "max": 0.389
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 452.267,
+          "min": 449.961,
+          "max": 453.529
+        },
+        "png-encode": {
+          "median": 8.65,
+          "min": 8.576,
+          "max": 8.746
+        }
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 461.451,
+        "min": 455.627,
+        "max": 462.172
+      },
+      "roundTripMs": {
+        "median": 462.3009999999995,
+        "min": 456.3417079999999,
+        "max": 462.940125000001
+      },
+      "pngBytes": {
+        "median": 574413,
+        "min": 574413,
+        "max": 574413
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 461.445,
+          "min": 455.625,
+          "max": 462.132
+        },
+        "pipe-write": {
+          "median": 0.378,
+          "min": 0.316,
+          "max": 0.415
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 452.694,
+          "min": 446.81,
+          "max": 453.426
+        },
+        "png-encode": {
+          "median": 8.727,
+          "min": 8.671,
+          "max": 8.956
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 7.098,
+        "min": 6.897,
+        "max": 7.434
+      },
+      "roundTripMs": {
+        "median": 8.176124999999956,
+        "min": 7.9437089999996715,
+        "max": 8.526000000000067
+      },
+      "pngBytes": {
+        "median": 208141,
+        "min": 208141,
+        "max": 208141
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.096,
+          "min": 6.895,
+          "max": 7.432
+        },
+        "pipe-write": {
+          "median": 0.092,
+          "min": 0.084,
+          "max": 0.118
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.144,
+          "min": 1.076,
+          "max": 1.201
+        },
+        "png-encode": {
+          "median": 5.98,
+          "min": 5.809,
+          "max": 6.272
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 7.627,
+        "min": 7.579,
+        "max": 7.744
+      },
+      "roundTripMs": {
+        "median": 8.73962500000016,
+        "min": 8.312249999999949,
+        "max": 8.790875000000142
+      },
+      "pngBytes": {
+        "median": 232547,
+        "min": 232547,
+        "max": 232547
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.624,
+          "min": 7.577,
+          "max": 7.741
+        },
+        "pipe-write": {
+          "median": 0.117,
+          "min": 0.092,
+          "max": 0.157
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.304,
+          "min": 1.245,
+          "max": 1.33
+        },
+        "png-encode": {
+          "median": 6.305,
+          "min": 6.272,
+          "max": 6.483
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 5178000,
+      "exportMs": {
+        "median": 11.698,
+        "min": 11.522,
+        "max": 11.895
+      },
+      "roundTripMs": {
+        "median": 12.736875000000055,
+        "min": 12.57929200000035,
+        "max": 12.964291000000003
+      },
+      "pngBytes": {
+        "median": 316664,
+        "min": 316664,
+        "max": 316664
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 11.695,
+          "min": 11.519,
+          "max": 11.892
+        },
+        "pipe-write": {
+          "median": 0.196,
+          "min": 0.157,
+          "max": 0.249
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.635,
+          "min": 1.604,
+          "max": 1.766
+        },
+        "png-encode": {
+          "median": 9.985,
+          "min": 9.897,
+          "max": 10.141
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 4001208,
+      "exportMs": {
+        "median": 9.669,
+        "min": 9.498,
+        "max": 9.69
+      },
+      "roundTripMs": {
+        "median": 10.595165999999608,
+        "min": 10.487249999999904,
+        "max": 10.800208000000111
+      },
+      "pngBytes": {
+        "median": 272809,
+        "min": 272809,
+        "max": 272809
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 9.667,
+          "min": 9.496,
+          "max": 9.687
+        },
+        "pipe-write": {
+          "median": 0.16,
+          "min": 0.124,
+          "max": 0.164
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.448,
+          "min": 1.397,
+          "max": 1.485
+        },
+        "png-encode": {
+          "median": 8.189,
+          "min": 8.024,
+          "max": 8.274
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 179200,
+      "exportMs": {
+        "median": 0.304,
+        "min": 0.295,
+        "max": 0.331
+      },
+      "roundTripMs": {
+        "median": 1.257916000000023,
+        "min": 1.1824580000002243,
+        "max": 1.3760419999998703
+      },
+      "pngBytes": {
+        "median": 893,
+        "min": 893,
+        "max": 893
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.303,
+          "min": 0.293,
+          "max": 0.33
+        },
+        "pipe-write": {
+          "median": 0.004,
+          "min": 0.004,
+          "max": 0.005
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 0.053,
+          "min": 0.038,
+          "max": 0.056
+        },
+        "png-encode": {
+          "median": 0.246,
+          "min": 0.232,
+          "max": 0.265
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 0.555,
+        "min": 0.496,
+        "max": 0.695
+      },
+      "roundTripMs": {
+        "median": 1.6084580000001552,
+        "min": 1.2385420000000522,
+        "max": 1.6639170000003105
+      },
+      "pngBytes": {
+        "median": 8165,
+        "min": 8165,
+        "max": 8165
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.554,
+          "min": 0.495,
+          "max": 0.69
+        },
+        "pipe-write": {
+          "median": 0.005,
+          "min": 0.004,
+          "max": 0.009
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.145,
+          "min": 0.082,
+          "max": 0.209
+        },
+        "png-encode": {
+          "median": 0.432,
+          "min": 0.402,
+          "max": 0.523
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 5.497,
+        "min": 5.412,
+        "max": 5.553
+      },
+      "roundTripMs": {
+        "median": 6.381125000000111,
+        "min": 6.2959579999997,
+        "max": 6.757874999999785
+      },
+      "pngBytes": {
+        "median": 129225,
+        "min": 129225,
+        "max": 129225
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 5.494,
+          "min": 5.409,
+          "max": 5.552
+        },
+        "pipe-write": {
+          "median": 0.046,
+          "min": 0.037,
+          "max": 0.063
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 0.727,
+          "min": 0.698,
+          "max": 0.815
+        },
+        "png-encode": {
+          "median": 4.736,
+          "min": 4.663,
+          "max": 4.834
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 7.105,
+        "min": 6.961,
+        "max": 7.508
+      },
+      "roundTripMs": {
+        "median": 8.076958999999988,
+        "min": 7.930042000000412,
+        "max": 8.660624999999982
+      },
+      "pngBytes": {
+        "median": 205324,
+        "min": 205324,
+        "max": 205324
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.102,
+          "min": 6.959,
+          "max": 7.506
+        },
+        "pipe-write": {
+          "median": 0.091,
+          "min": 0.085,
+          "max": 0.267
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.137,
+          "min": 1.069,
+          "max": 1.24
+        },
+        "png-encode": {
+          "median": 5.925,
+          "min": 5.841,
+          "max": 6.245
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "bottom",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 5.851,
+        "min": 5.574,
+        "max": 6.337
+      },
+      "roundTripMs": {
+        "median": 6.986915999999837,
+        "min": 6.691291999999976,
+        "max": 7.426457999999911
+      },
+      "pngBytes": {
+        "median": 129017,
+        "min": 129017,
+        "max": 129017
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 5.848,
+          "min": 5.572,
+          "max": 6.333
+        },
+        "pipe-write": {
+          "median": 0.077,
+          "min": 0.036,
+          "max": 0.096
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.759,
+          "min": 0.736,
+          "max": 0.777
+        },
+        "png-encode": {
+          "median": 5.085,
+          "min": 4.821,
+          "max": 5.536
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "center",
+      "samples": 5,
+      "pixels": 2802000,
+      "exportMs": {
+        "median": 7.145,
+        "min": 6.913,
+        "max": 7.595
+      },
+      "roundTripMs": {
+        "median": 8.229625000000397,
+        "min": 7.950041999999939,
+        "max": 8.664084000000003
+      },
+      "pngBytes": {
+        "median": 189950,
+        "min": 189950,
+        "max": 189950
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 7.141,
+          "min": 6.907,
+          "max": 7.591
+        },
+        "pipe-write": {
+          "median": 0.107,
+          "min": 0.077,
+          "max": 0.158
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.237,
+          "min": 1.095,
+          "max": 1.473
+        },
+        "png-encode": {
+          "median": 5.879,
+          "min": 5.802,
+          "max": 6.097
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "full-sharp",
+      "samples": 5,
+      "pixels": 14998024,
+      "exportMs": {
+        "median": 29.461,
+        "min": 29.131,
+        "max": 30.482
+      },
+      "roundTripMs": {
+        "median": 30.714582999999948,
+        "min": 30.45770799999991,
+        "max": 32.071874999999636
+      },
+      "pngBytes": {
+        "median": 520909,
+        "min": 520909,
+        "max": 520909
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 29.459,
+          "min": 29.128,
+          "max": 30.479
+        },
+        "pipe-write": {
+          "median": 0.346,
+          "min": 0.298,
+          "max": 0.436
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 6.335,
+          "min": 6.166,
+          "max": 6.84
+        },
+        "png-encode": {
+          "median": 23.099,
+          "min": 22.931,
+          "max": 23.607
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "old-base",
+      "samples": 5,
+      "pixels": 4001208,
+      "exportMs": {
+        "median": 9.826,
+        "min": 9.578,
+        "max": 10.34
+      },
+      "roundTripMs": {
+        "median": 10.816667000000052,
+        "min": 10.353625000000193,
+        "max": 11.900624999999764
+      },
+      "pngBytes": {
+        "median": 272809,
+        "min": 272809,
+        "max": 272809
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 9.824,
+          "min": 9.576,
+          "max": 10.338
+        },
+        "pipe-write": {
+          "median": 0.156,
+          "min": 0.141,
+          "max": 0.301
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 1.514,
+          "min": 1.469,
+          "max": 2.19
+        },
+        "png-encode": {
+          "median": 8.201,
+          "min": 8.093,
+          "max": 8.348
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "scroll-strip",
+      "samples": 5,
+      "pixels": 179328,
+      "exportMs": {
+        "median": 0.701,
+        "min": 0.683,
+        "max": 0.72
+      },
+      "roundTripMs": {
+        "median": 1.6363329999999223,
+        "min": 1.521125000000211,
+        "max": 1.7101250000000618
+      },
+      "pngBytes": {
+        "median": 13445,
+        "min": 13445,
+        "max": 13445
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.698,
+          "min": 0.681,
+          "max": 0.719
+        },
+        "pipe-write": {
+          "median": 0.007,
+          "min": 0.006,
+          "max": 0.007
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.186,
+          "min": 0.168,
+          "max": 0.213
+        },
+        "png-encode": {
+          "median": 0.495,
+          "min": 0.48,
+          "max": 0.506
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "tile-512",
+      "samples": 5,
+      "pixels": 262144,
+      "exportMs": {
+        "median": 0.376,
+        "min": 0.332,
+        "max": 0.602
+      },
+      "roundTripMs": {
+        "median": 1.3864579999999478,
+        "min": 1.32354099999975,
+        "max": 1.7891249999997854
+      },
+      "pngBytes": {
+        "median": 1319,
+        "min": 1319,
+        "max": 1319
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 0.375,
+          "min": 0.329,
+          "max": 0.601
+        },
+        "pipe-write": {
+          "median": 0.005,
+          "min": 0.004,
+          "max": 0.009
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.066,
+          "min": 0.021,
+          "max": 0.079
+        },
+        "png-encode": {
+          "median": 0.297,
+          "min": 0.294,
+          "max": 0.506
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "top",
+      "samples": 5,
+      "pixels": 2800000,
+      "exportMs": {
+        "median": 4.176,
+        "min": 4.048,
+        "max": 4.299
+      },
+      "roundTripMs": {
+        "median": 5.100667000000158,
+        "min": 5.016000000000076,
+        "max": 5.288833999999952
+      },
+      "pngBytes": {
+        "median": 52465,
+        "min": 52465,
+        "max": 52465
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 4.174,
+          "min": 4.045,
+          "max": 4.296
+        },
+        "pipe-write": {
+          "median": 0.015,
+          "min": 0.012,
+          "max": 0.017
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-draw": {
+          "median": 0.383,
+          "min": 0.366,
+          "max": 0.407
+        },
+        "png-encode": {
+          "median": 3.747,
+          "min": 3.663,
+          "max": 3.879
+        }
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "plan": "viewport",
+      "samples": 5,
+      "pixels": 2802000,
+      "exportMs": {
+        "median": 5.905,
+        "min": 5.683,
+        "max": 6.034
+      },
+      "roundTripMs": {
+        "median": 6.782958000000235,
+        "min": 6.41445799999974,
+        "max": 6.899792000000161
+      },
+      "pngBytes": {
+        "median": 135370,
+        "min": 135370,
+        "max": 135370
+      },
+      "stages": {
+        "page-export-cache-bypass": {
+          "median": 5.903,
+          "min": 5.681,
+          "max": 6.031
+        },
+        "pipe-write": {
+          "median": 0.101,
+          "min": 0.083,
+          "max": 0.151
+        },
+        "png-color": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "png-compare": {
+          "median": 0,
+          "min": 0,
+          "max": 0.001
+        },
+        "png-draw": {
+          "median": 0.728,
+          "min": 0.701,
+          "max": 0.836
+        },
+        "png-encode": {
+          "median": 5.161,
+          "min": 4.964,
+          "max": 5.204
+        }
+      }
+    }
+  ],
+  "validations": [
+    {
+      "fixture": "math-paper",
+      "mode": "fit",
+      "fullSize": [
+        2000,
+        2589
+      ],
+      "viewportSize": [
+        2000,
+        1400
+      ],
+      "cropComparison": {
+        "comparedPixels": 2800000,
+        "differentPixels": 0,
+        "maxChannelDelta": 0,
+        "meanChannelDelta": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "fullSize": [
+        3404,
+        4406
+      ],
+      "viewportSize": [
+        2000,
+        1401
+      ],
+      "cropComparison": {
+        "comparedPixels": 2802000,
+        "differentPixels": 0,
+        "maxChannelDelta": 0,
+        "meanChannelDelta": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "mode": "zoom",
+      "kind": "prose-edit",
+      "fullDamage": {
+        "changedPixels": 33270,
+        "totalPixels": 14998024,
+        "bounds": [
+          699,
+          1401,
+          2755,
+          1453
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 9,
+            "total": 252
+          },
+          {
+            "size": 512,
+            "changed": 5,
+            "total": 63
+          },
+          {
+            "size": 1024,
+            "changed": 3,
+            "total": 20
+          }
+        ]
+      },
+      "viewportDamage": {
+        "changedPixels": 21215,
+        "totalPixels": 2802000,
+        "bounds": [
+          699,
+          430,
+          2000,
+          482
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 6,
+            "total": 48
+          },
+          {
+            "size": 512,
+            "changed": 3,
+            "total": 12
+          },
+          {
+            "size": 1024,
+            "changed": 2,
+            "total": 4
+          }
+        ]
+      },
+      "oracle": [
+        {
+          "gridSize": 256,
+          "bounds": [
+            92.05170387779084,
+            230.1292596944771,
+            506.2843713278496,
+            276.15511163337254
+          ],
+          "samples": 5,
+          "pixelSize": [
+            2304,
+            257
+          ],
+          "exportMs": {
+            "median": 1.343,
+            "min": 1.298,
+            "max": 1.5
+          },
+          "pngBytes": {
+            "median": 27838,
+            "min": 27838,
+            "max": 27838
+          }
+        },
+        {
+          "gridSize": 512,
+          "bounds": [
+            92.05170387779084,
+            184.10340775558169,
+            552.3102232667451,
+            276.15511163337254
+          ],
+          "samples": 5,
+          "pixelSize": [
+            2560,
+            513
+          ],
+          "exportMs": {
+            "median": 2.756,
+            "min": 2.719,
+            "max": 2.915
+          },
+          "pngBytes": {
+            "median": 48063,
+            "min": 48063,
+            "max": 48063
+          }
+        },
+        {
+          "gridSize": 1024,
+          "bounds": [
+            0,
+            184.10340775558169,
+            552.3102232667451,
+            368.20681551116337
+          ],
+          "samples": 5,
+          "pixelSize": [
+            3072,
+            1024
+          ],
+          "exportMs": {
+            "median": 6.311,
+            "min": 6.226,
+            "max": 6.461
+          },
+          "pngBytes": {
+            "median": 149046,
+            "min": 149046,
+            "max": 149046
+          }
+        }
+      ],
+      "sourcePoint": {
+        "page": 0,
+        "x": 110.356163,
+        "y": 258.584076
+      },
+      "viewportOriginPixels": [
+        0,
+        971
+      ],
+      "fullExportMs": 34.149,
+      "viewportExportMs": 6.885
+    },
+    {
+      "fixture": "math-paper",
+      "normalizedLegacyHeaders": 0,
+      "sourceFingerprintUnchanged": true
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "fit",
+      "fullSize": [
+        2000,
+        1126
+      ],
+      "viewportSize": [
+        2000,
+        1126
+      ],
+      "cropComparison": {
+        "comparedPixels": 2252000,
+        "differentPixels": 0,
+        "maxChannelDelta": 0,
+        "meanChannelDelta": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "fullSize": [
+        4000,
+        2251
+      ],
+      "viewportSize": [
+        2000,
+        1400
+      ],
+      "cropComparison": {
+        "comparedPixels": 2800000,
+        "differentPixels": 202,
+        "maxChannelDelta": 12,
+        "meanChannelDelta": 0.00010904761904761905
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "mode": "zoom",
+      "kind": "prose-edit",
+      "fullDamage": {
+        "changedPixels": 2157,
+        "totalPixels": 9004000,
+        "bounds": [
+          1846,
+          103,
+          1915,
+          173
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 1,
+            "total": 144
+          },
+          {
+            "size": 512,
+            "changed": 1,
+            "total": 40
+          },
+          {
+            "size": 1024,
+            "changed": 1,
+            "total": 12
+          }
+        ]
+      },
+      "viewportDamage": {
+        "changedPixels": 2157,
+        "totalPixels": 2800000,
+        "bounds": [
+          1846,
+          103,
+          1915,
+          173
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 1,
+            "total": 48
+          },
+          {
+            "size": 512,
+            "changed": 1,
+            "total": 12
+          },
+          {
+            "size": 1024,
+            "changed": 1,
+            "total": 4
+          }
+        ]
+      },
+      "oracle": [
+        {
+          "gridSize": 256,
+          "bounds": [
+            203.187386752,
+            0,
+            232.214156288,
+            29.026769536
+          ],
+          "samples": 5,
+          "pixelSize": [
+            256,
+            257
+          ],
+          "exportMs": {
+            "median": 1.179,
+            "min": 1.148,
+            "max": 1.287
+          },
+          "pngBytes": {
+            "median": 4913,
+            "min": 4913,
+            "max": 4913
+          }
+        },
+        {
+          "gridSize": 512,
+          "bounds": [
+            174.160617216,
+            0,
+            232.214156288,
+            58.053539072
+          ],
+          "samples": 5,
+          "pixelSize": [
+            512,
+            512
+          ],
+          "exportMs": {
+            "median": 1.658,
+            "min": 1.55,
+            "max": 1.839
+          },
+          "pngBytes": {
+            "median": 13566,
+            "min": 13566,
+            "max": 13566
+          }
+        },
+        {
+          "gridSize": 1024,
+          "bounds": [
+            116.107078144,
+            0,
+            232.214156288,
+            116.107078144
+          ],
+          "samples": 5,
+          "pixelSize": [
+            1024,
+            1024
+          ],
+          "exportMs": {
+            "median": 63.214,
+            "min": 63.022,
+            "max": 63.956
+          },
+          "pngBytes": {
+            "median": 141026,
+            "min": 141026,
+            "max": 141026
+          }
+        }
+      ],
+      "sourcePoint": {
+        "page": 20,
+        "x": 72,
+        "y": 72
+      },
+      "viewportOriginPixels": [
+        0,
+        0
+      ],
+      "fullExportMs": 972.933,
+      "viewportExportMs": 455.404
+    },
+    {
+      "fixture": "graphic-slides",
+      "normalizedLegacyHeaders": 1,
+      "sourceFingerprintUnchanged": true
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "fit",
+      "fullSize": [
+        2000,
+        2829
+      ],
+      "viewportSize": [
+        2000,
+        1400
+      ],
+      "cropComparison": {
+        "comparedPixels": 2800000,
+        "differentPixels": 1,
+        "maxChannelDelta": 1,
+        "meanChannelDelta": 3.5714285714285716e-07
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "fullSize": [
+        3256,
+        4605
+      ],
+      "viewportSize": [
+        2000,
+        1400
+      ],
+      "cropComparison": {
+        "comparedPixels": 2800000,
+        "differentPixels": 27,
+        "maxChannelDelta": 6,
+        "meanChannelDelta": 2.0714285714285715e-05
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "mode": "zoom",
+      "kind": "prose-edit",
+      "fullDamage": {
+        "changedPixels": 9058,
+        "totalPixels": 14993880,
+        "bounds": [
+          528,
+          913,
+          1104,
+          968
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 3,
+            "total": 234
+          },
+          {
+            "size": 512,
+            "changed": 2,
+            "total": 63
+          },
+          {
+            "size": 1024,
+            "changed": 2,
+            "total": 20
+          }
+        ]
+      },
+      "viewportDamage": {
+        "changedPixels": 9058,
+        "totalPixels": 2800000,
+        "bounds": [
+          528,
+          406,
+          1104,
+          461
+        ],
+        "tiles": [
+          {
+            "size": 256,
+            "changed": 3,
+            "total": 48
+          },
+          {
+            "size": 512,
+            "changed": 2,
+            "total": 12
+          },
+          {
+            "size": 1024,
+            "changed": 2,
+            "total": 4
+          }
+        ]
+      },
+      "oracle": [
+        {
+          "gridSize": 256,
+          "bounds": [
+            93.60599665847664,
+            140.40899498771498,
+            234.01499164619162,
+            187.21199331695328
+          ],
+          "samples": 5,
+          "pixelSize": [
+            768,
+            256
+          ],
+          "exportMs": {
+            "median": 0.365,
+            "min": 0.351,
+            "max": 0.421
+          },
+          "pngBytes": {
+            "median": 6497,
+            "min": 6497,
+            "max": 6497
+          }
+        },
+        {
+          "gridSize": 512,
+          "bounds": [
+            93.60599665847664,
+            93.60599665847664,
+            280.81798997542995,
+            187.21199331695328
+          ],
+          "samples": 5,
+          "pixelSize": [
+            1024,
+            512
+          ],
+          "exportMs": {
+            "median": 1.213,
+            "min": 1.163,
+            "max": 1.369
+          },
+          "pngBytes": {
+            "median": 16964,
+            "min": 16964,
+            "max": 16964
+          }
+        },
+        {
+          "gridSize": 1024,
+          "bounds": [
+            0,
+            0,
+            374.42398663390657,
+            187.21199331695328
+          ],
+          "samples": 5,
+          "pixelSize": [
+            2048,
+            1024
+          ],
+          "exportMs": {
+            "median": 4.374,
+            "min": 4.121,
+            "max": 4.512
+          },
+          "pngBytes": {
+            "median": 30224,
+            "min": 30224,
+            "max": 30224
+          }
+        }
+      ],
+      "sourcePoint": {
+        "page": 2,
+        "x": 85.332283,
+        "y": 178.063995
+      },
+      "viewportOriginPixels": [
+        0,
+        507
+      ],
+      "fullExportMs": 31.669,
+      "viewportExportMs": 5.966
+    },
+    {
+      "fixture": "election-figure",
+      "normalizedLegacyHeaders": 0,
+      "sourceFingerprintUnchanged": true
+    }
+  ]
+}
