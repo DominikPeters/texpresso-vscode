@@ -9,11 +9,13 @@
  * Full-reference validation is mandatory: this is an experiment, not a proof
  * that MuPDF bounds cover every possible raster effect. */
 #include <stddef.h>
+#include <stdlib.h>
 
 typedef struct {
   fz_display_list *list;
   int id, page, width, nx, ny, supported;
   unsigned unsupported;
+  int block_hits, block_misses, cached_operations;
   fz_irect clip;
   fz_rect bounds;
   txp_renderer_config config;
@@ -129,6 +131,10 @@ static void d_defaults(fz_context *ctx,fz_device *dev,fz_default_colorspaces *cs
   D_BYTES(d,spaces,sizeof spaces); d_finish(d,fz_empty_rect,1);
 }
 
+#ifdef TXP_XDV_BLOCKS
+#include "xdv-block-damage.h"
+#endif
+
 static void damage_drop(fz_context *ctx,damage_snapshot *s)
 { fz_drop_display_list(ctx,s->list); fz_free(ctx,s->keys); *s=(damage_snapshot){0}; }
 static damage_snapshot damage_analyze(fz_context *ctx,txp_preview *p,fz_display_list *list,fz_rect page,const txp_preview_grid *grid,fz_irect clip,txp_renderer_config *config,int *operations)
@@ -137,6 +143,7 @@ static damage_snapshot damage_analyze(fz_context *ctx,txp_preview *p,fz_display_
   s.nx=(clip.x1+TXP_PREVIEW_CELL-1)/TXP_PREVIEW_CELL-clip.x0/TXP_PREVIEW_CELL;
   s.ny=(clip.y1+TXP_PREVIEW_CELL-1)/TXP_PREVIEW_CELL-clip.y0/TXP_PREVIEW_CELL;
   damage_device *d=NULL; fz_var(d);
+  fz_device *proxy=NULL; fz_var(proxy);
   fz_try(ctx) {
     s.list=fz_keep_display_list(ctx,list); s.keys=fz_malloc(ctx,(size_t)s.nx*s.ny*32);
     d=fz_new_derived_device(ctx,damage_device); d->snapshot=&s; d->grid=grid; d->matrix=grid_matrix(page,grid);
@@ -147,11 +154,16 @@ static damage_snapshot damage_analyze(fz_context *ctx,txp_preview *p,fz_display_
     d->super.pop_clip=d_pop; d->super.begin_group=d_group; d->super.end_group=d_end_group; d->super.render_flags=d_flags;
     d->super.fill_shade=d_shade; d->super.fill_image=d_image; d->super.fill_image_mask=d_image_mask; d->super.clip_image_mask=d_clip_image;
     d->super.begin_mask=d_mask; d->super.end_mask=d_end_mask; d->super.begin_tile=d_tile; d->super.end_tile=d_end_tile; d->super.set_default_colorspaces=d_defaults;
-    fz_run_display_list(ctx,list,&d->super,fz_identity,fz_infinite_rect,NULL); fz_close_device(ctx,&d->super);
+    #ifdef TXP_XDV_BLOCKS
+    proxy=block_proxy(ctx,d);
+#else
+    proxy=fz_keep_device(ctx,&d->super);
+#endif
+    fz_run_display_list(ctx,list,proxy,fz_identity,fz_infinite_rect,NULL); fz_close_device(ctx,proxy);
     for(int i=0;i<s.nx*s.ny;i++)fz_sha256_final(&d->cells[i],s.keys+i*32);
     *operations=d->operations;
   }
-  fz_always(ctx) { if(d)fz_free(ctx,d->cells); fz_drop_device(ctx,(fz_device*)d); }
+  fz_always(ctx) { fz_drop_device(ctx,proxy); if(d)fz_free(ctx,d->cells); fz_drop_device(ctx,(fz_device*)d); }
   fz_catch(ctx) { damage_drop(ctx,&s); fz_rethrow(ctx); }
   return s;
 }
@@ -198,11 +210,13 @@ static fz_pixmap *damage_draw(fz_context *ctx,txp_preview *p,fz_display_list *li
     double render=txp_profile_now()-draw_start;
     // Verification is deliberately outside the measured analysis/replay stages.
     // It runs on EVERY export, not a sample. False-negative damage aborts.
+    double reference_start=txp_profile_now();
     reference=txp_preview_draw(ctx,list,page,grid,clip);txp_renderer_colorize_rgb(ctx,renderer,reference);
     for(int y=0;y<pix->h;y++)if(memcmp(pix->samples+(size_t)y*pix->stride,reference->samples+(size_t)y*reference->stride,(size_t)pix->w*3))
       fz_throw(ctx,FZ_ERROR_GENERIC,"Experimental damage missed changed sharp pixels");
-    fprintf(stderr,"[damage] {\"request\":%d,\"analysisMs\":%.6f,\"renderMs\":%.6f,\"changedCells\":%d,\"totalCells\":%d,\"operations\":%d,\"supported\":%s,\"unsupported\":%u,\"reused\":%s,\"exact\":true}\n",
-      p->request,analysis,render,changed,total,operations,next.supported?"true":"false",next.unsupported,reuse?"true":"false");
+    double reference_ms=txp_profile_now()-reference_start;
+    fprintf(stderr,"[damage] {\"request\":%d,\"analysisMs\":%.6f,\"renderMs\":%.6f,\"referenceMs\":%.6f,\"changedCells\":%d,\"totalCells\":%d,\"operations\":%d,\"supported\":%s,\"unsupported\":%u,\"reused\":%s,\"blockHits\":%d,\"blockMisses\":%d,\"cachedOperations\":%d,\"exact\":true}\n",
+      p->request,analysis,render,reference_ms,changed,total,operations,next.supported?"true":"false",next.unsupported,reuse?"true":"false",next.block_hits,next.block_misses,next.cached_operations);
     unsigned slot=damage_clock++%TXP_PREVIEW_RETAINED;damage_drop(ctx,&damage_history[slot]);damage_history[slot]=next;next=(damage_snapshot){0};
   }
   fz_always(ctx) { fz_drop_pixmap(ctx,reference);fz_drop_pixmap(ctx,part);damage_drop(ctx,&next); }
