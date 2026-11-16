@@ -22,6 +22,11 @@ Review corrections:
   Otherwise visiting many pages accumulates metadata for unavailable patch bases.
 - Recognize `preview-surface` in integration diagnostics. Navigation cache tests
   count authoritative exports separately from optional coarse placeholders.
+- Fix the additional packaged-command navigation race: the host previously
+  rendered using a nearby page's coarse prefetch width before the webview sent
+  its sharp grid/clip. A per-jump acknowledgment now gates rendering; old queued
+  viewport/ready replies cannot unblock it. Missing replies recover the webview,
+  and late coarse prefetches cannot overwrite a retained sharp page.
 - Snap page positions in screen coordinates, including viewport origin and
   scrolling. At DPR 1.25 a 37 CSS-pixel toolbar places the viewport at physical
   y=46.25: locally integer positions still resample the page. Measured phase error
@@ -30,7 +35,7 @@ Review corrections:
 - Document that the viewport pixel budget is a planning target, not a cap on all
   native, browser, transport and GPU allocations combined.
 
-Local validation: 261 unit tests, lint, native PNG/grid/retention tests, all 64
+Local validation: 264 unit tests, lint, native PNG/grid/retention tests, all 64
 real-engine tests with preview coverage explicitly enabled, and the production
 preview in the installed VS Code webview passed. Native pixel tests include
 overlapping regions, nonzero origins, text, curves, transparency and a real TikZ
@@ -53,6 +58,9 @@ and the magnifier run outside those input phases. One measured workload per
 case/policy; p95 is descriptive of these 24/32 inputs, not a population estimate.
 An initial instrumentation warmup is excluded. All reported runs have no harness
 errors. The final surface runs follow the screen-position correction.
+They precede the subsequent host-command navigation correction at `947455f`;
+the browser workload navigates through the page input, while packaged command
+navigation is validated separately in the VS Code integration suite.
 
 Latency below is input injection to the first paint opportunity of a revision
 that includes that input. Coalesced intermediate revisions count as caught-up
