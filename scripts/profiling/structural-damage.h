@@ -168,6 +168,40 @@ static damage_snapshot damage_analyze(fz_context *ctx,txp_preview *p,fz_display_
   return s;
 }
 
+/* Replay one canonical cell into the cloned destination when the held rectangle
+ * contains it completely. Partial cells still rasterize the entire canonical
+ * cell before copying: changing MuPDF's raster bounds can change path AA. */
+static int damage_redraw_cell(fz_context *ctx,fz_display_list *list,fz_rect page,
+                             const txp_preview_grid *grid,fz_irect clip,fz_irect whole,
+                             fz_pixmap *pix,txp_renderer *renderer)
+{
+  fz_irect part=fz_intersect_irect(whole,clip);
+  int direct=part.x0==whole.x0 && part.y0==whole.y0 && part.x1==whole.x1 && part.y1==whole.y1;
+  fz_pixmap *view=NULL;fz_device *dev=NULL;
+  fz_var(view);fz_var(dev);
+  fz_try(ctx) {
+    if(direct) {
+      view=fz_new_pixmap_with_data(ctx,fz_device_rgb(ctx),whole.x1-whole.x0,whole.y1-whole.y0,NULL,0,
+        pix->stride,pix->samples+(size_t)(whole.y0-clip.y0)*pix->stride+(size_t)(whole.x0-clip.x0)*3);
+      view->x=whole.x0;view->y=whole.y0;
+    } else view=fz_new_pixmap_with_bbox(ctx,fz_device_rgb(ctx),whole,NULL,0);
+    /* The view shares a larger stride: clear its pixels, never adjacent cells
+     * or row padding. Retained pixels have already been colorized. */
+    for(int row=0;row<view->h;row++)memset(view->samples+(size_t)row*view->stride,255,(size_t)view->w*3);
+    dev=fz_new_draw_device(ctx,fz_identity,view);
+    fz_run_display_list(ctx,list,dev,grid_matrix(page,grid),fz_rect_from_irect(whole),NULL);
+    fz_close_device(ctx,dev);fz_drop_device(ctx,dev);dev=NULL;
+    txp_renderer_colorize_rgb(ctx,renderer,view);
+    if(!direct)for(int row=part.y0;row<part.y1;row++)
+      memcpy(pix->samples+(size_t)(row-clip.y0)*pix->stride+(size_t)(part.x0-clip.x0)*3,
+        view->samples+(size_t)(row-whole.y0)*view->stride+(size_t)(part.x0-whole.x0)*3,
+        (size_t)(part.x1-part.x0)*3);
+  }
+  fz_always(ctx) {fz_drop_device(ctx,dev);fz_drop_pixmap(ctx,view);}
+  fz_catch(ctx)fz_rethrow(ctx);
+  return direct;
+}
+
 static fz_pixmap *damage_draw(fz_context *ctx,txp_preview *p,fz_display_list *list,fz_rect page,const txp_preview_grid *grid,fz_irect clip,txp_renderer *renderer)
 {
   if(!p->surface)return txp_preview_draw(ctx,list,page,grid,clip);
@@ -182,6 +216,8 @@ static fz_pixmap *damage_draw(fz_context *ctx,txp_preview *p,fz_display_list *li
     old->config.themed_color==config->themed_color && old->config.invert_color==config->invert_color;
   double analysis=txp_profile_now()-start,draw_start=txp_profile_now();
   fz_pixmap *pix=NULL,*part=NULL,*reference=NULL;
+  const char *direct_env=getenv("TEXPRESSO_DAMAGE_DIRECT");
+  int direct=direct_env && !strcmp(direct_env,"1"),direct_cells=0;
   int changed=0,total=next.nx*next.ny; fz_var(pix); fz_var(part); fz_var(reference);
   fz_try(ctx) {
     if(!reuse) { pix=txp_preview_draw(ctx,list,page,grid,clip); changed=total; }
@@ -199,11 +235,15 @@ static fz_pixmap *damage_draw(fz_context *ctx,txp_preview *p,fz_display_list *li
         if(!memcmp(old->keys+i*32,next.keys+i*32,32))continue;
         changed++;
         fz_irect cell={(clip.x0/TXP_PREVIEW_CELL+x)*TXP_PREVIEW_CELL,(clip.y0/TXP_PREVIEW_CELL+y)*TXP_PREVIEW_CELL,0,0};
-        cell.x1=cell.x0+TXP_PREVIEW_CELL;cell.y1=cell.y0+TXP_PREVIEW_CELL;cell=fz_intersect_irect(cell,clip);
-        part=txp_preview_draw(ctx,list,page,grid,cell);txp_renderer_colorize_rgb(ctx,renderer,part);
-        for(int row=cell.y0;row<cell.y1;row++)memcpy(pix->samples+(size_t)(row-clip.y0)*pix->stride+(cell.x0-clip.x0)*3,
-          part->samples+(size_t)(row-cell.y0)*part->stride,(size_t)(cell.x1-cell.x0)*3);
-        fz_drop_pixmap(ctx,part);part=NULL;
+        cell.x1=fz_mini(cell.x0+TXP_PREVIEW_CELL,grid->width);cell.y1=fz_mini(cell.y0+TXP_PREVIEW_CELL,grid->height);
+        if(direct)direct_cells+=damage_redraw_cell(ctx,list,page,grid,clip,cell,pix,renderer);
+        else {
+          cell=fz_intersect_irect(cell,clip);
+          part=txp_preview_draw(ctx,list,page,grid,cell);txp_renderer_colorize_rgb(ctx,renderer,part);
+          for(int row=cell.y0;row<cell.y1;row++)memcpy(pix->samples+(size_t)(row-clip.y0)*pix->stride+(cell.x0-clip.x0)*3,
+            part->samples+(size_t)(row-cell.y0)*part->stride,(size_t)(cell.x1-cell.x0)*3);
+          fz_drop_pixmap(ctx,part);part=NULL;
+        }
       }
     }
     if(!reuse)txp_renderer_colorize_rgb(ctx,renderer,pix);
@@ -215,8 +255,8 @@ static fz_pixmap *damage_draw(fz_context *ctx,txp_preview *p,fz_display_list *li
     for(int y=0;y<pix->h;y++)if(memcmp(pix->samples+(size_t)y*pix->stride,reference->samples+(size_t)y*reference->stride,(size_t)pix->w*3))
       fz_throw(ctx,FZ_ERROR_GENERIC,"Experimental damage missed changed sharp pixels");
     double reference_ms=txp_profile_now()-reference_start;
-    fprintf(stderr,"[damage] {\"request\":%d,\"analysisMs\":%.6f,\"renderMs\":%.6f,\"referenceMs\":%.6f,\"changedCells\":%d,\"totalCells\":%d,\"operations\":%d,\"supported\":%s,\"unsupported\":%u,\"reused\":%s,\"blockHits\":%d,\"blockMisses\":%d,\"cachedOperations\":%d,\"exact\":true}\n",
-      p->request,analysis,render,reference_ms,changed,total,operations,next.supported?"true":"false",next.unsupported,reuse?"true":"false",next.block_hits,next.block_misses,next.cached_operations);
+    fprintf(stderr,"[damage] {\"request\":%d,\"analysisMs\":%.6f,\"renderMs\":%.6f,\"referenceMs\":%.6f,\"changedCells\":%d,\"totalCells\":%d,\"operations\":%d,\"supported\":%s,\"unsupported\":%u,\"reused\":%s,\"direct\":%s,\"directCells\":%d,\"blockHits\":%d,\"blockMisses\":%d,\"cachedOperations\":%d,\"exact\":true}\n",
+      p->request,analysis,render,reference_ms,changed,total,operations,next.supported?"true":"false",next.unsupported,reuse?"true":"false",direct?"true":"false",direct_cells,next.block_hits,next.block_misses,next.cached_operations);
     unsigned slot=damage_clock++%TXP_PREVIEW_RETAINED;damage_drop(ctx,&damage_history[slot]);damage_history[slot]=next;next=(damage_snapshot){0};
   }
   fz_always(ctx) { fz_drop_pixmap(ctx,reference);fz_drop_pixmap(ctx,part);damage_drop(ctx,&next); }
