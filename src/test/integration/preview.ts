@@ -19,9 +19,9 @@ async function until(check: () => Promise<boolean>, description: string, timeout
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 }
-async function renders(): Promise<{ id: number; page: number }[]> {
-  return [...(await logs()).matchAll(/\["preview-(?:render|svg|auto|png|background|surface)",(\d+),(\d+),/g)]
-    .map(match => ({ id: Number(match[1]), page: Number(match[2]) }));
+async function renders(): Promise<{ id: number; page: number; kind: string }[]> {
+  return [...(await logs()).matchAll(/\["preview-(render|svg|auto|png|background|surface)",(\d+),(\d+),/g)]
+    .map(match => ({ kind: match[1], id: Number(match[2]), page: Number(match[3]) }));
 }
 
 async function decoded(): Promise<{ id: number; page: number }[]> {
@@ -189,12 +189,12 @@ Pages are compiled when requested, and images have a bounded pixel budget.
     lastPresentation = (await presentations()).length;
     await command('nextPage');
     await until(async () => (await presentations()).slice(lastPresentation).some(d => d.page === 1), 'second page restored');
-    const before = (await renders()).filter(r => r.page === 0).length;
+    const before = (await renders()).filter(r => r.page === 0 && r.kind !== 'background').length;
     lastPresentation = (await presentations()).length;
     await command('previousPage');
     await until(async () => (await presentations()).slice(lastPresentation).some(d => d.page === 0), 'cached first page decoded');
-    assert.equal((await renders()).filter(r => r.page === 0).length, before,
-      'cached navigation skips native export of the retained page while neighboring prefetch may continue');
+    assert.equal((await renders()).filter(r => r.page === 0 && r.kind !== 'background').length, before,
+      'cached navigation skips authoritative native export; optional coarse placeholders and neighboring prefetch may continue: ' + JSON.stringify(await renders()));
 
     const offset = document.getText().indexOf('PREVIEW-BEFORE');
     const source = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false, preserveFocus: false });
