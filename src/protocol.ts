@@ -16,6 +16,8 @@ export type Command =
   | ['preview-barrier', number]
   | ['preview-destination', number, number, string]
   | ['preview-background', number, number, number, number, number, 0 | 1 | 2, number]
+  /** requestId, page, gridWidth, revision, sequence, x0, y0, x1, y1, codec, vectorLimit, baseRasterId, background */
+  | ['preview-surface', number, number, number, number, number, number, number, number, number, 0 | 1 | 2, number, number, 0 | 1]
   | ['preview-cancel', number, number]
   | ['preview-search', number, string, number, number]
   | ['preview-search-precise', number, string, number, number, number, string?]

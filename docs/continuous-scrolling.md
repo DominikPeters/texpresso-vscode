@@ -16,7 +16,8 @@ compile, export or mount all its pages.
 `PageLayout` geometry model lives in `preview-viewport.js`. At most twelve shells
 are mounted. The shared decoded cache is limited to eight entries and 32 MiB
 of estimated cost, with a 40,000-node aggregate SVG limit. Visible raster pages
-share a four-megapixel base-image allowance, with more density for the active
+share a four-megapixel base-image allowance (with a `surfaces` engine, a
+viewport-derived budget for [sharp surfaces](sharp-surfaces.md) instead), with more density for the active
 page; speculative neighbors use smaller images. Oversized SVGs use PNG.
 
 The host receives bounded visible/nearby demands and resident-page inventory.

@@ -9,7 +9,7 @@ import type { Command, Message, OutputTarget } from './protocol';
 import { EngineFailure, processFailure } from './failures';
 import { Dependencies, WatchFile } from './dependencies';
 import { probePreview } from './preview-capabilities';
-import { isPreviewMessage, type PreviewImage, type PreviewImageHeader, type PreviewMessage } from './preview-protocol';
+import { DEFAULT_IMAGE_PIXELS, imageLimits, isPreviewMessage, type PreviewImage, type PreviewImageHeader, type PreviewMessage } from './preview-protocol';
 import * as path from 'path';
 import { sourceWordAt } from './source-word';
 
@@ -61,6 +61,10 @@ export class TexpressoSession {
   previewSvg = false;
   previewAuto = false;
   previewPngPatches = false;
+  /** Display-density rectangles on a shared page grid (PREVIEW-PROTOCOL.md, "Page grids and surfaces"). */
+  previewSurfaces = false;
+  /** Largest image frame of this session: the surface budget, or a budget the user launched the engine with. */
+  previewMaxPixels = DEFAULT_IMAGE_PIXELS;
   previewBackground = false;
   previewPrepareEdit = false;
   previewRequestLifecycle = false;
@@ -128,17 +132,24 @@ export class TexpressoSession {
   }
 
   async start(): Promise<void> {
-    let launch;
+    let launch, surfaceBudget: number | undefined;
     try {
       launch = buildLaunchCommand({ ...this.configuration, streamFiles: this.configuration.streamFiles || !!this.services.recovering }, this.paths);
       const location = this.configuration.previewLocation;
       if (location && location !== 'window') {
-        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; this.previewSvg = features.svg; this.previewAuto = features.auto; this.previewPngPatches = features.pngPatches; this.previewBackground = features.background; this.previewPrepareEdit = features.prepareEdit; this.previewLinks = features.links; this.previewRequestLifecycle = features.requestLifecycle === true; this.previewSynctexPrecision = features.synctexPrecision === true; });
+        this.embedded = await (this.services.probePreview || probePreview)(this.configuration, launch.cwd, features => { this.previewRegions = features.regions; this.previewSvg = features.svg; this.previewAuto = features.auto; this.previewPngPatches = features.pngPatches; this.previewBackground = features.background; this.previewPrepareEdit = features.prepareEdit; this.previewLinks = features.links; this.previewRequestLifecycle = features.requestLifecycle === true; this.previewSynctexPrecision = features.synctexPrecision === true;
+          this.previewSurfaces = features.surfaces === true; surfaceBudget = features.surfaces === true ? features.maxPixels : undefined; });
         if (this.ended) { return; }
         if (!this.embedded && location === 'editor') {
           throw new EngineFailure('configuration', 'This TeXpresso build does not support the editor preview. Choose a build with headless preview support, or set Preview Location to Window.', 'PREVIEW_UNSUPPORTED');
         }
         if (this.embedded) { launch.args.splice(launch.args.length - 1, 0, '-headless'); }
+        // A surface covers the visible part of a page at display density, so its size follows the viewport
+        // rather than a fixed four megapixels. Its ceiling is the engine's advertised maximum; whole pages
+        // keep their default. An explicit budget in the user's arguments bounds both, in the engine and here.
+        const configured = launch.args.indexOf('-preview-max-pixels'), explicit = Number(launch.args[configured + 1]);
+        if (this.embedded && configured >= 0 && Number.isSafeInteger(explicit) && explicit >= 1) { this.previewMaxPixels = explicit; }
+        else if (this.embedded && this.previewSurfaces && surfaceBudget) { this.previewMaxPixels = surfaceBudget; }
       }
       const directories: string[] = [];
       for (let i = 0; i < launch.args.length; i++) {
@@ -153,7 +164,7 @@ export class TexpressoSession {
     }
     try {
       this.events.debug('Starting: ' + JSON.stringify([launch.command, ...launch.args]));
-      await this.engine.start(launch, this.embedded);
+      await this.engine.start(launch, this.embedded, imageLimits(this.previewMaxPixels));
       if (this.ended) {
         return;
       }

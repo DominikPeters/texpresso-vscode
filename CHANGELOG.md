@@ -1,5 +1,12 @@
 # Release notes
 
+### Unreleased
+
+- Keep PNG pages sharp while typing. The preview now holds each visible page at display density and patches it in place on every edit, instead of replacing it with a capped whole-page image and sharpening after a pause. Needs an engine with the `surfaces` capability; older engines behave as before.
+- Size sharp rendering from the preview pane rather than a fixed four megapixels, so wide panes, high zoom and fit-to-text stay sharp. Pages larger than the pane's budget show a coarse placeholder outside the visible part while scrolling.
+- Lay pages out on whole device pixels, so a raster pixel is a screen pixel at any zoom and display scale.
+- Patch visible neighbouring pages in place too when an edit reflows them.
+
 ### 2.0.1
 
 - Simplify the preview toolbar: choose Auto, PNG or SVG in Settings, with Auto still the default and zoom controls grouped together.

@@ -1071,12 +1071,12 @@ test('preparing an edit preserves acknowledged PNG and SVG patch bases', t=>{
       f.controller.handle(svg?autoFrame(1,true,12000):pngFrame(1,0));
       const image=f.messages.filter(m=>m.type==='image').at(-1)!;
       f.send({type:'decoded',id:1,...(svg?{svg:image.contentId}:{png:image.contentId}),cached:[image.contentId]});
-      const internals=f.controller as any,base=svg?internals.svgBase:internals.rasterBase;
+      const internals=f.controller as any,base=svg?internals.svgBase:internals.rasterBases.get(0);
       assert.ok(base);
       f.controller.prepareEdit(f.session.document as unknown as vscode.TextDocument,128);t.mock.timers.tick(200);
       const command=f.commands.filter(c=>c[0]==='preview-prepare').at(-1)!;assert.ok(command);
       f.controller.handle(['preview-prepared',command[1] as number,1,0,'ready']);
-      assert.equal(svg?internals.svgBase:internals.rasterBase,base,'checkpoint replay does not invalidate the acknowledged mutable surface');
+      assert.equal(svg?internals.svgBase:internals.rasterBases.get(0),base,'checkpoint replay does not invalidate the acknowledged mutable surface');
       f.session.previewSequence=1;f.controller.handle({sourceSequence:1});f.controller.handle(['preview-state',2,1,3,true,0]);
       const request=f.commands.at(-1)!;
       if(!svg){assert.equal(request[6],1,'next PNG edit retains its native raster base');}
@@ -1614,5 +1614,163 @@ test('precise cached-page inverse skips image restoration and retires its editor
     f.controller.beginSourceFollow(); assert.equal(queries[0][5](), false, 'new source selection wins over an older click');
     f.send({ type: 'inverse', revision: 1, sequence: 0, page: 0, x: -100, y: 200 });
     assert.equal(queries.length, 1, 'malformed webview coordinates cannot query native state');
+  } finally { f.controller.dispose(); }
+});
+
+// --- Display-density surfaces -------------------------------------------
+type Rect4 = [number, number, number, number];
+function surfaceFixture(extra: object = {}) {
+  const f = fixture();
+  Object.assign(f.session, { previewPngPatches: true, previewSurfaces: true, previewMaxPixels: 16000000, previewBackground: true, ...extra });
+  f.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+  return f;
+}
+function surfaceFrame(command: Command, page: number, clip: Rect4, extra: object = {}) {
+  return { header: { requestId: command[1] as number, revision: command[4] as number, sequence: command[5] as number, page,
+    bounds: [0, 0, 612, 792] as Rect4, grid: [3404, 4406] as [number, number], clip, width: clip[2] - clip[0], height: clip[3] - clip[1],
+    mime: 'image/png' as const, byteLength: 4, rasterId: command[1] as number, ...extra }, bytes: Buffer.from([page, command[1] as number, 3, 4]) };
+}
+const lastImage = (f: ReturnType<typeof fixture>) => f.messages.filter(m => m.type === 'image').at(-1)!;
+
+test('surface patch metadata follows browser eviction when navigating between pages', () => {
+  const f = surfaceFixture(), clip: Rect4 = [0, 0, 2048, 1536];
+  try {
+    for (const page of [0, 1, 2]) {
+      f.send({ type: page === 0 ? 'ready' : 'viewport', page, width: 3404, clip, format: 'png', pngCanvas: true,
+        continuous: true, visible: [{ page, width: 3404, clip }], nearby: [], resident: [], epoch: page });
+      const request = f.commands.filter(c => c[0] === 'preview-surface').at(-1)!;
+      f.controller.handle(surfaceFrame(request, page, clip));
+      const image = lastImage(f);
+      f.send({ type: 'decoded', id: request[1], page, png: image.contentId, cached: [image.contentId] });
+      const bases = (f.controller as any).rasterBases;
+      assert.deepEqual([...bases.keys()], [page], 'evicted canvases cannot accumulate patch bases');
+    }
+  } finally { f.controller.dispose(); }
+});
+
+test('surfaces request display-density rectangles and patch each visible page in place across edits', () => {
+  const f = surfaceFixture(), active: Rect4 = [512, 1024, 3072, 3072], neighbor: Rect4 = [0, 0, 2048, 512];
+  try {
+    f.send({ type: 'ready', page: 0, width: 3404, clip: active, format: 'png', pngCanvas: true, continuous: true, nearby: [], resident: [], epoch: 0,
+      visible: [{ page: 0, width: 3404, clip: active, placeholder: 900 }, { page: 1, width: 3404, clip: neighbor, placeholder: 900 }] });
+    const state = f.messages.filter(m => m.type === 'state').at(-1)!;
+    assert.equal(state.surfaces, true); assert.equal(state.maxPixels, 16000000);
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 1, 0, 3404, 1, 0, ...active, 0, 0, 0, 0], 'the grid width is not capped at the legacy 4096');
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, active));
+    const first = lastImage(f);
+    assert.deepEqual(first.header.clip, active); assert.deepEqual(first.header.grid, [3404, 4406]);
+    assert.deepEqual(first.header.bounds, [0, 0, 612, 792], 'page geometry stays that of the complete page');
+    assert.equal(first.inlinePng, true); assert.equal(first.rasterPatch, undefined);
+    f.send({ type: 'decoded', id: 1, page: 0, png: first.contentId, cached: [first.contentId] });
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 2, 1, 3404, 1, 0, ...neighbor, 0, 0, 0, 1], 'a visible neighbour is a surface in the speculative slot');
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 1, neighbor));
+    const second = lastImage(f);
+    f.send({ type: 'decoded', id: 2, page: 1, png: second.contentId, cached: [first.contentId, second.contentId] });
+    const settled = f.commands.length;
+
+    // An edit: both pages are compared with the rasters already on screen.
+    f.session.previewSequence = 1; f.controller.handle({ sourceSequence: 1 }); f.controller.handle(['preview-state', 2, 1, 3, true, 0]);
+    assert.equal(f.commands.length, settled + 1);
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 3, 0, 3404, 2, 1, ...active, 0, 0, 1, 0]);
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, active, { patch: { base: 1, rect: [10, 20, 30, 40] } }));
+    const patched = lastImage(f);
+    assert.equal(patched.rasterPatch.base, first.contentId); assert.deepEqual(patched.rasterPatch.rect, [10, 20, 30, 40]);
+    f.send({ type: 'decoded', id: 3, page: 0, png: patched.contentId, cached: [patched.contentId, second.contentId] });
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 4, 1, 3404, 2, 1, ...neighbor, 0, 0, 2, 1], 'the neighbour keeps its own patch base');
+    f.controller.handle({ ...surfaceFrame(f.commands.at(-1)!, 1, neighbor, { patch: { base: 2, rect: [0, 0, 0, 0] }, byteLength: 0 }), bytes: Buffer.alloc(0) });
+    const unchanged = lastImage(f);
+    assert.equal(unchanged.contentId, second.contentId); assert.equal(unchanged.bytes, undefined);
+    f.send({ type: 'decoded', id: 4, page: 1, png: unchanged.contentId, cached: [patched.contentId, second.contentId] });
+
+    // Scrolling beyond the held rectangle asks for another one; nothing else is re-rendered.
+    const moved: Rect4 = [512, 1536, 3072, 3584], before = f.commands.length;
+    f.send({ type: 'viewport', page: 0, width: 3404, clip: moved, format: 'png', continuous: true, nearby: [], resident: [0, 1], epoch: 0, scroll: true,
+      visible: [{ page: 0, width: 3404, clip: moved, placeholder: 900 }, { page: 1, width: 3404, clip: neighbor, placeholder: 900 }] });
+    assert.equal(f.commands.filter(c => c[0] === 'preview-surface').length, 5);
+    const scrolled = f.commands.filter(c => c[0] === 'preview-surface').at(-1)!;
+    assert.deepEqual(scrolled.slice(2, 4), [0, 3404]); assert.deepEqual(scrolled.slice(6, 10), moved); assert.ok(f.commands.length > before);
+    // A patch for a rectangle other than the one on screen cannot be applied: complete pixels are requested.
+    f.controller.handle(surfaceFrame(scrolled, 0, moved, { patch: { base: scrolled[12] as number, rect: [1, 1, 2, 2] } }));
+    const recovery = f.commands.filter(c => c[0] === 'preview-surface').at(-1)!;
+    assert.notEqual(recovery[1], scrolled[1]); assert.equal(recovery[12], 0);
+    assert.equal(lastImage(f), unchanged, 'the mismatched patch never reaches the webview');
+  } finally { f.controller.dispose(); }
+});
+
+test('a coarse placeholder follows once the visible rectangles are sharp, once per source revision', async () => {
+  const f = surfaceFixture(), clip: Rect4 = [0, 1024, 2048, 2560];
+  try {
+    f.send({ type: 'ready', page: 0, width: 3404, clip, format: 'png', pngCanvas: true, continuous: true, nearby: [], resident: [], epoch: 0,
+      visible: [{ page: 0, width: 3404, clip, placeholder: 728 }] });
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, clip));
+    assert.equal(f.commands.filter(c => c[0] === 'preview-background').length, 0, 'never before the sharp pixels');
+    const first = lastImage(f);
+    f.send({ type: 'decoded', id: 1, page: 0, png: first.contentId, cached: [first.contentId] });
+    await prefetchDelay();
+    const coarse = f.commands.at(-1)!;
+    assert.deepEqual(coarse, ['preview-background', 2, 0, 728, 1, 0, 0, 0]);
+    f.controller.handle({ header: { requestId: 2, revision: 1, sequence: 0, page: 0, bounds: [0, 0, 612, 792], width: 728, height: 943,
+      mime: 'image/png', byteLength: 3 }, bytes: Buffer.from([7, 8, 9]) });
+    const placeholder = f.messages.at(-1)!;
+    assert.equal(placeholder.type, 'placeholder'); assert.equal(placeholder.page, 0); assert.equal(new Uint8Array(placeholder.bytes).length, 3);
+    assert.equal(lastImage(f), first, 'a placeholder is not a page image and carries no metadata');
+    f.send({ type: 'decoded', id: 2 });
+    await prefetchDelay();
+    assert.equal(f.commands.filter(c => c[0] === 'preview-background').length, 1, 'one per revision');
+    assert.equal((f.controller as any).rasterBases.get(0)?.rasterId, 1, 'the sharp raster keeps its patch base');
+    // A page held whole has no use for one.
+    f.send({ type: 'viewport', page: 0, width: 1400, clip: [0, 0, 1400, 1812], format: 'png', continuous: true, nearby: [], resident: [0], epoch: 0,
+      visible: [{ page: 0, width: 1400, clip: [0, 0, 1400, 1812] }] });
+    const whole = f.commands.at(-1)!;
+    assert.deepEqual(whole.slice(0, 4), ['preview-surface', 3, 0, 1400]);
+    f.controller.handle(surfaceFrame(whole, 0, [0, 0, 1400, 1812], { grid: [1400, 1812] }));
+    f.send({ type: 'decoded', id: 3, page: 0, png: lastImage(f).contentId, cached: [lastImage(f).contentId] });
+    await prefetchDelay();
+    assert.equal(f.commands.filter(c => c[0] === 'preview-background').length, 1);
+  } finally { f.controller.dispose(); }
+});
+
+test('surface rectangles are validated and need both the engine capability and a canvas', () => {
+  const clip: Rect4 = [0, 0, 2048, 2048];
+  for (const bad of [[0, 0, 5000, 100], [0, 0, 100, 2000000], [10, 10, 10, 20], [0, 0, 8193, 10], [0, 0, 4096, 4096], [0.5, 0, 10, 10], [-1, 0, 10, 10], [0, 0, 10]]) {
+    const f = surfaceFixture();
+    try {
+      f.send({ type: 'ready', page: 0, width: 4500, clip: bad, format: 'png', pngCanvas: true });
+      assert.equal(f.commands.length, 0, `${bad}: an invalid rectangle cannot smuggle an oversized legacy width`);
+      f.send({ type: 'ready', page: 0, width: 4000, clip: bad, format: 'png', pngCanvas: true });
+      assert.deepEqual(f.commands.at(-1)!.slice(0, 4), ['preview-png', 1, 0, 4000], `${bad}: falls back to a whole page`);
+    } finally { f.controller.dispose(); }
+  }
+  const legacy = fixture(); Object.assign(legacy.session, { previewPngPatches: true });
+  try {
+    legacy.controller.handle(['preview-state', 1, 0, 3, true, 0]);
+    legacy.send({ type: 'ready', page: 0, width: 3000, clip, format: 'png', pngCanvas: true });
+    assert.equal(legacy.messages.filter(m => m.type === 'state').at(-1)!.surfaces, false);
+    assert.deepEqual(legacy.commands.at(-1), ['preview-png', 1, 0, 3000, 1, 0, 0], 'older engines keep whole pages');
+  } finally { legacy.controller.dispose(); }
+  const f = surfaceFixture();
+  try {
+    f.send({ type: 'ready', page: 0, width: 5000, clip, format: 'png', pngCanvas: true });
+    assert.equal(f.commands.at(-1)![0], 'preview-surface');
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, clip, { grid: [5000, 6471] }));
+    f.send({ type: 'cache-miss', id: 1, pngUnsupported: true });
+    assert.equal(f.messages.filter(m => m.type === 'state').at(-1)!.surfaces, false, 'the webview is told to lay out whole pages again');
+    assert.deepEqual(f.commands.at(-1)!.slice(0, 4), ['preview-render', 2, 0, 4096]);
+  } finally { f.controller.dispose(); }
+});
+
+test('codec choices keep their rectangle: Auto, SVG and idle upgrades all fall back to sharp pixels', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] });
+  const clip: Rect4 = [0, 0, 2048, 2048];
+  const f = surfaceFixture({ previewAuto: true, previewSvg: true });
+  try {
+    f.send({ type: 'ready', page: 0, width: 3404, clip, format: 'auto', pngCanvas: true, svgDom: true });
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 1, 0, 3404, 1, 0, ...clip, 2, 16000, 0, 0]);
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, clip, { svgEligible: true, vectorCost: 30000 }));
+    f.send({ type: 'decoded', id: 1, png: lastImage(f).contentId, cached: [lastImage(f).contentId] });
+    t.mock.timers.tick(350);
+    assert.deepEqual(f.commands.at(-1), ['preview-surface', 2, 0, 3404, 1, 0, ...clip, 1, 0, 0, 0], 'the idle SVG upgrade names the same rectangle');
+    f.send({ type: 'viewport', page: 0, width: 3404, clip, format: 'svg' });
+    assert.deepEqual(f.commands.at(-1)!.slice(0, 4), ['preview-surface', 3, 0, 3404]); assert.equal(f.commands.at(-1)![10], 1);
   } finally { f.controller.dispose(); }
 });

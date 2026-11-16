@@ -1,6 +1,6 @@
 import { spawn, ChildProcess, SpawnOptions } from 'child_process';
 import { readProtocol, Command, Message } from './protocol';
-import { readPreviewProtocol, type PreviewMessage, type PreviewImage } from './preview-protocol';
+import { readPreviewProtocol, type ImageLimits, type PreviewMessage, type PreviewImage } from './preview-protocol';
 import type { LaunchCommand } from './configuration';
 import { processFailure } from './failures';
 import { terminate } from './process-lifecycle';
@@ -31,7 +31,7 @@ export class EngineProcess {
     return this.child !== undefined;
   }
 
-  start(launch: LaunchCommand, preview = false): Promise<void> {
+  start(launch: LaunchCommand, preview = false, limits?: ImageLimits): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.stopping) { resolve(); return; }
       let spawned = false;
@@ -85,7 +85,7 @@ export class EngineProcess {
         };
         this.reader = preview ? readPreviewProtocol(child.stdout, message,
           image => { if (!this.stopping) { this.events.image?.(image); } },
-          error => { if (!this.stopping) { this.events.error(processFailure(error, 'connection', this.stderrTail)); } }) : readProtocol(child.stdout, message, (line, error) => {
+          error => { if (!this.stopping) { this.events.error(processFailure(error, 'connection', this.stderrTail)); } }, limits) : readProtocol(child.stdout, message, (line, error) => {
           if (this.stopping) { return; }
           this.events.debug('Invalid protocol message: ' + line.slice(0, 250) + ' (' + String(error) + ')');
         });

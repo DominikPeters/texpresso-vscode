@@ -6,7 +6,8 @@
   const template = globalElement('sheet').cloneNode(true); globalElement('sheet').remove();
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
-  const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache } = TexpressoViewport;
+  const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache,
+    surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect } = TexpressoViewport;
   const status = globalElement('status'), zoomSelect = globalElement('zoom');
   let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
   function observeSource(sequence, revision, reset = false) {
@@ -30,6 +31,14 @@
   let format = ['auto', 'png', 'svg'].includes(document.body.dataset.renderingFormat) ? document.body.dataset.renderingFormat :
     ['png', 'svg'].includes(saved.format) ? saved.format : 'auto';
   let count = 0, complete = false, paused = false, phase = 'running', regions = false, problem = '', magnify = false, lensOwner, detailOwner;
+  // With surfaces, each visible page holds one sharp raster of its device grid:
+  // the whole page when that fits the viewport-derived budget, otherwise the
+  // visible rectangle. Edits patch that raster in place. Without them (older
+  // engines) a capped whole-page base is sharpened by a debounced detail crop.
+  // The host states both at creation, so the first layout is already the right one.
+  let surfaces = document.body.dataset.surfaces === 'true';
+  let maxPixels = Number.isSafeInteger(Number(document.body.dataset.maxPixels)) && Number(document.body.dataset.maxPixels) >= 1 ? Number(document.body.dataset.maxPixels) : 4000000;
+  const baseCacheBytes = 32 * 1024 * 1024;
   // Compile errors usually come from source that is briefly invalid while typing. The last good
   // page stays visible; the error is shown only if it persists, and once shown it stays until a
   // page renders again, so it never blinks with each keystroke.
@@ -52,7 +61,7 @@
     if (value.vector) { (value.vector.layer || value.vector.root).remove(); }
     if (value.raster) { value.raster.canvas.remove(); value.raster.canvas.width = 0; }
     value.owner?.evicted(value.id);
-  }, 32 * 1024 * 1024, 8);
+  }, baseCacheBytes, 8);
   const inventory = () => [...new Set([...decoded.entries.values()].map(entry => entry.value.id))];
   const resident = () => [...views].filter(([, view]) => view.resident()).map(([index]) => index);
   function trimDecoded() {
@@ -89,7 +98,7 @@
   function anchorAt(origin) {
     const view = viewport.getBoundingClientRect(), y = viewport.scrollTop + origin.y - view.top;
     const index = geometry.pageAt(y), rect = geometry.rects[index], sheet = views.get(index)?.sheet;
-    const left = sheet ? sheet.getBoundingClientRect().left : view.left + (geometry.maxWidth - rect.width) / 2 - viewport.scrollLeft;
+    const left = sheet ? sheet.getBoundingClientRect().left : view.left + sheetLeft(rect) - viewport.scrollLeft;
     return { page: index, x: (origin.x - left) / rect.width, y: (y - rect.top) / rect.height, origin };
   }
   function topAnchor() {
@@ -117,9 +126,21 @@
     }
   }
 
+  const viewportPixels = () => viewport.clientWidth * viewport.clientHeight * devicePixelRatio * devicePixelRatio;
+  const surfaceTotal = () => surfaceBudget(viewportPixels(), maxPixels);
+  // Sheets are placed on whole device pixels. A transform-centered sheet of odd
+  // device width would sit half a pixel off and resample its entire raster.
+  function sheetLeft(rect) {
+    const left = (geometry.maxWidth - rect.width) / 2;
+    return surfaces ? Math.round(left * devicePixelRatio) / devicePixelRatio : left;
+  }
   function configure() {
     const retainedEnd = layoutEnd !== undefined && count === layoutEnd && currentPage < count;
-    geometry.configure({ count, complete: complete || retainedEnd, active: currentPage, zoom, width: viewport.clientWidth, height: viewport.clientHeight });
+    geometry.configure({ count, complete: complete || retainedEnd, active: currentPage, zoom, width: viewport.clientWidth, height: viewport.clientHeight,
+      dpr: surfaces ? devicePixelRatio : undefined });
+    // Decoded RGBA for the sharp surfaces of one viewport, the outgoing and
+    // incoming rasters of a replacement, and the retained neighbours.
+    decoded.maxBytes = surfaces ? Math.max(baseCacheBytes, surfaceTotal() * 4 * 2 + 8 * 1024 * 1024) : baseCacheBytes;
     stack.hidden = complete && count === 0;
     if (stack.hidden) { globalElement('empty').hidden = false; globalElement('empty').textContent = 'This document has no pages.'; }
     else { globalElement('empty').textContent = 'Your document will appear here.'; }
@@ -137,6 +158,7 @@
       let view = views.get(index); if (!view) { view = createPage(index); views.set(index, view); stack.appendChild(view.sheet); }
       const rect = geometry.rects[index]; if (!rect) { continue; }
       view.sheet.style.top = `${rect.top}px`; view.sheet.style.width = `${rect.width}px`; view.sheet.style.height = `${rect.height}px`;
+      view.sheet.style.left = surfaces ? `${sheetLeft(rect)}px` : ''; view.sheet.style.transform = surfaces ? 'none' : '';
     }
     stack.style.width = `${geometry.maxWidth}px`; diagnostics();
     return window;
@@ -189,16 +211,50 @@
     if (request) { clearTimeout(timer); if (immediate) { requestViewport(false); } else { timer = setTimeout(() => requestViewport(false), 100); } }
     views.get(currentPage)?.scheduleDetail(); save();
   }
+  // A placeholder is seen only in motion or off screen: about three quarters of
+  // a megapixel is legible while scrolling and cheap to render, send and keep.
+  const placeholderPixels = 750000;
+  function placeholderWidth(bounds, gridWidth) {
+    return Math.max(1, Math.min(gridWidth, 4096, Math.floor(Math.sqrt(placeholderPixels * (bounds[2] - bounds[0]) / (bounds[3] - bounds[1])))));
+  }
+  // The rasters wanted for the pages on screen. A surface entry names the
+  // page's grid width and an integer rectangle of it; an entry without a
+  // rectangle is a whole page at a capped width.
+  function demands(window) {
+    const visible = [], scope = { left: viewport.scrollLeft, top: viewport.scrollTop,
+      right: viewport.scrollLeft + viewport.clientWidth, bottom: viewport.scrollTop + viewport.clientHeight };
+    const shown = [];
+    for (let index = window.first; index <= window.last && shown.length < 12; index++) { if (views.has(index)) { shown.push(index); } }
+    if (!shown.includes(currentPage) && views.has(currentPage)) { shown.unshift(currentPage); shown.splice(12); }
+    const parts = shown.map(index => {
+      const rect = geometry.rects[index]; if (!surfaces || !rect) { return undefined; }
+      const grid = geometry.grid(rect.bounds, rect.width);
+      return { grid, seen: visibleGridRect(grid, { left: sheetLeft(rect), top: rect.top, width: rect.width, height: rect.height }, scope) };
+    });
+    const total = surfaceTotal(), area = r => r ? (r[2] - r[0]) * (r[3] - r[1]) : 0;
+    const seen = parts.reduce((sum, part) => sum + area(part?.seen), 0);
+    shown.forEach((index, i) => {
+      const view = views.get(index), part = parts[i];
+      const clip = part && view.plan(part.grid, part.seen, { whole: total, max: maxPixels,
+        clip: seen ? Math.floor(total * area(part.seen) / seen) : 0 });
+      if (!clip) { visible.push({ page: index, width: view.width(), allocation: allocation(index) }); return; }
+      const whole = clip[0] === 0 && clip[1] === 0 && clip[2] === part.grid[0] && clip[3] === part.grid[1];
+      // Outside a partial rectangle the page shows a coarse placeholder.
+      visible.push({ page: index, width: part.grid[0], clip, allocation: allocation(index),
+        ...(whole ? {} : { placeholder: placeholderWidth(geometry.rects[index].bounds, part.grid[0]) }) });
+    });
+    return visible;
+  }
   function requestViewport(scroll = false, jump = false, ready = false) {
     if (disposing) { return; }
-    const window = mountWindow(), visible = [];
-    for (let index = window.first; index <= window.last && visible.length < 12; index++) {
-      if (views.has(index)) { visible.push({ page: index, width: views.get(index).width(), allocation: allocation(index) }); }
-    }
+    const window = mountWindow(), visible = demands(window);
     if (!visible.some(entry => entry.page === currentPage)) { visible.unshift({ page: currentPage, width: views.get(currentPage)?.width() || 1200, allocation: allocation(currentPage) }); visible.splice(12); }
     const order = direction > 0 ? [window.last + 1, window.first - 1] : [window.first - 1, window.last + 1];
+    // Pages about to scroll in are prefetched whole at a capped width; they
+    // become surfaces of their own once visible.
     const nearby = order.filter(index => index >= 0 && index < geometry.count && !visible.some(entry=>entry.page===index)).map(index => ({ page: index, width: views.get(index)?.width() || desiredWidth(index,geometry.rects[index].bounds,geometry.rects[index].width), allocation: allocation(index) }));
-    const snapshot = { page: currentPage, allocation: allocation(currentPage), width: views.get(currentPage)?.width() || 1200, format, continuous: true, visible, nearby, resident: resident(), epoch };
+    const active = visible.find(entry => entry.page === currentPage);
+    const snapshot = { page: currentPage, allocation: allocation(currentPage), width: active.width, ...(active.clip ? { clip: active.clip } : {}), format, continuous: true, visible, nearby, resident: resident(), epoch };
     const key = JSON.stringify(snapshot);
     if (ready || jump || scroll || key !== lastSnapshot) { lastSnapshot = key; post({ type: ready ? 'ready' : 'viewport', ...snapshot, ...(scroll ? { scroll: true } : {}), ...(jump ? { jump: true } : {}), ...(ready ? { svgDom: true, pngCanvas: true } : {}) }); }
   }
@@ -253,6 +309,41 @@
     let image = element('image'), bounds = geometry.rects[page]?.bounds || [0,0,595.28,841.89];
     image.hidden = true;
     const vector = element('vector'), raster = element('raster'), lensVector = globalElement('lensVector'), lensCanvas = globalElement('lensCanvas');
+    const placeholder = element('placeholder');
+    // The rectangle last asked for at a grid: kept while it covers what is
+    // visible, so small scrolls and in-flight requests do not move it.
+    let planned;
+    function plan(grid, seen, budget) {
+      const clip = planSurface(grid, seen, budget, planned && sameRect(planned.grid, grid) ? planned.clip : undefined);
+      planned = clip ? { grid, clip } : undefined;
+      return clip;
+    }
+    const wholeRaster = h => !!h && h.mime === 'image/png' && (!h.clip || (h.clip[0] === 0 && h.clip[1] === 0 && h.clip[2] === h.grid[0] && h.clip[3] === h.grid[1]));
+    // A canvas covers its rectangle of the page; without one, the whole sheet.
+    function placeRaster(canvas, h) {
+      const style = canvas.style;
+      if (!h.clip) { style.position = style.left = style.top = style.width = style.height = ''; return; }
+      const at = surfacePlacement(h.grid, h.clip);
+      style.position = 'absolute'; style.left = `${at.left * 100}%`; style.top = `${at.top * 100}%`;
+      style.width = `${at.width * 100}%`; style.height = `${at.height * 100}%`;
+    }
+    let placeholderSnapshot;
+    function clearPlaceholder() {
+      for (const node of placeholder.children) { if (node.width) { node.width = 0; } }
+      placeholder.replaceChildren(); placeholder.hidden = true; placeholderSnapshot = undefined;
+    }
+    // Coarse pixels of the complete page, for the parts a rectangle does not
+    // cover. They never replace sharp pixels and may be one edit behind.
+    function showPlaceholder(source, sourceWidth, sourceHeight, snapshot) {
+      if (placeholderSnapshot && snapshot && (snapshot.sequence < placeholderSnapshot.sequence ||
+          (snapshot.sequence === placeholderSnapshot.sequence && snapshot.revision < placeholderSnapshot.revision))) { return; }
+      const scale = Math.min(1, Math.sqrt(placeholderPixels / (sourceWidth * sourceHeight)));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale)); canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+      const context = canvas.getContext('2d', { alpha: false }); if (!context) { return; }
+      context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      clearPlaceholder(); placeholder.appendChild(canvas); placeholder.hidden = false; placeholderSnapshot = snapshot;
+    }
     let svgPage, pngPage, imageId, header, objectUrl, stale = true, generation = 0, visualSnapshot, highlightTimer;
     const surface = () => svgPage ? vector : pngPage ? raster : image;
     let view, rasterizedAt;
@@ -268,6 +359,8 @@
     };
     const acknowledge = (id, renderMs, displayed = true) => post({ type: 'decoded', id, page, cached: inventory(), svg: svgPage?.contentId, png: pngPage?.contentId, renderMs, displayed, stale: displayed ? stale : true });
     function layout(request = true, immediate = false) { layoutDocument(request, immediate); }
+    // Whole-page width for a capped raster: the legacy base, a prefetched
+    // neighbour, or a placeholder.
     const width = () => desiredWidth(page,bounds,sheet.getBoundingClientRect().width);
     function highlight(target) {
       if (!header || stale || target.page !== page) { return; }
@@ -316,6 +409,7 @@
     detailTimer = setTimeout(requestDetail, 120);
   }
   function requestDetail() {
+    if (surfaces) { return; } // The surface is already at display density.
     if (page !== currentPage || stale || !header || header.mime === 'image/svg+xml' || autoRefining || !regions || detailFailed) { return; }
     if (detailOwner && detailOwner !== view) { detailOwner.clearDetail(); }
     detailOwner = view;
@@ -382,8 +476,10 @@
       if (lensCanvas.width !== size) { lensCanvas.width = size; lensCanvas.height = size; }
       lensCanvas.style.width = `${lensSize}px`; lensCanvas.style.left = '0px'; lensCanvas.style.top = '0px';
       const ctx = lensCanvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, lensSize, lensSize);
-      ctx.drawImage(pngPage.canvas, lensSize / 2 - (pointer.clientX - rect.left) * magnification,
-        lensSize / 2 - (pointer.clientY - rect.top) * magnification, rect.width * magnification, rect.height * magnification);
+      const at = header.clip ? surfacePlacement(header.grid, header.clip) : { left: 0, top: 0, width: 1, height: 1 };
+      ctx.drawImage(pngPage.canvas, lensSize / 2 + (at.left * rect.width - (pointer.clientX - rect.left)) * magnification,
+        lensSize / 2 + (at.top * rect.height - (pointer.clientY - rect.top)) * magnification,
+        at.width * rect.width * magnification, at.height * rect.height * magnification);
     } else if (lensBase.src !== image.src) { lensBase.src = image.src; }
     lensBase.style.width = `${rect.width * magnification}px`;
     lensBase.style.left = `${lensSize / 2 - (pointer.clientX - rect.left) * magnification}px`;
@@ -502,7 +598,7 @@
   }
   sheet.addEventListener('click', event => { if ((event.ctrlKey || event.metaKey) && !event.target.closest('.page-link')) { inverseAt(event); } });
 
-    view = { sheet, page, hideFigure, currentId:()=>imageId, header: () => header, width, highlight, closeLens, clearDetail, scheduleDetail,
+    view = { sheet, page, hideFigure, currentId:()=>imageId, header: () => header, width, plan, highlight, closeLens, clearDetail, scheduleDetail,
       recost() {
         if (!header || !imageId || header.mime !== 'image/svg+xml') { return; }
         const entry = decoded.entries.get(cacheKey(imageId)); if (!entry) { return; }
@@ -539,6 +635,19 @@
         break;
       case 'refinement-end': autoRefining = false; scheduleDetail(); break;
       case 'detail': await receiveDetail(m); break;
+      case 'placeholder': {
+        const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime })), candidate = new Image();
+        try {
+          candidate.src = url; await candidate.decode();
+          // Only a page still showing a partial rectangle has use for it.
+          if (header && pngPage && !wholeRaster(header) && !svgPage) {
+            showPlaceholder(candidate, candidate.naturalWidth, candidate.naturalHeight, { sequence: m.header.sequence, revision: m.header.revision });
+          }
+        } catch { /* A placeholder is optional; the sheet background shows instead. */ }
+        finally { candidate.removeAttribute('src'); URL.revokeObjectURL(url); }
+        post({ type: 'decoded', id: m.header.requestId });
+        break;
+      }
       case 'region': {
         const url = URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
         const candidate = new Image(); candidate.src = url;
@@ -594,7 +703,7 @@
             if (!pngPage || pngPage.canvas.width !== m.header.width || pngPage.canvas.height !== m.header.height) { throw Error('PNG patch base unavailable'); }
             commitRaster = await pngPage.prepare(m.rasterPatch, m.bytes);
             nextRaster = pngPage;
-          } else if (m.inlinePng && m.bytes) { nextRaster = await TexpressoPngPage.create(m.bytes, m.header.width, m.header.height, m.contentId); }
+          } else if (m.inlinePng && m.bytes) { nextRaster = await TexpressoPngPage.create(m.bytes, m.header.width, m.header.height, m.contentId, maxPixels); }
           if (!nextVector && !nextRaster) {
             url = cached ? cached.url : URL.createObjectURL(new Blob([m.bytes], { type: m.header.mime }));
             candidate = cached ? cached.image : new Image();
@@ -640,6 +749,13 @@
             if (!images.has(svgPage.contentId)) { svgPage.layer?.remove(); }
             else { svgPage.layer?.classList.remove('active'); }
           }
+          // A complete page giving way to a rectangle of it becomes that page's
+          // placeholder; a raster or vector covering the page needs none.
+          if (nextRaster && !wholeRaster(m.header)) {
+            if (pngPage && pngPage !== nextRaster && wholeRaster(header)) {
+              showPlaceholder(pngPage.canvas, pngPage.canvas.width, pngPage.canvas.height, { sequence: header.sequence, revision: header.revision });
+            }
+          } else { clearPlaceholder(); }
           if (pngPage && pngPage !== nextRaster && !images.has(pngPage.contentId)) { pngPage.canvas.remove(); pngPage.canvas.width = 0; }
           imageId = m.contentId; svgPage = nextVector; pngPage = nextRaster;
           vector.hidden = !svgPage; raster.hidden = !pngPage;
@@ -650,7 +766,7 @@
             }
             if (svgPage.layer.parentNode !== vector) { vector.appendChild(svgPage.layer); }
             svgPage.layer.classList.add('active');
-          } else if (pngPage) { raster.replaceChildren(pngPage.canvas); }
+          } else if (pngPage) { placeRaster(pngPage.canvas, m.header); raster.replaceChildren(pngPage.canvas); }
           else {
             // Mount the element whose decode completed. Assigning its URL to a
             // separate <img> starts another load and can flash a broken image.
@@ -708,7 +824,7 @@
         }
       },
       dispose() {
-        generation++; hideFigure(); closeLens(); clearDetail(); clearTimeout(highlightTimer);
+        generation++; hideFigure(); closeLens(); clearDetail(); clearPlaceholder(); clearTimeout(highlightTimer);
         // Retain bounded decoded content for a quick return, but unmount its DOM.
         sheet.remove(); if (svgPage?.layer) { svgPage.layer.remove(); } if (pngPage) { pngPage.canvas.remove(); }
       }
@@ -732,6 +848,12 @@
         if (complete) { count = available; layoutEnd = available; }
         else { if (layoutEnd !== undefined && available >= layoutEnd) { layoutEnd = undefined; } count = Math.max(count,available); }
         paused = m.paused; phase = m.phase; regions = m.regions === true;
+        const nextSurfaces = m.surfaces === true, nextMaxPixels = Number.isSafeInteger(m.maxPixels) && m.maxPixels >= 1 ? m.maxPixels : 4000000;
+        if (nextSurfaces !== surfaces || nextMaxPixels !== maxPixels) {
+          // The layout changes with device snapping, so no in-flight decode
+          // or announced demand describes it any longer.
+          retireDecodes(); surfaces = nextSurfaces; maxPixels = nextMaxPixels; closeLens(); epoch++; lastSnapshot = '';
+        }
         const configuredFormat = m.renderingFormat === 'svg' && !m.svg ? 'png' : m.renderingFormat;
         if (['auto', 'png', 'svg'].includes(configuredFormat) && format !== configuredFormat) {
           retireDecodes(); format = configuredFormat; closeLens(); epoch++; lastSnapshot = '';
@@ -751,7 +873,7 @@
         const index = m.header?.page ?? m.page ?? currentPage;
         let view = views.get(index);
         // Background results may be cached without introducing a distant sheet.
-        if (!view && m.header && ['image','region','detail'].includes(m.type)) {
+        if (!view && m.header && ['image','region','detail','placeholder'].includes(m.type)) {
           post({ type: 'decoded', id: m.header.requestId, page: index, cached: inventory(), displayed: false, stale: true }); break;
         }
         if (view) { await view.receive(m); diagnostics(); }

@@ -6,6 +6,9 @@ implemented. The toolbar selects PNG or SVG; PNG remains the default while the
 formats are compared. Continuous scrolling and cross-page glyph reuse remain
 future work. The current wire contract is
 [documented with the engine](../native/texpresso/PREVIEW-PROTOCOL.md).
+PNG pages are now held at display density as [sharp surfaces](sharp-surfaces.md);
+the four-megapixel whole-page base and debounced detail crop described below
+remain only for engines without the `surfaces` capability.
 
 ## Recommendation
 

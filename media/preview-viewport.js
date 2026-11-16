@@ -44,6 +44,98 @@
     return Math.max(1, Math.floor(Math.min(Math.ceil(cssWidth * dpr), 4096,
       Math.sqrt(4000000 * w / h), 8192 * w / Math.max(w, h))));
   }
+  // --- Page grids and surfaces (PREVIEW-PROTOCOL.md) ---------------------
+  // A page's grid is its complete width in device pixels. The layout snaps a
+  // page to exactly that many device pixels, so a raster pixel is a screen
+  // pixel; a surface is an integer rectangle [x0, y0, x1, y1] of the grid.
+  const SURFACE_CELL = 512;
+  // Rows of a page `gridWidth` device pixels wide: the engine's own rule,
+  // including single-precision page extents and its row tolerance.
+  function gridHeight(bounds, gridWidth) {
+    const w = Math.fround(bounds[2] - bounds[0]), h = Math.fround(bounds[3] - bounds[1]);
+    return Math.max(1, Math.ceil(h * gridWidth / w - 1e-4));
+  }
+  const area = r => r ? Math.max(0, r[2] - r[0]) * Math.max(0, r[3] - r[1]) : 0;
+  const contains = (outer, inner) => !!outer && outer[0] <= inner[0] && outer[1] <= inner[1] && outer[2] >= inner[2] && outer[3] >= inner[3];
+  const sameRect = (a, b) => !!a && !!b && a.every((n, i) => n === b[i]);
+  // Pixels the sharp surfaces of one viewport may hold in total: the screen
+  // area with a margin for scrolling, never the engine's whole ceiling by
+  // default and never less than a small pane needs for whole pages.
+  function surfaceBudget(viewportPixels, maxPixels) {
+    return Math.max(1, Math.floor(Math.min(maxPixels, Math.max(2000000, viewportPixels * 1.5))));
+  }
+  /* Choose the rectangle of a page's grid to keep sharp.
+   *  grid     [width, height] in device pixels
+   *  visible  the part of the page inside the viewport, in grid pixels, or
+   *           undefined when the page is off screen
+   *  budget   { whole, clip, max }: a page of at most `whole` pixels is held
+   *           complete; otherwise the rectangle may use `clip` pixels, or
+   *           what the visible part needs if that is more, up to `max`
+   *  current  the rectangle already held at this grid, if any
+   * A page that fits is held whole: its rectangle never moves, so scrolling
+   * costs nothing. Otherwise the rectangle covers the visible part, aligned
+   * outward to the engine's lattice, plus as many further lattice rows as the
+   * budget allows. It is kept for as long as it still covers what is visible. */
+  function planSurface(grid, visible, budget, current, cell = SURFACE_CELL) {
+    const [gw, gh] = grid;
+    if (gw <= 8192 && gh <= 8192 && gw * gh <= Math.min(budget.whole, budget.max)) { return [0, 0, gw, gh]; }
+    if (!visible || visible[2] <= visible[0] || visible[3] <= visible[1]) { return undefined; }
+    const need = [Math.max(0, Math.floor(visible[0] / cell) * cell), Math.max(0, Math.floor(visible[1] / cell) * cell),
+      Math.min(gw, Math.ceil(visible[2] / cell) * cell), Math.min(gh, Math.ceil(visible[3] / cell) * cell)];
+    // What is on screen is sharp even where lattice alignment costs more than
+    // this page's share; only the engine's ceiling can cut into it.
+    const limit = Math.min(budget.max, Math.max(budget.clip, area(need)));
+    // A held rectangle stays while it covers the view and is within the whole
+    // budget, even above this page's present share: shares shift with every
+    // scroll, and re-rendering to give pixels back would cost more than it saves.
+    if (current && contains(current, need) && area(current) <= Math.max(limit, Math.min(budget.max, budget.whole))) { return current.slice(); }
+    const fits = r => r[2] - r[0] <= 8192 && r[3] - r[1] <= 8192 && area(r) <= limit;
+    const clip = need.slice();
+    // A viewport beyond the budget keeps its middle sharp; the placeholder
+    // shows around it. Shrink by whole lattice steps, longest side first.
+    while (!fits(clip)) {
+      const wide = clip[2] - clip[0], tall = clip[3] - clip[1];
+      if (wide <= cell && tall <= cell) {
+        // One cell is the smallest lattice-aligned rectangle; trim it exactly.
+        clip[2] = clip[0] + Math.max(1, Math.min(wide, 8192, limit));
+        clip[3] = clip[1] + Math.max(1, Math.min(tall, 8192, Math.floor(limit / (clip[2] - clip[0]))));
+        break;
+      }
+      const axis = tall >= wide ? 1 : 0, low = clip[axis], high = clip[axis + 2];
+      const centre = (visible[axis] + visible[axis + 2]) / 2;
+      if (centre - low >= high - centre) { clip[axis] = Math.min(high - 1, (Math.floor(low / cell) + 1) * cell); }
+      else { clip[axis + 2] = Math.max(low + 1, (Math.ceil(high / cell) - 1) * cell); }
+    }
+    // Overscan: grow by lattice rows, then columns, on the nearer-to-need side
+    // first, while the budget lasts. Scrolling then reuses the rectangle.
+    for (const axis of [1, 0]) {
+      const limit = axis ? gh : gw;
+      for (let grown = true; grown;) {
+        grown = false;
+        for (const side of [axis + 2, axis]) {
+          const next = clip.slice();
+          next[side] = side > 1 ? Math.min(limit, (Math.floor(clip[side] / cell) + 1) * cell) : Math.max(0, (Math.ceil(clip[side] / cell) - 1) * cell);
+          // Grow evenly: never more than one lattice step ahead of the other side.
+          const before = side > 1 ? clip[side] - need[side] : need[side] - clip[side];
+          const other = side > 1 ? need[axis] - clip[axis] : clip[axis + 2] - need[axis + 2];
+          const otherStuck = side > 1 ? clip[axis] === 0 : clip[axis + 2] === limit;
+          if (next[side] !== clip[side] && fits(next) && (before <= other || otherStuck)) { clip[side] = next[side]; grown = true; }
+        }
+      }
+    }
+    return clip;
+  }
+  // The part of a page inside the viewport, in the page's grid pixels.
+  function visibleGridRect(grid, pageRect, viewportRect) {
+    const sx = grid[0] / pageRect.width, sy = grid[1] / pageRect.height;
+    const r = [Math.max(0, Math.floor((viewportRect.left - pageRect.left) * sx)), Math.max(0, Math.floor((viewportRect.top - pageRect.top) * sy)),
+      Math.min(grid[0], Math.ceil((viewportRect.right - pageRect.left) * sx)), Math.min(grid[1], Math.ceil((viewportRect.bottom - pageRect.top) * sy))];
+    return r[2] > r[0] && r[3] > r[1] ? r : undefined;
+  }
+  // Where a surface's canvas sits on its page, as fractions of the page box.
+  function surfacePlacement(grid, clip) {
+    return { left: clip[0] / grid[0], top: clip[1] / grid[1], width: (clip[2] - clip[0]) / grid[0], height: (clip[3] - clip[1]) / grid[1] };
+  }
   const covers = (outer, inner) => outer && inner.every((n, i) =>
     i < 2 ? n >= outer[i] - 0.001 : n <= outer[i] + 0.001);
   class DetailCache {
@@ -146,27 +238,42 @@
         scale = Math.max(.05, this.width / w);
         if (this.zoom === 'page') { scale = Math.min(scale, Math.max(.05, this.height / h)); }
       }
+      if (this.dpr) {
+        // The page occupies a whole number of device pixels in both directions:
+        // its grid. A raster of that grid is then shown without resampling.
+        const grid = this.grid(bounds, w * scale);
+        return { width: grid[0] / this.dpr, height: grid[1] / this.dpr };
+      }
       return { width: w * scale, height: h * scale };
+    }
+    // The grid of a page laid out `cssWidth` wide at the device pixel ratio.
+    grid(bounds, cssWidth) {
+      const width = Math.max(1, Math.min(65536, Math.round(cssWidth * this.dpr)));
+      return [width, gridHeight(bounds, width)];
     }
     textScroll() {
       if (this.zoom !== 'text' || !this.textExtent) { return 0; }
       const center = (this.textExtent[0] + this.textExtent[1]) / 2;
       return clamp(this.maxWidth / 2 + center * this.textScale() - this.width / 2, 0, this.maxWidth - this.width);
     }
-    configure({ count = 0, complete = false, active = 0, zoom = 'width', width = 800, height = 700 } = {}) {
+    configure({ count = 0, complete = false, active = 0, zoom = 'width', width = 800, height = 700, dpr } = {}) {
       if (complete) { this.trim(Math.max(0, count)); }
       const length = Math.min(100001, complete ? Math.max(1,count) : Math.max(count+1,active+1,1));
       width = Math.max(1,width); height = Math.max(1,height);
-      const key = `${length}:${zoom}:${width}:${height}:${this.version}:${zoom === 'text' ? this.textExtent : ''}`;
+      // Device snapping is opt-in: without a pixel ratio the layout stays in
+      // exact page proportions, as callers that never show a raster expect.
+      dpr = Number.isFinite(dpr) && dpr > 0 ? dpr : undefined;
+      const key = `${length}:${zoom}:${width}:${height}:${this.version}:${zoom === 'text' ? this.textExtent : ''}:${dpr || ''}`;
       if (key === this.key) { return; } this.key = key;
       this.count = length;
-      this.zoom = zoom; this.width = width; this.height = height;
+      this.zoom = zoom; this.width = width; this.height = height; this.dpr = dpr;
+      const gap = dpr ? Math.max(1, Math.round(this.gap * dpr)) / dpr : this.gap;
       this.offsets = new Float64Array(this.count + 1); this.rects = new Array(this.count); this.maxWidth = this.width;
       for (let page = 0; page < this.count; page++) {
         const b = this.sizes.get(page) || this.fallback, size = this.dimensions(b);
         this.rects[page] = { top: this.offsets[page], width: size.width, height: size.height, bounds: b };
         this.maxWidth = Math.max(this.maxWidth, size.width);
-        this.offsets[page + 1] = this.offsets[page] + size.height + (page + 1 < this.count ? this.gap : 0);
+        this.offsets[page + 1] = this.offsets[page] + size.height + (page + 1 < this.count ? gap : 0);
       }
       if (zoom === 'text' && this.textExtent) {
         // Leave enough background around the whole sheets to center asymmetric
@@ -193,5 +300,6 @@
       return { first, last, center, start, end };
     }
   }
-  return { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache, PageLayout };
+  return { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache, PageLayout,
+    SURFACE_CELL, gridHeight, surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect };
 });

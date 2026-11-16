@@ -33,7 +33,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       document:{fileName:'/fixture/continuous.tex'},send:(command:Command)=>{
         commands.push(command);
         if(command[0]==='preview-region'){regionPending.push({command,purpose:(controller as any).inFlight?.region?.purpose});}
-        if(/^preview-(?:render|png|svg|auto|background)$/.test(command[0])){pending.push(command);}
+        if(/^preview-(?:render|png|svg|auto|background|surface)$/.test(command[0])){pending.push(command);}
         if(command[0]==='preview-cancel'){for(let i=pending.length-1;i>=0;i--){if(command[1]===0||pending[i][1]===command[1]){pending.splice(i,1);}}}
       }};
     const createPanel=(...args:Parameters<typeof vscode.window.createWebviewPanel>)=>{
@@ -120,11 +120,11 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
     f.state(10000,true,0);await f.action('jump',{page:4000});await f.drain();const far=await f.action('snapshot');
     assert.ok(far.shellCount>0&&far.shellCount<=12,'ten-thousand-page catalogue mounts at most12shells');assert.ok(Number.isFinite(far.residentBytes)&&far.residentBytes<=32*1024*1024,'all resident page surfaces share the32MiB budget');
     assert.ok(far.shells.some((s:any)=>s.page===4000&&s.rendered),'explicit far jump reaches its page without mounting document prefix');
-    const rendersBeforeEmpty=f.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0])).length;
+    const rendersBeforeEmpty=f.commands.filter(c=>/^preview-(?:render|svg|auto|png|background|surface)$/.test(c[0])).length;
     f.state(0,true,0);const empty=await f.action('snapshot');
     assert.equal(empty.toolbarValue,'','zero-page document has no selected physical page');assert.equal(empty.toolbarDisabled,true,'zero-page page selector is disabled');
     await new Promise(resolve=>setTimeout(resolve,200));
-    assert.equal(f.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0])).length,rendersBeforeEmpty,'terminal empty document cannot enqueue vanished pages');
+    assert.equal(f.commands.filter(c=>/^preview-(?:render|svg|auto|png|background|surface)$/.test(c[0])).length,rendersBeforeEmpty,'terminal empty document cannot enqueue vanished pages');
     f.state(3,true,0);await f.action('jump',{page:0});await f.drain();const recovered=await f.action('snapshot');
     assert.equal(recovered.toolbarDisabled,false);assert.ok(recovered.shells.some((s:any)=>s.page===0&&s.rendered),'nonempty output recovers after an empty document');
     f.controller.beginSourceFollow();f.controller.handle(['preview-forward',2,1,2,300,150]);await f.drain();
@@ -227,7 +227,7 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
       const returned=await fitted.action('jump',{page:0});
       assert.ok(Math.abs(returned.shells.find((s:any)=>s.page===0).width-retainedWidth)<1,'evicted surface keeps learned text geometry before a replacement image');
       await fitted.drain();const commandStart=fitted.commands.length;fitted.invalidate();fitted.state(1,false,0);await fitted.drain();
-      const local=fitted.commands.slice(commandStart).filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0]));
+      const local=fitted.commands.slice(commandStart).filter(c=>/^preview-(?:render|svg|auto|png|background|surface)$/.test(c[0]));
       assert.ok(local.length<12&&local.every(c=>(c[2] as number)<=3),'fit geometry after an edit demands only nearby pages, not the document catalogue');
       console.log('PASS: '+(png?'PNG':'SVG')+' Fit to text width centers real content, retains full paper and stable geometry through edits, resizing and eviction');
     }finally{fitted.controller.dispose();}
@@ -248,10 +248,10 @@ export async function checkContinuousPreview(extensionUri: vscode.Uri): Promise<
   const unknown=await make(true);
   try {
     await unknown.drain();await new Promise(resolve=>setTimeout(resolve,500));await unknown.drain();
-    const rendered=unknown.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0]));
+    const rendered=unknown.commands.filter(c=>/^preview-(?:render|svg|auto|png|background|surface)$/.test(c[0]));
     assert.ok(rendered.length>0&&Math.max(...rendered.map(c=>c[2] as number))<=2,'stationary unknown frontier advances at most two pages during initial fill');
     const settled=rendered.length;await new Promise(resolve=>setTimeout(resolve,350));await unknown.drain();
-    assert.equal(unknown.commands.filter(c=>/^preview-(?:render|svg|auto|png|background)$/.test(c[0])).length,settled,'response arrival does not create another scroll epoch');
+    assert.equal(unknown.commands.filter(c=>/^preview-(?:render|svg|auto|png|background|surface)$/.test(c[0])).length,settled,'response arrival does not create another scroll epoch');
     console.log('PASS: unknown frontier settles without runaway compilation or export');
   } finally {unknown.controller.dispose();}
   const progress=await make(false,true,false);

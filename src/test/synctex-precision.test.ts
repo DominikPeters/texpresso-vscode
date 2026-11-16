@@ -109,5 +109,5 @@ test('precise inverse settles nulls and guards the ID, page, revision, source ep
   const beforeBarrier = f.reveals.length;
   const pending = request(); f.session.send(['rescan']);
   f.reply(result(pending[1])); assert.equal(f.reveals.length, beforeBarrier);
-  assert.ok(f.child.commands.every(c => !/^preview-(render|svg|png|auto|background)$/.test(c[0])), 'inverse lookup requests no images');
+  assert.ok(f.child.commands.every(c => !/^preview-(render|svg|png|auto|background|surface)$/.test(c[0])), 'inverse lookup requests no images');
 }));
