@@ -12,6 +12,12 @@ function replace(engine,text) {
   engine.send(['change-range',engine.file,...point(engine.text.slice(0,start)),...point(engine.text.slice(0,end)),text.slice(start,tail)]);
   engine.text=text;engine.send(['preview-barrier',++engine.sequence]);
 }
+function scenarios(input) {
+  const available=['small','reflow',...(input.figureChange?['figure']:[])];
+  const selected=input.scenarios||available;
+  assert.ok(selected.length && new Set(selected).size===selected.length && selected.every(value=>available.includes(value)),'Invalid scenario selection');
+  return selected;
+}
 async function main() {
   const [config,baseline,flat,experiment,outputArg]=process.argv.slice(2),output=path.resolve(outputArg);
   if(fs.existsSync(output))throw Error('Use a fresh output directory');
@@ -19,9 +25,9 @@ async function main() {
   const meta={created:new Date().toISOString(),cpu:'Apple M1 Pro',platform:process.platform,architecture:process.arch,
     harnessSha256:sha(fs.readFileSync(__filename)),flatManifest:JSON.parse(fs.readFileSync(path.join(path.dirname(flat),'manifest.json'))),
     experimentManifest:JSON.parse(fs.readFileSync(path.join(path.dirname(experiment),'manifest.json'))),
-    fixtures:fixtures.map(f=>({id:f.id,sourceSha256:f.sourceSha256,originalSha256:f.originalSha256,compatibility:f.compatibility}))};
+    fixtures:fixtures.map(f=>({id:f.id,focusPage:f.focusPage,sourceSha256:f.sourceSha256,originalSha256:f.originalSha256,compatibility:f.compatibility}))};
   fs.writeFileSync(path.join(output,'metadata.json'),JSON.stringify(meta,null,2));
-  for(const fixture of fixtures)for(const scenario of ['small','reflow',...(inputs.find(i=>i.id===fixture.id).figureChange?['figure']:[])])for(const [variant,binary] of [['baseline',baseline],['flat',flat],['uncached',experiment],['cached',experiment]]) {
+  for(const fixture of fixtures)for(const scenario of scenarios(inputs.find(i=>i.id===fixture.id)))for(const [variant,binary] of [['baseline',baseline],['flat',flat],['uncached',experiment],['cached',experiment]]) {
     process.env.TEXPRESSO_BLOCK_CACHE=variant==='uncached'?'0':'1';
     const dump=path.join(output,'xdv',fixture.id,scenario,variant);
     fs.mkdirSync(dump,{recursive:true});process.env.TEXPRESSO_XDV_DUMP_DIR=dump;
@@ -67,14 +73,7 @@ async function main() {
     } finally {await engine.close();}
     assert.equal(fingerprint(fixture.projectRoot).sha256,fixture.projectFingerprint.sha256);
   }
-  const {compare}=require('./xdv-stability.cjs');
-  const stability=[];
-  for(const fixture of fixtures)for(const scenario of ['small','reflow',...(inputs.find(i=>i.id===fixture.id).figureChange?['figure']:[])]) {
-    const dir=path.join(output,'xdv',fixture.id,scenario,'cached');
-    const files=fs.readdirSync(dir).filter(f=>f.endsWith('.xdv')).sort();
-    if(files.length>=2)stability.push({fixture:fixture.id,scenario,comparison:compare(fs.readFileSync(path.join(dir,files[0])),fs.readFileSync(path.join(dir,files.at(-1))),{page:fixture.focusPage})});
-  }
-  fs.writeFileSync(path.join(output,'xdv-stability.json'),JSON.stringify(stability,null,2)+'\n');
+  fs.writeFileSync(path.join(output,'xdv-stability.json'),JSON.stringify(require('./xdv-snapshots.cjs').snapshots(output),null,2)+'\n');
   for(const row of samples.filter(r=>r.variant!=='baseline')) {
     const baseline=samples.find(r=>r.fixture===row.fixture&&r.scenario===row.scenario&&r.variant==='baseline'&&r.repeat===row.repeat);
     assert.equal(row.sourceSha256,baseline.sourceSha256);assert.deepEqual(row.clip,baseline.clip);

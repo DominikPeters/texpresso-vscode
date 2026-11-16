@@ -67,7 +67,7 @@ function summarize(rows, metadata, stability, complete) {
       exactFullReferenceComparisons: candidates.length, exactBaselinePixelComparisons: candidates.length},
     machine: {cpu: metadata.cpu, platform: metadata.platform, architecture: metadata.architecture},
     provenance: provenance(metadata),
-    fixtures: metadata.fixtures.map(f => ({id: f.id, sourceSha256: f.sourceSha256, originalSha256: f.originalSha256})),
+    fixtures: metadata.fixtures.map(f => ({id: f.id, focusPage:f.focusPage, sourceSha256: f.sourceSha256, originalSha256: f.originalSha256})),
     rows: [...groups.values()].map(group => ({fixture: group[0].fixture, scenario: group[0].scenario, variant: group[0].variant,
       n: group.length, ...Object.fromEntries(Object.entries(metrics).map(([name, fn]) => [name, stats(group.map(fn))]))})),
     syntacticWarning: 'Exact XDV instruction or balanced PUSH/POP matches are opportunity measurements only; incoming interpreter state, resource identity, paint order and pixel reuse are not validated by syntactic equality.',
@@ -88,18 +88,37 @@ function summarize(rows, metadata, stability, complete) {
     ],
     reproduction: [
       'node scripts/profiling/build-damage-engine.cjs',
+      'node scripts/profiling/make-xdv-fixture.cjs artifacts/xdv-fixture',
       'node scripts/profiling/build-xdv-engine.cjs',
       'node scripts/profiling/xdv-block-benchmark.cjs <private-corpus-config.json> <baseline-engine> <flat-engine> <xdv-engine> artifacts/xdv-comparison',
-      'node scripts/profiling/summarize-xdv-blocks.cjs artifacts/xdv-comparison docs/profiling/2026-11-17-xdv-blocks',
+      'node scripts/profiling/xdv-block-benchmark.cjs artifacts/xdv-fixture/adversarial.json <baseline-engine> <flat-engine> <xdv-engine> artifacts/xdv-adversarial',
+      'node scripts/profiling/summarize-xdv-blocks.cjs artifacts/xdv-comparison docs/profiling/2026-11-17-xdv-blocks artifacts/xdv-adversarial',
     ]};
 }
 const number = value => Number.isFinite(value) ? value.toFixed(3) : '—';
 function markdown(report) {
   const pair = metric => metric ? `${number(metric.median)} / ${number(metric.p95)}` : '—';
+  const find=(fixture,scenario,variant)=>report.rows.find(r=>r.fixture===fixture&&r.scenario===scenario&&r.variant===variant);
+  const flat=find('graphic-slides','small','flat'),cached=find('graphic-slides','small','cached'),baseline=find('graphic-slides','small','baseline');
+  const conclusions=flat&&cached&&baseline?[
+    '## Findings and next direction','',
+    `On the real slide title edit, flat analysis took ${number(flat.analysisMs.median)} ms; cached PDF leaves took ${number(cached.analysisMs.median)} ms. Estimated native export fell from ${number(baseline.estimatedNativeExportMs.median)} ms with the unchanged engine to ${number(cached.estimatedNativeExportMs.median)} ms.`,
+    '',`Page display-list construction still took ${number(cached.dviDisplayListMs.median)} ms separately. The export result therefore is not a claim of a ${number(cached.estimatedNativeExportMs.median)} ms typing-to-screen latency. Reflow that moves the expensive figure still pays its rasterization cost.`,
+    '',
+    'The promising direction is reuse of explicitly identified immutable drawing blocks. General byte or PUSH/POP matching should remain a diagnostic: it does not establish state/resource equivalence, and large reflow diffs can themselves be costly. Cheap pages and direct TikZ do not justify enabling this imported-PDF cache universally.',
+    '',
+    'The next experiment should test reusing imported-PDF interpretation/display-list output, which targets the remaining construction cost, with bounded memory and the same full-reference checks. Further raster reuse for moved figures needs separate compositing and subpixel-correctness work.',
+    '',
+    'The cache passed replacement, fractional placement/scaling, repeated imports, nested optional-content layers and unsupported-image fallback in the generated fixtures. Registry tests cover invalidation, aborts, forged tags and eviction. Real same-path file reloads, malformed PDF exceptions, varied themes and arbitrary transparency/clip combinations still need integration coverage before production adoption.',
+    '',
+    'XDV summaries compare snapshot 0 (original) with snapshot 1 (first edit). Snapshot 2 returns to a short edit in alternating reflow tests and must not be used to measure reflow. A regression test covers this selection.',
+    '',
+  ]:[];
   const lines = ['# XDV imported-PDF block experiment', '', report.scope, '',
     `Machine: ${report.machine.cpu}, ${report.machine.platform}/${report.machine.architecture}.`, '',
     `${report.verification.exactFullReferenceComparisons} full-reference comparisons and ${report.verification.exactBaselinePixelComparisons} baseline pixel comparisons passed, including warmups. ${report.verification.measuredSamples} measured samples remain after warmup exclusion.`, '',
     'Times below are median / p95 in milliseconds. p95 uses nearest rank; with six measured edits it is the maximum. Native export is an estimate from stage sums, excluding verification renders and compiler/display-list work.', '',
+    ...conclusions,
     '| Fixture | Edit | Variant | Analysis | Render | PNG encode | PNG compare | Compiler burst | DVI list | Native export estimate |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |'];
   for (const r of report.rows) lines.push(`| ${r.fixture} | ${r.scenario} | ${r.variant} | ${pair(r.analysisMs)} | ${pair(r.variant === 'baseline' ? r.pngDrawMs : r.renderMs)} | ${pair(r.pngEncodeMs)} | ${pair(r.pngCompareMs)} | ${pair(r.compilerBurstMs)} | ${pair(r.dviDisplayListMs)} | ${pair(r.estimatedNativeExportMs)} |`);
@@ -119,7 +138,8 @@ function main() {
     const rows=fs.readFileSync(path.join(directory,'samples.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(line=>JSON.parse(line));
     return {rows,complete,metadata:json('metadata.json'),stability:json('xdv-stability.json')};
   });
-  const metadata={...runs[0].metadata,fixtures:runs.flatMap(run=>run.metadata.fixtures)};
+  const metadata={...runs[0].metadata,fixtures:runs.flatMap(run=>run.metadata.fixtures),
+    harnessesSha256:Object.fromEntries(runs.map((run,index)=>['run'+index,run.metadata.harnessSha256]))};
   for(const run of runs) {
     assert.equal(run.metadata.experimentManifest.experimentBinarySha256,metadata.experimentManifest.experimentBinarySha256,'Combining different candidate binaries');
     assert.equal(run.metadata.flatManifest.experimentBinarySha256,metadata.flatManifest.experimentBinarySha256,'Combining different flat binaries');

@@ -1,0 +1,4794 @@
+{
+  "schema": 1,
+  "scope": "Native stage timings only; not end-to-end or presentation latency.",
+  "methodology": {
+    "warmupsExcluded": true,
+    "percentile": "nearest rank p95; median averages middle pair",
+    "estimatedNativeExport": "analysis + render (baseline: png-draw) + png-color + png-compare + png-encode + text-bounds; excludes full-reference/oracle render, compilation, display-list construction, IPC and webview",
+    "repetitions": "Each group excludes the first of seven edits; p95 is the maximum of six samples."
+  },
+  "verification": {
+    "samples": 448,
+    "measuredSamples": 384,
+    "exactFullReferenceComparisons": 336,
+    "exactBaselinePixelComparisons": 336
+  },
+  "machine": {
+    "cpu": "Apple M1 Pro",
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "provenance": {
+    "harnessSha256": "0abcc1e27677df2e6696d741f80d69976b7f480a8ef62c9b99d73edbac828b7f",
+    "flatManifest": {
+      "engineRevision": "87e1cbbcc99e0f6a6037569b5204ff4dc057596f",
+      "baselineBinarySha256": "94ea93630f9eb33fdab357c8ff4d19b90d39cfd5299e344dccae62ae77be0774",
+      "experimentBinarySha256": "0ebff4c4230862ab288fd34bf320b669bb8d50155d8c2ed9afc9bfab43c19b5c",
+      "previewSourceSha256": "b3f41483839238c936cd085ad1e473188e6bf63bd79975cfebbe0595e093a8c1",
+      "experimentSourceSha256": "ead5c5b5f0d757a10860cded7c58128ef113cf016607278c099de51a3046fca7",
+      "workerSha256": "70f717d9fa3c5f89d136b01ad283169e247bce0dcb35b7f8b975098e63d43f8d"
+    },
+    "experimentManifest": {
+      "engineRevision": "87e1cbbcc99e0f6a6037569b5204ff4dc057596f",
+      "baselineBinarySha256": "94ea93630f9eb33fdab357c8ff4d19b90d39cfd5299e344dccae62ae77be0774",
+      "experimentBinarySha256": "193873b07f68f6304bff3cf2053811de6cd51068fe85dd0423fe34ee94e11194",
+      "workerSha256": "70f717d9fa3c5f89d136b01ad283169e247bce0dcb35b7f8b975098e63d43f8d",
+      "sources": {
+        "scripts/profiling/build-xdv-engine.cjs": "32632feb91d27ab6dba3dfca21b9978e29cdc8c920831f956156f0698ec70782",
+        "native/texpresso/src/frontend/preview.c": "b3f41483839238c936cd085ad1e473188e6bf63bd79975cfebbe0595e093a8c1",
+        "native/texpresso/src/dvi/dvi_special.c": "e9ba1b301ccee48c25c56183bb67309ff591193d8c030b1396dbc848aa2681a1",
+        "native/texpresso/src/dvi/dvi_resmanager.c": "774c7cbeca88f6e6efa9fea5911e4ccc2b2acdab1a471e6ce9e2585452fee695",
+        "native/texpresso/src/frontend/incdvi.c": "bca00cdc9f7f17ed1d39d0593a521b787f6a21f96a6f5507065b0404e365a0d0",
+        "native/.work/xdv-blocks/preview.c": "95b672aced5fa2f60ef55fd47b944c82f59a056dffb3c4b8488054e6f9780c23",
+        "native/.work/xdv-blocks/dvi_special.c": "0f2dcadace7dd95f9ddcf37930028d07ddf4a9a38f4fc95947c9d3ba0133d368",
+        "native/.work/xdv-blocks/dvi_resmanager.c": "778cc80c0cb5addc14ab91f9b5ee45849ed72e2b7e900a06aa20ee2a42a8246c",
+        "native/.work/xdv-blocks/incdvi.c": "f98853c0a2f28a77b0eeca43d8b13a1d5bb2186231e373c4267d379b271092c7",
+        "scripts/profiling/structural-damage.h": "ead5c5b5f0d757a10860cded7c58128ef113cf016607278c099de51a3046fca7",
+        "scripts/profiling/xdv-block-damage.h": "f37319b8d65ceb33c70e54555ad85a535f4a680ed3d0797d85d64994513db7f5",
+        "scripts/profiling/xdv-block-registry.h": "b52302b8c0b24bdec329e1686ccf0384d5d4ca9b463b4e3bc97d387b3ed3261b",
+        "scripts/profiling/xdv-block-registry.c": "63259e5b8e6e74752fa896b7371930fd7e7055388236ab2c432e83057f4c0444"
+      },
+      "reusedObjects": {
+        "driver": "815dc4fa77e0dd6159c9fbc02d29729625a47fb0a55d2ac463f0f992cda08115",
+        "main": "b5fcf1b279f25be1a683946cf14e3a11f5672c2b26d0e1f5352616cb72f9212d",
+        "logo": "21d000102ed7251b450c59c9ca62d56754132675d35956222ac6a4fbe5ffccec",
+        "sprotocol": "04d4ee9d634704c46808a2eda6bd5cfcd7748c396f2523e1c7a76a5552790063",
+        "state": "d113a22e4d81c32063f46ecc9aa9ebad124d1439b02eedd803c72cdc4f6956b4",
+        "fs": "a6123128f72782544bc7e5e57791715af440462659ac75df42394b45b658e85a",
+        "myabort": "b6fa4445aca9a42e01cf143b3b9f59242ef7b922004fadfde067f924d04b7bf9",
+        "renderer": "7c0228f1f3f4d48020743f0a004adf94a8a00222f15545a89b45eb3e9027bda1",
+        "engine_tex": "e30875d090dfc0818bd1888aa6d42983e39bc8612e8c93e208e700f3db7060c0",
+        "engine_pdf": "aa45ca2b81db1b245874e94d36faab97fdad9ef7ea6f37c167e34a1b016fcf7c",
+        "engine_dvi": "818f67949109212dd73d4d0479b3d2ef546f8026af1275d1cab03d9692d6d61c",
+        "synctex": "0a4dfd7561013368cb283ee0462a73b63bb09d6720d7a032b6c390146d649b37",
+        "prot_parser": "67a269f9d375641ec43c64b9d9ad6520724e0f64daa3dd48052493bda5f1b3a3",
+        "sexp_parser": "7944d22ed8d5dfec6ff87c63c38482c0df15e16a79da1ae9e363eeaf457e5f56",
+        "json_parser": "f740583926d3dcaed86bd234fd48cafd8cccc8405f7fc8943fbca5119887e023",
+        "editor": "af4c1d1fd08b744b7b4db043d773611955525f3122d963c9ce02eb6ed41f3bf1"
+      },
+      "archives": {
+        "build/frontend/libmydvi.a": "f7e7ddc9145248965731de30d7045c2b9c2dfa257274026463ad9f93052e5ef5",
+        "build/common/libcommon.a": "2a126590ca89027bb761faf43ef346d6d9f5355e4b59c186831225a3b02282bf"
+      },
+      "makefileSha256": "6a28be3575f82b679619dc477e4c3f7d3b57f2e97f21c6401e87664ff4966668"
+    },
+    "snapshotAnalyzerSha256": "ff97e3f7a7ace5758580b83299d714cd2f00bcba45b98bb0204dda50cb98600f",
+    "harnessesSha256": {
+      "run0": "0abcc1e27677df2e6696d741f80d69976b7f480a8ef62c9b99d73edbac828b7f",
+      "run1": "1e64981fc7da174945a9b8bd665e8ea1b5c285f7e9290f97a0a15933392f2632"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "math-paper",
+      "focusPage": 0,
+      "sourceSha256": "6ffe74cd20f2e5ffcf24d98ea1f5b55e0ac2272fec577d3b1880f94c6e09071c",
+      "originalSha256": "7f12276ff30f5ab1d20285b19bf01a76628321cb2215595b64975a30a37fb44b"
+    },
+    {
+      "id": "graphic-slides",
+      "focusPage": 20,
+      "sourceSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f",
+      "originalSha256": "f7e9b79c8a51a0b9f7bf3fe479ee62e08183b5666c008aac61360d858a6cae5f"
+    },
+    {
+      "id": "election-figure",
+      "focusPage": 2,
+      "sourceSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02",
+      "originalSha256": "bc07d4fe4e3c32107e8ad8efa134dfae3c76a0c6f00af0bda0fb9d42c59f6d02"
+    },
+    {
+      "id": "synthetic-plot",
+      "focusPage": 0,
+      "sourceSha256": "23289c9fce61c2fc923aece0d8fc4ef0ac582dddeabf955a70a7dfcd76773b5b",
+      "originalSha256": "23289c9fce61c2fc923aece0d8fc4ef0ac582dddeabf955a70a7dfcd76773b5b"
+    },
+    {
+      "id": "pdf-import",
+      "focusPage": 0,
+      "sourceSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9",
+      "originalSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9"
+    },
+    {
+      "id": "pdf-resource",
+      "focusPage": 0,
+      "sourceSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9",
+      "originalSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9"
+    },
+    {
+      "id": "pdf-scale",
+      "focusPage": 0,
+      "sourceSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9",
+      "originalSha256": "c0c66bd6c812afdcc3ace83449f5faacaf27355eaa4dafda1d421aef7dc610f9"
+    },
+    {
+      "id": "pdf-raster",
+      "focusPage": 0,
+      "sourceSha256": "fc775ffaebae9a0bb9d8248c13b93e9343697d069c2ca4668a1edb9396ed1bc3",
+      "originalSha256": "fc775ffaebae9a0bb9d8248c13b93e9343697d069c2ca4668a1edb9396ed1bc3"
+    },
+    {
+      "id": "pdf-repeated",
+      "focusPage": 0,
+      "sourceSha256": "1303e5a531f6e28a019d88e9a581761bf2f935c6566b831c870294f205e3645b",
+      "originalSha256": "1303e5a531f6e28a019d88e9a581761bf2f935c6566b831c870294f205e3645b"
+    }
+  ],
+  "rows": [
+    {
+      "fixture": "math-paper",
+      "scenario": "small",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1.0665,
+        "p95": 1.769
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0575,
+        "p95": 0.073
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.356,
+        "p95": 0.78
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.3935,
+        "p95": 1.595
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.2945,
+        "p95": 0.308
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 1.5484999999999998,
+        "p95": 2.663
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "small",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.2545,
+        "p95": 0.296
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 1.5855000000000001,
+        "p95": 2.598
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.1870000000000003,
+        "p95": 4.143
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.1015,
+        "p95": 0.136
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3565,
+        "p95": 0.382
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.7545,
+        "p95": 1.033
+      },
+      "dviDisplayListMs": {
+        "n": 5,
+        "median": 0.281,
+        "p95": 0.29
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.3545,
+        "p95": 3.379
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 3,
+        "p95": 3
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "small",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.2695,
+        "p95": 0.363
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 1.9085,
+        "p95": 2.355
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.9205,
+        "p95": 4.733
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0815,
+        "p95": 0.296
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.4215,
+        "p95": 0.551
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 2.041,
+        "p95": 3.74
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.392,
+        "p95": 0.617
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.7865,
+        "p95": 3.4299999999999997
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 3,
+        "p95": 3
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "small",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.3105,
+        "p95": 0.402
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.154,
+        "p95": 13.887
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.8625,
+        "p95": 37.944
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0685,
+        "p95": 0.325
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.443,
+        "p95": 0.599
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.8665,
+        "p95": 2.167
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.34850000000000003,
+        "p95": 0.591
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.985,
+        "p95": 15.066999999999998
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 3,
+        "p95": 3
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "reflow",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1.1275,
+        "p95": 1.81
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 3.8245,
+        "p95": 3.967
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.5545,
+        "p95": 0.995
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.4215,
+        "p95": 1.684
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.2885,
+        "p95": 0.327
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 5.6255,
+        "p95": 6.595000000000001
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "reflow",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.258,
+        "p95": 0.27
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.129,
+        "p95": 5.457
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.7895,
+        "p95": 7.608
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 3.74,
+        "p95": 3.984
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.59,
+        "p95": 0.638
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.4275,
+        "p95": 1.613
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.2905,
+        "p95": 0.295
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 6.855,
+        "p95": 10.206
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 6,
+        "p95": 6
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "reflow",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.2675,
+        "p95": 0.28
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.2435,
+        "p95": 4.392
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.9364999999999997,
+        "p95": 6.599
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 3.9015,
+        "p95": 4.532
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.529,
+        "p95": 0.609
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.5855000000000001,
+        "p95": 1.654
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.286,
+        "p95": 0.564
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 6.9750000000000005,
+        "p95": 9.847
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 6,
+        "p95": 6
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "reflow",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.273,
+        "p95": 0.291
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.2385,
+        "p95": 3.248
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 3.8475,
+        "p95": 5.314
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 3.783,
+        "p95": 4.171
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.5585,
+        "p95": 0.573
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.5565,
+        "p95": 1.864
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.289,
+        "p95": 0.828
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 6.894,
+        "p95": 8.312000000000001
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 6,
+        "p95": 6
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "small",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 605.8040000000001,
+        "p95": 626.671
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.1205,
+        "p95": 0.213
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.378,
+        "p95": 0.39
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.052,
+        "p95": 0.089
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 88.189,
+        "p95": 91
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 607.76,
+        "p95": 628.589
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "small",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 78.265,
+        "p95": 131.142
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 10.4885,
+        "p95": 24.22
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 688.4105,
+        "p95": 888.711
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.1135,
+        "p95": 0.139
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.41700000000000004,
+        "p95": 1.368
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.0305,
+        "p95": 4.868
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 87.946,
+        "p95": 100.36
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 90.67399999999998,
+        "p95": 159.97799999999998
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "small",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 77.392,
+        "p95": 78.378
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 10.2675,
+        "p95": 10.624
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 674.4175,
+        "p95": 702.741
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.1145,
+        "p95": 0.223
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.39549999999999996,
+        "p95": 0.429
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.034,
+        "p95": 4.436
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 87.816,
+        "p95": 95.402
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 89.7885,
+        "p95": 90.67799999999998
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "small",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 1.663,
+        "p95": 1.997
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 10.1585,
+        "p95": 10.198
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 595.7905000000001,
+        "p95": 600.275
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.138,
+        "p95": 0.208
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.377,
+        "p95": 0.407
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.034,
+        "p95": 0.044
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 86.145,
+        "p95": 87.748
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 13.753499999999999,
+        "p95": 14.070000000000002
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 49908,
+        "p95": 49908
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "reflow",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 572.5895,
+        "p95": 593.793
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.3525,
+        "p95": 21.89
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.9475,
+        "p95": 1.25
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.5375,
+        "p95": 1.148
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 87.487,
+        "p95": 102.336
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 595.9585,
+        "p95": 616.8180000000001
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "reflow",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 77.34700000000001,
+        "p95": 80.858
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 570.07,
+        "p95": 580.995
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1217.3595,
+        "p95": 1243.789
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.180999999999997,
+        "p95": 21.365
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.974,
+        "p95": 1.042
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.9545,
+        "p95": 4.961
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 86.7675,
+        "p95": 88.71
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 672.5925,
+        "p95": 681.17
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "reflow",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 80.63499999999999,
+        "p95": 159.111
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 609.5655,
+        "p95": 822.13
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1291.438,
+        "p95": 1493.354
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.5635,
+        "p95": 21.482
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.9735,
+        "p95": 1.655
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.5955,
+        "p95": 1.541
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 94.7515,
+        "p95": 442.994
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 713.6075,
+        "p95": 923.3520000000001
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "reflow",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 1.867,
+        "p95": 2.183
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 589.8125,
+        "p95": 652.38
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1194.6365,
+        "p95": 1255.253
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.4545,
+        "p95": 23.522
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.9595,
+        "p95": 1.785
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 0.5595,
+        "p95": 1.76
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 88.86449999999999,
+        "p95": 220.312
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 616.5340000000001,
+        "p95": 676.6479999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 49908,
+        "p95": 49908
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "small",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 1.7730000000000001,
+        "p95": 2.615
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.096,
+        "p95": 0.143
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.5045,
+        "p95": 1.032
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.626,
+        "p95": 1.924
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.463,
+        "p95": 0.514
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.6054999999999997,
+        "p95": 3.83
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "small",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.4015,
+        "p95": 0.404
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 1.469,
+        "p95": 1.552
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 4.0725,
+        "p95": 4.488
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.049,
+        "p95": 0.128
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3935,
+        "p95": 0.465
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.6059999999999999,
+        "p95": 2.204
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.462,
+        "p95": 0.477
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.3735000000000004,
+        "p95": 2.4160000000000004
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "small",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.395,
+        "p95": 0.569
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 1.52,
+        "p95": 1.906
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 4.116,
+        "p95": 5.212
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.059,
+        "p95": 0.09
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3635,
+        "p95": 0.392
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.47,
+        "p95": 1.901
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.495,
+        "p95": 0.724
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.425,
+        "p95": 2.9439999999999995
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "small",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.394,
+        "p95": 0.462
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 1.625,
+        "p95": 1.698
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 4.214,
+        "p95": 4.975
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.057499999999999996,
+        "p95": 0.097
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.359,
+        "p95": 0.37
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.5715,
+        "p95": 2.202
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.472,
+        "p95": 0.74
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 2.4859999999999998,
+        "p95": 2.5949999999999998
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "reflow",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 2.2085,
+        "p95": 3.781
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 8.6245,
+        "p95": 9.559
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 1.195,
+        "p95": 3.553
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.5725,
+        "p95": 1.712
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.4405,
+        "p95": 0.642
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 12.1025,
+        "p95": 15.285
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "reflow",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.377,
+        "p95": 0.395
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.8635,
+        "p95": 3.337
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 5.7465,
+        "p95": 6.251
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 8.6385,
+        "p95": 9.888
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7505,
+        "p95": 0.804
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.6955,
+        "p95": 1.884
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.437,
+        "p95": 0.515
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 12.9155,
+        "p95": 14.226
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "reflow",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.397,
+        "p95": 0.415
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.971,
+        "p95": 3.459
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 5.9415,
+        "p95": 11.375
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 9.068,
+        "p95": 10.261
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.744,
+        "p95": 1.03
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.685,
+        "p95": 1.811
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.42500000000000004,
+        "p95": 0.706
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 13.251999999999999,
+        "p95": 15.246
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "reflow",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.416,
+        "p95": 0.463
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 3.4365,
+        "p95": 9.23
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 6.6645,
+        "p95": 14.98
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 9.9865,
+        "p95": 10.7
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7865,
+        "p95": 1.048
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 1.6749999999999998,
+        "p95": 2.107
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 0.45999999999999996,
+        "p95": 1.64
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 14.576999999999998,
+        "p95": 21.491
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "small",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 31.721,
+        "p95": 35.881
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0775,
+        "p95": 0.099
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.5745,
+        "p95": 9.765
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.6235,
+        "p95": 12.531
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 32.171,
+        "p95": 33.536
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 32.5235,
+        "p95": 42.351000000000006
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "small",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.2765,
+        "p95": 6.457
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 14.577,
+        "p95": 17.364
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 52.2425,
+        "p95": 58.811
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.08049999999999999,
+        "p95": 0.099
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3705,
+        "p95": 0.446
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.0995,
+        "p95": 12.843
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 32.5865,
+        "p95": 35.026
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 21.442,
+        "p95": 24.421000000000003
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 8,
+        "p95": 8
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "small",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.355,
+        "p95": 6.497
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 14.2395,
+        "p95": 15.646
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 52.123000000000005,
+        "p95": 59.163
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.065,
+        "p95": 0.078
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.38,
+        "p95": 0.482
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.531500000000001,
+        "p95": 12.095
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 33.1785,
+        "p95": 34.444
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 21.241,
+        "p95": 22.76
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 8,
+        "p95": 8
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "small",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.246,
+        "p95": 6.373
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 14.141,
+        "p95": 15.612
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 52.465,
+        "p95": 53.39
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.064,
+        "p95": 0.107
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.377,
+        "p95": 0.416
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 11.738,
+        "p95": 12.637
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 32.558,
+        "p95": 34.295
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 20.972,
+        "p95": 22.572
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 8,
+        "p95": 8
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "reflow",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 23.255,
+        "p95": 32.538
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 19.59,
+        "p95": 21.611
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 1.0055,
+        "p95": 1.493
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 11.556999999999999,
+        "p95": 12.75
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 32.403999999999996,
+        "p95": 33.083
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 44.3945,
+        "p95": 54.400000000000006
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "reflow",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.220000000000001,
+        "p95": 6.262
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 25.5195,
+        "p95": 32.223
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 55.715,
+        "p95": 70.495
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.0035,
+        "p95": 20.422
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.656,
+        "p95": 0.739
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.93,
+        "p95": 13.24
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 33.815,
+        "p95": 35.431
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 52.62200000000001,
+        "p95": 59.75099999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "reflow",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.2055,
+        "p95": 6.285
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 24.873,
+        "p95": 32.748
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 54.7915,
+        "p95": 71.58
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 19.7025,
+        "p95": 22.054
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6945,
+        "p95": 0.725
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.4195,
+        "p95": 12.15
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 33.421,
+        "p95": 35.994
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 51.5905,
+        "p95": 61.832
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "reflow",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.2065,
+        "p95": 6.284
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 25.2595,
+        "p95": 35.835
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 55.813,
+        "p95": 75.306
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.317999999999998,
+        "p95": 23.687
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6785,
+        "p95": 0.942
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.003,
+        "p95": 12.076
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 33.028,
+        "p95": 35.321
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 54.388999999999996,
+        "p95": 63.20399999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 31.761499999999998,
+        "p95": 33.002
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 19.488,
+        "p95": 32.37
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 1.189,
+        "p95": 6.464
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.11,
+        "p95": 12.323
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 33.6485,
+        "p95": 34.391
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 52.67700000000001,
+        "p95": 72.112
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.1945,
+        "p95": 6.476
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 33.091499999999996,
+        "p95": 34.913
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 70.779,
+        "p95": 74.271
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.162,
+        "p95": 22.404
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.771,
+        "p95": 0.803
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 10.9775,
+        "p95": 12.649
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 31.61,
+        "p95": 34.218
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 61.1275,
+        "p95": 62.643
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.257,
+        "p95": 12.027
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 34.5085,
+        "p95": 60.004
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 74.054,
+        "p95": 184.911
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.1605,
+        "p95": 26.976
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6855,
+        "p95": 0.978
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 11.5395,
+        "p95": 13.082
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 31.622500000000002,
+        "p95": 36.326
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 61.8675,
+        "p95": 100.34599999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 6.2829999999999995,
+        "p95": 6.342
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 33.616,
+        "p95": 47.068
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 72.37299999999999,
+        "p95": 85.472
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 19.837,
+        "p95": 24.045
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.739,
+        "p95": 0.816
+      },
+      "compilerBurstMs": {
+        "n": 6,
+        "median": 11.46,
+        "p95": 12.752
+      },
+      "dviDisplayListMs": {
+        "n": 6,
+        "median": 31.711,
+        "p95": 43.077
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 61.6405,
+        "p95": 78.40599999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "small",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 15.9535,
+        "p95": 17.847
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0635,
+        "p95": 0.169
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3905,
+        "p95": 0.458
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 16.5635,
+        "p95": 18.631
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "small",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.8335,
+        "p95": 3.909
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.325,
+        "p95": 3.242
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 20.717,
+        "p95": 22.638
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.1205,
+        "p95": 0.209
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3925,
+        "p95": 0.439
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 6.889,
+        "p95": 7.674
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "small",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.91,
+        "p95": 4.025
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.468,
+        "p95": 3.128
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 23.9345,
+        "p95": 31.089
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.074,
+        "p95": 0.828
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3775,
+        "p95": 2.421
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 7.035,
+        "p95": 10.141
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "small",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.2015,
+        "p95": 0.205
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 2.512,
+        "p95": 3.381
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 17.884500000000003,
+        "p95": 19.75
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.061,
+        "p95": 0.185
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.3595,
+        "p95": 0.411
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 3.299,
+        "p95": 4.285
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "reflow",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 11.559000000000001,
+        "p95": 15.767
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.064500000000002,
+        "p95": 20.889
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6925,
+        "p95": 1.075
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 32.370000000000005,
+        "p95": 37.769999999999996
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "reflow",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.8529999999999998,
+        "p95": 4.091
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 14.040500000000002,
+        "p95": 16.639
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 31.217,
+        "p95": 38.548
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.121000000000002,
+        "p95": 22.102
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6765000000000001,
+        "p95": 0.739
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 39.731,
+        "p95": 43.352
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "reflow",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.9275,
+        "p95": 5.475
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 14.815000000000001,
+        "p95": 19.966
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 31.5985,
+        "p95": 44.966
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 22.275,
+        "p95": 41.226
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7275,
+        "p95": 1.135
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 45.661500000000004,
+        "p95": 56.757
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "reflow",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.23199999999999998,
+        "p95": 0.265
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 13.5905,
+        "p95": 17.124
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 26.671,
+        "p95": 33.671
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.872,
+        "p95": 21.58
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.724,
+        "p95": 0.769
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 35.606,
+        "p95": 39.06699999999999
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 18.1755,
+        "p95": 28.422
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.492,
+        "p95": 21.787
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.8095,
+        "p95": 1.048
+      },
+      "compilerBurstMs": {
+        "n": 1,
+        "median": 0.605,
+        "p95": 0.605
+      },
+      "dviDisplayListMs": {
+        "n": 1,
+        "median": 3.729,
+        "p95": 3.729
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 40.8335,
+        "p95": 51.175
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.9285,
+        "p95": 9.475
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 17.485,
+        "p95": 19.709
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 38.536500000000004,
+        "p95": 45.39
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.957,
+        "p95": 23.525
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.744,
+        "p95": 0.779
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 43.709500000000006,
+        "p95": 50.897999999999996
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.8674999999999997,
+        "p95": 4.02
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.796,
+        "p95": 18.548
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 37.0265,
+        "p95": 46.77
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.3965,
+        "p95": 22.016
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.722,
+        "p95": 0.89
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 42.953,
+        "p95": 45.379999999999995
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.201,
+        "p95": 0.256
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.459,
+        "p95": 17.189
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 33.063,
+        "p95": 34.474
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.8855,
+        "p95": 22.281
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7495,
+        "p95": 0.891
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 38.606,
+        "p95": 39.492
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-resource",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 15.0515,
+        "p95": 16.555
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.835,
+        "p95": 21.104
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7324999999999999,
+        "p95": 0.82
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 36.978,
+        "p95": 38.303
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-resource",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.9325,
+        "p95": 5.01
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 17.124,
+        "p95": 20.104
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 36.471999999999994,
+        "p95": 38.868
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.557000000000002,
+        "p95": 23.783
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7044999999999999,
+        "p95": 0.732
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 44.054500000000004,
+        "p95": 46.977999999999994
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-resource",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.923,
+        "p95": 3.967
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.0935,
+        "p95": 17.704
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 36.1725,
+        "p95": 36.411
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.817999999999998,
+        "p95": 21.491
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.727,
+        "p95": 0.792
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 41.730000000000004,
+        "p95": 43.987
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-resource",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.20350000000000001,
+        "p95": 0.214
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.916,
+        "p95": 19.132
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 33.331999999999994,
+        "p95": 37.362
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.523,
+        "p95": 26.659
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7375,
+        "p95": 0.911
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 39.210499999999996,
+        "p95": 44.756
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-scale",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 15.389,
+        "p95": 19.047
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.673000000000002,
+        "p95": 25.395
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6945,
+        "p95": 0.853
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 37.028499999999994,
+        "p95": 45.448
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-scale",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.9325,
+        "p95": 4.094
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.688000000000002,
+        "p95": 19.167
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 37.4015,
+        "p95": 40.088
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.4185,
+        "p95": 22.777
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.6975,
+        "p95": 0.78
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 43.584500000000006,
+        "p95": 45.14300000000001
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-scale",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.8914999999999997,
+        "p95": 4.152
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 15.899000000000001,
+        "p95": 17.724
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 35.22,
+        "p95": 36.409
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.587000000000003,
+        "p95": 21.107
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.679,
+        "p95": 0.797
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 41.635000000000005,
+        "p95": 43.103
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-scale",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.206,
+        "p95": 0.243
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 17.045,
+        "p95": 29.012
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 33.995999999999995,
+        "p95": 62.215
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 22.7765,
+        "p95": 30.659
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7070000000000001,
+        "p95": 0.79
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 41.8805,
+        "p95": 60.847
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-raster",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 17.677500000000002,
+        "p95": 22.546
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 22.651,
+        "p95": 94.114
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.793,
+        "p95": 0.952
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 41.047,
+        "p95": 117.671
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-raster",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.908,
+        "p95": 4.095
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.186500000000002,
+        "p95": 17.088
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 36.0935,
+        "p95": 36.383
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.4315,
+        "p95": 21.107
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.705,
+        "p95": 0.754
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 41.5445,
+        "p95": 43.093
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-raster",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 3.9085,
+        "p95": 4.115
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 16.235,
+        "p95": 25.018
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 36.265,
+        "p95": 49.093
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 21.011499999999998,
+        "p95": 22.355
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7155,
+        "p95": 0.78
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 42.244,
+        "p95": 51.715
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-raster",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.2025,
+        "p95": 0.209
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 15.754999999999999,
+        "p95": 17.521
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 33.215,
+        "p95": 55.493
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 20.433500000000002,
+        "p95": 24.489
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.7384999999999999,
+        "p95": 1.078
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 38.1515,
+        "p95": 41.507
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 1,
+        "p95": 1
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 6001,
+        "p95": 6001
+      }
+    },
+    {
+      "fixture": "pdf-repeated",
+      "scenario": "figure",
+      "variant": "baseline",
+      "n": 6,
+      "analysisMs": null,
+      "renderMs": null,
+      "pngDrawMs": {
+        "n": 6,
+        "median": 16.8495,
+        "p95": 21.72
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0615,
+        "p95": 0.174
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.382,
+        "p95": 0.459
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 17.653000000000002,
+        "p95": 22.465999999999998
+      },
+      "changedCells": null,
+      "totalCells": null,
+      "blockHits": null,
+      "blockMisses": null,
+      "cachedOperations": null
+    },
+    {
+      "fixture": "pdf-repeated",
+      "scenario": "figure",
+      "variant": "flat",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 7.484999999999999,
+        "p95": 8.111
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 3.2975000000000003,
+        "p95": 4.498
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 30.0835,
+        "p95": 33.762
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0665,
+        "p95": 0.1
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.38749999999999996,
+        "p95": 0.503
+      },
+      "compilerBurstMs": {
+        "n": 1,
+        "median": 0.501,
+        "p95": 0.501
+      },
+      "dviDisplayListMs": {
+        "n": 1,
+        "median": 6.311,
+        "p95": 6.311
+      },
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 11.971499999999999,
+        "p95": 12.678
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 4,
+        "p95": 4
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-repeated",
+      "scenario": "figure",
+      "variant": "uncached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 7.2375,
+        "p95": 7.607
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 17.685499999999998,
+        "p95": 19.259
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 43.2,
+        "p95": 44.56
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.0925,
+        "p95": 0.409
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.373,
+        "p95": 0.456
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 26.132999999999996,
+        "p95": 27.218
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    {
+      "fixture": "pdf-repeated",
+      "scenario": "figure",
+      "variant": "cached",
+      "n": 6,
+      "analysisMs": {
+        "n": 6,
+        "median": 0.3785,
+        "p95": 0.384
+      },
+      "renderMs": {
+        "n": 6,
+        "median": 17.252499999999998,
+        "p95": 18.395
+      },
+      "pngDrawMs": {
+        "n": 6,
+        "median": 34.578,
+        "p95": 35.679
+      },
+      "pngEncodeMs": {
+        "n": 6,
+        "median": 0.078,
+        "p95": 0.088
+      },
+      "pngCompareMs": {
+        "n": 6,
+        "median": 0.356,
+        "p95": 0.442
+      },
+      "compilerBurstMs": null,
+      "dviDisplayListMs": null,
+      "estimatedNativeExportMs": {
+        "n": 6,
+        "median": 18.429,
+        "p95": 19.509
+      },
+      "changedCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "totalCells": {
+        "n": 6,
+        "median": 12,
+        "p95": 12
+      },
+      "blockHits": {
+        "n": 6,
+        "median": 2,
+        "p95": 2
+      },
+      "blockMisses": {
+        "n": 6,
+        "median": 0,
+        "p95": 0
+      },
+      "cachedOperations": {
+        "n": 6,
+        "median": 12002,
+        "p95": 12002
+      }
+    }
+  ],
+  "syntacticWarning": "Exact XDV instruction or balanced PUSH/POP matches are opportunity measurements only; incoming interpreter state, resource identity, paint order and pixel reuse are not validated by syntactic equality.",
+  "xdv": [
+    {
+      "fixture": "math-paper",
+      "scenario": "small",
+      "page": 0,
+      "oldInstructions": 4103,
+      "newInstructions": 4106,
+      "instructionDiff": {
+        "complete": true,
+        "work": 291,
+        "distance": 19,
+        "matchedInstructions": 4095,
+        "prefix": 446,
+        "suffix": 3564,
+        "oldMiddle": 93,
+        "newMiddle": 96
+      },
+      "balancedBlocks": {
+        "oldBlocks": 84,
+        "newBlocks": 84,
+        "matchedNewBlocks": 80,
+        "matchedNewByteCoverage": 5379,
+        "largestMatchedBytes": 331,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.9092292089249493,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 0.43608299999999645,
+      "totalComparisonMs": 20.200416999999998,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 677,
+        "distance": 33,
+        "matchedBytes": 5967,
+        "prefix": 1611,
+        "suffix": 4268,
+        "oldMiddle": 103,
+        "newMiddle": 106
+      }
+    },
+    {
+      "fixture": "math-paper",
+      "scenario": "reflow",
+      "page": 0,
+      "oldInstructions": 4103,
+      "newInstructions": 4114,
+      "instructionDiff": {
+        "complete": true,
+        "work": 1369304,
+        "distance": 1623,
+        "matchedInstructions": 3297,
+        "prefix": 446,
+        "suffix": 14,
+        "oldMiddle": 3643,
+        "newMiddle": 3654
+      },
+      "balancedBlocks": {
+        "oldBlocks": 84,
+        "newBlocks": 84,
+        "matchedNewBlocks": 70,
+        "matchedNewByteCoverage": 4208,
+        "largestMatchedBytes": 331,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.7100911238609517,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 26.139291,
+      "totalComparisonMs": 65.319208,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 1818970,
+        "distance": 1879,
+        "matchedBytes": 5049,
+        "prefix": 1611,
+        "suffix": 54,
+        "oldMiddle": 4317,
+        "newMiddle": 4330
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "small",
+      "page": 20,
+      "oldInstructions": 525,
+      "newInstructions": 527,
+      "instructionDiff": {
+        "complete": true,
+        "work": 4,
+        "distance": 2,
+        "matchedInstructions": 525,
+        "prefix": 174,
+        "suffix": 351,
+        "oldMiddle": 0,
+        "newMiddle": 2
+      },
+      "balancedBlocks": {
+        "oldBlocks": 92,
+        "newBlocks": 92,
+        "matchedNewBlocks": 81,
+        "matchedNewByteCoverage": 6952,
+        "largestMatchedBytes": 1803,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.8468753806797418,
+      "pdfImage": {
+        "old": 2,
+        "new": 2,
+        "matchedNew": 2,
+        "matchedNewBytes": 228
+      },
+      "instructionDiffMs": 0.05129199999998946,
+      "totalComparisonMs": 240.52483399999997,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 407,
+        "distance": 28,
+        "matchedBytes": 1108716,
+        "prefix": 1102490,
+        "suffix": 6226,
+        "oldMiddle": 0,
+        "newMiddle": 28
+      }
+    },
+    {
+      "fixture": "graphic-slides",
+      "scenario": "reflow",
+      "page": 20,
+      "oldInstructions": 525,
+      "newInstructions": 559,
+      "instructionDiff": {
+        "complete": true,
+        "work": 768,
+        "distance": 38,
+        "matchedInstructions": 523,
+        "prefix": 148,
+        "suffix": 351,
+        "oldMiddle": 26,
+        "newMiddle": 60
+      },
+      "balancedBlocks": {
+        "oldBlocks": 92,
+        "newBlocks": 93,
+        "matchedNewBlocks": 80,
+        "matchedNewByteCoverage": 6937,
+        "largestMatchedBytes": 1803,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.7606359649122807,
+      "pdfImage": {
+        "old": 2,
+        "new": 2,
+        "matchedNew": 2,
+        "matchedNewBytes": 228
+      },
+      "instructionDiffMs": 0.07466599999997925,
+      "totalComparisonMs": 181.18962500000004,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 445640,
+        "distance": 943,
+        "matchedBytes": 1108714,
+        "prefix": 1101959,
+        "suffix": 6226,
+        "oldMiddle": 531,
+        "newMiddle": 1470
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "small",
+      "page": 2,
+      "oldInstructions": 5053,
+      "newInstructions": 5056,
+      "instructionDiff": {
+        "complete": true,
+        "work": 45,
+        "distance": 5,
+        "matchedInstructions": 5052,
+        "prefix": 200,
+        "suffix": 4824,
+        "oldMiddle": 29,
+        "newMiddle": 32
+      },
+      "balancedBlocks": {
+        "oldBlocks": 223,
+        "newBlocks": 223,
+        "matchedNewBlocks": 213,
+        "matchedNewByteCoverage": 16566,
+        "largestMatchedBytes": 6152,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.9719549401548933,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 0.43745800000010604,
+      "totalComparisonMs": 18.20433300000002,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 187,
+        "distance": 12,
+        "matchedBytes": 29588,
+        "prefix": 13253,
+        "suffix": 16230,
+        "oldMiddle": 108,
+        "newMiddle": 114
+      }
+    },
+    {
+      "fixture": "election-figure",
+      "scenario": "reflow",
+      "page": 2,
+      "oldInstructions": 5053,
+      "newInstructions": 4884,
+      "instructionDiff": {
+        "complete": true,
+        "work": 1991766,
+        "distance": 1987,
+        "matchedInstructions": 3975,
+        "prefix": 34,
+        "suffix": 23,
+        "oldMiddle": 4996,
+        "newMiddle": 4827
+      },
+      "balancedBlocks": {
+        "oldBlocks": 223,
+        "newBlocks": 117,
+        "matchedNewBlocks": 96,
+        "matchedNewByteCoverage": 5644,
+        "largestMatchedBytes": 252,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.7586021505376344,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 40.12845900000002,
+      "totalComparisonMs": 96.10695800000008,
+      "rawByteDiff": {
+        "complete": false,
+        "work": 2000001,
+        "distanceLowerBound": 1993,
+        "prefix": 12806,
+        "suffix": 94,
+        "oldMiddle": 16691,
+        "newMiddle": 7093
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "small",
+      "page": 0,
+      "oldInstructions": 90877,
+      "newInstructions": 90879,
+      "instructionDiff": {
+        "complete": true,
+        "work": 47,
+        "distance": 8,
+        "matchedInstructions": 90874,
+        "prefix": 51,
+        "suffix": 90817,
+        "oldMiddle": 9,
+        "newMiddle": 11
+      },
+      "balancedBlocks": {
+        "oldBlocks": 18,
+        "newBlocks": 18,
+        "matchedNewBlocks": 15,
+        "matchedNewByteCoverage": 3114707,
+        "largestMatchedBytes": 3113446,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.9996004431390471,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 2.3837500000000773,
+      "totalComparisonMs": 405.55337499999996,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 1441,
+        "distance": 46,
+        "matchedBytes": 3115984,
+        "prefix": 1053,
+        "suffix": 3114649,
+        "oldMiddle": 291,
+        "newMiddle": 319
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "reflow",
+      "page": 0,
+      "oldInstructions": 90877,
+      "newInstructions": 91117,
+      "instructionDiff": {
+        "complete": true,
+        "work": 36712,
+        "distance": 270,
+        "matchedInstructions": 90862,
+        "prefix": 51,
+        "suffix": 90776,
+        "oldMiddle": 50,
+        "newMiddle": 290
+      },
+      "balancedBlocks": {
+        "oldBlocks": 18,
+        "newBlocks": 25,
+        "matchedNewBlocks": 14,
+        "matchedNewByteCoverage": 3114257,
+        "largestMatchedBytes": 3113446,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.9971263742174773,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 4.4992919999999685,
+      "totalComparisonMs": 344.7954579999998,
+      "rawByteDiff": {
+        "complete": false,
+        "work": 2000001,
+        "distanceLowerBound": 1973,
+        "prefix": 1053,
+        "suffix": 3113494,
+        "oldMiddle": 1446,
+        "newMiddle": 8754
+      }
+    },
+    {
+      "fixture": "synthetic-plot",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 90877,
+      "newInstructions": 90879,
+      "instructionDiff": {
+        "complete": false,
+        "work": 2000001,
+        "distanceLowerBound": 1992,
+        "prefix": 51,
+        "suffix": 630,
+        "oldMiddle": 90196,
+        "newMiddle": 90198
+      },
+      "balancedBlocks": {
+        "oldBlocks": 18,
+        "newBlocks": 18,
+        "matchedNewBlocks": 11,
+        "matchedNewByteCoverage": 1299,
+        "largestMatchedBytes": 450,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.0004168870380545015,
+      "pdfImage": {
+        "old": 0,
+        "new": 0,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 46.81270800000016,
+      "totalComparisonMs": 287.27045899999985,
+      "rawByteDiff": {
+        "complete": false,
+        "work": 2000001,
+        "distanceLowerBound": 1831,
+        "prefix": 1053,
+        "suffix": 15243,
+        "oldMiddle": 3099697,
+        "newMiddle": 3099725
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "small",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 75,
+      "instructionDiff": {
+        "complete": true,
+        "work": 4,
+        "distance": 2,
+        "matchedInstructions": 73,
+        "prefix": 17,
+        "suffix": 56,
+        "oldMiddle": 0,
+        "newMiddle": 2
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 11,
+        "matchedNewBlocks": 8,
+        "matchedNewByteCoverage": 448,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.3111111111111111,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 1,
+        "matchedNewBytes": 76
+      },
+      "instructionDiffMs": 0.003459000000020751,
+      "totalComparisonMs": 0.2803329999999278,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 407,
+        "distance": 28,
+        "matchedBytes": 1481,
+        "prefix": 409,
+        "suffix": 1072,
+        "oldMiddle": 0,
+        "newMiddle": 28
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "reflow",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 320,
+      "instructionDiff": {
+        "complete": true,
+        "work": 33235,
+        "distance": 257,
+        "matchedInstructions": 68,
+        "prefix": 12,
+        "suffix": 15,
+        "oldMiddle": 46,
+        "newMiddle": 293
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 18,
+        "matchedNewBlocks": 8,
+        "matchedNewByteCoverage": 448,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.051176604980580305,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 1,
+        "matchedNewBytes": 76
+      },
+      "instructionDiffMs": 0.314583999999968,
+      "totalComparisonMs": 21.60983299999998,
+      "rawByteDiff": {
+        "complete": false,
+        "work": 2000001,
+        "distanceLowerBound": 1990,
+        "prefix": 256,
+        "suffix": 314,
+        "oldMiddle": 911,
+        "newMiddle": 8253
+      }
+    },
+    {
+      "fixture": "pdf-import",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 75,
+      "instructionDiff": {
+        "complete": true,
+        "work": 39,
+        "distance": 4,
+        "matchedInstructions": 72,
+        "prefix": 17,
+        "suffix": 29,
+        "oldMiddle": 27,
+        "newMiddle": 29
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 11,
+        "matchedNewBlocks": 3,
+        "matchedNewByteCoverage": 387,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.26875,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 1,
+        "matchedNewBytes": 76
+      },
+      "instructionDiffMs": 0.00458400000002257,
+      "totalComparisonMs": 0.2439590000001317,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 1187,
+        "distance": 32,
+        "matchedBytes": 1479,
+        "prefix": 409,
+        "suffix": 450,
+        "oldMiddle": 622,
+        "newMiddle": 650
+      }
+    },
+    {
+      "fixture": "pdf-resource",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 75,
+      "instructionDiff": {
+        "complete": true,
+        "work": 44,
+        "distance": 4,
+        "matchedInstructions": 72,
+        "prefix": 17,
+        "suffix": 24,
+        "oldMiddle": 32,
+        "newMiddle": 34
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 11,
+        "matchedNewBlocks": 1,
+        "matchedNewByteCoverage": 307,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.2124567474048443,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 0,
+        "matchedNewBytes": 0
+      },
+      "instructionDiffMs": 0.03237499999886495,
+      "totalComparisonMs": 2.328125,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 1576,
+        "distance": 39,
+        "matchedBytes": 1478,
+        "prefix": 409,
+        "suffix": 342,
+        "oldMiddle": 730,
+        "newMiddle": 763
+      }
+    },
+    {
+      "fixture": "pdf-scale",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 75,
+      "instructionDiff": {
+        "complete": true,
+        "work": 52,
+        "distance": 6,
+        "matchedInstructions": 71,
+        "prefix": 17,
+        "suffix": 27,
+        "oldMiddle": 29,
+        "newMiddle": 31
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 11,
+        "matchedNewBlocks": 3,
+        "matchedNewByteCoverage": 387,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.268377253814147,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 1,
+        "matchedNewBytes": 76
+      },
+      "instructionDiffMs": 0.01766700000007404,
+      "totalComparisonMs": 0.9144159999996191,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 2023,
+        "distance": 50,
+        "matchedBytes": 1471,
+        "prefix": 409,
+        "suffix": 415,
+        "oldMiddle": 657,
+        "newMiddle": 687
+      }
+    },
+    {
+      "fixture": "pdf-raster",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 73,
+      "newInstructions": 75,
+      "instructionDiff": {
+        "complete": true,
+        "work": 39,
+        "distance": 4,
+        "matchedInstructions": 72,
+        "prefix": 17,
+        "suffix": 29,
+        "oldMiddle": 27,
+        "newMiddle": 29
+      },
+      "balancedBlocks": {
+        "oldBlocks": 11,
+        "newBlocks": 11,
+        "matchedNewBlocks": 3,
+        "matchedNewByteCoverage": 389,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.2697642163661581,
+      "pdfImage": {
+        "old": 1,
+        "new": 1,
+        "matchedNew": 1,
+        "matchedNewBytes": 78
+      },
+      "instructionDiffMs": 0.006959000002098037,
+      "totalComparisonMs": 0.5100840000013704,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 1187,
+        "distance": 32,
+        "matchedBytes": 1481,
+        "prefix": 409,
+        "suffix": 452,
+        "oldMiddle": 622,
+        "newMiddle": 650
+      }
+    },
+    {
+      "fixture": "pdf-repeated",
+      "scenario": "figure",
+      "page": 0,
+      "oldInstructions": 93,
+      "newInstructions": 95,
+      "instructionDiff": {
+        "complete": true,
+        "work": 72,
+        "distance": 6,
+        "matchedInstructions": 91,
+        "prefix": 17,
+        "suffix": 27,
+        "oldMiddle": 49,
+        "newMiddle": 51
+      },
+      "balancedBlocks": {
+        "oldBlocks": 18,
+        "newBlocks": 18,
+        "matchedNewBlocks": 10,
+        "matchedNewByteCoverage": 528,
+        "largestMatchedBytes": 307,
+        "oldUnclosed": 0,
+        "newUnclosed": 0,
+        "oldUnmatchedPops": 0,
+        "newUnmatchedPops": 0
+      },
+      "balancedByteCoverageFraction": 0.332703213610586,
+      "pdfImage": {
+        "old": 2,
+        "new": 2,
+        "matchedNew": 2,
+        "matchedNewBytes": 152
+      },
+      "instructionDiffMs": 0.006540999998833286,
+      "totalComparisonMs": 0.6293750000004366,
+      "rawByteDiff": {
+        "complete": true,
+        "work": 2066,
+        "distance": 48,
+        "matchedBytes": 1618,
+        "prefix": 409,
+        "suffix": 415,
+        "oldMiddle": 804,
+        "newMiddle": 832
+      }
+    }
+  ],
+  "limitations": [
+    "Research-only immutable imported-PDF fingerprint cache, not a general XDV subtree or raster cache.",
+    "The cache key includes resolved document identity, page and final transform. A moved block changes the key and conservatively invalidates all cells.",
+    "Full pixel comparisons validate these finite sampled edits; they are not a correctness proof for arbitrary documents.",
+    "Compiler-burst is a single instrumented burst, not total compilation latency; the harness does not issue edit-prewarm commands.",
+    "Fixed viewport, zoom and color settings; no scrolling, webview scheduling, presentation latency, revision age or peak-memory measurements.",
+    "Cache lookup still replays MuPDF display-list operations; hits avoid repeated detailed fingerprint analysis, not all display-list traversal.",
+    "Fixed variant order (baseline, flat, uncached, cached); small samples from one machine; reference checks perturb cache/CPU behavior, even though their timed work is excluded from the estimated cost."
+  ],
+  "reproduction": [
+    "node scripts/profiling/build-damage-engine.cjs",
+    "node scripts/profiling/make-xdv-fixture.cjs artifacts/xdv-fixture",
+    "node scripts/profiling/build-xdv-engine.cjs",
+    "node scripts/profiling/xdv-block-benchmark.cjs <private-corpus-config.json> <baseline-engine> <flat-engine> <xdv-engine> artifacts/xdv-comparison",
+    "node scripts/profiling/xdv-block-benchmark.cjs artifacts/xdv-fixture/adversarial.json <baseline-engine> <flat-engine> <xdv-engine> artifacts/xdv-adversarial",
+    "node scripts/profiling/summarize-xdv-blocks.cjs artifacts/xdv-comparison docs/profiling/2026-11-17-xdv-blocks artifacts/xdv-adversarial"
+  ]
+}

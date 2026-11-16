@@ -47,7 +47,7 @@ const adversarial=[
   {id:'pdf-scale',entry:'paper.tex',figureChange:{from:'width=.9',to:'width=.91'}},
   {id:'pdf-raster',entry:'raster.tex',figureChange:{from:'\\hspace{0pt}',to:'\\hspace{0.3pt}'}},
   {id:'pdf-repeated',entry:'twice.tex',figureChange:{from:'width=.3',to:'width=.31'}},
-].map(item=>({...inputs[0],...item}));
+].map(item=>({...inputs[0],...item,scenarios:['figure']}));
 fs.writeFileSync(path.join(output,'inputs.json'),JSON.stringify(inputs,null,2)+'\n');
 fs.writeFileSync(path.join(output,'adversarial.json'),JSON.stringify(adversarial,null,2)+'\n');
 console.log(path.join(output,'inputs.json'));
