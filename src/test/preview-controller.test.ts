@@ -1648,6 +1648,8 @@ test('surface navigation waits for the new viewport instead of promoting a coars
     const jump = f.messages.filter(m => m.type === 'jump').at(-1)!;
     assert.ok(Number.isSafeInteger(jump.viewportRequest));
     assert.equal(exports().length, before, 'a nearby capped width cannot become an authoritative page');
+    f.send({ ...demand(0), type: 'ready', pngCanvas: true });
+    assert.equal(exports().length, before, 'a queued pre-jump ready response cannot unblock rendering');
     f.send(demand(0));
     assert.equal(exports().length, before, 'a queued pre-jump viewport cannot unblock rendering');
     f.send(demand(1, jump.viewportRequest));

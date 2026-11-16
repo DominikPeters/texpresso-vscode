@@ -188,6 +188,7 @@ export class PreviewController {
 
   /** Rebind without destroying the last good browser surfaces or viewport. */
   replaceSession(session: TexpressoSession): void {
+    this.releaseViewport();
     const capabilities = this.uiCapabilities(); this.renderIntent++; this.visualSnapshots.clear();
     if (this.state) { this.recoveryPagination = { count: this.state[3], complete: this.state[4] }; }
     this.interactive(); this.release(); this.session = session; this.state = undefined;
@@ -392,7 +393,7 @@ export class PreviewController {
         this.interactive(); this.prewarm.refresh(); this.scheduleUpgrade(); break;
       case 'ready':
       case 'viewport':
-        if (this.awaitingViewport !== undefined && m.type !== 'ready' && m.viewportRequest !== this.awaitingViewport) { return; }
+        if (this.awaitingViewport !== undefined && m.viewportRequest !== this.awaitingViewport) { return; }
         const activeClip = this.clipOf(m.clip, m.width);
         if (!Number.isInteger(m.page) || (m.page as number) < 0 || (m.page as number) > 100000 ||
             !Number.isFinite(m.width) || (m.width as number) < 1 || (m.width as number) > (activeClip ? 65536 : 4096)) { return; }
