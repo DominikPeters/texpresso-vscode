@@ -10,18 +10,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <string.h>
 static volatile sig_atomic_t stop;
 static void finish(int signal) { stop = 1; }
 int main(int argc, char **argv)
 {
-  if (argc != 2) return 2;
-  int group = atoi(argv[1]);
+  int list = argc == 3 && !strcmp(argv[1], "--pids");
+  if (!list && argc != 2) return 2;
+  int group = list ? 0 : atoi(argv[1]);
+  if (!list && group <= 0) return 2;
   // proc_pid_rusage CPU counters use Mach ticks, not nanoseconds.
   mach_timebase_info_data_t timebase; mach_timebase_info(&timebase);
   signal(SIGTERM, finish); signal(SIGINT, finish);
-  while (!stop && kill(group, 0) == 0) {
+  while (!stop && (list || kill(group, 0) == 0)) {
     int pids[8192];
-    int n = proc_listpids(PROC_PGRP_ONLY, group, pids, sizeof pids) / sizeof(int);
+    int n = 0;
+    if (list) {
+      FILE *file = fopen(argv[2], "r");
+      if (file) {
+        while (n < 8192 && fscanf(file, "%d", &pids[n]) == 1) n++;
+        fclose(file);
+      }
+    } else n = proc_listpids(PROC_PGRP_ONLY, group, pids, sizeof pids) / sizeof(int);
     struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
     printf("{\"time\":%.3f,\"group\":%d,\"tasks\":[", t.tv_sec * 1000.0 + t.tv_nsec / 1e6, group);
     int count = 0;

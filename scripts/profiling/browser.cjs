@@ -42,7 +42,7 @@ fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify({
   platform: process.platform, architecture: process.arch, node: process.version,
   engine: cp.execFileSync('git', ['-C', 'native/texpresso', 'rev-parse', 'HEAD'], {cwd: repo, encoding:'utf8'}).trim(),
   extension: cp.execFileSync('git', ['rev-parse', 'HEAD'], {cwd: repo, encoding:'utf8'}).trim(),
-  scenario: process.env.TEXPRESSO_PROFILE_SCENARIO || 'legacy', jobs
+  scenario: process.env.TEXPRESSO_PROFILE_SCENARIO || 'legacy', disableSurfaces:process.env.TEXPRESSO_PROFILE_DISABLE_SURFACES==='1', jobs
 }, null, 2));
 
 let active, controller, panel, receive, stream, queue = [], frames = new Map, caseIndex = -1;
@@ -51,6 +51,7 @@ const results = [];
 
 const dispose = async () => {
   controller?.dispose();
+  active?.browserSampler?.kill();
   if (active) {
     await active.dispose();
     active = undefined;
@@ -72,6 +73,10 @@ async function prepare(index) {
   const job = jobs[index], fixture = cases.find(f => f.id === job.fixture);
   fs.writeFileSync(fixture.file, fixture.text);
   active = new Run(fixture, binary, job.codec, 1600, output, job.repeat);
+  if (process.env.TEXPRESSO_PROFILE_DISABLE_SURFACES === '1') {
+    const {probePreview}=require('../../out/preview-capabilities');
+    active.session.services.probePreview=(config,cwd,features)=>probePreview(config,cwd,value=>features({...value,surfaces:false}));
+  }
   active.onPreview = event => controller?.handle(event);
   active.onState = () => controller?.update();
   panel = {
@@ -124,6 +129,7 @@ async function prepare(index) {
   const instance = panel.webview.html.match(/data-instance="([^"]+)"/)[1];
   const bridge = fs.readFileSync(path.join(__dirname, ['auto-e2e', 'rapid-e2e'].includes(process.env.TEXPRESSO_PROFILE_SCENARIO) ? 'auto-client.js' : 'browser-client.js'), 'utf8').replace('__JOB__', JSON.stringify({
     ...job,
+    extras: process.env.TEXPRESSO_PROFILE_EXTRAS === '1',
     rapid: process.env.TEXPRESSO_PROFILE_SCENARIO === 'rapid-e2e',
     earlyInput: process.env.TEXPRESSO_PROFILE_RAPID_EARLY === '1',
     manual: process.env.TEXPRESSO_PROFILE_MANUAL === '1',
@@ -208,6 +214,24 @@ const server = http.createServer(async (req, res) => {
     } else if (url.pathname === '/status') {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ completed: results.length, total: jobs.length }));
+    } else if (url.pathname === '/browser-processes') {
+      const processes = await json();
+      const run = active;
+      if (!run || !Array.isArray(processes)) { res.writeHead(409); res.end(); return; }
+      const pids = processes.filter(p => Number.isSafeInteger(p.id) && p.id > 0).slice(0, 128);
+      const filename = path.join(output, 'browser-pids.txt');
+      fs.writeFileSync(filename, pids.map(p => p.id).join('\n') + '\n');
+      run.browserProcesses = pids;
+      if (!run.browserSampler && process.platform === 'darwin' && fs.existsSync(path.join(output, 'memory-sampler'))) {
+        run.browserMemory = [];
+        run.browserSampler = cp.spawn(path.join(output, 'memory-sampler'), ['--pids', filename]);
+        let pending = '';
+        run.browserSampler.stdout.on('data', bytes => {
+          pending += bytes.toString(); const lines = pending.split('\n'); pending = lines.pop();
+          for (const line of lines) run.browserMemory.push(JSON.parse(line));
+        });
+      }
+      res.end('ok');
     } else if (url.pathname === '/result') {
       const result = await json();
       const row = {
@@ -215,6 +239,8 @@ const server = http.createServer(async (req, res) => {
         nativeProfile: active.profile,
         uiMessages: active.uiMessages,
         memory: active.memory,
+        browserMemory: active.browserMemory,
+        browserProcesses: active.browserProcesses,
         node: process.memoryUsage()
       };
       results.push(row);

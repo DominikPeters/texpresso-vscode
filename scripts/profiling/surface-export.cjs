@@ -17,15 +17,19 @@ const median=values=>[...values].sort((a,b)=>a-b)[Math.floor(values.length/2)];
 class Engine {
   constructor(binary,file) {
     this.file=file;this.text=fs.readFileSync(file,'utf8');this.pending=Buffer.alloc(0);this.frames=new Map();this.retries=new Set();
-    this.errors=new Map();this.profiles=[];this.trace='';this.partial='';this.sequence=1;this.nextId=0;
-    this.child=cp.spawn(binary,['-texlive','-headless','-json','-lines','-stream','-preview-max-pixels','16000000',file],
-      {cwd:path.dirname(file),env:{...process.env,SDL_VIDEODRIVER:'dummy',TEXPRESSO_PROFILE:'1'},stdio:['pipe','pipe','pipe']});
+    this.errors=new Map();this.profiles=[];this.damage=[];this.trace='';this.partial='';this.sequence=1;this.nextId=0;
+    this.child=cp.spawn(binary,['-texlive','-headless','-watch-parent','-json','-lines','-stream','-preview-max-pixels','16000000',file],
+      {cwd:path.dirname(file),detached:true,env:{...process.env,SDL_VIDEODRIVER:'dummy',TEXPRESSO_PROFILE:'1'},stdio:['pipe','pipe','pipe']});
     this.child.on('error',error=>this.failure=error);
+    this.child.on('exit',(code,signal)=>{if(!this.closing)this.failure=Error('Engine exited '+code+'/'+signal+'\n'+this.trace.slice(-6000));});
     this.child.stdout.on('data',bytes=>{try{this.read(bytes);}catch(error){this.failure=error;}});
     this.child.stderr.on('data',bytes=>{
       const text=bytes.toString();this.trace=(this.trace+text).slice(-20000);this.partial+=text;
       const lines=this.partial.split('\n');this.partial=lines.pop();
-      for(const line of lines)if(line.startsWith('[profile] ')){try{this.profiles.push(JSON.parse(line.slice(10)));}catch{}}
+      for(const line of lines) {
+        if(line.startsWith('[profile] '))this.profiles.push(JSON.parse(line.slice(10)));
+        else if(line.startsWith('[damage] '))this.damage.push(JSON.parse(line.slice(9)));
+      }
     });
     this.send(['register',file]);this.send(['open',file,this.text]);this.send(['preview-barrier',this.sequence]);this.send(['resume']);
   }
@@ -40,11 +44,13 @@ class Engine {
       }
       const end=this.pending.indexOf(10);if(end<0)return;
       const raw=this.pending.subarray(0,end).toString('utf8');this.pending=this.pending.subarray(end+1);
-      let message;try{message=JSON.parse(raw);}catch{continue;}
+      const message=JSON.parse(raw);
       if(message[0]==='preview-image') {
+        if(!Number.isSafeInteger(message[1].byteLength)||message[1].byteLength<0||message[1].byteLength>64*1024*1024)throw Error('Invalid image byte length');
         if(message[1].byteLength)this.header=message[1];
         else this.frames.set(message[1].requestId,{header:message[1],bytes:Buffer.alloc(0)});
       } else if(message[0]==='preview-state')this.state=message;
+      else if(message[0]==='preview-forward')this.forward=message;
       else if(message[0]==='preview-retry'||message[0]==='preview-cancelled')this.retries.add(message[1]);
       else if(message[0]==='preview-error')this.errors.set(message[1],message[2]);
     }
@@ -53,7 +59,7 @@ class Engine {
     const deadline=performance.now()+120000;
     while(!check()) {
       if(this.failure)throw this.failure;
-      if(this.child.exitCode!==null||performance.now()>deadline)throw Error('Engine deadline/exit\n'+this.trace.slice(-3000));
+      if(this.child.exitCode!==null||this.child.signalCode!==null||performance.now()>deadline)throw Error('Engine deadline/exit\n'+this.trace.slice(-3000));
       await delay(1);
     }
   }
@@ -67,7 +73,7 @@ class Engine {
       if(this.retries.has(id)){await delay(5);continue;}
       const frame=this.frames.get(id);this.frames.delete(id);
       await this.until(()=>this.profiles.some(p=>p.request===id&&p.stage==='pipe-write'));
-      return {...frame,stages:Object.fromEntries(this.profiles.filter(p=>p.request===id).map(p=>[p.stage,p.ms]))};
+      return {...frame,damage:this.damage.find(p=>p.request===id),stages:Object.fromEntries(this.profiles.filter(p=>p.request===id).map(p=>[p.stage,p.ms]))};
     }
     throw Error('Repeated obsolete render');
   }
@@ -77,9 +83,10 @@ class Engine {
     this.text=this.text.slice(0,offset)+text+this.text.slice(offset);this.send(['preview-barrier',++this.sequence]);
   }
   async close() {
+    this.closing=true;
     this.child.stdin.end();
     await Promise.race([new Promise(resolve=>this.child.once('exit',resolve)),delay(2000)]);
-    try{this.child.kill('SIGTERM');}catch{}
+    try{process.kill(-this.child.pid,'SIGTERM');}catch(error){if(error.code!=='ESRCH')console.error('Native process-group cleanup:',error.code);}
   }
 }
 
@@ -112,7 +119,7 @@ async function measure(binary,file,anchor) {
   } finally { await engine.close(); }
 }
 
-(async()=>{
+if(require.main===module)(async()=>{
   const [binary,...rest]=process.argv.slice(2);
   if(!binary||!rest.length){console.error('usage: surface-export.cjs <texpresso> <file.tex> [anchor] ...');process.exit(2);}
   for(let i=0;i<rest.length;i++) {
@@ -120,3 +127,5 @@ async function measure(binary,file,anchor) {
     console.log(JSON.stringify(await measure(path.resolve(binary),file,anchor)));
   }
 })().catch(error=>{console.error(error);process.exit(1);});
+
+module.exports={Engine};

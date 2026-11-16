@@ -5,6 +5,7 @@ const profileHost = profileJob.vscode ? acquireVsCodeApi() : undefined;
 const profileRows = [], profileFrames = [], errors = [], pendingMain = new Set(), profileRequests = [], pendingRegions = new Map();
 let current, latestSequence = 0, latestRequest = 0;
 const displayedMainRequest = new Map();
+const surfaceSamples=[];let surfaceSampler;
 const profileInputs = [], rapidPhases = [], visibilityEvents = [], prewarmEvents = [];
 const visibility = () => ({state:document.visibilityState, focused:document.hasFocus()});
 document.addEventListener('visibilitychange',()=>visibilityEvents.push({at:performance.now(),...visibility()}));
@@ -27,9 +28,18 @@ const surfaceFor = page => {
     sheet?.querySelector('[data-part="image"]:not([hidden])');
 };
 const surfaceMetrics = page => {
-  const sheet = sheetFor(page), surface = surfaceFor(page), rect = sheet?.getBoundingClientRect();
+  const sheet = sheetFor(page), surface = surfaceFor(page), rect = sheet?.getBoundingClientRect(), rasterRect=surface?.getBoundingClientRect();
+  const detail=sheet?.querySelector('[data-part="detail"]'),detailRect=detail?.getBoundingClientRect(),viewportRect=document.getElementById('viewport')?.getBoundingClientRect();
+  const detailVisible=!!detail && !detail.hidden && detail.naturalWidth>0;
+  const detailCoversVisible=detailVisible && rect && viewportRect && detailRect.left<=Math.max(rect.left,viewportRect.left)+1 &&
+    detailRect.top<=Math.max(rect.top,viewportRect.top)+1 && detailRect.right>=Math.min(rect.right,viewportRect.right)-1 &&
+    detailRect.bottom>=Math.min(rect.bottom,viewportRect.bottom)-1;
   return { page, mounted: !!sheet, rendered: !!surface, stale: sheet?.dataset.stale,
     cssWidth: rect?.width, cssHeight: rect?.height,
+    surfaceCssWidth:rasterRect?.width,surfaceCssHeight:rasterRect?.height,
+    physicalOrigin:rasterRect?[rasterRect.left*devicePixelRatio,rasterRect.top*devicePixelRatio]:undefined,detailVisible,detailCoversVisible,
+    detailDensity:detailVisible?detail.naturalWidth/(detailRect.width*devicePixelRatio):undefined,
+    density: surface instanceof HTMLCanvasElement ? surface.width/(rasterRect.width*devicePixelRatio) : surface instanceof HTMLImageElement ? surface.naturalWidth/(rasterRect.width*devicePixelRatio) : undefined,
     surface: surface?.tagName?.toLowerCase(),
     pixelWidth: surface instanceof HTMLCanvasElement ? surface.width : surface instanceof HTMLImageElement ? surface.naturalWidth : undefined,
     pixelHeight: surface instanceof HTMLCanvasElement ? surface.height : surface instanceof HTMLImageElement ? surface.naturalHeight : undefined,
@@ -145,6 +155,13 @@ else {
     Object.assign(op,memorySnapshot());
     profileRows.push(op); current = undefined;
   };
+  surfaceSampler=setInterval(()=>{
+    const page=Number(document.getElementById('page').value)-1,at=performance.now();
+    const shown=profileFrames.find(f=>f.request===displayedMainRequest.get(page));
+    const pending=profileInputs.find(i=>i.sequence!==undefined && i.sequence>(shown?.sequence??-1));
+    surfaceSamples.push({at,displayedSequence:shown?.sequence,latestInputSequence:profileInputs.at(-1)?.sequence,
+      oldestPendingInputAgeMs:pending?at-pending.injectedAt:0,...surfaceMetrics(page),...memorySnapshot()});
+  },32);
   await finish(profileJob.richDemo ? 1600 : profileJob.earlyInput ? 80 : 650);
   const operation = async (name,page,edit,action,idle=80) => {
     current = {name,page,start:performance.now(),minSequence:latestSequence+(edit?1:0),afterRequest:latestRequest,frames:[]};
@@ -396,7 +413,8 @@ else {
   const mainFrames = profileFrames.filter(f=>f.type==='image' && f.paintedAt);
   const uiChecks = {normalStatusHidden:mainFrames.every(f=>f.statusHidden), autoLabelStable:mainFrames.every(f=>f.autoLabel==='Auto')};
   if(profileJob.earlyInput && (!uiChecks.normalStatusHidden || !uiChecks.autoLabelStable)) throw Error('Normal preview UI assertions failed: '+JSON.stringify(uiChecks));
-  const result={...profileJob,uiChecks,ua:navigator.userAgent,dpr:devicePixelRatio,viewport:[innerWidth,innerHeight],
+  clearInterval(surfaceSampler);
+  const result={...profileJob,surfaceSamples,uiChecks,ua:navigator.userAgent,dpr:devicePixelRatio,viewport:[innerWidth,innerHeight],
     rows:profileRows,frames:profileFrames,regionRequests:profileRequests,inputs:profileInputs,rapidPhases,visibilityEvents,prewarmEvents,rasterReadbackMs:readback,errors};
   if (profileHost) { profileHost.postMessage({type:'profile-result',result});return; }
   await fetch('/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
@@ -404,4 +422,4 @@ else {
   parent.postMessage({profileDone:true,summary:{...profileJob,dpr:devicePixelRatio,metrics:{initial:select('initial'),page:select('page-first-compiled'),
     cache:[...select('page-previous-cached'),...select('page-next-cached')],typing:profileJob.rapid?select('typing-overlap'):select('edit-letter'),edit:profileJob.rapid?select('backspace-overlap'):select('edit-text'),coordinate:profileJob.rapid?select('coordinate-overlap'):select('edit-coordinate'),
     decode:profileFrames.filter(f=>f.dispatchToDecoded!==undefined).map(f=>f.dispatchToDecoded)}}},location.origin);
-})().catch(error=>{document.getElementById('status').hidden=false;document.getElementById('status').textContent='PROFILE ERROR: '+error.message;console.error(error);profileHost?.postMessage({type:'profile-error',error:error.message,partial:{...profileJob,rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,errors}});});
+})().catch(error=>{clearInterval(surfaceSampler);document.getElementById('status').hidden=false;document.getElementById('status').textContent='PROFILE ERROR: '+error.message;console.error(error);profileHost?.postMessage({type:'profile-error',error:error.message,partial:{...profileJob,rows:profileRows,frames:profileFrames,inputs:profileInputs,rapidPhases,errors}});});
