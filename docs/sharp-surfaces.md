@@ -72,6 +72,12 @@ transfers no pixels for it.
 Every visible page keeps its own patch base, so an edit that reflows a
 neighbouring page patches that page too.
 
+Navigation first obtains the target's device grid and clip from the webview.
+A jump token prevents older queued viewport messages from promoting the target's
+coarse prefetch size to an authoritative page. Missing acknowledgments use the
+normal bounded webview recovery. Late coarse prefetches never replace an already
+retained sharp page.
+
 ## Memory
 
 For a viewport budget `B` pixels:

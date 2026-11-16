@@ -1632,6 +1632,82 @@ function surfaceFrame(command: Command, page: number, clip: Rect4, extra: object
 }
 const lastImage = (f: ReturnType<typeof fixture>) => f.messages.filter(m => m.type === 'image').at(-1)!;
 
+test('surface navigation waits for the new viewport instead of promoting a coarse prefetch demand', () => {
+  const f = surfaceFixture(), clip: Rect4 = [0, 0, 2048, 1536];
+  const demand = (page: number, viewportRequest?: number) => ({ type: 'viewport', page, width: 3404, clip,
+    viewportRequest, format: 'png', continuous: true, visible: [{ page, width: 3404, clip }],
+    nearby: [{ page: page ? 0 : 1, width: 1000 }], resident: [0, 1], epoch: 0 });
+  const exports = () => f.commands.filter(c => /^preview-(?:surface|png|render|background)$/.test(c[0]));
+  try {
+    f.send({ ...demand(0), type: 'ready', pngCanvas: true });
+    f.controller.handle(surfaceFrame(exports().at(-1)!, 0, clip));
+    const first = lastImage(f);
+    f.send({ type: 'decoded', id: first.header.requestId, page: 0, png: first.contentId, cached: [first.contentId] });
+    const before = exports().length;
+    f.controller.navigate(1);
+    const jump = f.messages.filter(m => m.type === 'jump').at(-1)!;
+    assert.ok(Number.isSafeInteger(jump.viewportRequest));
+    assert.equal(exports().length, before, 'a nearby capped width cannot become an authoritative page');
+    f.send(demand(0));
+    assert.equal(exports().length, before, 'a queued pre-jump viewport cannot unblock rendering');
+    f.send(demand(1, jump.viewportRequest));
+    assert.equal(exports().at(-1)![0], 'preview-surface');
+    f.controller.handle(surfaceFrame(exports().at(-1)!, 1, clip));
+    const second = lastImage(f);
+    f.send({ type: 'decoded', id: second.header.requestId, page: 1, png: second.contentId, cached: [first.contentId, second.contentId] });
+    const warmed = exports().length;
+    f.controller.navigate(-1);
+    const back = f.messages.filter(m => m.type === 'jump').at(-1)!;
+    f.send(demand(1, jump.viewportRequest));
+    assert.equal(exports().length, warmed, 'an earlier jump acknowledgment is obsolete');
+    f.send(demand(0, back.viewportRequest));
+    assert.equal(exports().length, warmed, 'the retained sharp page needs no coarse replacement or native export');
+  } finally { f.controller.dispose(); }
+});
+
+test('a missing post-jump viewport acknowledgment recovers the webview instead of blocking forever', t => {
+  (t.mock.timers as unknown as { enable(options: { apis: string[] }): void }).enable({ apis: ['setTimeout'] });
+  const f = surfaceFixture(), clip: Rect4 = [0, 0, 2048, 1536];
+  try {
+    f.send({ type: 'ready', page: 0, width: 3404, clip, format: 'png', pngCanvas: true, continuous: true,
+      visible: [{ page: 0, width: 3404, clip }], nearby: [], resident: [], epoch: 0 });
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, clip));
+    const image = lastImage(f);
+    f.send({ type: 'decoded', id: image.header.requestId, page: 0, png: image.contentId, cached: [image.contentId] });
+    const before = f.panel.webview.html;
+    f.controller.navigate(1);
+    t.mock.timers.tick(10001);
+    assert.notEqual(f.panel.webview.html, before, 'the nonresponding webview gets a fresh identity');
+    f.send({ type: 'ready', page: 1, width: 3404, clip, format: 'png', pngCanvas: true, continuous: true,
+      visible: [{ page: 1, width: 3404, clip }], nearby: [], resident: [], epoch: 0 });
+    assert.equal(f.commands.at(-1)![0], 'preview-surface', 'rendering resumes after recovery');
+  } finally { f.controller.dispose(); }
+});
+
+test('a late coarse prefetch cannot replace a retained sharp neighboring page', async () => {
+  const f = surfaceFixture(), clip: Rect4 = [0, 0, 2048, 1536];
+  try {
+    f.send({ type: 'ready', page: 0, width: 3404, clip, format: 'png', pngCanvas: true, continuous: true,
+      visible: [{ page: 0, width: 3404, clip }, { page: 1, width: 3404, clip }], nearby: [], resident: [], epoch: 0 });
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 0, clip));
+    const first = lastImage(f);
+    f.send({ type: 'decoded', id: first.header.requestId, page: 0, png: first.contentId, cached: [first.contentId] });
+    f.controller.handle(surfaceFrame(f.commands.at(-1)!, 1, clip));
+    const second = lastImage(f);
+    f.send({ type: 'decoded', id: second.header.requestId, page: 1, png: second.contentId, cached: [first.contentId, second.contentId] });
+    f.send({ type: 'viewport', page: 0, width: 3404, clip, format: 'png', continuous: true,
+      visible: [{ page: 0, width: 3404, clip }], nearby: [{ page: 1, width: 1000 }], resident: [0], epoch: 0 });
+    await prefetchDelay();
+    const request = f.commands.at(-1)!;
+    assert.equal(request[0], 'preview-background');
+    const images = f.messages.filter(m => m.type === 'image').length;
+    f.controller.handle({ header: { requestId: request[1] as number, revision: 1, sequence: 0, page: 1,
+      bounds: [0, 0, 612, 792], width: 1000, height: 1295, mime: 'image/png', byteLength: 4 }, bytes: Buffer.from([1, 2, 3, 4]) });
+    assert.equal(f.messages.filter(m => m.type === 'image').length, images, 'coarse pixels stay out of the authoritative canvas');
+    assert.deepEqual((f.controller as any).presented.get(1).header.clip, clip);
+  } finally { f.controller.dispose(); }
+});
+
 test('surface patch metadata follows browser eviction when navigating between pages', () => {
   const f = surfaceFixture(), clip: Rect4 = [0, 0, 2048, 1536];
   try {
