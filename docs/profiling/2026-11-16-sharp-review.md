@@ -41,6 +41,13 @@ preview in the installed VS Code webview passed. Native pixel tests include
 overlapping regions, nonzero origins, text, curves, transparency and a real TikZ
 page. The experiment below is additional evidence, not a replacement for CI.
 
+Final production revision `947455f3148647d51ec2fbd24733e7b8cab9b2d5` passed
+[Tests, including Windows/WSL](https://github.com/DominikPeters/texpresso-vscode/actions/runs/43885237021)
+and [installed Linux x64/arm64 VSIX acceptance](https://github.com/DominikPeters/texpresso-vscode/actions/runs/43885236993).
+The same native engine pin also passed
+[both macOS bundle builds](https://github.com/DominikPeters/texpresso-vscode/actions/runs/43874544507).
+The engine and extension PRs are ready for review; nothing has been released.
+
 ## Browser comparison
 
 Production controller and webview scripts through the existing local HTTP bridge
