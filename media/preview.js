@@ -7,7 +7,7 @@
   const stack = document.createElement('div'); stack.className = 'page-stack'; viewport.prepend(stack);
   const saved = vscode.getState() || {}, views = new Map(), geometry = new TexpressoViewport.PageLayout();
   const { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache,
-    surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect } = TexpressoViewport;
+    surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect, snapDevicePosition } = TexpressoViewport;
   const status = globalElement('status'), zoomSelect = globalElement('zoom');
   let layoutEnd, latestSourceSequence, latestSourceRevision, sourceGeneration = 0, revealIntent = 0, pendingReveal;
   function observeSource(sequence, revision, reset = false) {
@@ -99,7 +99,7 @@
     const view = viewport.getBoundingClientRect(), y = viewport.scrollTop + origin.y - view.top;
     const index = geometry.pageAt(y), rect = geometry.rects[index], sheet = views.get(index)?.sheet;
     const left = sheet ? sheet.getBoundingClientRect().left : view.left + sheetLeft(rect) - viewport.scrollLeft;
-    return { page: index, x: (origin.x - left) / rect.width, y: (y - rect.top) / rect.height, origin };
+    return { page: index, x: (origin.x - left) / rect.width, y: (y - sheetTop(rect)) / rect.height, origin };
   }
   function topAnchor() {
     const rect = viewport.getBoundingClientRect(); return anchorAt({ x: rect.left, y: rect.top });
@@ -107,7 +107,7 @@
   function restoreAnchor(anchor) {
     const rect = geometry.rects[anchor.page]; if (!rect) { return; }
     const view = viewport.getBoundingClientRect();
-    const top = rect.top + anchor.y * rect.height - (anchor.origin.y - view.top);
+    const top = sheetTop(rect) + anchor.y * rect.height - (anchor.origin.y - view.top);
     viewport.scrollTop = top;
     const sheet = views.get(anchor.page)?.sheet;
     if (sheet) {
@@ -117,7 +117,7 @@
       // axis instead of carrying the impossible offset into the next gesture.
       if (Math.abs(viewport.scrollLeft-left) > 1) { anchor.x = (anchor.origin.x-sheet.getBoundingClientRect().left)/rect.width; }
     }
-    if (Math.abs(viewport.scrollTop-top) > 1) { anchor.y = (viewport.scrollTop+anchor.origin.y-view.top-rect.top)/rect.height; }
+    if (Math.abs(viewport.scrollTop-top) > 1) { anchor.y = (viewport.scrollTop+anchor.origin.y-view.top-sheetTop(rect))/rect.height; }
     programmaticTop = viewport.scrollTop; programmaticLeft = viewport.scrollLeft;
   }
   function alignText() {
@@ -128,13 +128,17 @@
 
   const viewportPixels = () => viewport.clientWidth * viewport.clientHeight * devicePixelRatio * devicePixelRatio;
   const surfaceTotal = () => surfaceBudget(viewportPixels(), maxPixels);
+  let deviceOrigin = { x: 0, y: 0 };
   // Sheets are placed on whole device pixels. A transform-centered sheet of odd
   // device width would sit half a pixel off and resample its entire raster.
   function sheetLeft(rect) {
     const left = (geometry.maxWidth - rect.width) / 2;
-    return surfaces ? Math.round(left * devicePixelRatio) / devicePixelRatio : left;
+    return surfaces ? snapDevicePosition(left, devicePixelRatio, deviceOrigin.x) : left;
   }
+  const sheetTop = rect => surfaces ? snapDevicePosition(rect.top, devicePixelRatio, deviceOrigin.y) : rect.top;
   function configure() {
+    const viewportRect = viewport.getBoundingClientRect();
+    deviceOrigin = { x: viewportRect.left - viewport.scrollLeft, y: viewportRect.top - viewport.scrollTop };
     const retainedEnd = layoutEnd !== undefined && count === layoutEnd && currentPage < count;
     geometry.configure({ count, complete: complete || retainedEnd, active: currentPage, zoom, width: viewport.clientWidth, height: viewport.clientHeight,
       dpr: surfaces ? devicePixelRatio : undefined });
@@ -157,7 +161,7 @@
     for (const index of [...wanted].sort((a,b)=>a-b)) {
       let view = views.get(index); if (!view) { view = createPage(index); views.set(index, view); stack.appendChild(view.sheet); }
       const rect = geometry.rects[index]; if (!rect) { continue; }
-      view.sheet.style.top = `${rect.top}px`; view.sheet.style.width = `${rect.width}px`; view.sheet.style.height = `${rect.height}px`;
+      view.sheet.style.top = `${sheetTop(rect)}px`; view.sheet.style.width = `${rect.width}px`; view.sheet.style.height = `${rect.height}px`;
       view.sheet.style.left = surfaces ? `${sheetLeft(rect)}px` : ''; view.sheet.style.transform = surfaces ? 'none' : '';
     }
     stack.style.width = `${geometry.maxWidth}px`; diagnostics();
@@ -229,7 +233,7 @@
     const parts = shown.map(index => {
       const rect = geometry.rects[index]; if (!surfaces || !rect) { return undefined; }
       const grid = geometry.grid(rect.bounds, rect.width);
-      return { grid, seen: visibleGridRect(grid, { left: sheetLeft(rect), top: rect.top, width: rect.width, height: rect.height }, scope) };
+      return { grid, seen: visibleGridRect(grid, { left: sheetLeft(rect), top: sheetTop(rect), width: rect.width, height: rect.height }, scope) };
     });
     const total = surfaceTotal(), area = r => r ? (r[2] - r[0]) * (r[3] - r[1]) : 0;
     const seen = parts.reduce((sum, part) => sum + area(part?.seen), 0);

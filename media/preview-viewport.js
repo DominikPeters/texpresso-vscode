@@ -49,6 +49,9 @@
   // page to exactly that many device pixels, so a raster pixel is a screen
   // pixel; a surface is an integer rectangle [x0, y0, x1, y1] of the grid.
   const SURFACE_CELL = 512;
+  // Snap in screen coordinates, not just the page stack. Toolbar height and
+  // scroll offsets need not be whole device pixels at fractional display scales.
+  const snapDevicePosition = (position, dpr, origin = 0) => Math.round((position + origin) * dpr) / dpr - origin;
   // Rows of a page `gridWidth` device pixels wide: the engine's own rule,
   // including single-precision page extents and its row tolerance.
   function gridHeight(bounds, gridWidth) {
@@ -301,5 +304,5 @@
     }
   }
   return { clamp, wheelFactor, scrollCorrection, syncScrollCorrection, rasterWidth, DetailCache, PageLayout,
-    SURFACE_CELL, gridHeight, surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect };
+    SURFACE_CELL, snapDevicePosition, gridHeight, surfaceBudget, planSurface, visibleGridRect, surfacePlacement, sameRect };
 });

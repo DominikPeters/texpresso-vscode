@@ -32,6 +32,11 @@ pixel off and resample its entire raster), and positions a surface's canvas by
 its rectangle. See `PageLayout.grid`, `planSurface` and `surfacePlacement` in
 [preview-viewport.js](../media/preview-viewport.js).
 
+Position snapping includes the viewport's screen origin and scroll offset. A
+37 CSS-pixel toolbar at DPR 1.25 places the viewport at physical y=46.25; snapping
+only within the stack would leave the entire page a quarter pixel off the grid.
+The browser check covers actual 125% and 150% display scaling as well as DPR 2.
+
 The engine rasterizes every pixel in its cell of a fixed 512-pixel lattice, so
 any rectangle of a grid has exactly the pixels of any other. A shared transform
 alone does not give this: MuPDF re-interpolates an edge where it crosses the

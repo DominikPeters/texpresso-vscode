@@ -122,6 +122,7 @@ test('automatic SyncTeX preserves horizontal position even for offscreen targets
 type Budget = { whole: number; clip: number; max: number };
 const surface = require('../../media/preview-viewport.js') as {
   SURFACE_CELL: number;
+  snapDevicePosition(position: number, dpr: number, origin?: number): number;
   gridHeight(bounds: number[], gridWidth: number): number;
   surfaceBudget(viewportPixels: number, maxPixels: number): number;
   planSurface(grid: number[], visible: number[] | undefined, budget: Budget, current?: number[], cell?: number): number[] | undefined;
@@ -132,6 +133,19 @@ const surface = require('../../media/preview-viewport.js') as {
     configure(options: object): void } };
 };
 const pixels = (r: number[]) => (r[2] - r[0]) * (r[3] - r[1]);
+
+test('page positions account for toolbar and scroll phase at fractional display scales', () => {
+  for (const dpr of [1, 1.25, 1.5, 1.75, 2, 2.5]) {
+    for (const origin of [37, 36.5, -123.2, -0.25]) {
+      for (const position of [0, 0.4, 1731 / dpr, 3228.8]) {
+        const snapped = surface.snapDevicePosition(position, dpr, origin);
+        near((snapped + origin) * dpr, Math.round((position + origin) * dpr));
+        assert.ok(Math.abs(snapped - position) <= 0.5 / dpr + 1e-9);
+      }
+    }
+  }
+  near(surface.snapDevicePosition(0, 1.25, 37), -0.2);
+});
 
 test('grid rows follow the engine rule, without an extra row from single-precision page sizes', () => {
   const a4 = [0, 0, 595.276, 841.89];
