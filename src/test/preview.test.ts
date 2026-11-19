@@ -4,7 +4,7 @@ import { PassThrough } from 'node:stream';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { readPreviewProtocol, isImageHeader, isPreviewMessage, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
+import { readPreviewProtocol, isImageHeader, isPreviewMessage, imageLimits, DEFAULT_IMAGE_LIMITS, type PreviewImageHeader, type PreviewImage } from '../preview-protocol';
 import { TexpressoSession } from '../session';
 import { SessionPaths } from '../paths';
 import { config, document, FakeProcess } from './helpers';
@@ -294,5 +294,57 @@ test('optional full-page text geometry survives PNG, SVG and no-op patch framing
   assert.ok(isImageHeader({ ...header, textBounds: [-10, -20, 620, 800] }), 'overhanging text stays in page coordinates');
   for (const invalid of [null, [], [1, 2, 3], [0, 0, 0, 10], [0, 0, 10, 0], [0, 0, Infinity, 10], [0, NaN, 10, 10], ['0', 0, 10, 10]]) {
     assert.equal(isImageHeader({ ...header, textBounds: invalid }), false);
+  }
+});
+
+test('surface headers pair an integer grid rectangle with the raster size; larger frames need a session opted into them', () => {
+  const surface = { ...header, width: 2048, height: 1536, grid: [3404, 4406], clip: [0, 1024, 2048, 2560], rasterId: 7 };
+  assert.ok(isImageHeader(surface));
+  assert.ok(isImageHeader({ ...surface, patch: { base: 6, rect: [2000, 1500, 48, 36] } }), 'patch rectangles are relative to the surface');
+  for (const change of [{ grid: undefined }, { clip: undefined }, { clip: [0, 1024, 2047, 2560] }, { clip: [0, 1024, 2048, 2561] },
+    { clip: [1400, 1024, 3448, 2560] }, { clip: [0, 3000, 2048, 4536] }, { grid: [3404.5, 4406] }, { grid: [65537, 4406] }, { grid: [3404, 1048577] },
+    { clip: [-1, 1024, 2047, 2560] }, { clip: [0, 1024, 2048] }, { grid: [3404] }, { mime: 'image/svg+xml' }]) {
+    assert.equal(isImageHeader({ ...surface, ...change }), false, JSON.stringify(change));
+  }
+  const large = { ...header, width: 4096, height: 2560, grid: [6808, 8811], clip: [0, 0, 4096, 2560], rasterId: 8, byteLength: 20 * 1024 * 1024 };
+  assert.equal(isImageHeader(large), false, 'the default session keeps four megapixels and 16 MiB');
+  assert.equal(isImageHeader({ ...large, byteLength: 9 }), false);
+  const limits = imageLimits(16000000);
+  assert.deepEqual(imageLimits(4000000), DEFAULT_IMAGE_LIMITS);
+  assert.ok(isImageHeader(large, limits));
+  assert.equal(isImageHeader({ ...large, width: 8192, height: 2048, clip: [0, 0, 8192, 2048], grid: [8192, 8811] }, limits), false, 'still bounded by the session budget');
+  assert.equal(isImageHeader({ ...header, mime: 'image/svg+xml', byteLength: 20 * 1024 * 1024 }, limits), false, 'SVG keeps its 16 MiB bound');
+  const errors: Error[] = [], frames: PreviewImage[] = [];
+  const strict = new PassThrough(), opted = new PassThrough();
+  readPreviewProtocol(strict, () => {}, () => assert.fail('oversized for this session'), e => errors.push(e));
+  readPreviewProtocol(opted, () => {}, f => frames.push(f), e => { throw e; }, limits);
+  const small = { ...large, byteLength: 4 }, line = Buffer.concat([Buffer.from(JSON.stringify(['preview-image', small]) + '\n'), Buffer.from([1, 2, 3, 4])]);
+  strict.write(line); opted.write(line);
+  assert.equal(errors.length, 1); assert.equal(frames.length, 1); assert.deepEqual(frames[0].header.clip, [0, 0, 4096, 2560]);
+});
+
+test('a surface session takes its frame budget from the engine, or from a budget the user launched it with', async () => {
+  const surfaceFrame = { ...header, width: 3072, height: 2048, grid: [3404, 4406], clip: [0, 0, 3072, 2048], rasterId: 5, byteLength: 4 };
+  for (const [extra, surfaces, expected, accepted] of [[[], true, 16000000, true], [['-preview-max-pixels', '2000000'], true, 2000000, false],
+    [[], false, 4000000, false], [['-preview-max-pixels', '8000000'], false, 8000000, true]] as [string[], boolean, number, boolean][]) {
+    const main = document('/work/main.tex'), child = new FakeProcess(), frames: PreviewImage[] = [], errors: Error[] = [];
+    let launchArguments: string[] = [];
+    const session = new TexpressoSession(main, { ...config, arguments: [...config.arguments, ...extra], previewLocation: 'editor' }, new SessionPaths(main.fileName, false),
+      () => [main], { state() {}, output() {}, debug() {}, synctex() {}, error: error => errors.push(error), preview: event => { if ('header' in event) { frames.push(event); } } }, undefined,
+      (_command, args) => { launchArguments = [...args]; queueMicrotask(() => child.emit('spawn')); return child.asChild(); }, {
+        probePreview: async (_configuration, _cwd, features) => {
+          features?.({ regions: true, svg: true, links: true, auto: true, pngPatches: true, background: true, prepareEdit: true, surfaces, maxPixels: 16000000 });
+          return true;
+        }
+      });
+    try {
+      await session.start();
+      assert.equal(session.previewSurfaces, surfaces); assert.equal(session.previewMaxPixels, expected, JSON.stringify(extra));
+      assert.deepEqual(launchArguments.filter(a => a === '-preview-max-pixels').length, extra.length ? 1 : 0, 'the extension adds no budget of its own: whole pages keep the engine default');
+      child.stdout.write(Buffer.concat([Buffer.from(JSON.stringify(['preview-image', surfaceFrame]) + '\n'), Buffer.from([1, 2, 3, 4])]));
+      await new Promise(resolve => setImmediate(resolve));
+      assert.equal(frames.length, accepted ? 1 : 0, `a ${3072 * 2048}-pixel frame under ${expected}`);
+      assert.equal(errors.length, accepted ? 0 : 1);
+    } finally { await session.dispose(); }
   }
 });

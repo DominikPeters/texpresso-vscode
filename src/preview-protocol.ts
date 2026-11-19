@@ -2,6 +2,14 @@ import type { Readable } from 'stream';
 import { validateMessage, type Message } from './protocol';
 
 export const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
+export const DEFAULT_IMAGE_PIXELS = 4000000;
+/** Bounds on one image frame. Sessions launched with a larger pixel budget accept correspondingly larger frames. */
+export interface ImageLimits { pixels: number; bytes: number }
+export const DEFAULT_IMAGE_LIMITS: ImageLimits = { pixels: DEFAULT_IMAGE_PIXELS, bytes: MAX_IMAGE_BYTES };
+/** The engine allows 64 MiB PNG bodies once its budget exceeds the default (PREVIEW-PROTOCOL.md). */
+export function imageLimits(pixels: number): ImageLimits {
+  return pixels > DEFAULT_IMAGE_PIXELS ? { pixels, bytes: 64 * 1024 * 1024 } : DEFAULT_IMAGE_LIMITS;
+}
 export interface PreviewFigure {
   bounds: [number, number, number, number]; file: string; line: number; endLine: number;
 }
@@ -24,6 +32,11 @@ export interface PreviewImageHeader {
   /** Full-page text extent in page coordinates, including on raster patches. */
   textBounds?: [number, number, number, number];
   rasterId?: number; patch?: { base: number; rect: [number, number, number, number] };
+  /**
+   * Surface frames only. `grid` is the complete page in device pixels and `clip` the integer rectangle of it
+   * that this raster covers; `width`/`height` are the clip's size while `bounds` remains the complete page.
+   */
+  grid?: [number, number]; clip?: [number, number, number, number];
   svgEligible?: boolean; vectorCost?: number;
   /** Native export wall time, excluding compilation and pipe transfer. */
   exportMs?: number;
@@ -82,6 +95,13 @@ function rasterPatch(h: PreviewImageHeader): boolean {
   return h.byteLength === 0 ? r.every(n => n === 0) :
     w > 0 && height > 0 && x + w <= h.width && y + height <= h.height;
 }
+function surface(h: PreviewImageHeader): boolean {
+  if (h.grid === undefined && h.clip === undefined) { return true; }
+  const g = h.grid, c = h.clip;
+  return h.mime === 'image/png' && Array.isArray(g) && g.length === 2 && g.every(count) && g[0] >= 1 && g[0] <= 65536 &&
+    g[1] >= 1 && g[1] <= 1048576 && Array.isArray(c) && c.length === 4 && c.every(count) &&
+    c[2] <= g[0] && c[3] <= g[1] && c[2] - c[0] === h.width && c[3] - c[1] === h.height;
+}
 function renderFeatures(value: unknown): boolean {
   if (!value || typeof value !== 'object') { return false; }
   const f = value as RenderFeatures;
@@ -90,12 +110,13 @@ function renderFeatures(value: unknown): boolean {
     Number.isSafeInteger(f.imagePixels) && f.imagePixels >= 0 && f.uniqueGlyphs <= 8192 && typeof f.glyphOverflow === 'boolean' &&
     typeof f.fontOverflow === 'boolean' && typeof f.svgEligible === 'boolean';
 }
-export function isImageHeader(value: unknown): value is PreviewImageHeader {
+export function isImageHeader(value: unknown, limits: ImageLimits = DEFAULT_IMAGE_LIMITS): value is PreviewImageHeader {
   if (!value || typeof value !== 'object') { return false; }
   const h = value as PreviewImageHeader;
   return [h.requestId, h.revision, h.sequence, h.page, h.width, h.height, h.byteLength].every(count) &&
     h.width > 0 && h.height > 0 && h.width <= 8192 && h.height <= 8192 &&
-    h.width * h.height <= 4000000 && rasterPatch(h) && h.byteLength <= MAX_IMAGE_BYTES &&
+    h.width * h.height <= limits.pixels && rasterPatch(h) && surface(h) &&
+    h.byteLength <= (h.mime === 'image/png' ? limits.bytes : MAX_IMAGE_BYTES) &&
     (h.mime === 'image/png' || h.mime === 'image/svg+xml') && rectangle(h.bounds) &&
     (h.textBounds === undefined || rectangle(h.textBounds)) &&
     (h.fallback === undefined || (typeof h.fallback === 'string' && h.fallback.length <= 160)) &&
@@ -133,7 +154,7 @@ export function isPreviewMessage(value: unknown): value is PreviewMessage {
 // This reader is used only after explicitly enabling the engine's binary mode.
 // Never attach readline, setEncoding, or another stdout consumer alongside it.
 export function readPreviewProtocol(input: Readable, message: (value: Message | PreviewMessage) => void,
-  image: (value: PreviewImage) => void, failure: (error: Error) => void): { close(): void } {
+  image: (value: PreviewImage) => void, failure: (error: Error) => void, limits: ImageLimits = DEFAULT_IMAGE_LIMITS): { close(): void } {
   let line: Buffer[] = [], lineBytes = 0;
   let header: PreviewImageHeader | undefined;
   let body: Buffer | undefined, offset = 0, closed = false;
@@ -170,7 +191,7 @@ export function readPreviewProtocol(input: Readable, message: (value: Message | 
           if (!text) { continue; }
           const value: unknown = JSON.parse(text);
           if (Array.isArray(value) && value[0] === 'preview-image') {
-            if (value.length !== 2 || !isImageHeader(value[1])) { throw new Error('Invalid preview image header.'); }
+            if (value.length !== 2 || !isImageHeader(value[1], limits)) { throw new Error('Invalid preview image header.'); }
             if (value[1].byteLength === 0) { image({ header: value[1], bytes: Buffer.alloc(0) }); }
             else { header = value[1]; body = Buffer.allocUnsafe(header.byteLength); }
           } else {

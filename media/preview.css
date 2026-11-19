@@ -58,6 +58,10 @@ button[aria-pressed="true"] { background: var(--vscode-toolbar-activeBackground,
 .page-sheet.waiting::after { content: 'Preparing page…'; position: absolute; top: 24px; left: 0; width: 100%; text-align: center; color: var(--vscode-descriptionForeground); font: 12px var(--vscode-font-family,sans-serif); }
 .page-image, .page-raster, .page-raster > canvas, .page-vector { width: 100%; height: 100%; display: block; user-select: none; }
 .page-detail { position: absolute; pointer-events: none; user-select: none; }
+/* Coarse whole-page pixels beneath a sharp rectangle of the same page. */
+.page-placeholder { position: absolute; inset: 0; pointer-events: none; user-select: none; }
+.page-placeholder > canvas { width: 100%; height: 100%; display: block; }
+.page-raster { position: relative; }
 .page-links { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .page-links .page-link { position: absolute; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; pointer-events: auto; cursor: pointer; }
 .page-links .page-link:hover { background: #0088ff22; }
