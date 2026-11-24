@@ -1,7 +1,7 @@
 # Native engine builds
 
 `texpresso/` is a submodule of `DominikPeters/texpresso`, on the maintained
-`codex/unified-engine` branch shared with TeXstudio. The extension's Git commit records the exact engine commit.
+`main` branch shared with TeXstudio. The extension's Git commit records the exact engine commit.
 The old `web-wrapper-version` branch is independent historical work; new
 embedding work starts from current upstream and is implemented afresh.
 
@@ -19,17 +19,18 @@ Initialize the engine only when doing native work:
 
 ```sh
 git submodule update --init native/texpresso
-git -C native/texpresso switch codex/unified-engine
+git -C native/texpresso fetch origin main
+git -C native/texpresso switch main
 git -C native/texpresso remote add upstream https://github.com/let-def/texpresso.git
 ```
 
 `submodule update` checks out the recorded commit, initially detached. If a
-local `codex/unified-engine` branch does not exist, create it from `origin/codex/unified-engine`. Add the
+local `main` branch does not exist, create it from `origin/main`. Add the
 `upstream` remote only once. Ordinary extension tests do not need a submodule
 checkout or native build dependencies.
 
-Maintain the fork's `main` as an upstream mirror and merge selected upstream
-updates into `codex/unified-engine`. Preserve published engine commits: extension releases
+Merge selected updates from `upstream/main` into the fork's `main`.
+Preserve published engine commits: extension releases
 refer to those SHAs. Keep editor integrations on this shared history instead of
 advancing separate VS Code and TeXstudio engine branches. Use feature branches for engine changes; prefer small,
 upstreamable changes for protocol/capability and rendering transport support.
@@ -38,7 +39,7 @@ After testing an engine change, push it to the fork **before** committing the
 updated submodule pointer in the extension:
 
 ```sh
-git -C native/texpresso push origin codex/unified-engine
+git -C native/texpresso push origin main
 git add native/texpresso
 git commit -m "Update bundled TeXpresso engine"
 ```
