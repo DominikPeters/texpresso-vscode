@@ -3,7 +3,7 @@
   "displayName": "TeXpresso",
   "description": "Live LaTeX preview inside VS Code, with native rendering and bidirectional SyncTeX",
   "publisher": "DominikPeters",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "icon": "./assets/texpresso_logo.png",
   "homepage": "https://github.com/DominikPeters/texpresso-vscode",
   "repository": {

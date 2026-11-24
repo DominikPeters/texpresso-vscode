@@ -1,5 +1,12 @@
 # Release notes
 
+### 2.0.3
+
+- Keep the preview running when forward SyncTeX returns an empty highlight box.
+- Jump to the editable source frame when inverse SyncTeX lands in a generated Beamer verbatim file.
+- Honor clipping for adjusted content and included PDF images, and find graphics installed in the TeX tree.
+- Release file buffers replaced during rollback, and free engine and virtual-font resources at teardown.
+
 ### 2.0.2
 
 - Keep PNG pages sharp while typing. The preview now holds each visible page at display density and patches it in place on every edit, instead of replacing it with a capped whole-page image and sharpening after a pause. Needs an engine with the `surfaces` capability; older engines behave as before.
