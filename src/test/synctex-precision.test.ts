@@ -30,7 +30,7 @@ test('precise framing accepts empty boxes and fragmented Unicode replies, reject
     input.write(bytes.subarray(0, split)); input.write(bytes.subarray(split));
     assert.deepEqual(messages, [source, inverse]); reader.close();
   }
-  for (const rects of [[[1, 2, 1, 3]], [[1, 2, Infinity, 3]], Array(129).fill([1, 2, 3, 4])]) {
+  for (const rects of [[[2, 2, 1, 3]], [[1, 2, Infinity, 3]], Array(129).fill([1, 2, 3, 4])]) {
     assert.equal(isPreviewMessage([...source.slice(0, 7), rects]), false);
   }
   for (const bad of [{ line: 0 }, { column: -2 }, { file: 'bad\nfile' }, { word: 'é'.repeat(129) }]) {
