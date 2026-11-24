@@ -67,7 +67,10 @@ function rectangle(b: unknown): boolean {
   return Array.isArray(b) && b.length === 4 && b.every(coordinate) && b[2] > b[0] && b[3] > b[1];
 }
 function sourceRectangles(value: unknown): boolean {
-  return Array.isArray(value) && value.length <= 128 && value.every(rectangle);
+  // SyncTeX can report empty boxes, for example around a display equation.
+  // The preview skips boxes without area and can still use the jump point.
+  return Array.isArray(value) && value.length <= 128 && value.every(box =>
+    Array.isArray(box) && box.length === 4 && box.every(coordinate) && box[2] >= box[0] && box[3] >= box[1]);
 }
 function inverseLocation(value: unknown): boolean {
   if (value === null) { return true; }

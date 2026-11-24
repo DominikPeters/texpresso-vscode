@@ -16,6 +16,18 @@ const header: PreviewImageHeader = { requestId: 1, revision: 3, sequence: 2, pag
 const body = Buffer.from([0x89, 0x50, 0, 10, 13, 255, 123, 0xc3, 0xa9]);
 const frame = Buffer.concat([Buffer.from(JSON.stringify(['preview-image', header]) + '\n'), body]);
 
+test('a zero-width SyncTeX box does not interrupt the preview stream', () => {
+  const input = new PassThrough();
+  const messages: unknown[] = [];
+  readPreviewProtocol(input, message => messages.push(message), () => {}, error => { throw error; });
+  const target = ['preview-source-precise', 1, 3, 2, 0, 72, 120,
+    [[72, 120, 72, 130], [74, 120, 110, 130]]];
+  const state = ['preview-state', 3, 2, 1, true, 0];
+  input.end([target, state].map(message => JSON.stringify(message) + '\n').join(''));
+  assert.deepEqual(messages, [target, state]);
+  assert.equal(isPreviewMessage([...target.slice(0, -1), [[73, 120, 72, 130]]]), false);
+});
+
 test('optional render feature metadata accepts bounded counters and rejects malformed samples', () => {
   const features = {schema:1,glyphs:20,uniqueGlyphs:10,glyphOverflow:false,textSpans:2,fonts:1,fontOverflow:false,paths:3,pathBytes:100,
     images:1,imagePixels:16000000,clips:2,groups:0,shades:0,vectorCost:600,svgEligible:false};
